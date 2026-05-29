@@ -1,4 +1,5 @@
 import os
+import re
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
@@ -120,31 +121,39 @@ def preferences():
 
         elif action == 'save_smtp':
             server = request.form.get('smtp_server', '').strip()
-            port = request.form.get('smtp_port', '587').strip()
+            port = request.form.get('smtp_port', '587').strip() or '587'
             username = request.form.get('smtp_username', '').strip()
             password = request.form.get('smtp_password', '').strip()
+            # Adresse expeditrice, decouplee de l'identifiant : indispensable
+            # pour le Direct Send (envoi sans authentification).
+            sender = request.form.get('smtp_sender', '').strip() or username
             updates = {
                 'MAIL_METHOD': 'smtp',
                 'MAIL_SERVER': server,
                 'MAIL_PORT': port,
                 'MAIL_USERNAME': username,
+                'MAIL_DEFAULT_SENDER': sender,
             }
             if password:
                 updates['MAIL_PASSWORD'] = password
-            # L'adresse expeditrice doit correspondre a la boite authentifiee,
-            # sinon Microsoft 365 (et beaucoup d'autres) rejette l'envoi.
-            if username:
-                updates['MAIL_DEFAULT_SENDER'] = username
             _update_env_file(updates)
             current_app.config['MAIL_METHOD'] = 'smtp'
             current_app.config['MAIL_SERVER'] = server
             current_app.config['MAIL_PORT'] = int(port)
             current_app.config['MAIL_USERNAME'] = username
+            current_app.config['MAIL_DEFAULT_SENDER'] = sender
             if password:
                 current_app.config['MAIL_PASSWORD'] = password
-            if username:
-                current_app.config['MAIL_DEFAULT_SENDER'] = username
             flash('Configuration SMTP enregistree', 'success')
+
+        elif action == 'save_recipients':
+            raw = request.form.get('alert_recipients', '')
+            # accepte virgules, points-virgules, espaces et retours a la ligne
+            parts = [p.strip() for p in re.split(r'[,;\s]+', raw) if p.strip()]
+            recipients = list(dict.fromkeys(parts))  # dedoublonne en gardant l'ordre
+            _update_env_file({'ALERT_RECIPIENTS': ','.join(recipients)})
+            current_app.config['ALERT_RECIPIENTS'] = recipients
+            flash(f'{len(recipients)} destinataire(s) enregistre(s)', 'success')
 
         elif action == 'test_email':
             test_email_addr = request.form.get('test_email', '').strip()
@@ -182,7 +191,10 @@ def preferences():
         'server': current_app.config.get('MAIL_SERVER', ''),
         'port': current_app.config.get('MAIL_PORT', '587'),
         'username': current_app.config.get('MAIL_USERNAME', ''),
+        'sender': current_app.config.get('MAIL_DEFAULT_SENDER', ''),
     }
+
+    alert_recipients = ', '.join(current_app.config.get('ALERT_RECIPIENTS', []) or [])
 
     o365_app_configured = all([o365_config['client_id'], o365_config['client_secret'],
                                o365_config['tenant_id']])
@@ -190,13 +202,16 @@ def preferences():
     if mail_method == 'o365':
         mail_configured = o365_connected and o365_app_configured
     else:
-        mail_configured = all([smtp_config['server'], smtp_config['username']])
+        # Configure si un serveur + une adresse expeditrice (auth ou Direct Send)
+        mail_configured = bool(smtp_config['server']
+                               and (smtp_config['sender'] or smtp_config['username']))
 
     return render_template('auth/preferences.html', mail_method=mail_method,
                            mail_configured=mail_configured, o365_config=o365_config,
                            smtp_config=smtp_config, o365_connected=o365_connected,
                            o365_user_email=o365_user_email,
-                           o365_app_configured=o365_app_configured)
+                           o365_app_configured=o365_app_configured,
+                           alert_recipients=alert_recipients)
 
 
 @bp.route('/auth/o365/callback')

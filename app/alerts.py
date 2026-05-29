@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, current_app
 from flask_login import login_required
 from app import db
 from app.models import AlertLog
-from app.email_service import send_email
+from app.email_service import send_email, render_alert_email
 
 bp = Blueprint('alerts', __name__)
 
@@ -15,14 +15,16 @@ def list():
     return render_template('alerts/list.html', alerts=alerts)
 
 
-def send_alert(subject, body, entity_type=None, entity_id=None, entity_name=None):
+def send_alert(subject, body, entity_type=None, entity_id=None, entity_name=None,
+               status='danger'):
     recipients = current_app.config.get('ALERT_RECIPIENTS', [])
     recipients = [r.strip() for r in recipients if r.strip()]
     if not recipients:
         return
 
     try:
-        send_email(subject, recipients, body)
+        html_body = render_alert_email(subject, body, status=status)
+        send_email(subject, recipients, body, html_body=html_body)
 
         log = AlertLog(
             alert_type='email',

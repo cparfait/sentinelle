@@ -1,10 +1,10 @@
 import os
 import json
+import smtplib
+from email.message import EmailMessage
 import msal
 import requests as http_requests
 from flask import current_app, session
-from flask_mail import Message
-from app import mail
 
 
 def _token_path():
@@ -145,28 +145,82 @@ def send_email(subject, recipients, body, html_body=None):
     return _send_via_smtp(subject, recipients, body, html_body)
 
 
-def _send_via_smtp(subject, recipients, body, html_body=None):
-    # A defaut d'expediteur configure, on utilise l'identifiant SMTP : c'est
-    # la boite authentifiee, donc le seul "From" accepte par Microsoft 365.
-    sender = (current_app.config.get('MAIL_DEFAULT_SENDER')
-              or current_app.config.get('MAIL_USERNAME'))
-    if not sender:
-        raise Exception("Aucune adresse expeditrice configuree. "
-                        "Renseignez l'utilisateur SMTP dans Preferences.")
-    if not current_app.config.get('MAIL_SERVER'):
-        raise Exception("Aucun serveur SMTP configure dans Preferences.")
-    # Flask-Mail fige sa config a l'init_app : on la rafraichit a partir de la
-    # config vivante pour prendre en compte les reglages saisis via Preferences
-    # sans avoir a redemarrer l'application.
-    mail.init_app(current_app)
-    msg = Message(
-        subject=f"[Sentinelle] {subject}",
-        sender=sender,
-        recipients=recipients,
-        body=body,
-        html=html_body
+_STATUS_COLORS = {
+    'danger': '#ef4444',
+    'warning': '#f59e0b',
+    'info': '#3b82f6',
+    'success': '#10b981',
+}
+
+
+def render_alert_email(title, body, status='danger'):
+    """Habille un message d'alerte en HTML (charte Sentinelle, barre de statut)."""
+    from html import escape
+    bar = _STATUS_COLORS.get(status, '#4f46e5')
+    body_html = escape(body).replace('\n', '<br>')
+    return (
+        '<!DOCTYPE html><html lang="fr"><body style="margin:0;background:#f1f5f9;'
+        'font-family:Segoe UI,Arial,sans-serif;color:#334155;">'
+        '<div style="max-width:600px;margin:24px auto;background:#fff;border-radius:10px;'
+        'overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);">'
+        '<div style="background:linear-gradient(135deg,#6366f1,#3b82f6);padding:16px 24px;'
+        'color:#fff;font-size:18px;font-weight:700;letter-spacing:.5px;">&#128737; Sentinelle</div>'
+        f'<div style="height:4px;background:{bar};"></div>'
+        '<div style="padding:24px;">'
+        f'<h2 style="margin:0 0 12px;font-size:18px;color:#1e293b;">{escape(title)}</h2>'
+        f'<div style="font-size:14px;line-height:1.6;">{body_html}</div>'
+        '</div>'
+        '<div style="padding:14px 24px;background:#f8fafc;color:#94a3b8;font-size:12px;'
+        'border-top:1px solid #e2e8f0;">Message automatique — Sentinelle, supervision DSI.</div>'
+        '</div></body></html>'
     )
-    mail.send(msg)
+
+
+def _send_via_smtp(subject, recipients, body, html_body=None):
+    """Envoi SMTP, compatible aussi bien avec un serveur authentifie qu'avec
+    le "Direct Send" Microsoft 365 (relais par IP, sans identifiants).
+
+    - Si MAIL_USERNAME et MAIL_PASSWORD sont fournis -> authentification.
+    - Sinon -> envoi sans authentification (Direct Send / relais interne).
+    On lit la config vivante (current_app.config) a chaque envoi pour prendre
+    en compte les reglages saisis via Preferences sans redemarrage.
+    """
+    server = current_app.config.get('MAIL_SERVER')
+    port = int(current_app.config.get('MAIL_PORT') or 25)
+    use_tls = current_app.config.get('MAIL_USE_TLS', True)
+    username = (current_app.config.get('MAIL_USERNAME') or '').strip()
+    password = current_app.config.get('MAIL_PASSWORD') or ''
+    sender = ((current_app.config.get('MAIL_DEFAULT_SENDER') or '').strip()
+              or username)
+
+    if not server:
+        raise Exception("Aucun serveur SMTP configure dans Preferences.")
+    if not sender:
+        raise Exception("Aucune adresse expeditrice configuree dans Preferences.")
+
+    recipients = [r.strip() for r in recipients if r and r.strip()]
+    if not recipients:
+        raise Exception("Aucun destinataire.")
+
+    # EmailMessage gere proprement l'UTF-8 du sujet et du corps.
+    msg = EmailMessage()
+    msg['Subject'] = f"[Sentinelle] {subject}"
+    msg['From'] = sender
+    msg['To'] = ', '.join(recipients)
+    msg.set_content(body)
+    if html_body:
+        msg.add_alternative(html_body, subtype='html')
+
+    # local_hostname force en ASCII : evite un EHLO avec un nom de machine
+    # accentue qui ferait planter smtplib ('ascii' codec can't encode...).
+    with smtplib.SMTP(server, port, local_hostname='sentinelle', timeout=30) as smtp:
+        smtp.ehlo()
+        if use_tls and smtp.has_extn('starttls'):
+            smtp.starttls()
+            smtp.ehlo()
+        if username and password:
+            smtp.login(username, password)
+        smtp.send_message(msg)
     return True
 
 
