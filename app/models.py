@@ -268,6 +268,43 @@ class TestHistory(db.Model):
     performed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+class Domain(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(256), nullable=False)
+    registrar = db.Column(db.String(128))
+    expiry_date = db.Column(db.Date)
+    auto_renew = db.Column(db.Boolean, default=False)
+    description = db.Column(db.Text)
+    priority = db.Column(db.String(20), default='medium')
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    histories = db.relationship('DomainHistory', backref='domain', lazy='dynamic', cascade='all, delete-orphan')
+
+    def status(self):
+        if not self.expiry_date:
+            return 'warning'
+        days_left = (self.expiry_date - datetime.now(timezone.utc).date()).days
+        if days_left < 0:
+            return 'danger'
+        elif days_left <= 30:
+            return 'danger'
+        elif days_left <= 60:
+            return 'warning'
+        elif days_left <= 90:
+            return 'info'
+        return 'success'
+
+
+class DomainHistory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id'), nullable=False)
+    action = db.Column(db.String(64), nullable=False)
+    comment = db.Column(db.Text)
+    performed_by = db.Column(db.String(64))
+    performed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
 class AlertLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     alert_type = db.Column(db.String(64), nullable=False)

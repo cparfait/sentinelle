@@ -55,6 +55,26 @@
         </a>
     </div>
     <div class="col-md-3">
+        <a href="{{ url_for('domains.list') }}" class="text-decoration-none">
+        <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ stats.domains.danger }} domaine(s) en critique, {{ stats.domains.warning }} en alerte - Cliquer pour voir les domaines">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted d-block">Domaines</small>
+                    <span class="stat-number text-primary">{{ stats.domains.total }}</span>
+                </div>
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-globe"></i>
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-2">
+                {% if stats.domains.danger %}<span class="badge-status badge-danger">{{ stats.domains.danger }} critique(s)</span>{% endif %}
+                {% if stats.domains.warning %}<span class="badge-status badge-warning">{{ stats.domains.warning }} alerte(s)</span>{% endif %}
+                {% if stats.domains.ok %}<span class="badge-status badge-success">{{ stats.domains.ok }} OK</span>{% endif %}
+            </div>
+        </div>
+        </a>
+    </div>
+    <div class="col-md-3">
         <a href="{{ url_for('backups.list') }}" class="text-decoration-none">
         <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ stats.backups.danger }} backup(s) echoue(s) - Cliquer pour voir les backups">
             <div class="d-flex justify-content-between align-items-start">
@@ -177,6 +197,7 @@
                                     <span class="badge-status badge-{% if item.type == 'account' %}info{% elif item.type == 'certificate' %}success{% elif item.type == 'backup' %}warning{% else %}info{% endif %}">
                                         {% if item.type == 'account' %}<i class="bi bi-key me-1"></i>Compte
                                         {% elif item.type == 'certificate' %}<i class="bi bi-award me-1"></i>Certificat
+                                        {% elif item.type == 'domain' %}<i class="bi bi-globe me-1"></i>Domaine
                                         {% elif item.type == 'backup' %}<i class="bi bi-cloud-arrow-up me-1"></i>Backup
                                         {% else %}<i class="bi bi-clipboard-check me-1"></i>Test{% endif %}
                                     </span>

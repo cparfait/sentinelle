@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
-from app.models import Account, Certificate, Backup, BackupCheck, TestTask, AlertLog
+from app.models import Account, Certificate, Backup, BackupCheck, TestTask, AlertLog, Domain
+from app.snooze import is_snoozed
 from app import db
 
 from app.decorators import require_edit
@@ -15,6 +16,7 @@ def index():
 
     accounts = Account.query.filter_by(is_active=True).all()
     certificates = Certificate.query.filter_by(is_active=True).all()
+    domains = Domain.query.filter_by(is_active=True).all()
     backups = Backup.query.filter_by(is_active=True).all()
     tests = TestTask.query.filter_by(is_active=True).all()
 
@@ -25,6 +27,10 @@ def index():
     cert_danger = sum(1 for c in certificates if c.status() == 'danger')
     cert_warning = sum(1 for c in certificates if c.status() == 'warning')
     cert_ok = sum(1 for c in certificates if c.status() == 'success')
+
+    dom_danger = sum(1 for d in domains if d.status() == 'danger')
+    dom_warning = sum(1 for d in domains if d.status() == 'warning')
+    dom_ok = sum(1 for d in domains if d.status() == 'success')
 
     bkp_danger = sum(1 for b in backups if b.computed_status() == 'danger')
     bkp_warning = sum(1 for b in backups if b.computed_status() == 'warning')
@@ -50,6 +56,14 @@ def index():
                 'type': 'certificate', 'name': f'{c.service_name} - {c.domain}',
                 'detail': f'Expire dans {days} jour(s)' if days >= 0 else f'Expire depuis {abs(days)} jour(s)',
                 'status': c.status(), 'url': f'/certificates/{c.id}'
+            })
+    for d in domains:
+        if d.status() in ('danger', 'warning') and d.expiry_date:
+            days = (d.expiry_date - today).days
+            urgent_items.append({
+                'type': 'domain', 'name': d.name,
+                'detail': f'Expire dans {days} jour(s)' if days >= 0 else f'Expire depuis {abs(days)} jour(s)',
+                'status': d.status(), 'url': f'/domains/{d.id}'
             })
     for b in backups:
         if b.computed_status() == 'danger':
@@ -82,6 +96,7 @@ def index():
     stats = {
         'accounts': {'total': len(accounts), 'danger': acc_danger, 'warning': acc_warning, 'ok': acc_ok},
         'certificates': {'total': len(certificates), 'danger': cert_danger, 'warning': cert_warning, 'ok': cert_ok},
+        'domains': {'total': len(domains), 'danger': dom_danger, 'warning': dom_warning, 'ok': dom_ok},
         'backups': {'total': len(backups), 'danger': bkp_danger, 'warning': bkp_warning, 'ok': bkp_ok},
         'tests': {'total': len(tests), 'danger': tst_danger, 'warning': tst_warning, 'ok': tst_ok},
     }

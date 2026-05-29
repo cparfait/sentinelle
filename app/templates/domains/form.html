@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifier' if domain else 'Ajouter' }} un domaine - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0"><i class="bi bi-globe me-2"></i>{{ 'Modifier' if domain else 'Ajouter' }} un domaine</h4>
+    <a href="{{ url_for('domains.list') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Retour
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="data-card p-4">
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label fw-medium">Nom de domaine *</label>
+                        <div class="input-group">
+                            <input type="text" name="name" id="domainInput" class="form-control"
+                                   value="{{ domain.name if domain else '' }}" required
+                                   placeholder="chatillon92.fr">
+                            <button type="button" class="btn btn-outline-primary" id="checkRdapBtn"
+                                    title="Lire l'expiration via RDAP">
+                                <i class="bi bi-globe"></i> Vérifier
+                            </button>
+                        </div>
+                        <small id="checkRdapMsg" class="d-block mt-1"></small>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-medium">Priorite</label>
+                        <select name="priority" class="form-select">
+                            <option value="low" {{ 'selected' if domain and domain.priority == 'low' }}>Basse</option>
+                            <option value="medium" {{ 'selected' if not domain or domain.priority == 'medium' }}>Moyenne</option>
+                            <option value="high" {{ 'selected' if domain and domain.priority == 'high' }}>Haute</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Registrar</label>
+                        <input type="text" name="registrar" class="form-control"
+                               value="{{ domain.registrar if domain and domain.registrar else '' }}"
+                               placeholder="OVH, Gandi, AFNIC...">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Date d'expiration</label>
+                        <input type="date" name="expiry_date" class="form-control"
+                               value="{{ domain.expiry_date.strftime('%Y-%m-%d') if domain and domain.expiry_date else '' }}">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input type="checkbox" name="auto_renew" class="form-check-input" id="autoRenew"
+                               {{ 'checked' if domain and domain.auto_renew }}>
+                        <label class="form-check-label" for="autoRenew">Renouvellement automatique chez le registrar</label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Description / Notes</label>
+                    <textarea name="description" class="form-control" rows="3"
+                              placeholder="Usage, contacts...">{{ domain.description if domain and domain.description else '' }}</textarea>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if domain else 'Ajouter' }}
+                    </button>
+                    <a href="{{ url_for('domains.list') }}" class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var btn = document.getElementById('checkRdapBtn');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+        var domain = document.getElementById('domainInput').value.trim();
+        var msg = document.getElementById('checkRdapMsg');
+        if (!domain) {
+            msg.className = 'd-block mt-1 text-danger';
+            msg.textContent = "Renseignez d'abord le domaine.";
+            return;
+        }
+        msg.className = 'd-block mt-1 text-muted';
+        msg.textContent = 'Interrogation RDAP en cours…';
+        btn.disabled = true;
+        fetch("{{ url_for('domains.check_rdap_domain') }}?domain=" + encodeURIComponent(domain))
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.ok) {
+                    if (d.expiry_date) document.querySelector('input[name=expiry_date]').value = d.expiry_date;
+                    var reg = document.querySelector('input[name=registrar]');
+                    if (d.registrar && !reg.value) reg.value = d.registrar;
+                    msg.className = 'd-block mt-1 text-success';
+                    msg.textContent = 'Lu via RDAP : expire le ' + (d.expiry_date || '?')
+                        + (d.registrar ? ' (' + d.registrar + ')' : '');
+                } else {
+                    msg.className = 'd-block mt-1 text-danger';
+                    msg.textContent = 'Échec : ' + d.error;
+                }
+            })
+            .catch(function (e) {
+                msg.className = 'd-block mt-1 text-danger';
+                msg.textContent = 'Erreur : ' + e;
+            })
+            .finally(function () { btn.disabled = false; });
+    });
+});
+</script>
+{% endblock %}

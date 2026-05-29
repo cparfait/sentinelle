@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Domaines - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-globe me-2"></i>Domaines</h4>
+        <small class="text-muted">Suivi des expirations de noms de domaine (RDAP)</small>
+    </div>
+    <a href="{{ url_for('domains.create') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Ajouter un domaine
+    </a>
+</div>
+
+<div class="data-card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Domaine</th>
+                    <th>Registrar</th>
+                    <th>Expiration</th>
+                    <th>Jours restants</th>
+                    <th>Auto-renouvellement</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in domains %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('domains.detail', id=d.id) }}" class="fw-medium text-decoration-none">
+                            <code>{{ d.name }}</code>
+                        </a>
+                    </td>
+                    <td>{{ d.registrar or '-' }}</td>
+                    <td>{{ d.expiry_date.strftime('%d/%m/%Y') if d.expiry_date else '-' }}</td>
+                    <td>
+                        {% if d.expiry_date %}
+                        {% set days = (d.expiry_date - now().date()).days %}
+                        <span class="fw-bold {% if days <= 30 %}text-danger{% elif days <= 60 %}text-warning{% elif days <= 90 %}text-info{% else %}text-success{% endif %}">
+                            {{ days }}j
+                        </span>
+                        {% else %}<span class="text-muted">-</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if d.auto_renew %}
+                        <span class="badge bg-success"><i class="bi bi-arrow-repeat me-1"></i>Oui</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Non</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge-status badge-{{ d.status() }}">
+                        {{ {'danger': 'Critique', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK'}.get(d.status(), d.status()) }}
+                    </span></td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{{ url_for('domains.detail', id=d.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                            <a href="{{ url_for('domains.edit', id=d.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">Aucun domaine. <a href="{{ url_for('domains.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a></p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

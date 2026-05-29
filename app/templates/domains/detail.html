@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}{{ domain.name }} - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-globe me-2"></i>{{ domain.name }}</h4>
+        <small class="text-muted">{{ domain.registrar or 'Registrar inconnu' }}</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('domains.edit', id=domain.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil me-1"></i> Modifier
+        </a>
+        <a href="{{ url_for('domains.list') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="data-card p-4 mb-3">
+            <div class="row">
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Statut</small>
+                    <span class="badge-status badge-{{ domain.status() }}">
+                        {{ {'danger': 'Critique', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK'}.get(domain.status(), domain.status()) }}
+                    </span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Expiration</small>
+                    <span class="fw-medium">
+                        {{ domain.expiry_date.strftime('%d/%m/%Y') if domain.expiry_date else 'Non renseignee' }}
+                        {% if domain.expiry_date %}
+                        ({{ (domain.expiry_date - now().date()).days }}j)
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Registrar</small>
+                    <span class="fw-medium">{{ domain.registrar or '-' }}</span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Auto-renouvellement</small>
+                    <span class="fw-medium">{{ 'Oui' if domain.auto_renew else 'Non' }}</span>
+                </div>
+            </div>
+            {% if domain.description %}
+            <div class="mt-2">
+                <small class="text-muted d-block">Description</small>
+                <p class="mb-0">{{ domain.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="data-card p-4 mb-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-globe me-2 text-primary"></i>Vérification RDAP</h6>
+            <p class="text-muted small mb-2">Interroge le registre et met à jour la date d'expiration et le registrar.</p>
+            <form method="POST" action="{{ url_for('domains.check_rdap', id=domain.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+                    <i class="bi bi-arrow-repeat me-1"></i> Vérifier maintenant
+                </button>
+            </form>
+        </div>
+        {% with entity_type='domain', entity_id=domain.id %}{% include '_snooze_card.html' %}{% endwith %}
+        <div class="data-card p-4">
+            <form method="POST" action="{{ url_for('domains.delete', id=domain.id) }}"
+                  onsubmit="return confirm('Supprimer ce domaine ?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                    <i class="bi bi-trash me-1"></i> Supprimer
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="data-card">
+    <div class="card-header-custom">
+        <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>Date</th><th>Action</th><th>Commentaire</th><th>Par</th></tr></thead>
+            <tbody>
+                {% for h in histories %}
+                <tr>
+                    <td>{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>{{ h.action }}</td>
+                    <td>{{ h.comment or '-' }}</td>
+                    <td>{{ h.performed_by or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center py-3 text-muted">Aucun historique</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

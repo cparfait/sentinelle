@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from apscheduler.schedulers.background import BackgroundScheduler
 from app import db
-from app.models import Account, Certificate, Backup, BackupCheck, TestTask
+from app.models import Account, Certificate, Backup, BackupCheck, TestTask, Domain
 from app.alerts import send_alert
 from app.snooze import is_snoozed
 
@@ -120,6 +120,39 @@ def check_tests():
                 send_alert(subject, body, 'test', test.id, test.name)
 
 
+def check_domains():
+    with _app.app_context():
+        today = datetime.now(timezone.utc).date()
+        for domain in Domain.query.filter_by(is_active=True).all():
+            if not domain.expiry_date or is_snoozed('domain', domain.id):
+                continue
+            days_left = (domain.expiry_date - today).days
+            if days_left in (90, 60, 30, 15, 7, 3, 1, 0, -1):
+                urgency = 'EXPIRÉ' if days_left < 0 else f'expire dans {days_left} jour(s)'
+                subject = f"Alerte domaine - {domain.name}"
+                body = (
+                    f"Le nom de domaine suivant {urgency}:\n\n"
+                    f"Domaine: {domain.name}\n"
+                    f"Registrar: {domain.registrar or 'N/A'}\n"
+                    f"Date d'expiration: {domain.expiry_date.strftime('%d/%m/%Y')}\n"
+                    f"Jours restants: {days_left}\n"
+                    f"Renouvellement auto: {'Oui' if domain.auto_renew else 'Non'}\n"
+                )
+                send_alert(subject, body, 'domain', domain.id, domain.name)
+
+
+def refresh_domains_rdap():
+    """Lit en direct l'expiration RDAP de chaque domaine actif."""
+    with _app.app_context():
+        from app.domains import refresh_domain_rdap
+        for domain in Domain.query.filter_by(is_active=True).all():
+            try:
+                refresh_domain_rdap(domain, 'auto-rdap')
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+
 def refresh_certificates_tls():
     """Lit en direct la date d'expiration reelle de chaque certificat actif et
     met a jour les fiches. Tourne avant l'alerte certificats du matin."""
@@ -186,8 +219,12 @@ def start_scheduler(app):
 
     scheduler.add_job(refresh_certificates_tls, 'cron', hour=7, minute=0,
                       id='refresh_certificates_tls', replace_existing=True)
+    scheduler.add_job(refresh_domains_rdap, 'cron', hour=7, minute=10,
+                      id='refresh_domains_rdap', replace_existing=True)
     scheduler.add_job(send_daily_digest, 'cron', hour=7, minute=30,
                       id='send_daily_digest', replace_existing=True)
+    scheduler.add_job(check_domains, 'cron', hour=8, minute=20,
+                      id='check_domains', replace_existing=True)
     scheduler.add_job(check_passwords, 'cron', hour=8, minute=0,
                       id='check_passwords', replace_existing=True)
     scheduler.add_job(check_certificates, 'cron', hour=8, minute=15,

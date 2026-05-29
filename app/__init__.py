@@ -56,6 +56,9 @@ def create_app(config_class=Config):
     from app.certificates import bp as certificates_bp
     app.register_blueprint(certificates_bp, url_prefix='/certificates')
 
+    from app.domains import bp as domains_bp
+    app.register_blueprint(domains_bp, url_prefix='/domains')
+
     from app.backups import bp as backups_bp
     app.register_blueprint(backups_bp, url_prefix='/backups')
 

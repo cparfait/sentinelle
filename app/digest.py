@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from html import escape
 
-from app.models import Account, Certificate, Backup, TestTask
+from app.models import Account, Certificate, Backup, TestTask, Domain
 from app.snooze import is_snoozed
 
 _COLORS = {'danger': '#ef4444', 'warning': '#f59e0b', 'info': '#3b82f6',
@@ -49,6 +49,19 @@ def _collect():
                           'detail': 'Certificat ' + days_txt(c.expiry_date, 'expire'),
                           'status': s, 'path': f'/certificates/{c.id}'})
     domains.append({'key': 'Certificats', 'total': len(certs), 'items': items})
+
+    # Noms de domaine
+    doms = Domain.query.filter_by(is_active=True).all()
+    items = []
+    for dm in doms:
+        if is_snoozed('domain', dm.id):
+            continue
+        s = dm.status()
+        if s in ('danger', 'warning'):
+            items.append({'name': dm.name,
+                          'detail': 'Domaine ' + days_txt(dm.expiry_date, 'expire'),
+                          'status': s, 'path': f'/domains/{dm.id}'})
+    domains.append({'key': 'Domaines', 'total': len(doms), 'items': items})
 
     # Backups
     backups = Backup.query.filter_by(is_active=True).all()
