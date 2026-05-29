@@ -14,7 +14,8 @@
     {% if current_user.is_authenticated %}
     <div class="sidebar">
         <div class="sidebar-header">
-            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Sentinelle" class="sidebar-logo">
+            <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" class="sidebar-logo-icon">
+            <span class="sidebar-logo-text">Sentinelle</span>
         </div>
 
         <div class="sidebar-search px-3 pb-2">

@@ -72,16 +72,23 @@ code {
 }
 
 .sidebar-header {
-    padding: 16px 16px 8px;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 18px 10px;
 }
 
-.sidebar-logo {
-    width: 100%;
-    height: auto;
-    object-fit: contain;
-    border-radius: 6px;
-    padding: 6px 12px;
+.sidebar-logo-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+}
+
+.sidebar-logo-text {
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
 .sidebar-search {
@@ -553,8 +560,8 @@ code {
 }
 
 .login-logo {
-    height: 44px;
-    width: auto;
+    height: 56px;
+    width: 56px;
     object-fit: contain;
 }
 
