@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_required, current_user
 from app import db
 from app.models import Certificate, CertificateHistory
@@ -39,6 +39,23 @@ def refresh_certificate_tls(cert, performed_by):
 def list():
     certificates = Certificate.query.filter_by(is_active=True).order_by(Certificate.expiry_date.asc()).all()
     return render_template('certificates/list.html', certificates=certificates)
+
+
+@bp.route('/check-domain')
+@login_required
+@require_edit
+def check_domain():
+    """Lit en direct le certificat d'un domaine (pour pre-remplir le formulaire).
+    Renvoie du JSON ; utilise par le bouton "Verifier" de la fiche."""
+    domain = request.args.get('domain', '').strip()
+    if not domain:
+        return jsonify(ok=False, error="Renseignez d'abord le domaine."), 400
+    try:
+        info = fetch_cert_info(domain)
+        return jsonify(ok=True, expiry_date=info['expiry_date'].isoformat(),
+                       issuer=info['issuer'] or '')
+    except Exception as e:
+        return jsonify(ok=False, error=str(e))
 
 
 @bp.route('/create', methods=['GET', 'POST'])

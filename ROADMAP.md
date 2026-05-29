@@ -1,0 +1,52 @@
+# Feuille de route — Sentinelle
+
+Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à faire.
+
+## Surveillance & automatisation
+- ✅ **Vérif auto des certificats TLS** — lecture de la date d'expiration réelle (fiche + job 7h00 + **fiche de création**).
+- ⬜ **Détection backup en retard** — finesse selon la fréquence (quotidien/hebdo/mensuel).
+- ⬜ **Connecteurs backup** — lire l'état réel (Veeam / Windows Backup / dossier : taille & date du dernier fichier).
+- ⬜ **Expiration de noms de domaine** (WHOIS) — surveiller les dates d'expiration des domaines.
+
+## Alertes & notifications
+- ✅ **Récap quotidien par mail** — un seul mail le matin (job 7h30) + liens cliquables.
+- ✅ **Acquittement / report (snooze)** — mise en pause par élément (7/30/90 j).
+- ⬜ **Seuils d'alerte configurables** — J‑30/15/7… paramétrables (global ou par élément).
+- ⬜ **Anti-doublon d'alertes** — ne pas renvoyer une alerte déjà notifiée.
+
+## Reporting & visualisation
+- ⬜ **Export CSV** — par domaine + global.
+- ⬜ **Vue tendances** — évolution des statuts dans le temps (graphes).
+- ⬜ **Page « à venir cette semaine / ce mois »** — agenda des échéances.
+- ⬜ **Widgets dashboard** — taux de conformité, top urgences, compteurs.
+
+## Exploitation & fiabilité de l'outil
+- ⬜ **Historique d'exécution du scheduler** — tracer chaque run des jobs.
+- ⬜ **Import CSV** — initialisation en masse + **modèle CSV téléchargeable**.
+- ⬜ **Auto-sauvegarde de la base SQLite** — export quotidien horodaté + rotation.
+- ⬜ **Fichier de logs applicatif** — journalisation avec rotation (au lieu du print console).
+
+## Sécurité & conformité
+- ⬜ **Finir le rôle « lecture seule »** — masquer les actions d'édition pour les viewers.
+- ⬜ **Verrouillage après N échecs de login** + journal des connexions.
+- ⬜ **Journal d'audit global** — vue centralisée « qui a modifié quoi ».
+- ⬜ **2FA (TOTP) pour les admins**.
+- ⬜ **Politique de mot de passe + expiration des sessions**.
+
+## Ergonomie / UX
+- ⬜ **Tri & filtres** sur les listes (statut, priorité, échéance).
+- ⬜ **Pagination / recherche** dans les longues listes.
+- ⬜ **Badges de compteur** dans la sidebar (ex. « 3 » sur Certificats en rouge).
+- ⬜ **Confirmation de suppression uniformisée + corbeille** (restaurer un élément désactivé).
+
+## Technique / intégrations
+- ⬜ **Retirer Flask‑Mail** (devenu inutile depuis le passage à smtplib/Direct Send).
+- ⬜ **LDAP / Active Directory** — authentification avec le compte mairie.
+- ⬜ **Synchronisation des comptes AD** — expiration réelle des mots de passe AD.
+
+---
+
+### Déjà livré hors de cette liste (rappel)
+Corrections scheduler · sécurité (CSRF, RBAC, secret/admin) · git + doc · logo SVG ·
+messagerie SMTP/Direct Send (UTF‑8, expéditeur, config vivante) · modèle HTML d'alerte ·
+gestion des destinataires dans l'UI · `tools/devmail.py` (serveur SMTP de test local).

@@ -25,9 +25,16 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Domaine *</label>
-                        <input type="text" name="domain" class="form-control"
-                               value="{{ certificate.domain if certificate else '' }}" required
-                               placeholder="*.example.com">
+                        <div class="input-group">
+                            <input type="text" name="domain" id="domainInput" class="form-control"
+                                   value="{{ certificate.domain if certificate else '' }}" required
+                                   placeholder="exemple.chatillon92.fr">
+                            <button type="button" class="btn btn-outline-primary" id="checkTlsBtn"
+                                    title="Lire le certificat du domaine">
+                                <i class="bi bi-shield-check"></i> Vérifier
+                            </button>
+                        </div>
+                        <small id="checkTlsMsg" class="d-block mt-1"></small>
                     </div>
                 </div>
                 <div class="row">
@@ -80,4 +87,43 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var btn = document.getElementById('checkTlsBtn');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+        var domain = document.getElementById('domainInput').value.trim();
+        var msg = document.getElementById('checkTlsMsg');
+        if (!domain) {
+            msg.className = 'd-block mt-1 text-danger';
+            msg.textContent = "Renseignez d'abord le domaine.";
+            return;
+        }
+        msg.className = 'd-block mt-1 text-muted';
+        msg.textContent = 'Lecture du certificat en cours…';
+        btn.disabled = true;
+        fetch("{{ url_for('certificates.check_domain') }}?domain=" + encodeURIComponent(domain))
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.ok) {
+                    document.querySelector('input[name=expiry_date]').value = d.expiry_date;
+                    var iss = document.querySelector('input[name=issuer]');
+                    if (d.issuer && !iss.value) iss.value = d.issuer;
+                    msg.className = 'd-block mt-1 text-success';
+                    msg.textContent = 'Certificat lu : expire le ' + d.expiry_date
+                        + (d.issuer ? ' (' + d.issuer + ')' : '');
+                } else {
+                    msg.className = 'd-block mt-1 text-danger';
+                    msg.textContent = 'Échec : ' + d.error;
+                }
+            })
+            .catch(function (e) {
+                msg.className = 'd-block mt-1 text-danger';
+                msg.textContent = 'Erreur : ' + e;
+            })
+            .finally(function () { btn.disabled = false; });
+    });
+});
+</script>
 {% endblock %}
