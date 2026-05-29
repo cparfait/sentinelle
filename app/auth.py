@@ -167,18 +167,21 @@ def preferences():
     o365_connected = is_o365_connected()
     o365_user_email = get_o365_user_email()
 
+    # On lit la config vivante (current_app.config), pas os.getenv : l'env du
+    # processus n'est charge qu'au demarrage et n'est pas mis a jour lors d'un
+    # enregistrement, ce qui ferait "disparaitre" les valeurs saisies.
     o365_config = {
-        'client_id': os.getenv('O365_CLIENT_ID', ''),
-        'client_secret': os.getenv('O365_CLIENT_SECRET', ''),
-        'tenant_id': os.getenv('O365_TENANT_ID', ''),
-        'sender_email': os.getenv('O365_SENDER_EMAIL', ''),
-        'redirect_uri': os.getenv('O365_REDIRECT_URI', 'http://127.0.0.1:5000/auth/o365/callback'),
+        'client_id': current_app.config.get('O365_CLIENT_ID', ''),
+        'client_secret': current_app.config.get('O365_CLIENT_SECRET', ''),
+        'tenant_id': current_app.config.get('O365_TENANT_ID', ''),
+        'sender_email': current_app.config.get('O365_SENDER_EMAIL', ''),
+        'redirect_uri': current_app.config.get('O365_REDIRECT_URI', 'http://127.0.0.1:5000/auth/o365/callback'),
     }
 
     smtp_config = {
-        'server': os.getenv('MAIL_SERVER', ''),
-        'port': os.getenv('MAIL_PORT', '587'),
-        'username': os.getenv('MAIL_USERNAME', ''),
+        'server': current_app.config.get('MAIL_SERVER', ''),
+        'port': current_app.config.get('MAIL_PORT', '587'),
+        'username': current_app.config.get('MAIL_USERNAME', ''),
     }
 
     o365_app_configured = all([o365_config['client_id'], o365_config['client_secret'],
