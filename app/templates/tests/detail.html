@@ -100,6 +100,7 @@
                 </button>
             </form>
         </div>
+        {% with entity_type='test', entity_id=test.id %}{% include '_snooze_card.html' %}{% endwith %}
         <div class="data-card p-4">
             <form method="POST" action="{{ url_for('tests.delete', id=test.id) }}"
                   onsubmit="return confirm('Supprimer ce test ?')">

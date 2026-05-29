@@ -34,7 +34,9 @@ def create_app(config_class=Config):
 
     @app.context_processor
     def inject_now():
-        return {'now': lambda: datetime.now(timezone.utc)}
+        from app.snooze import get_active_snooze
+        return {'now': lambda: datetime.now(timezone.utc),
+                'active_snooze': get_active_snooze}
 
     from app.models import User
 

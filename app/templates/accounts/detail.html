@@ -86,6 +86,7 @@
                 </button>
             </form>
         </div>
+        {% with entity_type='account', entity_id=account.id %}{% include '_snooze_card.html' %}{% endwith %}
     </div>
 </div>
 

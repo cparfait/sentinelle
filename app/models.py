@@ -250,3 +250,17 @@ class AlertLog(db.Model):
     recipients = db.Column(db.String(512))
     sent_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     status = db.Column(db.String(20), default='sent')
+
+
+class AlertSnooze(db.Model):
+    """Report d'alerte : suspend les notifications d'un element jusqu'a une date.
+    Table dediee -> pas de colonne ajoutee aux modeles existants."""
+    id = db.Column(db.Integer, primary_key=True)
+    entity_type = db.Column(db.String(64), nullable=False)  # account/certificate/backup/test
+    entity_id = db.Column(db.Integer, nullable=False)
+    snoozed_until = db.Column(db.Date, nullable=False)
+    reason = db.Column(db.Text)
+    created_by = db.Column(db.String(64))
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    __table_args__ = (db.UniqueConstraint('entity_type', 'entity_id',
+                                          name='uq_snooze_entity'),)

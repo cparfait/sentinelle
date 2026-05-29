@@ -94,6 +94,7 @@
                 </button>
             </form>
         </div>
+        {% with entity_type='backup', entity_id=backup.id %}{% include '_snooze_card.html' %}{% endwith %}
         <div class="data-card p-4">
             <form method="POST" action="{{ url_for('backups.delete', id=backup.id) }}"
                   onsubmit="return confirm('Supprimer ce backup ?')">

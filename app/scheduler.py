@@ -3,6 +3,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from app import db
 from app.models import Account, Certificate, Backup, BackupCheck, TestTask
 from app.alerts import send_alert
+from app.snooze import is_snoozed
 
 scheduler = BackgroundScheduler()
 
@@ -18,6 +19,8 @@ def check_passwords():
         accounts = Account.query.filter_by(is_active=True).all()
         for account in accounts:
             if not account.next_password_change:
+                continue
+            if is_snoozed('account', account.id):
                 continue
             days_left = (account.next_password_change - today).days
             if days_left in (30, 15, 7, 3, 1, 0):
@@ -39,6 +42,8 @@ def check_certificates():
         today = datetime.now(timezone.utc).date()
         certs = Certificate.query.filter_by(is_active=True).all()
         for cert in certs:
+            if is_snoozed('certificate', cert.id):
+                continue
             days_left = (cert.expiry_date - today).days
             if days_left in (30, 15, 7, 3, 1, 0, -1):
                 urgency = 'EXPIRÉ' if days_left < 0 else f'expire dans {days_left} jour(s)'
@@ -63,6 +68,8 @@ def check_backups():
             # On s'appuie sur la logique reelle du modele (BackupCheck quotidiens),
             # et non sur des champs status/last_run qui n'existent pas.
             if backup.computed_status() != 'danger':
+                continue
+            if is_snoozed('backup', backup.id):
                 continue
             today_check = backup.today_check()
             last_check = backup.checks.order_by(BackupCheck.checked_at.desc()).first()
@@ -95,6 +102,8 @@ def check_tests():
         today = datetime.now(timezone.utc).date()
         tests = TestTask.query.filter_by(is_active=True).all()
         for test in tests:
+            if is_snoozed('test', test.id):
+                continue
             if not test.next_due:
                 continue
             days_left = (test.next_due - today).days

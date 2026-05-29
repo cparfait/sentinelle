@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from html import escape
 
 from app.models import Account, Certificate, Backup, TestTask
+from app.snooze import is_snoozed
 
 _COLORS = {'danger': '#ef4444', 'warning': '#f59e0b', 'info': '#3b82f6',
            'success': '#10b981'}
@@ -27,6 +28,8 @@ def _collect():
     accounts = Account.query.filter_by(is_active=True).all()
     items = []
     for a in accounts:
+        if is_snoozed('account', a.id):
+            continue
         s = a.status()
         if s in ('danger', 'warning'):
             items.append({'name': f'{a.service_name} ({a.username})',
@@ -38,6 +41,8 @@ def _collect():
     certs = Certificate.query.filter_by(is_active=True).all()
     items = []
     for c in certs:
+        if is_snoozed('certificate', c.id):
+            continue
         s = c.status()
         if s in ('danger', 'warning'):
             items.append({'name': f'{c.service_name} - {c.domain}',
@@ -49,6 +54,8 @@ def _collect():
     backups = Backup.query.filter_by(is_active=True).all()
     items = []
     for b in backups:
+        if is_snoozed('backup', b.id):
+            continue
         s = b.computed_status()
         if s in ('danger', 'warning'):
             tc = b.today_check()
@@ -61,6 +68,8 @@ def _collect():
     tests = TestTask.query.filter_by(is_active=True).all()
     items = []
     for t in tests:
+        if is_snoozed('test', t.id):
+            continue
         s = t.computed_status()
         if s in ('danger', 'warning'):
             items.append({'name': t.name,
