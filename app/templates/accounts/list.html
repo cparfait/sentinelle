@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Comptes - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-key me-2"></i>Comptes a surveiller</h4>
+        <small class="text-muted">Gestion des rotations de mots de passe</small>
+    </div>
+    <a href="{{ url_for('accounts.create') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Ajouter un compte
+    </a>
+</div>
+
+<div class="data-card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>Utilisateur</th>
+                    <th>Dernier changement</th>
+                    <th>Prochain changement</th>
+                    <th>Jours restants</th>
+                    <th>Priorite</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for account in accounts %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('accounts.detail', id=account.id) }}" class="fw-medium text-decoration-none">
+                            {{ account.service_name }}
+                        </a>
+                        {% if account.url %}<br><small class="text-muted">{{ account.url }}</small>{% endif %}
+                    </td>
+                    <td>{{ account.username }}</td>
+                    <td>{{ account.last_password_change.strftime('%d/%m/%Y') if account.last_password_change else '-' }}</td>
+                    <td>{{ account.next_password_change.strftime('%d/%m/%Y') if account.next_password_change else '-' }}</td>
+                    <td>
+                        {% if account.next_password_change %}
+                            {% set days = (account.next_password_change - now().date()).days %}
+                            <span class="fw-bold {% if days < 0 %}text-danger{% elif days <= 7 %}text-danger{% elif days <= 15 %}text-warning{% elif days <= 30 %}text-info{% else %}text-success{% endif %}">
+                                {% if days < 0 %}{{ days }}j{% else %}{{ days }}j{% endif %}
+                            </span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-{% if account.priority == 'high' %}danger{% elif account.priority == 'medium' %}warning{% else %}secondary{% endif %}">
+                            {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(account.priority, account.priority) }}
+                        </span>
+                    </td>
+                    <td><span class="badge-status badge-{{ account.status() }}">
+                        {{ {'danger': 'Critique', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK'}.get(account.status(), account.status()) }}
+                    </span></td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{{ url_for('accounts.detail', id=account.id) }}" class="btn btn-sm btn-outline-primary" title="Voir">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ url_for('accounts.edit', id=account.id) }}" class="btn btn-sm btn-outline-secondary" title="Modifier">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">Aucun compte enregistre. <a href="{{ url_for('accounts.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a></p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

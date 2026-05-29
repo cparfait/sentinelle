@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Tests - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-clipboard-check me-2"></i>Tests a effectuer</h4>
+        <small class="text-muted">Restaurations, sauvegardes sur cle, verification d'integrite</small>
+    </div>
+    <a href="{{ url_for('tests.create') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Ajouter un test
+    </a>
+</div>
+
+<div class="data-card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Type</th>
+                    <th>Derniere execution</th>
+                    <th>Prochaine echeance</th>
+                    <th>Jours restants</th>
+                    <th>Priorite</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for test in tests %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('tests.detail', id=test.id) }}" class="fw-medium text-decoration-none">
+                            {{ test.name }}
+                        </a>
+                    </td>
+                    <td>
+                        {% for value, label in test_types %}
+                            {% if test.test_type == value %}{{ label }}{% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>{{ test.last_performed.strftime('%d/%m/%Y') if test.last_performed else '-' }}</td>
+                    <td>{{ test.next_due.strftime('%d/%m/%Y') if test.next_due else '-' }}</td>
+                    <td>
+                        {% if test.next_due %}
+                            {% set days = (test.next_due - now().date()).days %}
+                            <span class="fw-bold {% if days < 0 %}text-danger{% elif days <= 7 %}text-danger{% elif days <= 15 %}text-warning{% elif days <= 30 %}text-info{% else %}text-success{% endif %}">
+                                {{ days }}j
+                            </span>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-{% if test.priority == 'high' %}danger{% elif test.priority == 'medium' %}warning{% else %}secondary{% endif %}">
+                            {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(test.priority, test.priority) }}
+                        </span>
+                    </td>
+                    <td><span class="badge-status badge-{{ test.computed_status() }}">
+                        {{ {'danger': 'En retard', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK', 'pending': 'A faire'}.get(test.computed_status(), test.status) }}
+                    </span></td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{{ url_for('tests.detail', id=test.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                            <a href="{{ url_for('tests.edit', id=test.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">Aucun test. <a href="{{ url_for('tests.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a></p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

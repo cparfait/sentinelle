@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">Tableau de bord</h4>
+        <small class="text-muted">Vue d'ensemble de votre infrastructure</small>
+    </div>
+    <form method="GET" action="{{ url_for('search.search') }}" class="d-flex gap-2" style="width: 350px;">
+        <input type="text" name="q" class="form-control form-control-sm" placeholder="Rechercher partout...">
+        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search"></i></button>
+    </form>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <a href="{{ url_for('accounts.list') }}" class="text-decoration-none">
+        <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ stats.accounts.danger }} compte(s) en critique, {{ stats.accounts.warning }} en alerte - Cliquer pour voir les comptes">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted d-block">Comptes</small>
+                    <span class="stat-number text-primary">{{ stats.accounts.total }}</span>
+                </div>
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-key"></i>
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-2">
+                {% if stats.accounts.danger %}<span class="badge-status badge-danger">{{ stats.accounts.danger }} critique(s)</span>{% endif %}
+                {% if stats.accounts.warning %}<span class="badge-status badge-warning">{{ stats.accounts.warning }} alerte(s)</span>{% endif %}
+                {% if stats.accounts.ok %}<span class="badge-status badge-success">{{ stats.accounts.ok }} OK</span>{% endif %}
+            </div>
+        </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('certificates.list') }}" class="text-decoration-none">
+        <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ stats.certificates.danger }} certificat(s) en critique, {{ stats.certificates.warning }} en alerte - Cliquer pour voir les certificats">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted d-block">Certificats</small>
+                    <span class="stat-number text-success">{{ stats.certificates.total }}</span>
+                </div>
+                <div class="stat-icon bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-award"></i>
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-2">
+                {% if stats.certificates.danger %}<span class="badge-status badge-danger">{{ stats.certificates.danger }} critique(s)</span>{% endif %}
+                {% if stats.certificates.warning %}<span class="badge-status badge-warning">{{ stats.certificates.warning }} alerte(s)</span>{% endif %}
+                {% if stats.certificates.ok %}<span class="badge-status badge-success">{{ stats.certificates.ok }} OK</span>{% endif %}
+            </div>
+        </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('backups.list') }}" class="text-decoration-none">
+        <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ stats.backups.danger }} backup(s) echoue(s) - Cliquer pour voir les backups">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted d-block">Backups</small>
+                    <span class="stat-number text-info">{{ stats.backups.total }}</span>
+                </div>
+                <div class="stat-icon bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-cloud-arrow-up"></i>
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-2">
+                {% if stats.backups.danger %}<span class="badge-status badge-danger">{{ stats.backups.danger }} echoue(s)</span>{% endif %}
+                {% if stats.backups.ok %}<span class="badge-status badge-success">{{ stats.backups.ok }} OK</span>{% endif %}
+            </div>
+        </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('tests.list') }}" class="text-decoration-none">
+        <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ stats.tests.danger }} test(s) en retard - Cliquer pour voir les tests">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted d-block">Tests</small>
+                    <span class="stat-number text-warning">{{ stats.tests.total }}</span>
+                </div>
+                <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-clipboard-check"></i>
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-2">
+                {% if stats.tests.danger %}<span class="badge-status badge-danger">{{ stats.tests.danger }} en retard</span>{% endif %}
+                {% if stats.tests.warning %}<span class="badge-status badge-warning">{{ stats.tests.warning }} alerte(s)</span>{% endif %}
+                {% if stats.tests.ok %}<span class="badge-status badge-success">{{ stats.tests.ok }} OK</span>{% endif %}
+            </div>
+        </div>
+        </a>
+    </div>
+</div>
+
+{% if backups %}
+<div class="data-card mb-4">
+    <div class="card-header-custom d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-cloud-arrow-up me-2 text-info"></i>Validation backups du {{ today.strftime('%d/%m/%Y') }}</h6>
+        <a href="{{ url_for('backups.daily') }}" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-check2-square me-1"></i> Check complet
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>Type</th>
+                    <th>Heure</th>
+                    <th>Statut du jour</th>
+                    <th>Commentaire</th>
+                    <th>Valider</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for backup in backups %}
+                <tr>
+                    <td class="fw-medium">{{ backup.service_name }}</td>
+                    <td><small>{{ {'full': 'Complet', 'incremental': 'Incremental', 'differential': 'Differentiel', 'snapshot': 'Snapshot'}.get(backup.backup_type, backup.backup_type or '-') }}</small></td>
+                    <td>{{ backup.expected_time or '-' }}</td>
+                    <td>
+                        {% set tc = backup_checks.get(backup.id) %}
+                        {% if tc and tc.status == 'ok' %}
+                            <span class="badge-status badge-success"><i class="bi bi-check-circle me-1"></i>OK</span>
+                        {% elif tc and tc.status == 'failed' %}
+                            <span class="badge-status badge-danger"><i class="bi bi-x-circle me-1"></i>Echoue</span>
+                        {% elif tc and tc.status == 'warning' %}
+                            <span class="badge-status badge-warning"><i class="bi bi-exclamation-triangle me-1"></i>Warning</span>
+                        {% else %}
+                            <span class="text-muted"><i class="bi bi-dash-circle me-1"></i>Pas encore verifie</span>
+                        {% endif %}
+                    </td>
+                    <form method="POST" action="{{ url_for('dashboard.quick_check') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="backup_id" value="{{ backup.id }}">
+                        <td>
+                            <input type="text" name="comment" class="form-control form-control-sm" placeholder="Commentaire..." style="min-width: 150px;">
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <button type="submit" name="status" value="ok" class="btn btn-sm btn-success" title="OK">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                                <button type="submit" name="status" value="warning" class="btn btn-sm btn-warning" title="Warning">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                </button>
+                                <button type="submit" name="status" value="failed" class="btn btn-sm btn-danger" title="Echoue">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </form>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="data-card">
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Elements requirent votre attention</h6>
+            </div>
+            <div class="p-3">
+                {% if urgent_items %}
+                    {% for item in urgent_items %}
+                    <a href="{{ item.url }}" class="text-decoration-none">
+                        <div class="urgent-item urgent-{{ item.status }}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge-status badge-{% if item.type == 'account' %}info{% elif item.type == 'certificate' %}success{% elif item.type == 'backup' %}warning{% else %}info{% endif %}">
+                                        {% if item.type == 'account' %}<i class="bi bi-key me-1"></i>Compte
+                                        {% elif item.type == 'certificate' %}<i class="bi bi-award me-1"></i>Certificat
+                                        {% elif item.type == 'backup' %}<i class="bi bi-cloud-arrow-up me-1"></i>Backup
+                                        {% else %}<i class="bi bi-clipboard-check me-1"></i>Test{% endif %}
+                                    </span>
+                                    <strong class="ms-2">{{ item.name }}</strong>
+                                </div>
+                                <small class="text-muted">{{ item.detail }}</small>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">Tout est en ordre !</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="data-card">
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-bell me-2 text-primary"></i>Dernieres alertes</h6>
+                <a href="{{ url_for('alerts.list') }}" class="btn btn-sm btn-outline-primary">
+                    Voir tout <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+            <div class="p-3">
+                {% if recent_alerts %}
+                    {% for alert in recent_alerts %}
+                    <div class="d-flex align-items-start gap-2 mb-3 pb-3 border-bottom">
+                        <i class="bi bi-envelope{% if alert.status == 'sent' %}-check text-success{% else %} text-danger{% endif %}"></i>
+                        <div>
+                            <small class="fw-medium d-block">{{ alert.entity_name or 'Systeme' }}</small>
+                            <small class="text-muted">{{ alert.sent_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center mb-0 py-3">Aucune alerte envoyee</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+        new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

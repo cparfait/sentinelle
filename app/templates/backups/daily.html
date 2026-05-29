@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Check quotidien - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-check2-square me-2 text-success"></i>Check quotidien</h4>
+        <small class="text-muted">{{ today.strftime('%A %d %B %Y') }}</small>
+    </div>
+    <a href="{{ url_for('backups.list') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Retour
+    </a>
+</div>
+
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="data-card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 20%">Service</th>
+                        <th style="width: 15%">Type</th>
+                        <th style="width: 10%">Heure</th>
+                        <th style="width: 20%">Statut du jour</th>
+                        <th style="width: 35%">Commentaire</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for backup in backups %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('backups.detail', id=backup.id) }}" class="fw-medium text-decoration-none">
+                                {{ backup.service_name }}
+                            </a>
+                            {% if backup.location %}<br><small class="text-muted">{{ backup.location }}</small>{% endif %}
+                        </td>
+                        <td>
+                            <small>{{ {'full': 'Complet', 'incremental': 'Incremental', 'differential': 'Differentiel', 'snapshot': 'Snapshot'}.get(backup.backup_type, backup.backup_type or '-') }}</small>
+                        </td>
+                        <td>{{ backup.expected_time or '-' }}</td>
+                        <td>
+                            {% set existing = checks.get(backup.id) %}
+                            <select name="status_{{ backup.id }}" class="form-select form-select-sm">
+                                <option value="">-- Non verifie --</option>
+                                <option value="ok" {{ 'selected' if existing and existing.status == 'ok' }}>
+                                    OK
+                                </option>
+                                <option value="warning" {{ 'selected' if existing and existing.status == 'warning' }}>
+                                    Warning
+                                </option>
+                                <option value="failed" {{ 'selected' if existing and existing.status == 'failed' }}>
+                                    Echoue
+                                </option>
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" name="comment_{{ backup.id }}" class="form-control form-control-sm"
+                                   value="{{ existing.comment if existing and existing.comment else '' }}"
+                                   placeholder="Commentaire si probleme...">
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                            <p class="mt-2 mb-0">Aucun backup configure. <a href="{{ url_for('backups.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a></p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if backups %}
+    <div class="mt-3 d-flex justify-content-end">
+        <button type="submit" class="btn btn-success btn-lg">
+            <i class="bi bi-check-lg me-1"></i> Enregistrer les checks
+        </button>
+    </div>
+    {% endif %}
+</form>
+{% endblock %}

@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+*.db
+venv/
+.venv/
+*.egg-info/
+instance/
+o365_token.json
+.claude/settings.local.json

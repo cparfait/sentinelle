@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}{{ test.name }} - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-clipboard-check me-2"></i>{{ test.name }}</h4>
+        <small class="text-muted">
+            {% for value, label in test_types %}
+                {% if test.test_type == value %}{{ label }}{% endif %}
+            {% endfor %}
+        </small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('tests.edit', id=test.id) }}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i> Modifier
+        </a>
+        <a href="{{ url_for('tests.list') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-8">
+        <div class="data-card p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <h6 class="fw-bold mb-0">Details du test</h6>
+                <span class="badge-status badge-{{ test.computed_status() }}">
+                    {{ {'danger': 'En retard', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK', 'pending': 'A faire'}.get(test.computed_status(), test.status) }}
+                </span>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-borderless table-sm">
+                        <tr><td class="text-muted" style="width: 40%">Nom</td><td class="fw-medium">{{ test.name }}</td></tr>
+                        <tr><td class="text-muted">Type</td>
+                            <td class="fw-medium">
+                                {% for value, label in test_types %}
+                                    {% if test.test_type == value %}{{ label }}{% endif %}
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        <tr><td class="text-muted">Frequence</td><td class="fw-medium">Tous les {{ test.frequency_days }} jours</td></tr>
+                        <tr><td class="text-muted">Priorite</td>
+                            <td><span class="badge bg-{% if test.priority == 'high' %}danger{% elif test.priority == 'medium' %}warning{% else %}secondary{% endif %}">
+                                {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(test.priority, test.priority) }}
+                            </span></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-borderless table-sm">
+                        <tr><td class="text-muted" style="width: 50%">Derniere execution</td><td class="fw-medium">{{ test.last_performed.strftime('%d/%m/%Y') if test.last_performed else '-' }}</td></tr>
+                        <tr><td class="text-muted">Prochaine echeance</td><td class="fw-medium {% if test.computed_status() == 'danger' %}text-danger{% endif %}">{{ test.next_due.strftime('%d/%m/%Y') if test.next_due else '-' }}</td></tr>
+                        <tr><td class="text-muted">Jours restants</td>
+                            <td class="fw-bold {% if test.computed_status() == 'danger' %}text-danger{% elif test.computed_status() == 'warning' %}text-warning{% else %}text-success{% endif %}">
+                                {% if test.next_due %}
+                                    {% set days = (test.next_due - now().date()).days %}{{ days }} jour(s)
+                                {% else %}-{% endif %}
+                            </td>
+                        </tr>
+                        <tr><td class="text-muted">Resultat dernier</td><td>{{ test.result or '-' }}</td></tr>
+                    </table>
+                </div>
+            </div>
+            {% if test.description %}
+            <div class="mt-2">
+                <small class="text-muted">Procedure / Description:</small>
+                <p class="mb-0" style="white-space: pre-line;">{{ test.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="data-card p-4 mb-3">
+            <h6 class="fw-bold mb-3"><i class="bi bi-check-circle me-2 text-success"></i>Marquer comme effectue</h6>
+            <form method="POST" action="{{ url_for('tests.complete', id=test.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-2">
+                    <label class="form-label small">Resultat</label>
+                    <select name="outcome" class="form-select form-select-sm">
+                        <option value="completed">Reussi</option>
+                        <option value="failed">Echoue</option>
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Details du resultat</label>
+                    <textarea name="result" class="form-control form-control-sm" rows="2"
+                              placeholder="Resultats du test..."></textarea>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Commentaire</label>
+                    <input type="text" name="comment" class="form-control form-control-sm"
+                           placeholder="Commentaire...">
+                </div>
+                <button type="submit" class="btn btn-success btn-sm w-100">
+                    <i class="bi bi-check-lg me-1"></i> Marquer effectue
+                </button>
+            </form>
+        </div>
+        <div class="data-card p-4">
+            <form method="POST" action="{{ url_for('tests.delete', id=test.id) }}"
+                  onsubmit="return confirm('Supprimer ce test ?')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                    <i class="bi bi-trash me-1"></i> Supprimer
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="data-card">
+    <div class="card-header-custom">
+        <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique</h6>
+    </div>
+    <div class="p-4">
+        {% if histories %}
+        <div class="timeline">
+            {% for h in histories %}
+            <div class="timeline-item">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <span class="fw-medium">{{ h.action }}</span>
+                        {% if h.result %}<br><small class="text-muted">{{ h.result }}</small>{% endif %}
+                        {% if h.comment %}<br><small class="text-muted">{{ h.comment }}</small>{% endif %}
+                    </div>
+                    <div class="text-end">
+                        <small class="timeline-date">{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                        <br><small class="text-muted">{{ h.performed_by }}</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted text-center mb-0">Aucun historique</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

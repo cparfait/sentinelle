@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Certificats - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-award me-2"></i>Certificats</h4>
+        <small class="text-muted">Suivi des expiration SSL/TLS</small>
+    </div>
+    <a href="{{ url_for('certificates.create') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Ajouter un certificat
+    </a>
+</div>
+
+<div class="data-card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>Domaine</th>
+                    <th>Emetteur</th>
+                    <th>Date emission</th>
+                    <th>Expiration</th>
+                    <th>Jours restants</th>
+                    <th>Auto-renouvellement</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cert in certificates %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('certificates.detail', id=cert.id) }}" class="fw-medium text-decoration-none">
+                            {{ cert.service_name }}
+                        </a>
+                    </td>
+                    <td><code>{{ cert.domain }}</code></td>
+                    <td>{{ cert.issuer or '-' }}</td>
+                    <td>{{ cert.issued_at.strftime('%d/%m/%Y') if cert.issued_at else '-' }}</td>
+                    <td>{{ cert.expiry_date.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        {% set days = (cert.expiry_date - now().date()).days %}
+                        <span class="fw-bold {% if days < 0 %}text-danger{% elif days <= 7 %}text-danger{% elif days <= 15 %}text-warning{% elif days <= 30 %}text-info{% else %}text-success{% endif %}">
+                            {{ days }}j
+                        </span>
+                    </td>
+                    <td>
+                        {% if cert.auto_renew %}
+                        <span class="badge bg-success"><i class="bi bi-arrow-repeat me-1"></i>Oui</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Non</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge-status badge-{{ cert.status() }}">
+                        {{ {'danger': 'Critique', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK'}.get(cert.status(), cert.status()) }}
+                    </span></td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{{ url_for('certificates.detail', id=cert.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                            <a href="{{ url_for('certificates.edit', id=cert.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">Aucun certificat. <a href="{{ url_for('certificates.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a></p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

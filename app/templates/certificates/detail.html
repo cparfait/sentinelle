@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}{{ certificate.service_name }} - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-award me-2"></i>{{ certificate.service_name }}</h4>
+        <small class="text-muted"><code>{{ certificate.domain }}</code></small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('certificates.edit', id=certificate.id) }}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i> Modifier
+        </a>
+        <a href="{{ url_for('certificates.list') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-8">
+        <div class="data-card p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <h6 class="fw-bold mb-0">Details du certificat</h6>
+                <span class="badge-status badge-{{ certificate.status() }}">
+                    {{ {'danger': 'Critique', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK'}.get(certificate.status(), certificate.status()) }}
+                </span>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-borderless table-sm">
+                        <tr><td class="text-muted" style="width: 40%">Service</td><td class="fw-medium">{{ certificate.service_name }}</td></tr>
+                        <tr><td class="text-muted">Domaine</td><td class="fw-medium"><code>{{ certificate.domain }}</code></td></tr>
+                        <tr><td class="text-muted">Emetteur</td><td class="fw-medium">{{ certificate.issuer or '-' }}</td></tr>
+                        <tr><td class="text-muted">Auto-renouvellement</td>
+                            <td>{% if certificate.auto_renew %}<span class="badge bg-success">Oui</span>{% else %}<span class="badge bg-secondary">Non</span>{% endif %}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-borderless table-sm">
+                        <tr><td class="text-muted" style="width: 50%">Date emission</td><td class="fw-medium">{{ certificate.issued_at.strftime('%d/%m/%Y') if certificate.issued_at else '-' }}</td></tr>
+                        <tr><td class="text-muted">Expiration</td><td class="fw-medium {% if certificate.status() == 'danger' %}text-danger{% endif %}">{{ certificate.expiry_date.strftime('%d/%m/%Y') }}</td></tr>
+                        <tr><td class="text-muted">Jours restants</td>
+                            <td class="fw-bold {% if certificate.status() == 'danger' %}text-danger{% elif certificate.status() == 'warning' %}text-warning{% else %}text-success{% endif %}">
+                                {% set days = (certificate.expiry_date - now().date()).days %}{{ days }} jour(s)
+                            </td>
+                        </tr>
+                        <tr><td class="text-muted">Priorite</td>
+                            <td><span class="badge bg-{% if certificate.priority == 'high' %}danger{% elif certificate.priority == 'medium' %}warning{% else %}secondary{% endif %}">
+                                {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(certificate.priority, certificate.priority) }}
+                            </span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            {% if certificate.description %}
+            <div class="mt-2">
+                <small class="text-muted">Description:</small>
+                <p class="mb-0">{{ certificate.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="data-card p-4 mb-3">
+            <h6 class="fw-bold mb-3"><i class="bi bi-arrow-repeat me-2 text-success"></i>Renouveler</h6>
+            <form method="POST" action="{{ url_for('certificates.renew', id=certificate.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-2">
+                    <label class="form-label small">Nouvelle date d'expiration</label>
+                    <input type="date" name="new_expiry_date" class="form-control form-control-sm" required>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Commentaire</label>
+                    <input type="text" name="comment" class="form-control form-control-sm"
+                           placeholder="Certificat renouvele...">
+                </div>
+                <button type="submit" class="btn btn-success btn-sm w-100">
+                    <i class="bi bi-check-lg me-1"></i> Marquer renouvele
+                </button>
+            </form>
+        </div>
+        <div class="data-card p-4">
+            <form method="POST" action="{{ url_for('certificates.delete', id=certificate.id) }}"
+                  onsubmit="return confirm('Supprimer ce certificat ?')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                    <i class="bi bi-trash me-1"></i> Supprimer
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="data-card">
+    <div class="card-header-custom">
+        <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique</h6>
+    </div>
+    <div class="p-4">
+        {% if histories %}
+        <div class="timeline">
+            {% for h in histories %}
+            <div class="timeline-item">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <span class="fw-medium">{{ h.action }}</span>
+                        {% if h.comment %}<br><small class="text-muted">{{ h.comment }}</small>{% endif %}
+                    </div>
+                    <div class="text-end">
+                        <small class="timeline-date">{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                        <br><small class="text-muted">{{ h.performed_by }}</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted text-center mb-0">Aucun historique</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

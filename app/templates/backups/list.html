@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Backups - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-cloud-arrow-up me-2"></i>Backups</h4>
+        <small class="text-muted">Configuration des sauvegardes a surveiller</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('backups.daily') }}" class="btn btn-outline-success">
+            <i class="bi bi-check2-square me-1"></i> Check quotidien
+        </a>
+        <a href="{{ url_for('backups.stats') }}" class="btn btn-outline-info">
+            <i class="bi bi-bar-chart me-1"></i> Statistiques
+        </a>
+        <a href="{{ url_for('backups.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Ajouter
+        </a>
+    </div>
+</div>
+
+<div class="data-card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>Type</th>
+                    <th>Emplacement</th>
+                    <th>Frequence</th>
+                    <th>Heure prevue</th>
+                    <th>Aujourd'hui</th>
+                    <th>Taux reussite 30j</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for backup in backups %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('backups.detail', id=backup.id) }}" class="fw-medium text-decoration-none">
+                            {{ backup.service_name }}
+                        </a>
+                    </td>
+                    <td>{{ {'full': 'Complet', 'incremental': 'Incremental', 'differential': 'Differentiel', 'snapshot': 'Snapshot'}.get(backup.backup_type, backup.backup_type or '-') }}</td>
+                    <td><small>{{ backup.location or '-' }}</small></td>
+                    <td>{{ {'daily': 'Quotidien', 'weekly': 'Hebdomadaire', 'monthly': 'Mensuel'}.get(backup.frequency, backup.frequency or '-') }}</td>
+                    <td>{{ backup.expected_time or '-' }}</td>
+                    <td>
+                        {% set tc = today_checks.get(backup.id) %}
+                        {% if tc %}
+                            {% if tc.status == 'ok' %}<span class="badge-status badge-success"><i class="bi bi-check-circle me-1"></i>OK</span>
+                            {% elif tc.status == 'failed' %}<span class="badge-status badge-danger"><i class="bi bi-x-circle me-1"></i>Echoue</span>
+                            {% else %}<span class="badge-status badge-warning"><i class="bi bi-exclamation-triangle me-1"></i>Warning</span>{% endif %}
+                        {% else %}
+                            <span class="text-muted"><i class="bi bi-dash-circle"></i> Non verifie</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set rate = backup.success_rate(30) %}
+                        {% if rate is not none %}
+                            <span class="fw-bold {% if rate >= 95 %}text-success{% elif rate >= 80 %}text-warning{% else %}text-danger{% endif %}">
+                                {{ rate }}%
+                            </span>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge-status badge-{{ backup.computed_status() }}">
+                        {{ {'danger': 'Non verifie', 'warning': 'Attention', 'info': 'Nouveau', 'success': 'OK'}.get(backup.computed_status(), 'A verifier') }}
+                    </span></td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{{ url_for('backups.detail', id=backup.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                            <a href="{{ url_for('backups.edit', id=backup.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">Aucun backup. <a href="{{ url_for('backups.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a></p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

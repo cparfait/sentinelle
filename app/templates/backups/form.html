@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifier' if backup else 'Ajouter' }} un backup - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-cloud-arrow-up me-2"></i>{{ 'Modifier' if backup else 'Ajouter' }} un backup</h4>
+    </div>
+    <a href="{{ url_for('backups.list') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Retour
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="data-card p-4">
+            <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Service *</label>
+                        <input type="text" name="service_name" class="form-control"
+                               value="{{ backup.service_name if backup else '' }}" required
+                               placeholder="ex: Serveur SQL, Active Directory...">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Type de backup</label>
+                        <select name="backup_type" class="form-select">
+                            <option value="">-- Selectionner --</option>
+                            <option value="full" {{ 'selected' if backup and backup.backup_type == 'full' }}>Complet</option>
+                            <option value="incremental" {{ 'selected' if backup and backup.backup_type == 'incremental' }}>Incremental</option>
+                            <option value="differential" {{ 'selected' if backup and backup.backup_type == 'differential' }}>Differentiel</option>
+                            <option value="snapshot" {{ 'selected' if backup and backup.backup_type == 'snapshot' }}>Snapshot</option>
+                            <option value="other" {{ 'selected' if backup and backup.backup_type == 'other' }}>Autre</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Emplacement</label>
+                        <input type="text" name="location" class="form-control"
+                               value="{{ backup.location if backup and backup.location else '' }}"
+                               placeholder="NAS, Cloud, Bande...">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Frequence</label>
+                        <select name="frequency" class="form-select">
+                            <option value="">-- Selectionner --</option>
+                            <option value="daily" {{ 'selected' if backup and backup.frequency == 'daily' }}>Quotidien</option>
+                            <option value="weekly" {{ 'selected' if backup and backup.frequency == 'weekly' }}>Hebdomadaire</option>
+                            <option value="monthly" {{ 'selected' if backup and backup.frequency == 'monthly' }}>Mensuel</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Heure prevue</label>
+                        <input type="time" name="expected_time" class="form-control"
+                               value="{{ backup.expected_time if backup and backup.expected_time else '' }}"
+                               placeholder="ex: 02:00">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Priorite</label>
+                        <select name="priority" class="form-select">
+                            <option value="low" {{ 'selected' if backup and backup.priority == 'low' }}>Basse</option>
+                            <option value="medium" {{ 'selected' if not backup or backup.priority == 'medium' }}>Moyenne</option>
+                            <option value="high" {{ 'selected' if backup and backup.priority == 'high' }}>Haute</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Description / Notes</label>
+                    <textarea name="description" class="form-control" rows="3"
+                              placeholder="Details complementaires...">{{ backup.description if backup and backup.description else '' }}</textarea>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if backup else 'Ajouter' }}
+                    </button>
+                    <a href="{{ url_for('backups.list') }}" class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

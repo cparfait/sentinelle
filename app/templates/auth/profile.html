@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Mon Profil - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">Mon Profil</h4>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="data-card p-4">
+            <h6 class="fw-bold mb-3"><i class="bi bi-person me-2"></i>Informations</h6>
+            <table class="table table-borderless">
+                <tr><td class="text-muted">Utilisateur</td><td class="fw-medium">{{ current_user.username }}</td></tr>
+                <tr><td class="text-muted">Email</td><td class="fw-medium">{{ current_user.email }}</td></tr>
+                <tr><td class="text-muted">Role</td>
+                    <td>
+                        <span class="badge bg-{% if current_user.role == 'admin' %}danger{% elif current_user.role == 'editor' %}warning{% else %}secondary{% endif %}">
+                            {{ {'admin': 'Administrateur', 'editor': 'Editeur', 'viewer': 'Lecteur'}.get(current_user.role, current_user.role) }}
+                        </span>
+                    </td>
+                </tr>
+                <tr><td class="text-muted">Inscrit le</td><td class="fw-medium">{{ current_user.created_at.strftime('%d/%m/%Y') }}</td></tr>
+            </table>
+        </div>
+
+        <div class="data-card p-4 mt-3">
+            <h6 class="fw-bold mb-3"><i class="bi bi-lock me-2"></i>Changer le mot de passe</h6>
+            <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="change_password">
+                <div class="mb-3">
+                    <label class="form-label">Mot de passe actuel</label>
+                    <input type="password" name="old_password" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Nouveau mot de passe</label>
+                    <input type="password" name="new_password" class="form-control" required minlength="8">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Confirmer le mot de passe</label>
+                    <input type="password" name="confirm_password" class="form-control" required minlength="8">
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i> Enregistrer
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
