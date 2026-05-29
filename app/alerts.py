@@ -23,7 +23,12 @@ def send_alert(subject, body, entity_type=None, entity_id=None, entity_name=None
         return
 
     try:
-        html_body = render_alert_email(subject, body, status=status)
+        url = None
+        if entity_type and entity_id:
+            base = current_app.config.get('APP_BASE_URL', '').rstrip('/')
+            if base:
+                url = f"{base}/{entity_type}s/{entity_id}"
+        html_body = render_alert_email(subject, body, status=status, url=url)
         send_email(subject, recipients, body, html_body=html_body)
 
         log = AlertLog(

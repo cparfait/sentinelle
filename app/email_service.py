@@ -153,11 +153,20 @@ _STATUS_COLORS = {
 }
 
 
-def render_alert_email(title, body, status='danger'):
-    """Habille un message d'alerte en HTML (charte Sentinelle, barre de statut)."""
+def render_alert_email(title, body, status='danger', url=None):
+    """Habille un message d'alerte en HTML (charte Sentinelle, barre de statut).
+    Si `url` est fourni, ajoute un bouton "Voir la fiche"."""
     from html import escape
     bar = _STATUS_COLORS.get(status, '#4f46e5')
     body_html = escape(body).replace('\n', '<br>')
+    button = ''
+    if url:
+        button = (
+            f'<div style="margin-top:18px;"><a href="{escape(url)}" '
+            'style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;'
+            'padding:9px 18px;border-radius:6px;font-size:14px;font-weight:600;">'
+            'Voir la fiche &rarr;</a></div>'
+        )
     return (
         '<!DOCTYPE html><html lang="fr"><body style="margin:0;background:#f1f5f9;'
         'font-family:Segoe UI,Arial,sans-serif;color:#334155;">'
@@ -169,6 +178,7 @@ def render_alert_email(title, body, status='danger'):
         '<div style="padding:24px;">'
         f'<h2 style="margin:0 0 12px;font-size:18px;color:#1e293b;">{escape(title)}</h2>'
         f'<div style="font-size:14px;line-height:1.6;">{body_html}</div>'
+        f'{button}'
         '</div>'
         '<div style="padding:14px 24px;background:#f8fafc;color:#94a3b8;font-size:12px;'
         'border-top:1px solid #e2e8f0;">Message automatique — Sentinelle, supervision DSI.</div>'

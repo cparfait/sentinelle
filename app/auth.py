@@ -170,6 +170,17 @@ def preferences():
             except Exception as e:
                 flash(f'Erreur envoi email: {str(e)}', 'danger')
 
+        elif action == 'send_digest':
+            from app.digest import build_daily_digest
+            addr = request.form.get('test_email', '').strip() or current_user.email
+            subject, text_body, html_body, _ = build_daily_digest(
+                current_app.config.get('APP_BASE_URL', ''))
+            try:
+                send_email(subject, [addr], text_body, html_body=html_body)
+                flash(f'Recapitulatif envoye a {addr}', 'success')
+            except Exception as e:
+                flash(f'Erreur envoi recap: {str(e)}', 'danger')
+
         return redirect(url_for('auth.preferences'))
 
     mail_method = current_app.config.get('MAIL_METHOD', 'smtp')

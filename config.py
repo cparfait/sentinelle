@@ -30,3 +30,6 @@ class Config:
     APP_HOST = os.getenv('APP_HOST', '127.0.0.1')
     APP_PORT = int(os.getenv('APP_PORT', 5000))
     APP_DEBUG = os.getenv('APP_DEBUG', 'false').lower() in ('true', '1', 'yes')
+
+    # URL publique de l'application, utilisee pour les liens dans les emails.
+    APP_BASE_URL = os.getenv('APP_BASE_URL', f"http://{os.getenv('APP_HOST', '127.0.0.1')}:{os.getenv('APP_PORT', 5000)}")

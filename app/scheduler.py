@@ -125,6 +125,34 @@ def refresh_certificates_tls():
                 db.session.rollback()
 
 
+def send_daily_digest():
+    """Envoie le recapitulatif quotidien de la meteo DSI (un seul email)."""
+    with _app.app_context():
+        from flask import current_app
+        from app.digest import build_daily_digest
+        from app.email_service import send_email
+        from app.models import AlertLog
+
+        recipients = [r.strip() for r in _app.config.get('ALERT_RECIPIENTS', [])
+                      if r and r.strip()]
+        if not recipients:
+            return
+
+        base_url = _app.config.get('APP_BASE_URL', '')
+        subject, text_body, html_body, _ = build_daily_digest(base_url)
+        try:
+            send_email(subject, recipients, text_body, html_body=html_body)
+            status = 'sent'
+            message = text_body
+        except Exception as e:
+            status = 'failed'
+            message = f"ERREUR: {e}\n{text_body}"
+        db.session.add(AlertLog(
+            alert_type='digest', entity_type='digest', entity_name='Meteo quotidienne',
+            message=message, recipients=', '.join(recipients), status=status))
+        db.session.commit()
+
+
 def start_scheduler(app):
     """Demarre le scheduler avec l'app reelle (sans la recreer dans les jobs)."""
     global _app
@@ -135,6 +163,8 @@ def start_scheduler(app):
 
     scheduler.add_job(refresh_certificates_tls, 'cron', hour=7, minute=0,
                       id='refresh_certificates_tls', replace_existing=True)
+    scheduler.add_job(send_daily_digest, 'cron', hour=7, minute=30,
+                      id='send_daily_digest', replace_existing=True)
     scheduler.add_job(check_passwords, 'cron', hour=8, minute=0,
                       id='check_passwords', replace_existing=True)
     scheduler.add_job(check_certificates, 'cron', hour=8, minute=15,
