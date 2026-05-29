@@ -153,6 +153,12 @@ def _send_via_smtp(subject, recipients, body, html_body=None):
     if not sender:
         raise Exception("Aucune adresse expeditrice configuree. "
                         "Renseignez l'utilisateur SMTP dans Preferences.")
+    if not current_app.config.get('MAIL_SERVER'):
+        raise Exception("Aucun serveur SMTP configure dans Preferences.")
+    # Flask-Mail fige sa config a l'init_app : on la rafraichit a partir de la
+    # config vivante pour prendre en compte les reglages saisis via Preferences
+    # sans avoir a redemarrer l'application.
+    mail.init_app(current_app)
     msg = Message(
         subject=f"[Sentinelle] {subject}",
         sender=sender,
