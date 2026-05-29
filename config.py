@@ -41,3 +41,8 @@ class Config:
     # Repertoire ou sont deposes les mails recap de backup (.eml/.txt/.html).
     # Sentinelle le scanne automatiquement. Laisser vide pour desactiver.
     BACKUP_INBOX_DIR = os.getenv('BACKUP_INBOX_DIR', '')
+
+    # Auto-sauvegarde de la base SQLite de Sentinelle.
+    # Repertoire (vide = <instance>/db_backups) et nombre de copies conservees.
+    BACKUP_DB_DIR = os.getenv('BACKUP_DB_DIR', '')
+    BACKUP_DB_KEEP = int(os.getenv('BACKUP_DB_KEEP', 14))

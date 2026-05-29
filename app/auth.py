@@ -170,6 +170,14 @@ def preferences():
             except Exception as e:
                 flash(f'Erreur envoi email: {str(e)}', 'danger')
 
+        elif action == 'backup_db':
+            from app.db_backup import backup_database
+            try:
+                path = backup_database(current_app)
+                flash(f"Base sauvegardee : {os.path.basename(path)}", 'success')
+            except Exception as e:
+                flash(f"Erreur sauvegarde base : {e}", 'danger')
+
         elif action == 'send_digest':
             from app.digest import build_daily_digest
             addr = request.form.get('test_email', '').strip() or current_user.email
@@ -207,6 +215,9 @@ def preferences():
 
     alert_recipients = ', '.join(current_app.config.get('ALERT_RECIPIENTS', []) or [])
 
+    from app.db_backup import list_backups
+    db_backups = list_backups(current_app)
+
     o365_app_configured = all([o365_config['client_id'], o365_config['client_secret'],
                                o365_config['tenant_id']])
 
@@ -222,7 +233,8 @@ def preferences():
                            smtp_config=smtp_config, o365_connected=o365_connected,
                            o365_user_email=o365_user_email,
                            o365_app_configured=o365_app_configured,
-                           alert_recipients=alert_recipients)
+                           alert_recipients=alert_recipients,
+                           db_backups=db_backups)
 
 
 @bp.route('/auth/o365/callback')

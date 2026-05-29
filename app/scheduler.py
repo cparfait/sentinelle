@@ -195,6 +195,16 @@ def send_daily_digest():
         db.session.commit()
 
 
+def backup_database_job():
+    """Sauvegarde quotidienne de la base SQLite de Sentinelle."""
+    with _app.app_context():
+        from app.db_backup import backup_database
+        try:
+            backup_database(_app)
+        except Exception:
+            pass
+
+
 def scan_backup_inbox():
     """Scanne le repertoire des mails de backup et enregistre les checks."""
     with _app.app_context():
@@ -216,6 +226,9 @@ def start_scheduler(app):
     if app.config.get('BACKUP_INBOX_DIR'):
         scheduler.add_job(scan_backup_inbox, 'interval', minutes=30,
                           id='scan_backup_inbox', replace_existing=True)
+
+    scheduler.add_job(backup_database_job, 'cron', hour=1, minute=0,
+                      id='backup_database_job', replace_existing=True)
 
     scheduler.add_job(refresh_certificates_tls, 'cron', hour=7, minute=0,
                       id='refresh_certificates_tls', replace_existing=True)
