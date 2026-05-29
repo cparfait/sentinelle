@@ -15,14 +15,14 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ⬜ **Anti-doublon d'alertes** — ne pas renvoyer une alerte déjà notifiée.
 
 ## Reporting & visualisation
-- ⬜ **Export CSV** — par domaine + global.
+- ✅ **Export CSV** — bouton « CSV » sur chaque liste (comptes, certificats, domaines, backups, tests) : export UTF‑8/Excel‑FR.
 - ⬜ **Vue tendances** — évolution des statuts dans le temps (graphes).
 - ⬜ **Page « à venir cette semaine / ce mois »** — agenda des échéances.
 - ⬜ **Widgets dashboard** — taux de conformité, top urgences, compteurs.
 
 ## Exploitation & fiabilité de l'outil
 - ⬜ **Historique d'exécution du scheduler** — tracer chaque run des jobs.
-- ⬜ **Import CSV** — initialisation en masse + **modèle CSV téléchargeable**.
+- ✅ **Import CSV** — import en masse depuis le bouton « CSV » de chaque liste + **modèle d'import téléchargeable** (détection séparateur, dates JJ/MM/AAAA ou AAAA‑MM‑JJ).
 - ⬜ **Auto-sauvegarde de la base SQLite** — export quotidien horodaté + rotation.
 - ⬜ **Fichier de logs applicatif** — journalisation avec rotation (au lieu du print console).
 

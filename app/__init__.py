@@ -74,6 +74,9 @@ def create_app(config_class=Config):
     from app.search import bp as search_bp
     app.register_blueprint(search_bp)
 
+    from app.data_io import bp as data_io_bp
+    app.register_blueprint(data_io_bp, url_prefix='/data')
+
     with app.app_context():
         db.create_all()
         _seed_default_user()
