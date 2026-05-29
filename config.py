@@ -33,3 +33,7 @@ class Config:
 
     # URL publique de l'application, utilisee pour les liens dans les emails.
     APP_BASE_URL = os.getenv('APP_BASE_URL', f"http://{os.getenv('APP_HOST', '127.0.0.1')}:{os.getenv('APP_PORT', 5000)}")
+
+    # Jeton secret pour l'ingestion des mails recap de backup (POST /backups/ingest).
+    # Laisser vide pour desactiver le point d'entree.
+    BACKUP_INGEST_TOKEN = os.getenv('BACKUP_INGEST_TOKEN', '')

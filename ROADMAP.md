@@ -5,7 +5,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 ## Surveillance & automatisation
 - ✅ **Vérif auto des certificats TLS** — lecture de la date d'expiration réelle (fiche + job 7h00 + **fiche de création**).
 - ✅ **Détection backup en retard** — statut calculé selon la fréquence (quotidien/hebdo/mensuel) + tolérance, au lieu de supposer du quotidien.
-- ⬜ **Connecteurs backup** — lire l'état réel (Veeam / Windows Backup / dossier : taille & date du dernier fichier).
+- 🚧 **Connecteurs backup** — ingestion du mail récap : endpoint sécurisé `POST /backups/ingest` + analyseur qui enregistre les checks du jour. ⏳ à affiner avec un vrai exemple de récap, et brancher le transport (Power Automate / script).
 - ⬜ **Expiration de noms de domaine** (WHOIS) — surveiller les dates d'expiration des domaines.
 
 ## Alertes & notifications

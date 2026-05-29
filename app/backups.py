@@ -1,12 +1,39 @@
 from datetime import datetime, timedelta, timezone
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
+from flask import (Blueprint, render_template, redirect, url_for, request, flash,
+                   jsonify, current_app)
 from flask_login import login_required, current_user
-from app import db
+from app import db, csrf
 from app.models import Backup, BackupCheck, BackupHistory
 from sqlalchemy import func
 
 from app.decorators import require_edit
 bp = Blueprint('backups', __name__)
+
+
+@bp.route('/ingest', methods=['POST'])
+@csrf.exempt
+def ingest():
+    """Point d'entree machine-to-machine : recoit le mail recap de backup
+    (transfere par une regle/flux) et enregistre les checks du jour.
+    Securise par un jeton (BACKUP_INGEST_TOKEN), pas de session utilisateur."""
+    token = current_app.config.get('BACKUP_INGEST_TOKEN')
+    if not token:
+        return jsonify(ok=False, error="Ingestion desactivee (BACKUP_INGEST_TOKEN non defini)."), 503
+    provided = request.headers.get('X-Sentinelle-Token') or request.args.get('token', '')
+    if provided != token:
+        return jsonify(ok=False, error="Jeton invalide."), 403
+
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+        subject = data.get('subject', '')
+        body = data.get('body', '')
+    else:
+        subject = request.args.get('subject', '')
+        body = request.get_data(as_text=True) or ''
+
+    from app.backup_ingest import parse_and_record
+    results = parse_and_record(subject, body)
+    return jsonify(ok=True, updated=results, count=len(results))
 
 
 @bp.route('/')
