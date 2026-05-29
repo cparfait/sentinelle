@@ -58,8 +58,11 @@ def _collect():
             continue
         s = b.computed_status()
         if s in ('danger', 'warning'):
-            tc = b.today_check()
-            detail = 'Non verifie aujourd\'hui' if not tc else f'Check du jour : {tc.status}'
+            days = b.days_since_last_ok()
+            if days is None:
+                detail = 'Aucun backup OK enregistre'
+            else:
+                detail = (f'Dernier OK il y a {days} j ({b.frequency_label().lower()})')
             items.append({'name': b.service_name, 'detail': detail,
                           'status': s, 'path': f'/backups/{b.id}'})
     domains.append({'key': 'Backups', 'total': len(backups), 'items': items})

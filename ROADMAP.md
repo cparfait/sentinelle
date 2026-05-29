@@ -4,7 +4,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 
 ## Surveillance & automatisation
 - ✅ **Vérif auto des certificats TLS** — lecture de la date d'expiration réelle (fiche + job 7h00 + **fiche de création**).
-- ⬜ **Détection backup en retard** — finesse selon la fréquence (quotidien/hebdo/mensuel).
+- ✅ **Détection backup en retard** — statut calculé selon la fréquence (quotidien/hebdo/mensuel) + tolérance, au lieu de supposer du quotidien.
 - ⬜ **Connecteurs backup** — lire l'état réel (Veeam / Windows Backup / dossier : taille & date du dernier fichier).
 - ⬜ **Expiration de noms de domaine** (WHOIS) — surveiller les dates d'expiration des domaines.
 

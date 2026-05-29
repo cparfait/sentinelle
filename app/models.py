@@ -131,26 +131,54 @@ class Backup(db.Model):
             db.func.date(BackupCheck.checked_at) == today
         ).first()
 
+    # Cadence attendue (jours) et tolerance avant alerte, selon la frequence.
+    _FREQ_PERIOD = {'daily': 1, 'weekly': 7, 'monthly': 31}
+    _FREQ_TOLERANCE = {'daily': 1, 'weekly': 2, 'monthly': 5}
+    _FREQ_LABEL = {'daily': 'Quotidien', 'weekly': 'Hebdomadaire', 'monthly': 'Mensuel'}
+
+    def frequency_label(self):
+        return self._FREQ_LABEL.get(self.frequency, self.frequency or 'Non definie')
+
+    def expected_interval_days(self):
+        return self._FREQ_PERIOD.get(self.frequency, 1)
+
+    def _tolerance_days(self):
+        return self._FREQ_TOLERANCE.get(self.frequency, 1)
+
+    def last_ok_check(self):
+        return self.checks.filter(BackupCheck.status == 'ok') \
+            .order_by(BackupCheck.check_date.desc()).first()
+
+    def days_since_last_ok(self):
+        last_ok = self.last_ok_check()
+        if not last_ok:
+            return None
+        return (datetime.now(timezone.utc).date() - last_ok.check_date).days
+
     def computed_status(self):
+        """Statut tenant compte de la frequence : un backup hebdo/mensuel n'est
+        pas en retard simplement parce qu'il n'a pas tourne aujourd'hui."""
         tc = self.today_check()
         if tc:
+            if tc.status == 'failed':
+                return 'danger'
+            if tc.status == 'warning':
+                return 'warning'
             if tc.status == 'ok':
                 return 'success'
-            elif tc.status == 'failed':
-                return 'danger'
-            elif tc.status == 'warning':
-                return 'warning'
-        today = datetime.now(timezone.utc).date()
-        last_check = self.checks.order_by(BackupCheck.checked_at.desc()).first()
-        if last_check:
-            days_since = (today - last_check.checked_at.date()).days
-            if days_since >= 2:
-                return 'danger'
-            elif days_since == 1:
-                return 'warning'
-        else:
-            return 'info'
-        return 'warning'
+
+        days_since = self.days_since_last_ok()
+        if days_since is None:
+            # jamais de backup OK enregistre
+            return 'warning' if self.checks.first() else 'info'
+
+        period = self.expected_interval_days()
+        tolerance = self._tolerance_days()
+        if days_since <= period:
+            return 'success'
+        if days_since <= period + tolerance:
+            return 'warning'
+        return 'danger'
 
     def success_rate(self, days=30):
         from sqlalchemy import func

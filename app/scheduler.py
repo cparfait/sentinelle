@@ -72,18 +72,18 @@ def check_backups():
             if is_snoozed('backup', backup.id):
                 continue
             today_check = backup.today_check()
-            last_check = backup.checks.order_by(BackupCheck.checked_at.desc()).first()
+            last_ok = backup.last_ok_check()
+            days_since = backup.days_since_last_ok()
             if today_check and today_check.status == 'failed':
                 detail = f"Le check du jour est en ECHEC ({today_check.comment or 'sans commentaire'})"
-            elif today_check:
-                detail = f"Statut du check du jour: {today_check.status}"
-            elif last_check:
+            elif last_ok:
                 detail = (
-                    f"Aucun check aujourd'hui. Dernier check le "
-                    f"{last_check.checked_at.strftime('%d/%m/%Y')} ({last_check.status})"
+                    f"Dernier backup OK le {last_ok.check_date.strftime('%d/%m/%Y')} "
+                    f"(il y a {days_since} j ; cadence attendue : "
+                    f"{backup.frequency_label().lower()} / {backup.expected_interval_days()} j)"
                 )
             else:
-                detail = "Aucun check enregistre pour ce backup"
+                detail = "Aucun backup OK enregistre pour ce service"
 
             subject = f"Alerte backup - {backup.service_name}"
             body = (
@@ -91,7 +91,7 @@ def check_backups():
                 f"Service: {backup.service_name}\n"
                 f"Type: {backup.backup_type}\n"
                 f"Emplacement: {backup.location}\n"
-                f"Frequence: {backup.frequency}\n"
+                f"Frequence: {backup.frequency_label()}\n"
                 f"{detail}\n"
             )
             send_alert(subject, body, 'backup', backup.id, backup.service_name)
