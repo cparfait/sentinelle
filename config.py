@@ -37,3 +37,7 @@ class Config:
     # Jeton secret pour l'ingestion des mails recap de backup (POST /backups/ingest).
     # Laisser vide pour desactiver le point d'entree.
     BACKUP_INGEST_TOKEN = os.getenv('BACKUP_INGEST_TOKEN', '')
+
+    # Repertoire ou sont deposes les mails recap de backup (.eml/.txt/.html).
+    # Sentinelle le scanne automatiquement. Laisser vide pour desactiver.
+    BACKUP_INBOX_DIR = os.getenv('BACKUP_INBOX_DIR', '')

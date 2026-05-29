@@ -162,6 +162,16 @@ def send_daily_digest():
         db.session.commit()
 
 
+def scan_backup_inbox():
+    """Scanne le repertoire des mails de backup et enregistre les checks."""
+    with _app.app_context():
+        directory = _app.config.get('BACKUP_INBOX_DIR')
+        if not directory:
+            return
+        from app.backup_ingest import scan_inbox
+        scan_inbox(directory)
+
+
 def start_scheduler(app):
     """Demarre le scheduler avec l'app reelle (sans la recreer dans les jobs)."""
     global _app
@@ -169,6 +179,10 @@ def start_scheduler(app):
 
     if scheduler.running:
         return
+
+    if app.config.get('BACKUP_INBOX_DIR'):
+        scheduler.add_job(scan_backup_inbox, 'interval', minutes=30,
+                          id='scan_backup_inbox', replace_existing=True)
 
     scheduler.add_job(refresh_certificates_tls, 'cron', hour=7, minute=0,
                       id='refresh_certificates_tls', replace_existing=True)

@@ -14,6 +14,14 @@
         <a href="{{ url_for('backups.stats') }}" class="btn btn-outline-info">
             <i class="bi bi-bar-chart me-1"></i> Statistiques
         </a>
+        {% if config.BACKUP_INBOX_DIR %}
+        <form method="POST" action="{{ url_for('backups.scan_inbox_now') }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-secondary" title="Lire les mails de backup du repertoire">
+                <i class="bi bi-envelope-arrow-down me-1"></i> Scanner la boîte
+            </button>
+        </form>
+        {% endif %}
         <a href="{{ url_for('backups.create') }}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-1"></i> Ajouter
         </a>

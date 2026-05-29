@@ -36,6 +36,26 @@ def ingest():
     return jsonify(ok=True, updated=results, count=len(results))
 
 
+@bp.route('/scan-inbox', methods=['POST'])
+@login_required
+@require_edit
+def scan_inbox_now():
+    directory = current_app.config.get('BACKUP_INBOX_DIR')
+    if not directory:
+        flash("Aucun repertoire de mails configure (BACKUP_INBOX_DIR).", 'danger')
+        return redirect(url_for('backups.list'))
+    from app.backup_ingest import scan_inbox
+    summary = scan_inbox(directory)
+    if summary.get('error'):
+        flash(summary['error'], 'danger')
+    else:
+        n_files = len(summary['files'])
+        n_updates = sum(len(f.get('updated', [])) for f in summary['files'])
+        flash(f"{n_files} fichier(s) traite(s), {n_updates} sauvegarde(s) mise(s) a jour.",
+              'success' if n_files else 'info')
+    return redirect(url_for('backups.list'))
+
+
 @bp.route('/')
 @login_required
 def list():
