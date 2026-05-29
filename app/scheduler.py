@@ -111,6 +111,20 @@ def check_tests():
                 send_alert(subject, body, 'test', test.id, test.name)
 
 
+def refresh_certificates_tls():
+    """Lit en direct la date d'expiration reelle de chaque certificat actif et
+    met a jour les fiches. Tourne avant l'alerte certificats du matin."""
+    with _app.app_context():
+        from app.certificates import refresh_certificate_tls
+        certs = Certificate.query.filter_by(is_active=True).all()
+        for cert in certs:
+            try:
+                refresh_certificate_tls(cert, 'auto-tls')
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+
 def start_scheduler(app):
     """Demarre le scheduler avec l'app reelle (sans la recreer dans les jobs)."""
     global _app
@@ -119,6 +133,8 @@ def start_scheduler(app):
     if scheduler.running:
         return
 
+    scheduler.add_job(refresh_certificates_tls, 'cron', hour=7, minute=0,
+                      id='refresh_certificates_tls', replace_existing=True)
     scheduler.add_job(check_passwords, 'cron', hour=8, minute=0,
                       id='check_passwords', replace_existing=True)
     scheduler.add_job(check_certificates, 'cron', hour=8, minute=15,

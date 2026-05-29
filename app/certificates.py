@@ -3,9 +3,35 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
 from app.models import Certificate, CertificateHistory
+from app.cert_checker import fetch_cert_info
 
 from app.decorators import require_edit
 bp = Blueprint('certificates', __name__)
+
+
+def refresh_certificate_tls(cert, performed_by):
+    """Met a jour la fiche depuis le certificat TLS lu en direct.
+    Cree une entree d'historique mais NE COMMIT PAS (le caller s'en charge).
+    Retourne (ok: bool, message: str)."""
+    try:
+        info = fetch_cert_info(cert.domain)
+    except Exception as e:
+        db.session.add(CertificateHistory(
+            certificate_id=cert.id, action='tls_check_failed',
+            comment=f"Echec lecture TLS : {e}", performed_by=performed_by))
+        return False, f"Verification TLS impossible : {e}"
+
+    old = cert.expiry_date
+    cert.expiry_date = info['expiry_date']
+    if info['issuer']:
+        cert.issuer = info['issuer']
+    msg = f"Expiration mise a jour via TLS : {info['expiry_date'].strftime('%d/%m/%Y')}"
+    if old and old != info['expiry_date']:
+        msg += f" (avant : {old.strftime('%d/%m/%Y')})"
+    db.session.add(CertificateHistory(
+        certificate_id=cert.id, action='tls_check',
+        comment=msg, performed_by=performed_by))
+    return True, msg
 
 
 @bp.route('/')
@@ -89,6 +115,17 @@ def renew(id):
     db.session.add(h)
     db.session.commit()
     flash('Certificat marqué comme renouvelé', 'success')
+    return redirect(url_for('certificates.detail', id=id))
+
+
+@bp.route('/<int:id>/check-tls', methods=['POST'])
+@login_required
+@require_edit
+def check_tls(id):
+    cert = Certificate.query.get_or_404(id)
+    ok, message = refresh_certificate_tls(cert, current_user.username)
+    db.session.commit()
+    flash(message, 'success' if ok else 'danger')
     return redirect(url_for('certificates.detail', id=id))
 
 
