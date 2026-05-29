@@ -5,7 +5,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 ## Surveillance & automatisation
 - ✅ **Vérif auto des certificats TLS** — lecture de la date d'expiration réelle (fiche + job 7h00 + **fiche de création**).
 - ✅ **Détection backup en retard** — statut calculé selon la fréquence (quotidien/hebdo/mensuel) + tolérance, au lieu de supposer du quotidien.
-- 🚧 **Connecteurs backup** — deux entrées : (a) connecteur **dossier** (Sentinelle lit un répertoire de mails .eml/.txt/.html, scan auto toutes les 30 min + bouton « Scanner la boîte », archive dans `traites/`) ; (b) endpoint `POST /backups/ingest` (jeton). Analyseur commun. ⏳ reste à **calibrer la détection avec un vrai récap**.
+- ✅ **Connecteurs backup** — connecteur **dossier** (scan auto 30 min + bouton « Scanner la boîte », archive `traites/`) et endpoint `POST /backups/ingest` (jeton). Analyseur calibré sur les mails réels : tag `[Success]/[Warning]/[Failed]` Veeam, mots‑clés en mots entiers (piège « Ko » évité), et succès implicite pour les rapports « Sauvegarde … » sans erreur. ⚠️ Nommer les backups dans Sentinelle pour que le nom soit contenu dans l'objet du mail (ex. `PC-SYGAAL`, `WWW VPS`, `Backup_Chatillon_VM`).
 - ⬜ **Expiration de noms de domaine** (WHOIS) — surveiller les dates d'expiration des domaines.
 
 ## Alertes & notifications
