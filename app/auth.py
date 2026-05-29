@@ -131,6 +131,10 @@ def preferences():
             }
             if password:
                 updates['MAIL_PASSWORD'] = password
+            # L'adresse expeditrice doit correspondre a la boite authentifiee,
+            # sinon Microsoft 365 (et beaucoup d'autres) rejette l'envoi.
+            if username:
+                updates['MAIL_DEFAULT_SENDER'] = username
             _update_env_file(updates)
             current_app.config['MAIL_METHOD'] = 'smtp'
             current_app.config['MAIL_SERVER'] = server
@@ -138,6 +142,8 @@ def preferences():
             current_app.config['MAIL_USERNAME'] = username
             if password:
                 current_app.config['MAIL_PASSWORD'] = password
+            if username:
+                current_app.config['MAIL_DEFAULT_SENDER'] = username
             flash('Configuration SMTP enregistree', 'success')
 
         elif action == 'test_email':
