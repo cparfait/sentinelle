@@ -146,8 +146,16 @@ def send_email(subject, recipients, body, html_body=None):
 
 
 def _send_via_smtp(subject, recipients, body, html_body=None):
+    # A defaut d'expediteur configure, on utilise l'identifiant SMTP : c'est
+    # la boite authentifiee, donc le seul "From" accepte par Microsoft 365.
+    sender = (current_app.config.get('MAIL_DEFAULT_SENDER')
+              or current_app.config.get('MAIL_USERNAME'))
+    if not sender:
+        raise Exception("Aucune adresse expeditrice configuree. "
+                        "Renseignez l'utilisateur SMTP dans Preferences.")
     msg = Message(
         subject=f"[Sentinelle] {subject}",
+        sender=sender,
         recipients=recipients,
         body=body,
         html=html_body
