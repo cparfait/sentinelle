@@ -236,9 +236,10 @@ def backup_database_job():
     with _app.app_context():
         from app.db_backup import backup_database
         try:
-            backup_database(_app)
-        except Exception:
-            pass
+            path = backup_database(_app)
+            _app.logger.info('Sauvegarde base creee : %s', path)
+        except Exception as e:
+            _app.logger.error('Echec sauvegarde base : %s', e)
 
 
 def scan_backup_inbox():

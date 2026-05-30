@@ -25,6 +25,7 @@ def create_app(config_class=Config):
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
+    _setup_logging(app)
 
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Veuillez vous connecter pour accéder à cette page.'
@@ -119,6 +120,27 @@ def create_app(config_class=Config):
         start_scheduler(app)
 
     return app
+
+
+def _setup_logging(app):
+    """Journalisation applicative dans un fichier avec rotation."""
+    if app.config.get('TESTING'):
+        return
+    import os
+    import logging
+    from logging.handlers import RotatingFileHandler
+    log_dir = os.path.join(app.instance_path, 'logs')
+    os.makedirs(log_dir, exist_ok=True)
+    handler = RotatingFileHandler(os.path.join(log_dir, 'sentinelle.log'),
+                                  maxBytes=1_000_000, backupCount=5, encoding='utf-8')
+    handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s %(name)s: %(message)s'))
+    handler.setLevel(logging.INFO)
+    # evite les handlers en double lors du reload en mode debug
+    if not any(isinstance(h, RotatingFileHandler) for h in app.logger.handlers):
+        app.logger.addHandler(handler)
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('Sentinelle demarre')
 
 
 def _auto_migrate_sqlite():
