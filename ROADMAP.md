@@ -20,7 +20,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 
 ## Reporting & visualisation
 - ✅ **Export CSV** — bouton « CSV » sur chaque liste (comptes, certificats, domaines, backups, tests) : export UTF‑8/Excel‑FR.
-- ⬜ **Vue tendances** — évolution des statuts dans le temps (graphes).
+- ✅ **Vue tendances** — page « Tendances » (Chart.js) : répartition globale par statut, alertes envoyées/jour et checks de backup/jour sur 30 jours, filtrée selon les droits.
 - ✅ **Page « À venir »** — agenda des échéances (rotations MDP, certificats, domaines, tests) groupé par horizon (en retard / cette semaine / ce mois / 90 j), filtré selon les droits.
 - ✅ **Widgets dashboard** — bandeau de **conformité globale** (% OK + barre de progression + compteurs), en plus des cartes par catégorie et de la liste des urgences déjà présentes.
 

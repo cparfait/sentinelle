@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
 from flask_login import login_required, current_user
 from app.models import (Account, Certificate, Backup, BackupCheck, TestTask,
@@ -8,6 +8,54 @@ from app import db
 
 from app.decorators import require_edit
 bp = Blueprint('dashboard', __name__)
+
+
+@bp.route('/tendances')
+@login_required
+def trends():
+    from sqlalchemy import func
+    today = datetime.now(timezone.utc).date()
+    days = [today - timedelta(days=i) for i in range(29, -1, -1)]
+    labels = [d.strftime('%d/%m') for d in days]
+
+    backups = {'ok': [], 'warning': [], 'failed': []}
+    show_backups = current_user.can_view('backups')
+    if show_backups:
+        for d in days:
+            checks = BackupCheck.query.filter_by(check_date=d).all()
+            backups['ok'].append(sum(1 for c in checks if c.status == 'ok'))
+            backups['warning'].append(sum(1 for c in checks if c.status == 'warning'))
+            backups['failed'].append(sum(1 for c in checks if c.status == 'failed'))
+
+    alerts = []
+    show_alerts = current_user.can_view('alerts')
+    if show_alerts:
+        for d in days:
+            alerts.append(AlertLog.query.filter(
+                func.date(AlertLog.sent_at) == d, AlertLog.status == 'sent').count())
+
+    # Repartition globale par statut (categories visibles)
+    sources = [
+        ('accounts', Account, lambda o: o.status()),
+        ('certificates', Certificate, lambda o: o.status()),
+        ('domains', Domain, lambda o: o.status()),
+        ('backups', Backup, lambda o: o.computed_status()),
+        ('tests', TestTask, lambda o: o.computed_status()),
+        ('reviews', AccessReview, lambda o: o.computed_status()),
+        ('updates', SystemUpdate, lambda o: o.status_color()),
+    ]
+    dist = {'danger': 0, 'warning': 0, 'info': 0, 'success': 0}
+    for cat, model, statusf in sources:
+        if not current_user.can_view(cat):
+            continue
+        for o in model.query.filter_by(is_active=True).all():
+            s = statusf(o)
+            if s in dist:
+                dist[s] += 1
+
+    return render_template('trends.html', labels=labels, backups=backups,
+                           alerts=alerts, dist=dist,
+                           show_backups=show_backups, show_alerts=show_alerts)
 
 
 @bp.route('/etat/<status>')

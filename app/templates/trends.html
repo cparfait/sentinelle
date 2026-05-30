@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Tendances - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-graph-up me-2"></i>Tendances</h4>
+        <small class="text-muted">Évolution sur les 30 derniers jours</small>
+    </div>
+    <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-grid-1x2 me-1"></i> Tableau de bord
+    </a>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="data-card p-3">
+            <h6 class="fw-bold mb-3">Répartition par statut</h6>
+            <canvas id="chartDist" height="180"></canvas>
+        </div>
+    </div>
+    {% if show_alerts %}
+    <div class="col-lg-6">
+        <div class="data-card p-3">
+            <h6 class="fw-bold mb-3">Alertes envoyées par jour</h6>
+            <canvas id="chartAlerts" height="180"></canvas>
+        </div>
+    </div>
+    {% endif %}
+    {% if show_backups %}
+    <div class="col-12">
+        <div class="data-card p-3">
+            <h6 class="fw-bold mb-3">Checks de backup par jour</h6>
+            <canvas id="chartBackups" height="90"></canvas>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const LABELS = {{ labels | tojson }};
+const C = {danger: '#ef4444', warning: '#f59e0b', info: '#3b82f6', success: '#10b981'};
+
+new Chart(document.getElementById('chartDist'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Critique', 'Attention', 'Proche', 'OK'],
+        datasets: [{
+            data: [{{ dist.danger }}, {{ dist.warning }}, {{ dist.info }}, {{ dist.success }}],
+            backgroundColor: [C.danger, C.warning, C.info, C.success],
+        }]
+    },
+    options: {responsive: true, plugins: {legend: {position: 'bottom'}}}
+});
+
+{% if show_alerts %}
+new Chart(document.getElementById('chartAlerts'), {
+    type: 'line',
+    data: {labels: LABELS, datasets: [{
+        label: 'Alertes', data: {{ alerts | tojson }},
+        borderColor: C.danger, backgroundColor: 'rgba(239,68,68,.15)', fill: true, tension: .3
+    }]},
+    options: {responsive: true, plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true, ticks: {precision: 0}}}}
+});
+{% endif %}
+
+{% if show_backups %}
+new Chart(document.getElementById('chartBackups'), {
+    type: 'bar',
+    data: {labels: LABELS, datasets: [
+        {label: 'OK', data: {{ backups.ok | tojson }}, backgroundColor: C.success},
+        {label: 'Warning', data: {{ backups.warning | tojson }}, backgroundColor: C.warning},
+        {label: 'Échec', data: {{ backups.failed | tojson }}, backgroundColor: C.danger},
+    ]},
+    options: {responsive: true, scales: {x: {stacked: true}, y: {stacked: true, beginAtZero: true, ticks: {precision: 0}}}}
+});
+{% endif %}
+</script>
+{% endblock %}
