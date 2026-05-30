@@ -87,7 +87,7 @@ def create():
         db.session.add(d)
         db.session.commit()
         db.session.add(DomainHistory(domain_id=d.id, action='creation',
-                                     comment='Domaine cree', performed_by=current_user.username))
+                                     comment=f'Domaine cree : {d.name}', performed_by=current_user.username))
         db.session.commit()
         flash('Domaine ajoute avec succes', 'success')
         return redirect(url_for('domains.list'))
@@ -138,7 +138,7 @@ def delete(id):
     domain = Domain.query.get_or_404(id)
     domain.is_active = False
     db.session.add(DomainHistory(domain_id=domain.id, action='deleted',
-                                 comment='Domaine desactive', performed_by=current_user.username))
+                                 comment=f'Domaine desactive : {domain.name}', performed_by=current_user.username))
     db.session.commit()
     flash('Domaine supprime', 'success')
     return redirect(url_for('domains.list'))

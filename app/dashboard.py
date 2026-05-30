@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
 from flask_login import login_required, current_user
 from app.models import (Account, Certificate, Backup, BackupCheck, TestTask,
                         AlertLog, Domain, AccessReview, SystemUpdate)
@@ -8,6 +8,33 @@ from app import db
 
 from app.decorators import require_edit
 bp = Blueprint('dashboard', __name__)
+
+
+@bp.route('/etat/<status>')
+@login_required
+def by_status(status):
+    labels = {'danger': 'Critiques', 'warning': 'À surveiller',
+              'info': 'Proches', 'success': 'OK'}
+    if status not in labels:
+        abort(404)
+    sources = [
+        ('accounts', 'Comptes', Account, lambda o: f'{o.service_name} ({o.username})', 'accounts', lambda o: o.status()),
+        ('certificates', 'Certificats', Certificate, lambda o: f'{o.service_name} - {o.domain}', 'certificates', lambda o: o.status()),
+        ('domains', 'Domaines', Domain, lambda o: o.name, 'domains', lambda o: o.status()),
+        ('backups', 'Backups', Backup, lambda o: o.service_name, 'backups', lambda o: o.computed_status()),
+        ('tests', 'Tests', TestTask, lambda o: o.name, 'tests', lambda o: o.computed_status()),
+        ('reviews', 'Revue de droits', AccessReview, lambda o: o.application, 'reviews', lambda o: o.computed_status()),
+        ('updates', 'Mises à jour', SystemUpdate, lambda o: o.name, 'updates', lambda o: o.status_color()),
+    ]
+    items = []
+    for cat, label, model, namef, prefix, statusf in sources:
+        if not current_user.can_view(cat):
+            continue
+        for o in model.query.filter_by(is_active=True).all():
+            if statusf(o) == status:
+                items.append({'cat': label, 'name': namef(o), 'url': f'/{prefix}/{o.id}'})
+    items.sort(key=lambda x: x['cat'])
+    return render_template('by_status.html', status=status, label=labels[status], items=items)
 
 
 @bp.route('/trash')
@@ -22,13 +49,12 @@ def trash():
 def trash_restore():
     from app.trash import restore
     from app.audit import record
-    etype = request.form.get('entity_type', '')
-    eid = request.form.get('entity_id', '0')
-    ok = restore(current_user, etype, eid, current_user.username)
-    if ok:
-        record('restauration', detail=f'{etype} #{eid}', category='corbeille')
-    flash('Élément restauré.' if ok else 'Restauration impossible.',
-          'success' if ok else 'danger')
+    res = restore(current_user, request.form.get('entity_type', ''),
+                  request.form.get('entity_id', '0'), current_user.username)
+    if res:
+        record('restauration', detail=f'{res[0]} : {res[1]}', category='corbeille')
+    flash('Élément restauré.' if res else 'Restauration impossible.',
+          'success' if res else 'danger')
     return redirect(url_for('dashboard.trash'))
 
 
@@ -37,13 +63,12 @@ def trash_restore():
 def trash_purge_one():
     from app.trash import purge_one
     from app.audit import record
-    etype = request.form.get('entity_type', '')
-    eid = request.form.get('entity_id', '0')
-    ok = purge_one(current_user, etype, eid)
-    if ok:
-        record('suppression definitive', detail=f'{etype} #{eid}', category='corbeille')
-    flash('Élément supprimé définitivement.' if ok else 'Suppression impossible.',
-          'success' if ok else 'danger')
+    res = purge_one(current_user, request.form.get('entity_type', ''),
+                    request.form.get('entity_id', '0'))
+    if res:
+        record('suppression definitive', detail=f'{res[0]} : {res[1]}', category='corbeille')
+    flash('Élément supprimé définitivement.' if res else 'Suppression impossible.',
+          'success' if res else 'danger')
     return redirect(url_for('dashboard.trash'))
 
 

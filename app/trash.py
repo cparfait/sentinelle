@@ -51,15 +51,17 @@ def _purge_obj(etype, obj):
 
 
 def purge_one(user, etype, entity_id):
+    """Suppression definitive d'un element. Retourne (label, nom) ou None."""
     s = SPECS.get(etype)
     if not s or not str(entity_id).isdigit() or not user.can_delete(s['cat']):
-        return False
+        return None
     obj = s['model'].query.filter_by(id=int(entity_id), is_active=False).first()
     if not obj:
-        return False
+        return None
+    name = s['name'](obj)
     _purge_obj(etype, obj)
     db.session.commit()
-    return True
+    return (s['label'], name)
 
 
 def purge_all(user):
@@ -78,15 +80,17 @@ def purge_all(user):
 
 
 def restore(user, etype, entity_id, performed_by):
+    """Restaure un element. Retourne (label, nom) ou None."""
     s = SPECS.get(etype)
     if not s or not str(entity_id).isdigit() or not user.can_edit(s['cat']):
-        return False
+        return None
     obj = s['model'].query.get(int(entity_id))
     if not obj:
-        return False
+        return None
     obj.is_active = True
+    name = s['name'](obj)
     db.session.add(s['hist'](**{s['fk']: obj.id, 'action': 'restored',
                                 'comment': 'Restaure depuis la corbeille',
                                 'performed_by': performed_by}))
     db.session.commit()
-    return True
+    return (s['label'], name)

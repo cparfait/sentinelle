@@ -55,7 +55,7 @@ def create():
 
         h = TestHistory(
             test_id=t.id, action='creation',
-            comment='Test créé', performed_by=current_user.username
+            comment=f'Test créé : {t.name}', performed_by=current_user.username
         )
         db.session.add(h)
         db.session.commit()
@@ -122,7 +122,7 @@ def delete(id):
     test.is_active = False
     h = TestHistory(
         test_id=test.id, action='deleted',
-        comment='Test désactivé', performed_by=current_user.username
+        comment=f'Test désactivé : {test.name}', performed_by=current_user.username
     )
     db.session.add(h)
     db.session.commit()

@@ -62,6 +62,13 @@ def create_app(config_class=Config):
             'reviews': _danger(AccessReview.query.filter_by(is_active=True).all(), 'computed_status'),
             'updates': _danger(SystemUpdate.query.filter_by(is_active=True).all(), 'status_color'),
         }
+        # Nombre d'elements en corbeille sur les categories editables par l'utilisateur
+        trash_models = [('accounts', Account), ('certificates', Certificate),
+                        ('domains', Domain), ('backups', Backup), ('tests', TestTask),
+                        ('reviews', AccessReview), ('updates', SystemUpdate)]
+        counts['trash'] = sum(
+            m.query.filter_by(is_active=False).count()
+            for cat, m in trash_models if current_user.can_edit(cat))
         return {'nav_counts': counts, 'all_roles': Role.query.order_by(Role.name).all()}
 
     from app.models import User

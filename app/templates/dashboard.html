@@ -25,9 +25,9 @@
             </div>
         </div>
         <div class="d-flex gap-2">
-            {% if totals.danger %}<span class="badge-status badge-danger">{{ totals.danger }} critique(s)</span>{% endif %}
-            {% if totals.warning %}<span class="badge-status badge-warning">{{ totals.warning }} à surveiller</span>{% endif %}
-            <span class="badge-status badge-success">{{ totals.ok }} OK</span>
+            {% if totals.danger %}<a href="{{ url_for('dashboard.by_status', status='danger') }}" class="badge-status badge-danger text-decoration-none">{{ totals.danger }} critique(s)</a>{% endif %}
+            {% if totals.warning %}<a href="{{ url_for('dashboard.by_status', status='warning') }}" class="badge-status badge-warning text-decoration-none">{{ totals.warning }} à surveiller</a>{% endif %}
+            <a href="{{ url_for('dashboard.by_status', status='success') }}" class="badge-status badge-success text-decoration-none">{{ totals.ok }} OK</a>
         </div>
     </div>
     <div class="progress mt-3" style="height: 8px;">

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ label }} - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">
+            <span class="badge-status badge-{{ status }} me-2">{{ label }}</span>
+            {{ items|length }} élément(s)
+        </h4>
+        <small class="text-muted">Vue transversale par statut</small>
+    </div>
+    <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-grid-1x2 me-1"></i> Tableau de bord
+    </a>
+</div>
+
+<div class="data-card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>Catégorie</th><th>Élément</th></tr></thead>
+            <tbody>
+                {% for it in items %}
+                <tr class="row-{{ status }}">
+                    <td style="width: 180px;"><span class="badge bg-light text-dark border">{{ it.cat }}</span></td>
+                    <td><a href="{{ it.url }}" class="text-decoration-none fw-medium">{{ it.name }}</a></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="2" class="text-center py-4 text-muted">Aucun élément dans cet état.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

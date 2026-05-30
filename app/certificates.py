@@ -85,7 +85,7 @@ def create():
 
         h = CertificateHistory(
             certificate_id=c.id, action='creation',
-            comment='Certificat créé', performed_by=current_user.username
+            comment=f'Certificat créé : {c.service_name} - {c.domain}', performed_by=current_user.username
         )
         db.session.add(h)
         db.session.commit()
@@ -161,7 +161,7 @@ def delete(id):
     cert.is_active = False
     h = CertificateHistory(
         certificate_id=cert.id, action='deleted',
-        comment='Certificat désactivé', performed_by=current_user.username
+        comment=f'Certificat désactivé : {cert.service_name} - {cert.domain}', performed_by=current_user.username
     )
     db.session.add(h)
     db.session.commit()

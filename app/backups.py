@@ -196,7 +196,7 @@ def create():
 
         h = BackupHistory(
             backup_id=b.id, action='creation',
-            comment='Backup cree', performed_by=current_user.username
+            comment=f'Backup cree : {b.service_name}', performed_by=current_user.username
         )
         db.session.add(h)
         db.session.commit()
@@ -269,7 +269,7 @@ def delete(id):
     backup.is_active = False
     h = BackupHistory(
         backup_id=backup.id, action='deleted',
-        comment='Backup desactive', performed_by=current_user.username
+        comment=f'Backup desactive : {backup.service_name}', performed_by=current_user.username
     )
     db.session.add(h)
     db.session.commit()

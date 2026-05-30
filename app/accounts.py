@@ -43,7 +43,7 @@ def create():
 
         h = AccountHistory(
             account_id=a.id, action='creation',
-            comment='Compte créé', performed_by=current_user.username
+            comment=f'Compte créé : {a.service_name} ({a.username})', performed_by=current_user.username
         )
         db.session.add(h)
         db.session.commit()
@@ -108,7 +108,7 @@ def delete(id):
     account.is_active = False
     h = AccountHistory(
         account_id=account.id, action='deleted',
-        comment='Compte désactivé', performed_by=current_user.username
+        comment=f'Compte désactivé : {account.service_name} ({account.username})', performed_by=current_user.username
     )
     db.session.add(h)
     db.session.commit()

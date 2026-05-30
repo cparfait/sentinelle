@@ -50,7 +50,7 @@ def create():
         db.session.add(u)
         db.session.commit()
         db.session.add(UpdateHistory(update_id=u.id, action='creation',
-                                     comment='Entree creee', performed_by=current_user.username))
+                                     comment=f'Mise a jour creee : {u.name}', performed_by=current_user.username))
         db.session.commit()
         flash('Mise a jour ajoutee', 'success')
         return redirect(url_for('updates.list'))
@@ -115,7 +115,7 @@ def delete(id):
     update = SystemUpdate.query.get_or_404(id)
     update.is_active = False
     db.session.add(UpdateHistory(update_id=update.id, action='deleted',
-                                 comment='Entree desactivee', performed_by=current_user.username))
+                                 comment=f'Mise a jour desactivee : {update.name}', performed_by=current_user.username))
     db.session.commit()
     flash('Entree supprimee', 'success')
     return redirect(url_for('updates.list'))

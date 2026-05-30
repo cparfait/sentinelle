@@ -46,7 +46,7 @@ def create():
         db.session.add(r)
         db.session.commit()
         db.session.add(ReviewHistory(review_id=r.id, action='creation',
-                                     comment='Revue creee', performed_by=current_user.username))
+                                     comment=f'Revue creee : {r.application}', performed_by=current_user.username))
         db.session.commit()
         flash('Revue de droits ajoutee', 'success')
         return redirect(url_for('reviews.list'))
@@ -106,7 +106,7 @@ def delete(id):
     review = AccessReview.query.get_or_404(id)
     review.is_active = False
     db.session.add(ReviewHistory(review_id=review.id, action='deleted',
-                                 comment='Revue desactivee', performed_by=current_user.username))
+                                 comment=f'Revue desactivee : {review.application}', performed_by=current_user.username))
     db.session.commit()
     flash('Revue supprimee', 'success')
     return redirect(url_for('reviews.list'))
