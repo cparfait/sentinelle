@@ -41,7 +41,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ✅ **Politique de mot de passe + expiration des sessions** — longueur minimale configurable (`PASSWORD_MIN_LENGTH`), déconnexion auto après inactivité (`SESSION_LIFETIME_MINUTES`, défaut 8 h), cookies durcis (HttpOnly, SameSite=Lax).
 
 ## Ergonomie / UX
-- 🚧 **Tri & filtres** sur les listes — tri automatique par criticité (critiques en tête) + surlignage des lignes fait. Filtres interactifs (par statut/priorité) à venir.
+- ✅ **Tri & filtres** sur les listes — tri automatique par criticité + surlignage + **filtres interactifs par statut** (barre Tous/Critique/Attention/À surveiller/OK générée en JS sur les tableaux `js-filterable`).
 - ⬜ **Pagination / recherche** dans les longues listes.
 - ✅ **Badges de compteur** dans la sidebar — nombre d'éléments critiques (rouges) par section (comptes, certificats, domaines, backups, tests).
 - ✅ **Corbeille** — page listant les éléments supprimés (désactivés) par catégorie, avec restauration (selon droits d'édition). Confirmations de suppression déjà en place sur les fiches.
