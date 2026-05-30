@@ -2,7 +2,8 @@
 from datetime import datetime, timezone
 from html import escape
 
-from app.models import Account, Certificate, Backup, TestTask, Domain
+from app.models import (Account, Certificate, Backup, TestTask, Domain,
+                        AccessReview, SystemUpdate)
 from app.snooze import is_snoozed
 
 _COLORS = {'danger': '#ef4444', 'warning': '#f59e0b', 'info': '#3b82f6',
@@ -92,6 +93,32 @@ def _collect():
                           'detail': 'Test ' + days_txt(t.next_due, 'due'),
                           'status': s, 'path': f'/tests/{t.id}'})
     domains.append({'key': 'Tests', 'total': len(tests), 'items': items})
+
+    # Revue de droits
+    reviews = AccessReview.query.filter_by(is_active=True).all()
+    items = []
+    for r in reviews:
+        if is_snoozed('review', r.id):
+            continue
+        s = r.computed_status()
+        if s in ('danger', 'warning'):
+            items.append({'name': r.application,
+                          'detail': 'Revue ' + days_txt(r.next_review, 'due'),
+                          'status': s, 'path': f'/reviews/{r.id}'})
+    domains.append({'key': 'Revue de droits', 'total': len(reviews), 'items': items})
+
+    # Mises a jour
+    updates = SystemUpdate.query.filter_by(is_active=True).all()
+    items = []
+    for u in updates:
+        if is_snoozed('update', u.id):
+            continue
+        s = u.status_color()
+        if s in ('danger', 'warning'):
+            detail = 'Mise a jour critique' if u.status == 'critical' else 'Mise a jour disponible'
+            items.append({'name': u.name, 'detail': detail,
+                          'status': s, 'path': f'/updates/{u.id}'})
+    domains.append({'key': 'Mises a jour', 'total': len(updates), 'items': items})
 
     return domains
 

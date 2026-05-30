@@ -5,7 +5,8 @@ from flask_login import current_user
 # La categorie de permission est deduite du blueprint courant.
 _BP_CATEGORY = {
     'accounts': 'accounts', 'certificates': 'certificates', 'domains': 'domains',
-    'backups': 'backups', 'tests': 'tests', 'alerts': 'alerts',
+    'backups': 'backups', 'tests': 'tests', 'reviews': 'reviews',
+    'updates': 'updates', 'alerts': 'alerts',
 }
 
 

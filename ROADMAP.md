@@ -2,6 +2,10 @@
 
 Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à faire.
 
+## Modules métier
+- ✅ **Revue de droits** — revue périodique des accès aux applications métiers (activité récurrente : application, responsable, périmètre, cadence, prochaine revue, statut). Alertes, agenda, snooze, CSV, RBAC.
+- ✅ **Mises à jour** — suivi des MàJ applications/systèmes (statut manuel À jour / MàJ disponible / Critique + versions). Bouton « Marquer à jour », alertes critiques, snooze, CSV, RBAC.
+
 ## Surveillance & automatisation
 - ✅ **Vérif auto des certificats TLS** — lecture de la date d'expiration réelle (fiche + job 7h00 + **fiche de création**).
 - ✅ **Détection backup en retard** — statut calculé selon la fréquence (quotidien/hebdo/mensuel) + tolérance, au lieu de supposer du quotidien.

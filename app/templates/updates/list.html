@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Mises à jour - Sentinelle{% endblock %}
+{% set status_labels = dict(status_choices) %}
+{% set type_labels = dict(type_choices) %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-arrow-up-circle me-2"></i>Mises à jour</h4>
+        <small class="text-muted">Suivi des mises à jour des applications et systèmes</small>
+    </div>
+    <div class="d-flex gap-2">
+        {% with csv_key='updates' %}{% include '_csv_toolbar.html' %}{% endwith %}
+        {% if current_user.can_edit('updates') %}
+        <a href="{{ url_for('updates.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Ajouter
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="data-card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Type</th>
+                    <th>Version actuelle</th>
+                    <th>Dernière version</th>
+                    <th>Dernière MàJ</th>
+                    <th>Priorité</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in updates %}
+                <tr class="row-{{ u.status_color() }}">
+                    <td><a href="{{ url_for('updates.detail', id=u.id) }}" class="fw-medium text-decoration-none">{{ u.name }}</a></td>
+                    <td>{{ type_labels.get(u.system_type, u.system_type) }}</td>
+                    <td><code>{{ u.current_version or '-' }}</code></td>
+                    <td><code>{{ u.latest_version or '-' }}</code></td>
+                    <td>{{ u.last_update.strftime('%d/%m/%Y') if u.last_update else '-' }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ u.priority }}</span></td>
+                    <td><span class="badge-status badge-{{ u.status_color() }}">{{ status_labels.get(u.status, u.status) }}</span></td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{{ url_for('updates.detail', id=u.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                            {% if current_user.can_edit('updates') %}
+                            <a href="{{ url_for('updates.edit', id=u.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                    <p class="mt-2 mb-0">Aucune application/système suivi.</p>
+                </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

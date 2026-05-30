@@ -49,7 +49,8 @@ def create_app(config_class=Config):
         from flask_login import current_user
         if not current_user.is_authenticated:
             return {}
-        from app.models import Account, Certificate, Domain, Backup, TestTask, Role
+        from app.models import (Account, Certificate, Domain, Backup, TestTask,
+                                AccessReview, SystemUpdate, Role)
 
         def _danger(items, method):
             return sum(1 for i in items if getattr(i, method)() == 'danger')
@@ -60,6 +61,8 @@ def create_app(config_class=Config):
             'domains': _danger(Domain.query.filter_by(is_active=True).all(), 'status'),
             'backups': _danger(Backup.query.filter_by(is_active=True).all(), 'computed_status'),
             'tests': _danger(TestTask.query.filter_by(is_active=True).all(), 'computed_status'),
+            'reviews': _danger(AccessReview.query.filter_by(is_active=True).all(), 'computed_status'),
+            'updates': _danger(SystemUpdate.query.filter_by(is_active=True).all(), 'status_color'),
         }
         return {'nav_counts': counts, 'all_roles': Role.query.order_by(Role.name).all()}
 
@@ -90,6 +93,12 @@ def create_app(config_class=Config):
     from app.tests import bp as tests_bp
     app.register_blueprint(tests_bp, url_prefix='/tests')
 
+    from app.reviews import bp as reviews_bp
+    app.register_blueprint(reviews_bp, url_prefix='/reviews')
+
+    from app.updates import bp as updates_bp
+    app.register_blueprint(updates_bp, url_prefix='/updates')
+
     from app.alerts import bp as alerts_bp
     app.register_blueprint(alerts_bp, url_prefix='/alerts')
 
@@ -116,20 +125,39 @@ def create_app(config_class=Config):
 
 def _seed_roles():
     from app.models import Role, PERMISSION_CATEGORIES
+
+    def editor_level(c):
+        return 1 if c == 'alerts' else 3
+
+    def viewer_level(c):
+        return 1
+
     defaults = {
-        'admin': {'description': 'Acces total', 'is_admin': True, 'permissions': {}},
-        'editor': {'description': 'Gestion des donnees', 'is_admin': False,
-                   'permissions': {c: (1 if c == 'alerts' else 3) for c in PERMISSION_CATEGORIES}},
-        'viewer': {'description': 'Lecture seule', 'is_admin': False,
-                   'permissions': {c: 1 for c in PERMISSION_CATEGORIES}},
+        'admin': {'description': 'Acces total', 'is_admin': True, 'level': None},
+        'editor': {'description': 'Gestion des donnees', 'is_admin': False, 'level': editor_level},
+        'viewer': {'description': 'Lecture seule', 'is_admin': False, 'level': viewer_level},
     }
-    created = False
+    changed = False
     for name, cfg in defaults.items():
-        if not Role.query.filter_by(name=name).first():
+        role = Role.query.filter_by(name=name).first()
+        if role is None:
+            perms = {} if cfg['level'] is None else {c: cfg['level'](c) for c in PERMISSION_CATEGORIES}
             db.session.add(Role(name=name, description=cfg['description'],
-                                is_admin=cfg['is_admin'], permissions=cfg['permissions']))
-            created = True
-    if created:
+                                is_admin=cfg['is_admin'], permissions=perms))
+            changed = True
+        elif not role.is_admin and cfg['level']:
+            # complete les categories manquantes (ex. ajout d'un nouveau module)
+            # sans ecraser les niveaux deja personnalises.
+            perms = dict(role.permissions or {})
+            missing = False
+            for c in PERMISSION_CATEGORIES:
+                if c not in perms:
+                    perms[c] = cfg['level'](c)
+                    missing = True
+            if missing:
+                role.permissions = perms
+                changed = True
+    if changed:
         db.session.commit()
 
 

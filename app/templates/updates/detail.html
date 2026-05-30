@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{{ update.name }} - Sentinelle{% endblock %}
+{% set status_labels = dict(status_choices) %}
+{% set type_labels = dict(type_choices) %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-arrow-up-circle me-2"></i>{{ update.name }}</h4>
+        <small class="text-muted">{{ type_labels.get(update.system_type, update.system_type) }}</small>
+    </div>
+    <a href="{{ url_for('updates.list') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Retour</a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="data-card p-4 mb-3">
+            <div class="row">
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Statut</small>
+                    <span class="badge-status badge-{{ update.status_color() }}">{{ status_labels.get(update.status, update.status) }}</span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Dernière mise à jour</small>
+                    <span class="fw-medium">{{ update.last_update.strftime('%d/%m/%Y') if update.last_update else '-' }}</span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Version actuelle</small>
+                    <span class="fw-medium"><code>{{ update.current_version or '-' }}</code></span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Dernière version disponible</small>
+                    <span class="fw-medium"><code>{{ update.latest_version or '-' }}</code></span>
+                </div>
+            </div>
+            {% if update.description %}
+            <div class="mt-2"><small class="text-muted d-block">Description</small><p class="mb-0">{{ update.description }}</p></div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-4">
+        {% if current_user.can_edit('updates') %}
+        {% if update.status != 'up_to_date' %}
+        <div class="data-card p-4 mb-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-check-circle me-2 text-success"></i>Marquer à jour</h6>
+            <p class="text-muted small mb-2">Passe le statut à « À jour », aligne la version actuelle sur la dernière et date la mise à jour.</p>
+            <form method="POST" action="{{ url_for('updates.mark_updated', id=update.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-success btn-sm w-100"><i class="bi bi-check-lg me-1"></i> Marquer à jour</button>
+            </form>
+        </div>
+        {% endif %}
+        <a href="{{ url_for('updates.edit', id=update.id) }}" class="btn btn-outline-secondary btn-sm w-100 mb-3"><i class="bi bi-pencil me-1"></i> Modifier</a>
+        {% endif %}
+        {% with entity_type='update', entity_id=update.id %}{% include '_snooze_card.html' %}{% endwith %}
+        {% if current_user.can_delete('updates') %}
+        <div class="data-card p-4">
+            <form method="POST" action="{{ url_for('updates.delete', id=update.id) }}" onsubmit="return confirm('Supprimer cette entrée ?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100"><i class="bi bi-trash me-1"></i> Supprimer</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="data-card">
+    <div class="card-header-custom"><h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique</h6></div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>Date</th><th>Action</th><th>Commentaire</th><th>Par</th></tr></thead>
+            <tbody>
+                {% for h in histories %}
+                <tr><td>{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</td><td>{{ h.action }}</td><td>{{ h.comment or '-' }}</td><td>{{ h.performed_by or '-' }}</td></tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center py-3 text-muted">Aucun historique</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

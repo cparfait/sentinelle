@@ -75,6 +75,20 @@
                     {% if nav_counts and nav_counts.tests %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.tests }}</span>{% endif %}
                 </a>
                 {% endif %}
+                {% if current_user.can_view('reviews') %}
+                <a href="{{ url_for('reviews.list') }}" class="sidebar-link {% if 'reviews' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-person-check"></i>
+                    <span>Revue de droits</span>
+                    {% if nav_counts and nav_counts.reviews %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.reviews }}</span>{% endif %}
+                </a>
+                {% endif %}
+                {% if current_user.can_view('updates') %}
+                <a href="{{ url_for('updates.list') }}" class="sidebar-link {% if 'updates' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-arrow-up-circle"></i>
+                    <span>Mises à jour</span>
+                    {% if nav_counts and nav_counts.updates %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.updates }}</span>{% endif %}
+                </a>
+                {% endif %}
                 {% if current_user.can_view('alerts') %}
                 <a href="{{ url_for('alerts.list') }}" class="sidebar-link {% if 'alerts' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-bell"></i>

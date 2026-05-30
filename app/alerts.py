@@ -17,6 +17,8 @@ _DETAIL_ENDPOINT = {
     'backup': 'backups.detail',
     'test': 'tests.detail',
     'domain': 'domains.detail',
+    'review': 'reviews.detail',
+    'update': 'updates.detail',
 }
 
 

@@ -5,10 +5,12 @@ from app import db
 
 # Categories soumises aux permissions par role (les sections Utilisateurs et
 # Preferences restent reservees aux administrateurs via is_admin).
-PERMISSION_CATEGORIES = ['accounts', 'certificates', 'domains', 'backups', 'tests', 'alerts']
+PERMISSION_CATEGORIES = ['accounts', 'certificates', 'domains', 'backups', 'tests',
+                         'reviews', 'updates', 'alerts']
 CATEGORY_LABELS = {
     'accounts': 'Comptes', 'certificates': 'Certificats', 'domains': 'Domaines',
-    'backups': 'Backups', 'tests': 'Tests', 'alerts': 'Alertes',
+    'backups': 'Backups', 'tests': 'Tests', 'reviews': 'Revue de droits',
+    'updates': 'Mises à jour', 'alerts': 'Alertes',
 }
 # Niveaux : 0 aucun, 1 lecture, 2 ecriture, 3 suppression (cumulatifs)
 PERMISSION_LEVELS = {0: 'Aucun', 1: 'Lecture', 2: 'Écriture', 3: 'Suppression'}
@@ -341,6 +343,76 @@ class Domain(db.Model):
 class DomainHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     domain_id = db.Column(db.Integer, db.ForeignKey('domain.id'), nullable=False)
+    action = db.Column(db.String(64), nullable=False)
+    comment = db.Column(db.Text)
+    performed_by = db.Column(db.String(64))
+    performed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class AccessReview(db.Model):
+    """Revue de droits d'une application metier (activite recurrente)."""
+    id = db.Column(db.Integer, primary_key=True)
+    application = db.Column(db.String(128), nullable=False)
+    responsible = db.Column(db.String(128))
+    scope = db.Column(db.Text)  # perimetre / description
+    frequency_days = db.Column(db.Integer, default=365)
+    last_review = db.Column(db.Date)
+    next_review = db.Column(db.Date)
+    status = db.Column(db.String(20), default='pending')  # pending / completed / failed
+    priority = db.Column(db.String(20), default='medium')
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    histories = db.relationship('ReviewHistory', backref='review', lazy='dynamic', cascade='all, delete-orphan')
+
+    def computed_status(self):
+        if self.status == 'failed':
+            return 'danger'
+        if not self.next_review:
+            return 'warning'
+        days_left = (self.next_review - datetime.now(timezone.utc).date()).days
+        if days_left <= 7:
+            return 'danger'
+        if days_left <= 15:
+            return 'warning'
+        if days_left <= 30:
+            return 'info'
+        return 'success'
+
+
+class ReviewHistory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    review_id = db.Column(db.Integer, db.ForeignKey('access_review.id'), nullable=False)
+    action = db.Column(db.String(64), nullable=False)
+    comment = db.Column(db.Text)
+    performed_by = db.Column(db.String(64))
+    performed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class SystemUpdate(db.Model):
+    """Suivi des mises a jour d'une application ou d'un systeme (statut manuel)."""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=False)
+    system_type = db.Column(db.String(32), default='application')  # application / system
+    current_version = db.Column(db.String(64))
+    latest_version = db.Column(db.String(64))
+    status = db.Column(db.String(20), default='up_to_date')  # up_to_date / update_available / critical
+    last_update = db.Column(db.Date)
+    description = db.Column(db.Text)
+    priority = db.Column(db.String(20), default='medium')
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    histories = db.relationship('UpdateHistory', backref='system_update', lazy='dynamic', cascade='all, delete-orphan')
+
+    def status_color(self):
+        return {'up_to_date': 'success', 'update_available': 'warning',
+                'critical': 'danger'}.get(self.status, 'info')
+
+
+class UpdateHistory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    update_id = db.Column(db.Integer, db.ForeignKey('system_update.id'), nullable=False)
     action = db.Column(db.String(64), nullable=False)
     comment = db.Column(db.Text)
     performed_by = db.Column(db.String(64))

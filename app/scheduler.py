@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 from apscheduler.schedulers.background import BackgroundScheduler
 from app import db
-from app.models import Account, Certificate, Backup, BackupCheck, TestTask, Domain
+from app.models import (Account, Certificate, Backup, BackupCheck, TestTask, Domain,
+                        AccessReview, SystemUpdate)
 from app.alerts import send_alert
 from app.snooze import is_snoozed
 
@@ -153,6 +154,41 @@ def refresh_domains_rdap():
                 db.session.rollback()
 
 
+def check_reviews():
+    with _app.app_context():
+        today = datetime.now(timezone.utc).date()
+        for review in AccessReview.query.filter_by(is_active=True).all():
+            if not review.next_review or is_snoozed('review', review.id):
+                continue
+            days_left = (review.next_review - today).days
+            if days_left in (30, 15, 7, 3, 1, 0):
+                urgency = 'EN RETARD' if days_left < 0 else f'prevue dans {days_left} jour(s)'
+                subject = f"Alerte revue de droits - {review.application}"
+                body = (
+                    f"La revue de droits suivante est {urgency}:\n\n"
+                    f"Application: {review.application}\n"
+                    f"Responsable: {review.responsible or 'N/A'}\n"
+                    f"Prochaine revue: {review.next_review.strftime('%d/%m/%Y')}\n"
+                    f"Jours restants: {days_left}\n"
+                )
+                send_alert(subject, body, 'review', review.id, review.application)
+
+
+def check_updates():
+    with _app.app_context():
+        for upd in SystemUpdate.query.filter_by(is_active=True).all():
+            if upd.status != 'critical' or is_snoozed('update', upd.id):
+                continue
+            subject = f"Alerte mise a jour critique - {upd.name}"
+            body = (
+                f"Une mise a jour critique est en attente:\n\n"
+                f"Element: {upd.name}\n"
+                f"Version actuelle: {upd.current_version or 'N/A'}\n"
+                f"Derniere version: {upd.latest_version or 'N/A'}\n"
+            )
+            send_alert(subject, body, 'update', upd.id, upd.name)
+
+
 def refresh_certificates_tls():
     """Lit en direct la date d'expiration reelle de chaque certificat actif et
     met a jour les fiches. Tourne avant l'alerte certificats du matin."""
@@ -246,5 +282,9 @@ def start_scheduler(app):
                       id='check_backups', replace_existing=True)
     scheduler.add_job(check_tests, 'cron', hour=8, minute=45,
                       id='check_tests', replace_existing=True)
+    scheduler.add_job(check_reviews, 'cron', hour=8, minute=50,
+                      id='check_reviews', replace_existing=True)
+    scheduler.add_job(check_updates, 'cron', hour=8, minute=55,
+                      id='check_updates', replace_existing=True)
 
     scheduler.start()

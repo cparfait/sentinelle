@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ review.application }} - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-person-check me-2"></i>{{ review.application }}</h4>
+        <small class="text-muted">Revue de droits — {{ review.responsible or 'responsable non défini' }}</small>
+    </div>
+    <a href="{{ url_for('reviews.list') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Retour</a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="data-card p-4 mb-3">
+            <div class="row">
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Statut</small>
+                    <span class="badge-status badge-{{ review.computed_status() }}">
+                        {{ {'danger': 'Critique', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK'}.get(review.computed_status(), review.computed_status()) }}
+                    </span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Prochaine revue</small>
+                    <span class="fw-medium">{{ review.next_review.strftime('%d/%m/%Y') if review.next_review else 'Non planifiée' }}</span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Dernière revue</small>
+                    <span class="fw-medium">{{ review.last_review.strftime('%d/%m/%Y') if review.last_review else '-' }}</span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Fréquence</small>
+                    <span class="fw-medium">{{ review.frequency_days }} jours</span>
+                </div>
+            </div>
+            {% if review.scope %}
+            <div class="mt-2"><small class="text-muted d-block">Périmètre</small><p class="mb-0">{{ review.scope }}</p></div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-4">
+        {% if current_user.can_edit('reviews') %}
+        <div class="data-card p-4 mb-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-check-circle me-2 text-success"></i>Marquer la revue effectuée</h6>
+            <form method="POST" action="{{ url_for('reviews.complete', id=review.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-2">
+                    <label class="form-label small">Résultat</label>
+                    <select name="outcome" class="form-select form-select-sm">
+                        <option value="completed">Conforme</option>
+                        <option value="failed">Écarts constatés</option>
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <input type="text" name="comment" class="form-control form-control-sm" placeholder="Commentaire...">
+                </div>
+                <button type="submit" class="btn btn-success btn-sm w-100"><i class="bi bi-check-lg me-1"></i> Valider la revue</button>
+            </form>
+        </div>
+        <a href="{{ url_for('reviews.edit', id=review.id) }}" class="btn btn-outline-secondary btn-sm w-100 mb-3"><i class="bi bi-pencil me-1"></i> Modifier</a>
+        {% endif %}
+        {% with entity_type='review', entity_id=review.id %}{% include '_snooze_card.html' %}{% endwith %}
+        {% if current_user.can_delete('reviews') %}
+        <div class="data-card p-4">
+            <form method="POST" action="{{ url_for('reviews.delete', id=review.id) }}" onsubmit="return confirm('Supprimer cette revue ?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100"><i class="bi bi-trash me-1"></i> Supprimer</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="data-card">
+    <div class="card-header-custom"><h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique</h6></div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>Date</th><th>Action</th><th>Commentaire</th><th>Par</th></tr></thead>
+            <tbody>
+                {% for h in histories %}
+                <tr><td>{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</td><td>{{ h.action }}</td><td>{{ h.comment or '-' }}</td><td>{{ h.performed_by or '-' }}</td></tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center py-3 text-muted">Aucun historique</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

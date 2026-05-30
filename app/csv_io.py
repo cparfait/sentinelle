@@ -8,7 +8,8 @@ import csv
 from datetime import datetime, timedelta, timezone
 
 from app import db
-from app.models import Account, Certificate, Domain, Backup, TestTask
+from app.models import (Account, Certificate, Domain, Backup, TestTask,
+                        AccessReview, SystemUpdate)
 
 
 def _parse_date(value):
@@ -70,6 +71,11 @@ def _test_post(obj):
         obj.next_due = obj.last_performed + timedelta(days=obj.frequency_days)
 
 
+def _review_post(obj):
+    if not obj.next_review and obj.last_review and obj.frequency_days:
+        obj.next_review = obj.last_review + timedelta(days=obj.frequency_days)
+
+
 SPECS = {
     'accounts': {
         'model': Account, 'label': 'comptes', 'list_endpoint': 'accounts.list',
@@ -121,6 +127,27 @@ SPECS = {
                     'description': '', 'last_performed': '2026-01-10',
                     'next_due': '', 'frequency_days': '90', 'priority': 'high'},
         'post': _test_post,
+    },
+    'reviews': {
+        'model': AccessReview, 'label': 'revues de droits', 'list_endpoint': 'reviews.list',
+        'columns': [('application', 'str'), ('responsible', 'str'), ('scope', 'str'),
+                    ('frequency_days', 'int'), ('last_review', 'date'),
+                    ('next_review', 'date'), ('priority', 'str')],
+        'example': {'application': 'SIRH', 'responsible': 'DRH', 'scope': 'Comptes RH',
+                    'frequency_days': '365', 'last_review': '2026-01-15',
+                    'next_review': '', 'priority': 'high'},
+        'post': _review_post,
+    },
+    'updates': {
+        'model': SystemUpdate, 'label': 'mises a jour', 'list_endpoint': 'updates.list',
+        'columns': [('name', 'str'), ('system_type', 'str'), ('current_version', 'str'),
+                    ('latest_version', 'str'), ('status', 'str'), ('last_update', 'date'),
+                    ('priority', 'str'), ('description', 'str')],
+        'example': {'name': 'Windows Server 2022', 'system_type': 'system',
+                    'current_version': '21H2', 'latest_version': '21H2',
+                    'status': 'up_to_date', 'last_update': '2026-05-01',
+                    'priority': 'high', 'description': ''},
+        'post': None,
     },
 }
 

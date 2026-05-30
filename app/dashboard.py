@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
-from app.models import Account, Certificate, Backup, BackupCheck, TestTask, AlertLog, Domain
+from app.models import (Account, Certificate, Backup, BackupCheck, TestTask,
+                        AlertLog, Domain, AccessReview, SystemUpdate)
 from app.snooze import is_snoozed
 from app import db
 
@@ -39,6 +40,10 @@ def agenda():
         for t in TestTask.query.filter_by(is_active=True).all():
             add('Tests', 'clipboard-check', t.name, t.next_due,
                 'Test a effectuer', f'/tests/{t.id}')
+    if current_user.can_view('reviews'):
+        for r in AccessReview.query.filter_by(is_active=True).all():
+            add('Revue de droits', 'person-check', r.application, r.next_review,
+                'Revue des acces', f'/reviews/{r.id}')
 
     items.sort(key=lambda x: x['date'])
     buckets = [
@@ -63,6 +68,8 @@ def index():
     domains = Domain.query.filter_by(is_active=True).all() if current_user.can_view('domains') else []
     backups = Backup.query.filter_by(is_active=True).all() if current_user.can_view('backups') else []
     tests = TestTask.query.filter_by(is_active=True).all() if current_user.can_view('tests') else []
+    reviews = AccessReview.query.filter_by(is_active=True).all() if current_user.can_view('reviews') else []
+    updates = SystemUpdate.query.filter_by(is_active=True).all() if current_user.can_view('updates') else []
 
     acc_danger = sum(1 for a in accounts if a.status() == 'danger')
     acc_warning = sum(1 for a in accounts if a.status() == 'warning')
@@ -83,6 +90,14 @@ def index():
     tst_danger = sum(1 for t in tests if t.computed_status() == 'danger')
     tst_warning = sum(1 for t in tests if t.computed_status() == 'warning')
     tst_ok = sum(1 for t in tests if t.computed_status() == 'success')
+
+    rev_danger = sum(1 for r in reviews if r.computed_status() == 'danger')
+    rev_warning = sum(1 for r in reviews if r.computed_status() == 'warning')
+    rev_ok = sum(1 for r in reviews if r.computed_status() == 'success')
+
+    upd_danger = sum(1 for u in updates if u.status_color() == 'danger')
+    upd_warning = sum(1 for u in updates if u.status_color() == 'warning')
+    upd_ok = sum(1 for u in updates if u.status_color() == 'success')
 
     urgent_items = []
     for a in accounts:
@@ -126,6 +141,22 @@ def index():
                 'detail': f'Test en retard de {abs(days)} jour(s)' if isinstance(days, int) and days < 0 else f'Test a faire dans {days} jour(s)',
                 'status': 'danger', 'url': f'/tests/{t.id}'
             })
+    for r in reviews:
+        if r.computed_status() in ('danger', 'warning'):
+            days = (r.next_review - today).days if r.next_review else None
+            detail = (f'Revue dans {days} j' if days is not None and days >= 0
+                      else (f'Revue en retard de {abs(days)} j' if days is not None else 'Revue a planifier'))
+            urgent_items.append({
+                'type': 'review', 'name': r.application, 'detail': detail,
+                'status': r.computed_status(), 'url': f'/reviews/{r.id}'
+            })
+    for u in updates:
+        if u.status_color() in ('danger', 'warning'):
+            detail = 'Mise a jour critique' if u.status == 'critical' else 'Mise a jour disponible'
+            urgent_items.append({
+                'type': 'update', 'name': u.name, 'detail': detail,
+                'status': u.status_color(), 'url': f'/updates/{u.id}'
+            })
 
     urgent_items.sort(key=lambda x: {'danger': 0, 'warning': 1, 'info': 2}.get(x['status'], 3))
 
@@ -143,6 +174,8 @@ def index():
         'domains': {'total': len(domains), 'danger': dom_danger, 'warning': dom_warning, 'ok': dom_ok},
         'backups': {'total': len(backups), 'danger': bkp_danger, 'warning': bkp_warning, 'ok': bkp_ok},
         'tests': {'total': len(tests), 'danger': tst_danger, 'warning': tst_warning, 'ok': tst_ok},
+        'reviews': {'total': len(reviews), 'danger': rev_danger, 'warning': rev_warning, 'ok': rev_ok},
+        'updates': {'total': len(updates), 'danger': upd_danger, 'warning': upd_warning, 'ok': upd_ok},
     }
 
     return render_template('dashboard.html', stats=stats, urgent_items=urgent_items,
