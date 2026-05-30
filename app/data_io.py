@@ -1,9 +1,20 @@
-from flask import Blueprint, Response, redirect, url_for, request, flash, abort
+from flask import Blueprint, Response, redirect, url_for, request, flash, abort, current_app
 from flask_login import login_required
 from app import csv_io
-from app.decorators import require_edit
+from app.decorators import require_edit, require_admin
 
 bp = Blueprint('data_io', __name__)
+
+
+@bp.route('/export-full.zip')
+@login_required
+@require_admin
+def export_full():
+    """Export total de secours (ZIP : base + CSV + page HTML + LISEZMOI)."""
+    from app.full_export import build_full_export
+    filename, data = build_full_export(current_app)
+    return Response(data, mimetype='application/zip',
+                    headers={'Content-Disposition': f'attachment; filename="{filename}"'})
 
 
 def _csv_response(content, filename):

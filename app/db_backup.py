@@ -4,11 +4,14 @@ Utilise l'API de sauvegarde en ligne de sqlite3 (coherente meme si l'app
 ecrit en parallele), avec horodatage et rotation (on garde les N plus recents).
 """
 import os
+import re
 import glob
 import sqlite3
 from datetime import datetime, timezone
 
 from app import db
+
+_BACKUP_NAME_RE = re.compile(r'sentinelle_\d{8}_\d{6}\.db')
 
 
 def _db_path(app):
@@ -69,6 +72,19 @@ def backup_database(app):
 
     _rotate(app, directory)
     return dest_path
+
+
+def delete_backup(app, name):
+    """Supprime une sauvegarde de base par son nom (avec garde anti-traversee)."""
+    if not name or not _BACKUP_NAME_RE.fullmatch(name):
+        raise ValueError("Nom de sauvegarde invalide")
+    directory = app.config.get('BACKUP_DB_DIR') or os.path.join(app.instance_path, 'db_backups')
+    path = os.path.join(directory, name)
+    if os.path.dirname(os.path.abspath(path)) != os.path.abspath(directory):
+        raise ValueError("Chemin invalide")
+    if not os.path.exists(path):
+        raise ValueError("Sauvegarde introuvable")
+    os.remove(path)
 
 
 def _rotate(app, directory):

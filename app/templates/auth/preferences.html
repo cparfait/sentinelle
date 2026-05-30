@@ -217,19 +217,36 @@
                     {{ db_backups|length }} sauvegarde(s) conservée(s)
                     {% if db_backups %}— dernière le {{ db_backups[0].date.strftime('%d/%m/%Y %H:%M') }}{% endif %}
                 </small>
-                <form method="POST" action="{{ url_for('auth.preferences') }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" name="action" value="backup_db" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-download me-1"></i> Sauvegarder maintenant
-                    </button>
-                </form>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('data_io.export_full') }}" class="btn btn-sm btn-outline-success"
+                       title="Archive ZIP (base + CSV + page HTML) pour cle USB">
+                        <i class="bi bi-usb-drive me-1"></i> Export complet
+                    </a>
+                    <form method="POST" action="{{ url_for('auth.preferences') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" name="action" value="backup_db" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-download me-1"></i> Sauvegarder maintenant
+                        </button>
+                    </form>
+                </div>
             </div>
             {% if db_backups %}
             <ul class="list-group list-group-flush small">
-                {% for b in db_backups[:5] %}
-                <li class="list-group-item d-flex justify-content-between px-0 bg-transparent">
+                {% for b in db_backups[:8] %}
+                <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
                     <span><i class="bi bi-file-earmark-zip me-1"></i>{{ b.name }}</span>
-                    <span class="text-muted">{{ b.date.strftime('%d/%m/%Y %H:%M') }} · {{ b.size_kb }} Ko</span>
+                    <span class="d-flex align-items-center gap-2">
+                        <span class="text-muted">{{ b.date.strftime('%d/%m/%Y %H:%M') }} · {{ b.size_kb }} Ko</span>
+                        <form method="POST" action="{{ url_for('auth.preferences') }}"
+                              onsubmit="return confirm('Supprimer cette sauvegarde ?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="delete_db_backup">
+                            <input type="hidden" name="name" value="{{ b.name }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Supprimer">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </span>
                 </li>
                 {% endfor %}
             </ul>

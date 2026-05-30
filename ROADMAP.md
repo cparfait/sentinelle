@@ -23,7 +23,8 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 ## Exploitation & fiabilité de l'outil
 - ⬜ **Historique d'exécution du scheduler** — tracer chaque run des jobs.
 - ✅ **Import CSV** — import en masse depuis le bouton « CSV » de chaque liste + **modèle d'import téléchargeable** (détection séparateur, dates JJ/MM/AAAA ou AAAA‑MM‑JJ).
-- ✅ **Auto-sauvegarde de la base SQLite** — copie horodatée cohérente (API sqlite3) quotidienne (01h00) + rotation (N copies) + bouton « Sauvegarder maintenant » et liste dans Préférences.
+- ✅ **Auto-sauvegarde de la base SQLite** — copie horodatée cohérente (API sqlite3) quotidienne (01h00) + rotation (N copies) + bouton « Sauvegarder maintenant », liste et **suppression** dans Préférences.
+- ✅ **Export total de secours (clé USB)** — archive ZIP (base + CSV + page HTML consultable hors-ligne + LISEZMOI) pour PRA en cas de crash/attaque. Bouton « Export complet » (admin).
 - ⬜ **Fichier de logs applicatif** — journalisation avec rotation (au lieu du print console).
 
 ## Sécurité & conformité

@@ -178,6 +178,14 @@ def preferences():
             except Exception as e:
                 flash(f"Erreur sauvegarde base : {e}", 'danger')
 
+        elif action == 'delete_db_backup':
+            from app.db_backup import delete_backup
+            try:
+                delete_backup(current_app, request.form.get('name', ''))
+                flash('Sauvegarde supprimee', 'success')
+            except Exception as e:
+                flash(f"Suppression impossible : {e}", 'danger')
+
         elif action == 'send_digest':
             from app.digest import build_daily_digest
             addr = request.form.get('test_email', '').strip() or current_user.email
