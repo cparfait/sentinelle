@@ -34,7 +34,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 
 ## Sécurité & conformité
 - ✅ **Rôles & permissions granulaires** — rôles par défaut (admin/editor/viewer) **+ rôles personnalisés**, droits par catégorie (Aucun / Lecture / Écriture / Suppression), appliqués aux routes (lecture, écriture, suppression), au menu, aux boutons et à l'import CSV. Page d'admin « Rôles & permissions ».
-- 🚧 Listes mises en avant : tri par criticité + surlignage (fait) ; filtres interactifs à venir.
+- ✅ Listes mises en avant : tri par criticité + surlignage + filtres interactifs par statut.
 - ✅ **Finir le rôle « lecture seule »** — boutons d'édition/création/suppression, import CSV, snooze, check rapide et colonnes d'actions des fiches masqués pour les viewers (RBAC déjà appliqué côté serveur). Export CSV reste accessible.
 - ✅ **Verrouillage après N échecs de login** — table `LoginThrottle`, blocage temporaire configurable (`LOGIN_MAX_ATTEMPTS`=5, `LOGIN_LOCKOUT_MINUTES`=15), messages d'erreur désormais affichés sur la page de login.
 - ✅ **Journal d'audit global** — vue chronologique unifiée des historiques (comptes, certificats, domaines, backups, tests), réservée aux admins.
@@ -43,7 +43,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 
 ## Ergonomie / UX
 - ✅ **Tri & filtres** sur les listes — tri automatique par criticité + surlignage + **filtres interactifs par statut** (barre Tous/Critique/Attention/À surveiller/OK générée en JS sur les tableaux `js-filterable`).
-- 🚧 **Pagination / recherche** — faites sur le **journal d'audit** (50/page + recherche plein-texte, plus de plafond à 200). Reste à étendre aux listes métier si besoin.
+- ✅ **Pagination / recherche** — journal d'audit (50/page + recherche plein-texte). Les listes métier disposent du tri + filtres par statut (volumes modestes).
 - ✅ **Badges de compteur** dans la sidebar — nombre d'éléments critiques (rouges) par section (comptes, certificats, domaines, backups, tests).
 - ✅ **Corbeille** — page listant les éléments supprimés (désactivés) par catégorie, avec restauration (droit d'édition) et **suppression définitive** / **vider la corbeille** (droit de suppression). Confirmations en place.
 
