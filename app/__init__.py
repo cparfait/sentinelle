@@ -35,8 +35,14 @@ def create_app(config_class=Config):
     @app.context_processor
     def inject_now():
         from app.snooze import get_active_snooze
+
+        def role_label(name):
+            labels = {'admin': 'Administrateur', 'editor': 'Éditeur', 'viewer': 'Lecteur'}
+            return labels.get(name, (name or '').replace('-', ' ').replace('_', ' ').title())
+
         return {'now': lambda: datetime.now(timezone.utc),
-                'active_snooze': get_active_snooze}
+                'active_snooze': get_active_snooze,
+                'role_label': role_label}
 
     @app.context_processor
     def inject_nav_counts():

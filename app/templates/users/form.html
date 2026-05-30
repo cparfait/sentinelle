@@ -43,7 +43,7 @@
                     <select name="role" class="form-select" required>
                         {% for r in all_roles %}
                         <option value="{{ r.name }}" {{ 'selected' if user and user.role == r.name }}>
-                            {{ r.name }}{% if r.description %} — {{ r.description }}{% endif %}
+                            {{ role_label(r.name) }}{% if r.description %} — {{ r.description }}{% endif %}
                         </option>
                         {% endfor %}
                     </select>

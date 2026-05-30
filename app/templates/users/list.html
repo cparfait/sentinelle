@@ -38,7 +38,7 @@
                     <td>{{ user.email }}</td>
                     <td>
                         <span class="badge bg-{% if user.role == 'admin' %}danger{% elif user.role == 'editor' %}warning{% else %}secondary{% endif %}">
-                            {{ {'admin': 'Administrateur', 'editor': 'Editeur', 'viewer': 'Lecteur'}.get(user.role, user.role) }}
+                            {{ role_label(user.role) }}
                         </span>
                     </td>
                     <td>{{ user.created_at.strftime('%d/%m/%Y') }}</td>

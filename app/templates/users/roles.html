@@ -19,7 +19,7 @@
         <div class="d-flex justify-content-between align-items-start mb-3">
             <div>
                 <h6 class="fw-bold mb-0">
-                    {{ role.name }}
+                    {{ role_label(role.name) }} <span class="text-muted small">({{ role.name }})</span>
                     {% if role.is_admin %}<span class="badge bg-danger ms-1">Admin (accès total)</span>{% endif %}
                     <span class="badge bg-secondary ms-1">{{ counts.get(role.name, 0) }} utilisateur(s)</span>
                 </h6>
