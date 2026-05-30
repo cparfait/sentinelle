@@ -16,7 +16,7 @@
                 <tr><td class="text-muted">Role</td>
                     <td>
                         <span class="badge bg-{% if current_user.role == 'admin' %}danger{% elif current_user.role == 'editor' %}warning{% else %}secondary{% endif %}">
-                            {{ {'admin': 'Administrateur', 'editor': 'Editeur', 'viewer': 'Lecteur'}.get(current_user.role, current_user.role) }}
+                            {{ role_label(current_user.role) }}
                         </span>
                     </td>
                 </tr>
@@ -45,6 +45,49 @@
                     <i class="bi bi-check-lg me-1"></i> Enregistrer
                 </button>
             </form>
+        </div>
+
+        <div class="data-card p-4 mt-3">
+            <h6 class="fw-bold mb-3"><i class="bi bi-shield-lock me-2"></i>Double authentification (2FA)</h6>
+            {% if setup_secret %}
+            <p class="small text-muted mb-2">Scannez ce QR code avec votre application (Google / Microsoft Authenticator, etc.), puis saisissez le code à 6 chiffres pour activer.</p>
+            <div class="d-flex gap-3 align-items-center flex-wrap mb-2">
+                <div style="width:160px;">{{ qr_svg | safe }}</div>
+                <div>
+                    <small class="text-muted d-block">Clé manuelle :</small>
+                    <code style="word-break:break-all;">{{ setup_secret }}</code>
+                </div>
+            </div>
+            <form method="POST" class="d-flex gap-2 align-items-end" style="max-width:320px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="confirm_2fa">
+                <div class="flex-grow-1">
+                    <label class="form-label small">Code de vérification</label>
+                    <input type="text" name="code" class="form-control" inputmode="numeric" maxlength="6" placeholder="000000" required autofocus>
+                </div>
+                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i> Activer</button>
+            </form>
+            {% elif current_user.has_2fa %}
+            <p class="mb-2"><span class="badge bg-success"><i class="bi bi-shield-check me-1"></i>Activée</span>
+                Une vérification par code est demandée à chaque connexion.</p>
+            <form method="POST" class="d-flex gap-2 align-items-end" style="max-width:360px;"
+                  onsubmit="return confirm('Désactiver la double authentification ?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="disable_2fa">
+                <div class="flex-grow-1">
+                    <label class="form-label small">Mot de passe pour confirmer</label>
+                    <input type="password" name="password" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-outline-danger">Désactiver</button>
+            </form>
+            {% else %}
+            <p class="small text-muted mb-2">Renforcez la sécurité de votre compte avec un code à usage unique (TOTP).</p>
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="init_2fa">
+                <button type="submit" class="btn btn-outline-primary"><i class="bi bi-shield-plus me-1"></i> Activer la 2FA</button>
+            </form>
+            {% endif %}
         </div>
     </div>
 </div>

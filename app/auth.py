@@ -45,6 +45,12 @@ def login():
             if throttle:
                 db.session.delete(throttle)
                 db.session.commit()
+            if user.totp_secret:
+                # 2FA active : on differe la connexion jusqu'a verification du code
+                session['pending_2fa_uid'] = user.id
+                session['pending_2fa_ldap'] = ldap_used
+                session['pending_2fa_next'] = request.args.get('next')
+                return redirect(url_for('auth.two_factor'))
             login_user(user)
             session.permanent = True  # applique PERMANENT_SESSION_LIFETIME (inactivite)
             audit_record('connexion' + (' (LDAP)' if ldap_used else ''), category='securite')
@@ -68,6 +74,43 @@ def login():
             restantes = max_attempts - throttle.failed_count
             flash(f'Identifiants incorrects ({restantes} tentative(s) restante(s)).', 'danger')
     return render_template('auth/login.html')
+
+
+@bp.route('/2fa', methods=['GET', 'POST'])
+def two_factor():
+    uid = session.get('pending_2fa_uid')
+    if not uid:
+        return redirect(url_for('auth.login'))
+    user = db.session.get(User, uid)
+    if not user or not user.totp_secret:
+        session.pop('pending_2fa_uid', None)
+        return redirect(url_for('auth.login'))
+    if request.method == 'POST':
+        import pyotp
+        code = (request.form.get('code') or '').strip().replace(' ', '')
+        if pyotp.TOTP(user.totp_secret).verify(code, valid_window=1):
+            ldap_used = session.pop('pending_2fa_ldap', False)
+            nxt = session.pop('pending_2fa_next', None)
+            session.pop('pending_2fa_uid', None)
+            login_user(user)
+            session.permanent = True
+            audit_record('connexion (2FA)' + (' LDAP' if ldap_used else ''), category='securite')
+            return redirect(nxt or url_for('dashboard.index'))
+        audit_record('echec 2FA', detail=user.username, category='securite')
+        flash('Code de vérification invalide.', 'danger')
+    return render_template('auth/two_factor.html')
+
+
+def _totp_qr_svg(secret, username):
+    import io
+    import pyotp
+    import qrcode
+    import qrcode.image.svg
+    uri = pyotp.totp.TOTP(secret).provisioning_uri(name=username, issuer_name='Sentinelle')
+    img = qrcode.make(uri, image_factory=qrcode.image.svg.SvgImage)
+    buf = io.BytesIO()
+    img.save(buf)
+    return buf.getvalue().decode('utf-8')
 
 
 def _provision_ldap_user(username, info):
@@ -99,6 +142,7 @@ def logout():
 @bp.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
+    import pyotp
     if request.method == 'POST':
         action = request.form.get('action')
         if action == 'change_password':
@@ -117,6 +161,40 @@ def profile():
                 db.session.commit()
                 audit_record('changement mot de passe', category='securite')
                 flash('Mot de passe modifie avec succes', 'success')
+            return redirect(url_for('auth.profile'))
+
+        elif action == 'init_2fa':
+            secret = pyotp.random_base32()
+            session['setup_2fa'] = secret
+            return render_template('auth/profile.html', setup_secret=secret,
+                                   qr_svg=_totp_qr_svg(secret, current_user.username))
+
+        elif action == 'confirm_2fa':
+            secret = session.get('setup_2fa')
+            code = (request.form.get('code') or '').strip().replace(' ', '')
+            if secret and pyotp.TOTP(secret).verify(code, valid_window=1):
+                current_user.totp_secret = secret
+                db.session.commit()
+                session.pop('setup_2fa', None)
+                audit_record('activation 2FA', category='securite')
+                flash('Double authentification activée.', 'success')
+                return redirect(url_for('auth.profile'))
+            flash('Code invalide, réessayez.', 'danger')
+            if secret:
+                return render_template('auth/profile.html', setup_secret=secret,
+                                       qr_svg=_totp_qr_svg(secret, current_user.username))
+            return redirect(url_for('auth.profile'))
+
+        elif action == 'disable_2fa':
+            if current_user.check_password(request.form.get('password', '')):
+                current_user.totp_secret = None
+                db.session.commit()
+                audit_record('desactivation 2FA', category='securite')
+                flash('Double authentification désactivée.', 'success')
+            else:
+                flash('Mot de passe incorrect.', 'danger')
+            return redirect(url_for('auth.profile'))
+
         return redirect(url_for('auth.profile'))
     return render_template('auth/profile.html')
 

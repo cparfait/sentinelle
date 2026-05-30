@@ -50,7 +50,12 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), default='viewer')
+    totp_secret = db.Column(db.String(32))  # secret 2FA TOTP (None = desactive)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    @property
+    def has_2fa(self):
+        return bool(self.totp_secret)
 
     def _role_obj(self):
         return Role.query.filter_by(name=self.role).first() if self.role else None

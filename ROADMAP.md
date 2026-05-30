@@ -38,7 +38,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ✅ **Finir le rôle « lecture seule »** — boutons d'édition/création/suppression, import CSV, snooze, check rapide et colonnes d'actions des fiches masqués pour les viewers (RBAC déjà appliqué côté serveur). Export CSV reste accessible.
 - ✅ **Verrouillage après N échecs de login** — table `LoginThrottle`, blocage temporaire configurable (`LOGIN_MAX_ATTEMPTS`=5, `LOGIN_LOCKOUT_MINUTES`=15), messages d'erreur désormais affichés sur la page de login.
 - ✅ **Journal d'audit global** — vue chronologique unifiée des historiques (comptes, certificats, domaines, backups, tests), réservée aux admins.
-- ⬜ **2FA (TOTP) pour les admins**.
+- ✅ **2FA (TOTP)** — activable par chaque utilisateur depuis son profil (QR code pyotp/qrcode), vérification d'un code à la connexion, désactivation protégée par mot de passe.
 - ✅ **Politique de mot de passe + expiration des sessions** — longueur minimale configurable (`PASSWORD_MIN_LENGTH`), déconnexion auto après inactivité (`SESSION_LIFETIME_MINUTES`, défaut 8 h), cookies durcis (HttpOnly, SameSite=Lax).
 
 ## Ergonomie / UX
