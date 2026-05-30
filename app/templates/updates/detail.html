@@ -32,6 +32,15 @@
                     <small class="text-muted d-block">Dernière version disponible</small>
                     <span class="fw-medium"><code>{{ update.latest_version or '-' }}</code></span>
                 </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Réalisée par</small>
+                    <span class="fw-medium">
+                        {{ update.updated_by or '-' }}
+                        {% if update.updated_by %}
+                        <span class="badge bg-light text-dark border ms-1">{{ 'Prestataire' if update.updater_type == 'prestataire' else 'Interne' }}</span>
+                        {% endif %}
+                    </span>
+                </div>
             </div>
             {% if update.description %}
             <div class="mt-2"><small class="text-muted d-block">Description</small><p class="mb-0">{{ update.description }}</p></div>

@@ -113,6 +113,7 @@ def create_app(config_class=Config):
 
     with app.app_context():
         db.create_all()
+        _auto_migrate_sqlite()
         _seed_roles()
         _seed_default_user()
 
@@ -121,6 +122,26 @@ def create_app(config_class=Config):
         start_scheduler(app)
 
     return app
+
+
+def _auto_migrate_sqlite():
+    """Ajoute les colonnes manquantes aux tables SQLite existantes (create_all
+    ne modifie pas une table deja creee). Pratique a chaque ajout de champ."""
+    from sqlalchemy import inspect, text
+    if not db.engine.url.get_backend_name().startswith('sqlite'):
+        return
+    insp = inspect(db.engine)
+    existing = set(insp.get_table_names())
+    for table in db.metadata.sorted_tables:
+        if table.name not in existing:
+            continue  # nouvelle table : create_all s'en charge
+        cols = {c['name'] for c in insp.get_columns(table.name)}
+        for col in table.columns:
+            if col.name not in cols:
+                coltype = col.type.compile(db.engine.dialect)
+                db.session.execute(text(
+                    f'ALTER TABLE "{table.name}" ADD COLUMN "{col.name}" {coltype}'))
+    db.session.commit()
 
 
 def _seed_roles():

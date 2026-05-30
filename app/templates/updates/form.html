@@ -62,6 +62,21 @@
                         </select>
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-medium">Réalisée par</label>
+                        <select name="updater_type" class="form-select">
+                            <option value="interne" {{ 'selected' if not update or update.updater_type == 'interne' }}>Interne</option>
+                            <option value="prestataire" {{ 'selected' if update and update.updater_type == 'prestataire' }}>Prestataire</option>
+                        </select>
+                    </div>
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label fw-medium">Nom de la personne</label>
+                        <input type="text" name="updated_by" class="form-control"
+                               value="{{ update.updated_by if update and update.updated_by else '' }}"
+                               placeholder="ex: Jean Dupont (DSI) ou Société XYZ">
+                    </div>
+                </div>
                 <div class="mb-3">
                     <label class="form-label fw-medium">Description / notes</label>
                     <textarea name="description" class="form-control" rows="3"

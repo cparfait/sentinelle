@@ -398,6 +398,8 @@ class SystemUpdate(db.Model):
     latest_version = db.Column(db.String(64))
     status = db.Column(db.String(20), default='up_to_date')  # up_to_date / update_available / critical
     last_update = db.Column(db.Date)
+    updater_type = db.Column(db.String(20), default='interne')  # interne / prestataire
+    updated_by = db.Column(db.String(128))  # nom de la personne ayant fait la MaJ
     description = db.Column(db.Text)
     priority = db.Column(db.String(20), default='medium')
     is_active = db.Column(db.Boolean, default=True)

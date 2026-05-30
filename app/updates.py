@@ -42,6 +42,8 @@ def create():
             latest_version=request.form.get('latest_version', '').strip() or None,
             status=request.form.get('status', 'up_to_date'),
             last_update=_parse_date(request.form.get('last_update')),
+            updater_type=request.form.get('updater_type', 'interne'),
+            updated_by=request.form.get('updated_by', '').strip() or None,
             description=request.form.get('description'),
             priority=request.form.get('priority', 'medium'),
         )
@@ -77,6 +79,8 @@ def edit(id):
         update.latest_version = request.form.get('latest_version', '').strip() or None
         update.status = request.form.get('status', 'up_to_date')
         update.last_update = _parse_date(request.form.get('last_update'))
+        update.updater_type = request.form.get('updater_type', 'interne')
+        update.updated_by = request.form.get('updated_by', '').strip() or None
         update.description = request.form.get('description')
         update.priority = request.form.get('priority', 'medium')
         db.session.commit()
