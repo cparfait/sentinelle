@@ -33,7 +33,7 @@
             </thead>
             <tbody>
                 {% for d in domains %}
-                <tr>
+                <tr class="row-{{ d.status() }}">
                     <td>
                         <a href="{{ url_for('domains.detail', id=d.id) }}" class="fw-medium text-decoration-none">
                             <code>{{ d.name }}</code>

@@ -60,6 +60,8 @@ def scan_inbox_now():
 @login_required
 def list():
     backups = Backup.query.filter_by(is_active=True).all()
+    rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
+    backups.sort(key=lambda b: rank.get(b.computed_status(), 4))
     today = datetime.now(timezone.utc).date()
     today_checks = {}
     for b in backups:

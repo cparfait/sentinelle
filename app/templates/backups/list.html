@@ -51,7 +51,7 @@
             </thead>
             <tbody>
                 {% for backup in backups %}
-                <tr>
+                <tr class="row-{{ backup.computed_status() }}">
                     <td>
                         <a href="{{ url_for('backups.detail', id=backup.id) }}" class="fw-medium text-decoration-none">
                             {{ backup.service_name }}

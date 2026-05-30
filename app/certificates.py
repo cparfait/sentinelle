@@ -38,6 +38,8 @@ def refresh_certificate_tls(cert, performed_by):
 @login_required
 def list():
     certificates = Certificate.query.filter_by(is_active=True).order_by(Certificate.expiry_date.asc()).all()
+    rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
+    certificates.sort(key=lambda c: rank.get(c.status(), 4))
     return render_template('certificates/list.html', certificates=certificates)
 
 

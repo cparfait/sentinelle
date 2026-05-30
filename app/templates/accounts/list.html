@@ -34,7 +34,7 @@
             </thead>
             <tbody>
                 {% for account in accounts %}
-                <tr>
+                <tr class="row-{{ account.status() }}">
                     <td>
                         <a href="{{ url_for('accounts.detail', id=account.id) }}" class="fw-medium text-decoration-none">
                             {{ account.service_name }}

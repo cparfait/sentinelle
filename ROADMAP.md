@@ -35,7 +35,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ⬜ **Politique de mot de passe + expiration des sessions**.
 
 ## Ergonomie / UX
-- ⬜ **Tri & filtres** sur les listes (statut, priorité, échéance).
+- 🚧 **Tri & filtres** sur les listes — tri automatique par criticité (critiques en tête) + surlignage des lignes fait. Filtres interactifs (par statut/priorité) à venir.
 - ⬜ **Pagination / recherche** dans les longues listes.
 - ✅ **Badges de compteur** dans la sidebar — nombre d'éléments critiques (rouges) par section (comptes, certificats, domaines, backups, tests).
 - ⬜ **Confirmation de suppression uniformisée + corbeille** (restaurer un élément désactivé).

@@ -1,3 +1,10 @@
+/* Mise en avant des lignes critiques dans les listes */
+tr.row-danger > td:first-child { box-shadow: inset 4px 0 0 #ef4444; }
+tr.row-warning > td:first-child { box-shadow: inset 4px 0 0 #f59e0b; }
+tr.row-info > td:first-child { box-shadow: inset 4px 0 0 #3b82f6; }
+tr.row-danger > td { background: rgba(239, 68, 68, 0.06); }
+tr.row-warning > td { background: rgba(245, 158, 11, 0.06); }
+
 :root {
     --primary: #4f46e5;
     --primary-dark: #4338ca;

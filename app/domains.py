@@ -44,6 +44,8 @@ def refresh_domain_rdap(domain, performed_by):
 def list():
     domains = Domain.query.filter_by(is_active=True).order_by(
         Domain.expiry_date.asc().nullslast()).all()
+    rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
+    domains.sort(key=lambda d: rank.get(d.status(), 4))
     return render_template('domains/list.html', domains=domains)
 
 

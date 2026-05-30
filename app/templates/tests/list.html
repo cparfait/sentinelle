@@ -34,7 +34,7 @@
             </thead>
             <tbody>
                 {% for test in tests %}
-                <tr>
+                <tr class="row-{{ test.computed_status() }}">
                     <td>
                         <a href="{{ url_for('tests.detail', id=test.id) }}" class="fw-medium text-decoration-none">
                             {{ test.name }}

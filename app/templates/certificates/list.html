@@ -35,7 +35,7 @@
             </thead>
             <tbody>
                 {% for cert in certificates %}
-                <tr>
+                <tr class="row-{{ cert.status() }}">
                     <td>
                         <a href="{{ url_for('certificates.detail', id=cert.id) }}" class="fw-medium text-decoration-none">
                             {{ cert.service_name }}
