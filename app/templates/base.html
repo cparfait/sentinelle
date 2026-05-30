@@ -39,22 +39,27 @@
                 <a href="{{ url_for('accounts.list') }}" class="sidebar-link {% if 'accounts' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-key"></i>
                     <span>Comptes</span>
+                    {% if nav_counts and nav_counts.accounts %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.accounts }}</span>{% endif %}
                 </a>
                 <a href="{{ url_for('certificates.list') }}" class="sidebar-link {% if 'certificates' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-award"></i>
                     <span>Certificats</span>
+                    {% if nav_counts and nav_counts.certificates %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.certificates }}</span>{% endif %}
                 </a>
                 <a href="{{ url_for('domains.list') }}" class="sidebar-link {% if 'domains' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-globe"></i>
                     <span>Domaines</span>
+                    {% if nav_counts and nav_counts.domains %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.domains }}</span>{% endif %}
                 </a>
                 <a href="{{ url_for('backups.list') }}" class="sidebar-link {% if 'backups' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-cloud-arrow-up"></i>
                     <span>Backups</span>
+                    {% if nav_counts and nav_counts.backups %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.backups }}</span>{% endif %}
                 </a>
                 <a href="{{ url_for('tests.list') }}" class="sidebar-link {% if 'tests' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-clipboard-check"></i>
                     <span>Tests</span>
+                    {% if nav_counts and nav_counts.tests %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.tests }}</span>{% endif %}
                 </a>
                 <a href="{{ url_for('alerts.list') }}" class="sidebar-link {% if 'alerts' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-bell"></i>

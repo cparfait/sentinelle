@@ -38,6 +38,25 @@ def create_app(config_class=Config):
         return {'now': lambda: datetime.now(timezone.utc),
                 'active_snooze': get_active_snooze}
 
+    @app.context_processor
+    def inject_nav_counts():
+        from flask_login import current_user
+        if not current_user.is_authenticated:
+            return {}
+        from app.models import Account, Certificate, Domain, Backup, TestTask
+
+        def _danger(items, method):
+            return sum(1 for i in items if getattr(i, method)() == 'danger')
+
+        counts = {
+            'accounts': _danger(Account.query.filter_by(is_active=True).all(), 'status'),
+            'certificates': _danger(Certificate.query.filter_by(is_active=True).all(), 'status'),
+            'domains': _danger(Domain.query.filter_by(is_active=True).all(), 'status'),
+            'backups': _danger(Backup.query.filter_by(is_active=True).all(), 'computed_status'),
+            'tests': _danger(TestTask.query.filter_by(is_active=True).all(), 'computed_status'),
+        }
+        return {'nav_counts': counts}
+
     from app.models import User
 
     @login_manager.user_loader

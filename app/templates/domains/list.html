@@ -9,9 +9,11 @@
     </div>
     <div class="d-flex gap-2">
         {% with csv_key='domains' %}{% include '_csv_toolbar.html' %}{% endwith %}
+        {% if current_user.can_edit() %}
         <a href="{{ url_for('domains.create') }}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-1"></i> Ajouter un domaine
         </a>
+        {% endif %}
     </div>
 </div>
 

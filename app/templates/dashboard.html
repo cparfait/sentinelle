@@ -153,6 +153,7 @@
                             <span class="text-muted"><i class="bi bi-dash-circle me-1"></i>Pas encore verifie</span>
                         {% endif %}
                     </td>
+                    {% if current_user.can_edit() %}
                     <form method="POST" action="{{ url_for('dashboard.quick_check') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="backup_id" value="{{ backup.id }}">
@@ -173,6 +174,9 @@
                             </div>
                         </td>
                     </form>
+                    {% else %}
+                        <td></td><td></td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>

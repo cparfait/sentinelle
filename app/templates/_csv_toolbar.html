@@ -7,6 +7,7 @@
         <a class="btn btn-sm btn-outline-primary w-100 mb-2" href="{{ url_for('data_io.export', key=csv_key) }}">
             <i class="bi bi-download me-1"></i> Exporter
         </a>
+        {% if current_user.can_edit() %}
         <hr class="my-2">
         <form method="POST" action="{{ url_for('data_io.import_csv', key=csv_key) }}" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -19,5 +20,6 @@
         <a class="small d-block mt-2 text-muted" href="{{ url_for('data_io.template', key=csv_key) }}">
             <i class="bi bi-file-earmark-arrow-down me-1"></i> Télécharger le modèle d'import
         </a>
+        {% endif %}
     </div>
 </div>

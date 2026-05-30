@@ -28,7 +28,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ⬜ **Fichier de logs applicatif** — journalisation avec rotation (au lieu du print console).
 
 ## Sécurité & conformité
-- ⬜ **Finir le rôle « lecture seule »** — masquer les actions d'édition pour les viewers.
+- ✅ **Finir le rôle « lecture seule »** — boutons d'édition/création/suppression, import CSV, snooze, check rapide et colonnes d'actions des fiches masqués pour les viewers (RBAC déjà appliqué côté serveur). Export CSV reste accessible.
 - ⬜ **Verrouillage après N échecs de login** + journal des connexions.
 - ⬜ **Journal d'audit global** — vue centralisée « qui a modifié quoi ».
 - ⬜ **2FA (TOTP) pour les admins**.
@@ -37,7 +37,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 ## Ergonomie / UX
 - ⬜ **Tri & filtres** sur les listes (statut, priorité, échéance).
 - ⬜ **Pagination / recherche** dans les longues listes.
-- ⬜ **Badges de compteur** dans la sidebar (ex. « 3 » sur Certificats en rouge).
+- ✅ **Badges de compteur** dans la sidebar — nombre d'éléments critiques (rouges) par section (comptes, certificats, domaines, backups, tests).
 - ⬜ **Confirmation de suppression uniformisée + corbeille** (restaurer un élément désactivé).
 
 ## Technique / intégrations
