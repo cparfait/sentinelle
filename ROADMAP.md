@@ -12,7 +12,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ✅ **Récap quotidien par mail** — un seul mail le matin (job 7h30) + liens cliquables.
 - ✅ **Acquittement / report (snooze)** — mise en pause par élément (7/30/90 j).
 - ⬜ **Seuils d'alerte configurables** — J‑30/15/7… paramétrables (global ou par élément).
-- ⬜ **Anti-doublon d'alertes** — ne pas renvoyer une alerte déjà notifiée.
+- ✅ **Anti-doublon d'alertes** — `send_alert` idempotent : une seule alerte par élément et par jour (vérifie l'historique `AlertLog`).
 
 ## Reporting & visualisation
 - ✅ **Export CSV** — bouton « CSV » sur chaque liste (comptes, certificats, domaines, backups, tests) : export UTF‑8/Excel‑FR.

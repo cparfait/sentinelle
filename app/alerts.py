@@ -81,6 +81,20 @@ def send_alert(subject, body, entity_type=None, entity_id=None, entity_name=None
     if not recipients:
         return
 
+    # Anti-doublon : une seule alerte par element et par jour (evite les
+    # envois repetes si un job tourne plusieurs fois dans la journee).
+    if entity_type and entity_id:
+        from sqlalchemy import func
+        today = datetime.now(timezone.utc).date()
+        already = AlertLog.query.filter(
+            AlertLog.entity_type == entity_type,
+            AlertLog.entity_id == entity_id,
+            AlertLog.status == 'sent',
+            func.date(AlertLog.sent_at) == today,
+        ).first()
+        if already:
+            return
+
     try:
         url = None
         if entity_type and entity_id:
