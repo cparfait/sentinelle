@@ -7,10 +7,15 @@
         <h4 class="fw-bold mb-0">Tableau de bord</h4>
         <small class="text-muted">Vue d'ensemble de votre infrastructure</small>
     </div>
-    <form method="GET" action="{{ url_for('search.search') }}" class="d-flex gap-2" style="width: 350px;">
-        <input type="text" name="q" class="form-control form-control-sm" placeholder="Rechercher partout...">
-        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search"></i></button>
-    </form>
+    <div class="d-flex gap-2 align-items-center">
+        <a href="{{ url_for('dashboard.report_pdf') }}" class="btn btn-sm btn-outline-danger" title="Bilan PDF (COPIL)">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Bilan PDF
+        </a>
+        <form method="GET" action="{{ url_for('search.search') }}" class="d-flex gap-2" style="width: 320px;">
+            <input type="text" name="q" class="form-control form-control-sm" placeholder="Rechercher partout...">
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search"></i></button>
+        </form>
+    </div>
 </div>
 
 {% if totals.total %}

@@ -10,6 +10,17 @@ from app.decorators import require_edit
 bp = Blueprint('dashboard', __name__)
 
 
+@bp.route('/rapport.pdf')
+@login_required
+def report_pdf():
+    from flask import Response
+    from app.pdf_report import build_pdf
+    data = build_pdf(current_user)
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%d')
+    return Response(data, mimetype='application/pdf',
+                    headers={'Content-Disposition': f'attachment; filename="sentinelle-bilan-{stamp}.pdf"'})
+
+
 @bp.route('/tendances')
 @login_required
 def trends():

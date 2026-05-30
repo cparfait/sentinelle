@@ -22,7 +22,8 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ✅ **Export CSV** — bouton « CSV » sur chaque liste (comptes, certificats, domaines, backups, tests) : export UTF‑8/Excel‑FR.
 - ✅ **Vue tendances** — page « Tendances » (Chart.js) : répartition globale par statut, alertes envoyées/jour et checks de backup/jour sur 30 jours, filtrée selon les droits.
 - ✅ **Page « À venir »** — agenda des échéances (rotations MDP, certificats, domaines, tests) groupé par horizon (en retard / cette semaine / ce mois / 90 j), filtré selon les droits.
-- ✅ **Widgets dashboard** — bandeau de **conformité globale** (% OK + barre de progression + compteurs), en plus des cartes par catégorie et de la liste des urgences déjà présentes.
+- ✅ **Widgets dashboard** — bandeau de **conformité globale** (% OK + barre de progression + compteurs cliquables), en plus des cartes par catégorie et de la liste des urgences déjà présentes.
+- ✅ **Export PDF « bilan COPIL »** — bouton « Bilan PDF » : conformité globale, tableau par catégorie et éléments à traiter (reportlab), filtré selon les droits.
 
 ## Exploitation & fiabilité de l'outil
 - ✅ **Historique d'exécution du scheduler** — page admin « Tâches planifiées » : prochaines exécutions + dernières exécutions (succès/erreur) via un écouteur APScheduler (`SchedulerRun`, purge à 500).
