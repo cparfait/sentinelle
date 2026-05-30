@@ -32,7 +32,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - 🚧 Listes mises en avant : tri par criticité + surlignage (fait) ; filtres interactifs à venir.
 - ✅ **Finir le rôle « lecture seule »** — boutons d'édition/création/suppression, import CSV, snooze, check rapide et colonnes d'actions des fiches masqués pour les viewers (RBAC déjà appliqué côté serveur). Export CSV reste accessible.
 - ✅ **Verrouillage après N échecs de login** — table `LoginThrottle`, blocage temporaire configurable (`LOGIN_MAX_ATTEMPTS`=5, `LOGIN_LOCKOUT_MINUTES`=15), messages d'erreur désormais affichés sur la page de login.
-- ⬜ **Journal d'audit global** — vue centralisée « qui a modifié quoi ».
+- ✅ **Journal d'audit global** — vue chronologique unifiée des historiques (comptes, certificats, domaines, backups, tests), réservée aux admins.
 - ⬜ **2FA (TOTP) pour les admins**.
 - ⬜ **Politique de mot de passe + expiration des sessions**.
 

@@ -8,6 +8,32 @@ from app.decorators import require_admin
 bp = Blueprint('users', __name__)
 
 
+@bp.route('/audit')
+@login_required
+@require_admin
+def audit():
+    from app.models import (AccountHistory, CertificateHistory, BackupHistory,
+                            TestHistory, DomainHistory)
+    rows = []
+
+    def collect(model, fk, cat, endpoint):
+        for h in model.query.order_by(model.performed_at.desc()).limit(200).all():
+            rows.append({
+                'when': h.performed_at, 'cat': cat, 'action': h.action,
+                'comment': getattr(h, 'comment', None), 'by': h.performed_by,
+                'url': url_for(endpoint, id=getattr(h, fk)),
+            })
+
+    collect(AccountHistory, 'account_id', 'Compte', 'accounts.detail')
+    collect(CertificateHistory, 'certificate_id', 'Certificat', 'certificates.detail')
+    collect(DomainHistory, 'domain_id', 'Domaine', 'domains.detail')
+    collect(BackupHistory, 'backup_id', 'Backup', 'backups.detail')
+    collect(TestHistory, 'test_id', 'Test', 'tests.detail')
+
+    rows.sort(key=lambda r: r['when'], reverse=True)
+    return render_template('users/audit.html', rows=rows[:200])
+
+
 @bp.route('/roles')
 @login_required
 @require_admin
