@@ -27,6 +27,10 @@ class Config:
     ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
     ALERT_RECIPIENTS = os.getenv('ALERT_RECIPIENTS', '').split(',')
 
+    # Anti-bruteforce du login : nombre d'echecs avant blocage temporaire.
+    LOGIN_MAX_ATTEMPTS = int(os.getenv('LOGIN_MAX_ATTEMPTS', 5))
+    LOGIN_LOCKOUT_MINUTES = int(os.getenv('LOGIN_LOCKOUT_MINUTES', 15))
+
     APP_HOST = os.getenv('APP_HOST', '127.0.0.1')
     APP_PORT = int(os.getenv('APP_PORT', 5000))
     APP_DEBUG = os.getenv('APP_DEBUG', 'false').lower() in ('true', '1', 'yes')

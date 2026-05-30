@@ -305,6 +305,16 @@ class DomainHistory(db.Model):
     performed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+class LoginThrottle(db.Model):
+    """Suivi des echecs de connexion par identifiant (anti-bruteforce)."""
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, nullable=False)
+    failed_count = db.Column(db.Integer, default=0)
+    locked_until = db.Column(db.DateTime)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                           onupdate=lambda: datetime.now(timezone.utc))
+
+
 class AlertLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     alert_type = db.Column(db.String(64), nullable=False)

@@ -13,14 +13,43 @@ bp = Blueprint('auth', __name__)
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
+        from datetime import datetime, timezone, timedelta
+        from app.models import LoginThrottle
+        username = request.form.get('username', '')
         password = request.form.get('password')
+        now = datetime.now(timezone.utc)
+        max_attempts = current_app.config.get('LOGIN_MAX_ATTEMPTS', 5)
+        lockout_min = current_app.config.get('LOGIN_LOCKOUT_MINUTES', 15)
+
+        throttle = LoginThrottle.query.filter_by(username=username).first()
+        if throttle and throttle.locked_until and throttle.locked_until.replace(tzinfo=timezone.utc) > now:
+            mins = int((throttle.locked_until.replace(tzinfo=timezone.utc) - now).total_seconds() // 60) + 1
+            flash(f'Trop de tentatives. Reessayez dans {mins} minute(s).', 'danger')
+            return render_template('auth/login.html')
+
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
+            if throttle:
+                db.session.delete(throttle)
+                db.session.commit()
             login_user(user)
             next_page = request.args.get('next')
             return redirect(next_page or url_for('dashboard.index'))
-        flash('Identifiants incorrects', 'danger')
+
+        # echec : incremente le compteur
+        if not throttle:
+            throttle = LoginThrottle(username=username, failed_count=0)
+            db.session.add(throttle)
+        throttle.failed_count = (throttle.failed_count or 0) + 1
+        if throttle.failed_count >= max_attempts:
+            throttle.locked_until = now + timedelta(minutes=lockout_min)
+            throttle.failed_count = 0
+            db.session.commit()
+            flash(f'Trop de tentatives. Compte bloque {lockout_min} minute(s).', 'danger')
+        else:
+            db.session.commit()
+            restantes = max_attempts - throttle.failed_count
+            flash(f'Identifiants incorrects ({restantes} tentative(s) restante(s)).', 'danger')
     return render_template('auth/login.html')
 
 

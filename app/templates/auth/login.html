@@ -9,6 +9,11 @@
             <h3 class="fw-bold">Sentinelle</h3>
             <p class="text-muted">Connectez-vous pour accéder au tableau de bord</p>
         </div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} py-2 small mb-3">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
         <form method="POST">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-3">
