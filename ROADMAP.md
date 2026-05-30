@@ -38,7 +38,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ✅ **Verrouillage après N échecs de login** — table `LoginThrottle`, blocage temporaire configurable (`LOGIN_MAX_ATTEMPTS`=5, `LOGIN_LOCKOUT_MINUTES`=15), messages d'erreur désormais affichés sur la page de login.
 - ✅ **Journal d'audit global** — vue chronologique unifiée des historiques (comptes, certificats, domaines, backups, tests), réservée aux admins.
 - ⬜ **2FA (TOTP) pour les admins**.
-- ⬜ **Politique de mot de passe + expiration des sessions**.
+- ✅ **Politique de mot de passe + expiration des sessions** — longueur minimale configurable (`PASSWORD_MIN_LENGTH`), déconnexion auto après inactivité (`SESSION_LIFETIME_MINUTES`, défaut 8 h), cookies durcis (HttpOnly, SameSite=Lax).
 
 ## Ergonomie / UX
 - 🚧 **Tri & filtres** sur les listes — tri automatique par criticité (critiques en tête) + surlignage des lignes fait. Filtres interactifs (par statut/priorité) à venir.
@@ -47,7 +47,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ⬜ **Confirmation de suppression uniformisée + corbeille** (restaurer un élément désactivé).
 
 ## Technique / intégrations
-- ⬜ **Retirer Flask‑Mail** (devenu inutile depuis le passage à smtplib/Direct Send).
+- ✅ **Retirer Flask‑Mail** — supprimé (code + dépendance), l'envoi passe par smtplib directement.
 - ⬜ **LDAP / Active Directory** — authentification avec le compte mairie.
 - ⬜ **Synchronisation des comptes AD** — expiration réelle des mots de passe AD.
 

@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -8,6 +9,14 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key')
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///admin_dashboard.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # Session : deconnexion automatique apres inactivite (minutes) + cookie durci.
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=int(os.getenv('SESSION_LIFETIME_MINUTES', 480)))
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+
+    # Longueur minimale des mots de passe.
+    PASSWORD_MIN_LENGTH = int(os.getenv('PASSWORD_MIN_LENGTH', 8))
 
     MAIL_METHOD = os.getenv('MAIL_METHOD', 'smtp')
 

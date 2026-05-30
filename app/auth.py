@@ -1,6 +1,6 @@
 import os
 import re
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, session
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models import User
@@ -33,6 +33,7 @@ def login():
                 db.session.delete(throttle)
                 db.session.commit()
             login_user(user)
+            session.permanent = True  # applique PERMANENT_SESSION_LIFETIME (inactivite)
             next_page = request.args.get('next')
             return redirect(next_page or url_for('dashboard.index'))
 
@@ -73,8 +74,9 @@ def profile():
                 flash('Mot de passe actuel incorrect', 'danger')
             elif new != confirm:
                 flash('Les mots de passe ne correspondent pas', 'danger')
-            elif len(new) < 8:
-                flash('Le mot de passe doit contenir au moins 8 caracteres', 'danger')
+            elif len(new) < current_app.config.get('PASSWORD_MIN_LENGTH', 8):
+                _ml = current_app.config.get('PASSWORD_MIN_LENGTH', 8)
+                flash(f'Le mot de passe doit contenir au moins {_ml} caracteres', 'danger')
             else:
                 current_user.set_password(new)
                 db.session.commit()

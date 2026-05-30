@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, current_app
 from flask_login import login_required, current_user
 from app import db
 from app.models import (User, Role, PERMISSION_CATEGORIES, CATEGORY_LABELS,
@@ -127,8 +127,9 @@ def create():
         if User.query.filter_by(email=email).first():
             flash('Cet email existe deja', 'danger')
             return render_template('users/form.html', user=None)
-        if len(password) < 8:
-            flash('Le mot de passe doit contenir au moins 8 caracteres', 'danger')
+        minlen = current_app.config.get('PASSWORD_MIN_LENGTH', 8)
+        if len(password or '') < minlen:
+            flash(f'Le mot de passe doit contenir au moins {minlen} caracteres', 'danger')
             return render_template('users/form.html', user=None)
         u = User(username=username, email=email, role=role)
         u.set_password(password)
@@ -150,10 +151,11 @@ def edit(id):
         user.email = request.form.get('email')
         user.role = request.form.get('role', 'viewer')
         new_password = request.form.get('password')
-        if new_password and len(new_password) >= 8:
+        minlen = current_app.config.get('PASSWORD_MIN_LENGTH', 8)
+        if new_password and len(new_password) >= minlen:
             user.set_password(new_password)
-        elif new_password and len(new_password) < 8:
-            flash('Le mot de passe doit contenir au moins 8 caracteres', 'danger')
+        elif new_password and len(new_password) < minlen:
+            flash(f'Le mot de passe doit contenir au moins {minlen} caracteres', 'danger')
             return render_template('users/form.html', user=user)
         db.session.commit()
         flash(f'Utilisateur {user.username} modifie', 'success')
