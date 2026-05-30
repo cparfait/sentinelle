@@ -5,6 +5,18 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _triplet(env, default):
+    """Lit 3 entiers separes par virgule depuis l'environnement."""
+    raw = os.getenv(env, '')
+    try:
+        parts = [int(x.strip()) for x in raw.split(',') if x.strip()]
+        if len(parts) == 3:
+            return tuple(parts)
+    except ValueError:
+        pass
+    return default
+
+
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key')
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///admin_dashboard.db')
@@ -17,6 +29,11 @@ class Config:
 
     # Longueur minimale des mots de passe.
     PASSWORD_MIN_LENGTH = int(os.getenv('PASSWORD_MIN_LENGTH', 8))
+
+    # Seuils de statut en jours restants : (danger <=, attention <=, proche <=).
+    THRESHOLD_EXPIRY = _triplet('THRESHOLD_EXPIRY', (7, 15, 30))   # comptes, certificats
+    THRESHOLD_DOMAIN = _triplet('THRESHOLD_DOMAIN', (30, 60, 90))  # noms de domaine
+    THRESHOLD_TASK = _triplet('THRESHOLD_TASK', (7, 15, 30))       # tests, revues de droits
 
     MAIL_METHOD = os.getenv('MAIL_METHOD', 'smtp')
 

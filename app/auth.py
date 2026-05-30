@@ -230,6 +230,26 @@ def preferences():
             except Exception as e:
                 flash(f"Suppression impossible : {e}", 'danger')
 
+        elif action == 'save_thresholds':
+            def _parse3(prefix, default):
+                out = []
+                for i, k in enumerate(('danger', 'warning', 'info')):
+                    try:
+                        out.append(max(0, int(request.form.get(f'{prefix}_{k}', default[i]))))
+                    except (TypeError, ValueError):
+                        out.append(default[i])
+                return out
+            groups = {
+                'THRESHOLD_EXPIRY': _parse3('expiry', (7, 15, 30)),
+                'THRESHOLD_DOMAIN': _parse3('domain', (30, 60, 90)),
+                'THRESHOLD_TASK': _parse3('task', (7, 15, 30)),
+            }
+            _update_env_file({k: ','.join(str(x) for x in v) for k, v in groups.items()})
+            for k, v in groups.items():
+                current_app.config[k] = tuple(v)
+            audit_record('config seuils alertes', category='preferences')
+            flash('Seuils d\'alerte enregistres', 'success')
+
         elif action == 'send_digest':
             from app.digest import build_daily_digest
             addr = request.form.get('test_email', '').strip() or current_user.email
@@ -270,6 +290,12 @@ def preferences():
     from app.db_backup import list_backups
     db_backups = list_backups(current_app)
 
+    thresholds = {
+        'expiry': current_app.config.get('THRESHOLD_EXPIRY', (7, 15, 30)),
+        'domain': current_app.config.get('THRESHOLD_DOMAIN', (30, 60, 90)),
+        'task': current_app.config.get('THRESHOLD_TASK', (7, 15, 30)),
+    }
+
     o365_app_configured = all([o365_config['client_id'], o365_config['client_secret'],
                                o365_config['tenant_id']])
 
@@ -286,7 +312,7 @@ def preferences():
                            o365_user_email=o365_user_email,
                            o365_app_configured=o365_app_configured,
                            alert_recipients=alert_recipients,
-                           db_backups=db_backups)
+                           db_backups=db_backups, thresholds=thresholds)
 
 
 @bp.route('/auth/o365/callback')

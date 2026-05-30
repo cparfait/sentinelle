@@ -211,6 +211,30 @@
             </form>
 
             <hr>
+            <h6 class="fw-bold mb-3"><i class="bi bi-sliders me-2"></i>Seuils d'alerte (jours restants)</h6>
+            <form method="POST" action="{{ url_for('auth.preferences') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="save_thresholds">
+                <table class="table table-sm align-middle mb-2">
+                    <thead><tr><th></th><th class="text-danger">Critique ≤</th><th class="text-warning">Attention ≤</th><th class="text-info">Proche ≤</th></tr></thead>
+                    <tbody>
+                        {% set rows = [('expiry', 'Comptes & certificats'), ('domain', 'Noms de domaine'), ('task', 'Tests & revues de droits')] %}
+                        {% for key, label in rows %}
+                        <tr>
+                            <td class="fw-medium">{{ label }}</td>
+                            {% for i in range(3) %}
+                            <td><input type="number" min="0" name="{{ key }}_{{ ['danger','warning','info'][i] }}"
+                                       value="{{ thresholds[key][i] }}" class="form-control form-control-sm" style="width:90px;"></td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i> Enregistrer les seuils</button>
+                <small class="text-muted d-block mt-1">Détermine la couleur de statut selon le nombre de jours restants avant échéance.</small>
+            </form>
+
+            <hr>
             <h6 class="fw-bold mb-3"><i class="bi bi-database me-2"></i>Base de données</h6>
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <small class="text-muted">

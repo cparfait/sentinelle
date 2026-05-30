@@ -15,7 +15,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 ## Alertes & notifications
 - ✅ **Récap quotidien par mail** — un seul mail le matin (job 7h30) + liens cliquables.
 - ✅ **Acquittement / report (snooze)** — mise en pause par élément (7/30/90 j).
-- ⬜ **Seuils d'alerte configurables** — J‑30/15/7… paramétrables (global ou par élément).
+- ✅ **Seuils d'alerte configurables** — seuils de statut (jours restants : critique/attention/proche) paramétrables par groupe (comptes&certifs, domaines, tâches) via Préférences + `.env`.
 - ✅ **Anti-doublon d'alertes** — `send_alert` idempotent : une seule alerte par élément et par jour (vérifie l'historique `AlertLog`).
 
 ## Reporting & visualisation

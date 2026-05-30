@@ -3,6 +3,26 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from app import db
 
+
+def _thresholds(key, default):
+    """Seuils (danger, warning, info) en jours, depuis la config si disponible."""
+    try:
+        from flask import current_app
+        return current_app.config.get(key, default)
+    except Exception:
+        return default
+
+
+def _status_from_days(days_left, key, default):
+    d, w, i = _thresholds(key, default)
+    if days_left <= d:
+        return 'danger'
+    if days_left <= w:
+        return 'warning'
+    if days_left <= i:
+        return 'info'
+    return 'success'
+
 # Categories soumises aux permissions par role (les sections Utilisateurs et
 # Preferences restent reservees aux administrateurs via is_admin).
 PERMISSION_CATEGORIES = ['accounts', 'certificates', 'domains', 'backups', 'tests',
@@ -95,17 +115,8 @@ class Account(db.Model):
     def status(self):
         if not self.next_password_change:
             return 'warning'
-        today = datetime.now(timezone.utc).date()
-        days_left = (self.next_password_change - today).days
-        if days_left < 0:
-            return 'danger'
-        elif days_left <= 7:
-            return 'danger'
-        elif days_left <= 15:
-            return 'warning'
-        elif days_left <= 30:
-            return 'info'
-        return 'success'
+        days_left = (self.next_password_change - datetime.now(timezone.utc).date()).days
+        return _status_from_days(days_left, 'THRESHOLD_EXPIRY', (7, 15, 30))
 
 
 class AccountHistory(db.Model):
@@ -133,17 +144,8 @@ class Certificate(db.Model):
     histories = db.relationship('CertificateHistory', backref='certificate', lazy='dynamic', cascade='all, delete-orphan')
 
     def status(self):
-        today = datetime.now(timezone.utc).date()
-        days_left = (self.expiry_date - today).days
-        if days_left < 0:
-            return 'danger'
-        elif days_left <= 7:
-            return 'danger'
-        elif days_left <= 15:
-            return 'warning'
-        elif days_left <= 30:
-            return 'info'
-        return 'success'
+        days_left = (self.expiry_date - datetime.now(timezone.utc).date()).days
+        return _status_from_days(days_left, 'THRESHOLD_EXPIRY', (7, 15, 30))
 
 
 class CertificateHistory(db.Model):
@@ -289,17 +291,8 @@ class TestTask(db.Model):
             return 'success'
         if not self.next_due:
             return 'warning'
-        today = datetime.now(timezone.utc).date()
-        days_left = (self.next_due - today).days
-        if days_left < 0:
-            return 'danger'
-        elif days_left <= 7:
-            return 'danger'
-        elif days_left <= 15:
-            return 'warning'
-        elif days_left <= 30:
-            return 'info'
-        return 'success'
+        days_left = (self.next_due - datetime.now(timezone.utc).date()).days
+        return _status_from_days(days_left, 'THRESHOLD_TASK', (7, 15, 30))
 
 
 class TestHistory(db.Model):
@@ -329,15 +322,7 @@ class Domain(db.Model):
         if not self.expiry_date:
             return 'warning'
         days_left = (self.expiry_date - datetime.now(timezone.utc).date()).days
-        if days_left < 0:
-            return 'danger'
-        elif days_left <= 30:
-            return 'danger'
-        elif days_left <= 60:
-            return 'warning'
-        elif days_left <= 90:
-            return 'info'
-        return 'success'
+        return _status_from_days(days_left, 'THRESHOLD_DOMAIN', (30, 60, 90))
 
 
 class DomainHistory(db.Model):
@@ -371,13 +356,7 @@ class AccessReview(db.Model):
         if not self.next_review:
             return 'warning'
         days_left = (self.next_review - datetime.now(timezone.utc).date()).days
-        if days_left <= 7:
-            return 'danger'
-        if days_left <= 15:
-            return 'warning'
-        if days_left <= 30:
-            return 'info'
-        return 'success'
+        return _status_from_days(days_left, 'THRESHOLD_TASK', (7, 15, 30))
 
 
 class ReviewHistory(db.Model):
