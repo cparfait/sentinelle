@@ -421,6 +421,17 @@ class UpdateHistory(db.Model):
     performed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+class ActionLog(db.Model):
+    """Journal d'actions central et persistant (survit a la suppression des
+    entites) : qui a fait quoi, et quand."""
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64))
+    action = db.Column(db.String(64), nullable=False)
+    category = db.Column(db.String(64))
+    detail = db.Column(db.Text)
+    performed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
 class LoginThrottle(db.Model):
     """Suivi des echecs de connexion par identifiant (anti-bruteforce)."""
     id = db.Column(db.Integer, primary_key=True)

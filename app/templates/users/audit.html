@@ -28,7 +28,10 @@
                 {% for r in rows %}
                 <tr>
                     <td style="width: 150px; white-space: nowrap;">{{ r.when.strftime('%d/%m/%Y %H:%M') }}</td>
-                    <td><a href="{{ r.url }}" class="badge bg-light text-dark border text-decoration-none">{{ r.cat }}</a></td>
+                    <td>
+                        {% if r.url %}<a href="{{ r.url }}" class="badge bg-light text-dark border text-decoration-none">{{ r.cat }}</a>
+                        {% else %}<span class="badge bg-light text-dark border">{{ r.cat }}</span>{% endif %}
+                    </td>
                     <td><span class="fw-medium">{{ r.action }}</span></td>
                     <td class="text-muted">{{ r.comment or '-' }}</td>
                     <td>{{ r.by or '-' }}</td>

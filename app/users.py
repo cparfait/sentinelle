@@ -4,6 +4,7 @@ from app import db
 from app.models import (User, Role, PERMISSION_CATEGORIES, CATEGORY_LABELS,
                         PERMISSION_LEVELS)
 from app.decorators import require_admin
+from app.audit import record as audit_record
 
 bp = Blueprint('users', __name__)
 
@@ -13,7 +14,8 @@ bp = Blueprint('users', __name__)
 @require_admin
 def audit():
     from app.models import (AccountHistory, CertificateHistory, BackupHistory,
-                            TestHistory, DomainHistory)
+                            TestHistory, DomainHistory, ReviewHistory, UpdateHistory,
+                            ActionLog)
     rows = []
 
     def collect(model, fk, cat, endpoint):
@@ -29,6 +31,15 @@ def audit():
     collect(DomainHistory, 'domain_id', 'Domaine', 'domains.detail')
     collect(BackupHistory, 'backup_id', 'Backup', 'backups.detail')
     collect(TestHistory, 'test_id', 'Test', 'tests.detail')
+    collect(ReviewHistory, 'review_id', 'Revue', 'reviews.detail')
+    collect(UpdateHistory, 'update_id', 'Mise a jour', 'updates.detail')
+
+    # Journal d'actions central (login, corbeille, roles, config...) sans lien.
+    for a in ActionLog.query.order_by(ActionLog.performed_at.desc()).limit(200).all():
+        rows.append({
+            'when': a.performed_at, 'cat': a.category or 'Système', 'action': a.action,
+            'comment': a.detail, 'by': a.username, 'url': None,
+        })
 
     rows.sort(key=lambda r: r['when'], reverse=True)
     return render_template('users/audit.html', rows=rows[:200])
@@ -61,6 +72,7 @@ def roles_save(id):
             perms[c] = max(0, min(3, lvl))
         role.permissions = perms
     db.session.commit()
+    audit_record('modification role', detail=role.name, category='roles')
     flash(f'Role « {role.name} » enregistre', 'success')
     return redirect(url_for('users.roles'))
 
@@ -79,6 +91,7 @@ def roles_create():
     db.session.add(Role(name=name, description=request.form.get('description', ''),
                         is_admin=False, permissions={c: 0 for c in PERMISSION_CATEGORIES}))
     db.session.commit()
+    audit_record('creation role', detail=name, category='roles')
     flash(f'Role « {name} » cree.', 'success')
     return redirect(url_for('users.roles'))
 
@@ -94,8 +107,10 @@ def roles_delete(id):
     if User.query.filter_by(role=role.name).count() > 0:
         flash('Role utilise par des utilisateurs : reassignez-les d abord.', 'danger')
         return redirect(url_for('users.roles'))
+    _rname = role.name
     db.session.delete(role)
     db.session.commit()
+    audit_record('suppression role', detail=_rname, category='roles')
     flash('Role supprime.', 'success')
     return redirect(url_for('users.roles'))
 
@@ -135,6 +150,7 @@ def create():
         u.set_password(password)
         db.session.add(u)
         db.session.commit()
+        audit_record('creation utilisateur', detail=f'{username} (role {role})', category='utilisateurs')
         flash(f'Utilisateur {username} cree avec succes', 'success')
         return redirect(url_for('users.list'))
     return render_template('users/form.html', user=None)
@@ -158,6 +174,7 @@ def edit(id):
             flash(f'Le mot de passe doit contenir au moins {minlen} caracteres', 'danger')
             return render_template('users/form.html', user=user)
         db.session.commit()
+        audit_record('modification utilisateur', detail=f'{user.username} (role {user.role})', category='utilisateurs')
         flash(f'Utilisateur {user.username} modifie', 'success')
         return redirect(url_for('users.list'))
     return render_template('users/form.html', user=user)
@@ -176,7 +193,9 @@ def delete(id):
     if user.id == current_user.id:
         flash('Vous ne pouvez pas supprimer votre propre compte', 'danger')
         return redirect(url_for('users.list'))
+    _uname = user.username
     db.session.delete(user)
     db.session.commit()
-    flash(f'Utilisateur {user.username} supprime', 'success')
+    audit_record('suppression utilisateur', detail=_uname, category='utilisateurs')
+    flash(f'Utilisateur {_uname} supprime', 'success')
     return redirect(url_for('users.list'))

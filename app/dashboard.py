@@ -21,8 +21,12 @@ def trash():
 @login_required
 def trash_restore():
     from app.trash import restore
-    ok = restore(current_user, request.form.get('entity_type', ''),
-                 request.form.get('entity_id', '0'), current_user.username)
+    from app.audit import record
+    etype = request.form.get('entity_type', '')
+    eid = request.form.get('entity_id', '0')
+    ok = restore(current_user, etype, eid, current_user.username)
+    if ok:
+        record('restauration', detail=f'{etype} #{eid}', category='corbeille')
     flash('Élément restauré.' if ok else 'Restauration impossible.',
           'success' if ok else 'danger')
     return redirect(url_for('dashboard.trash'))
@@ -32,8 +36,12 @@ def trash_restore():
 @login_required
 def trash_purge_one():
     from app.trash import purge_one
-    ok = purge_one(current_user, request.form.get('entity_type', ''),
-                   request.form.get('entity_id', '0'))
+    from app.audit import record
+    etype = request.form.get('entity_type', '')
+    eid = request.form.get('entity_id', '0')
+    ok = purge_one(current_user, etype, eid)
+    if ok:
+        record('suppression definitive', detail=f'{etype} #{eid}', category='corbeille')
     flash('Élément supprimé définitivement.' if ok else 'Suppression impossible.',
           'success' if ok else 'danger')
     return redirect(url_for('dashboard.trash'))
@@ -43,7 +51,10 @@ def trash_purge_one():
 @login_required
 def trash_purge():
     from app.trash import purge_all
+    from app.audit import record
     n = purge_all(current_user)
+    if n:
+        record('corbeille videe', detail=f'{n} element(s) supprime(s)', category='corbeille')
     flash(f'Corbeille vidée ({n} élément(s) supprimé(s) définitivement).'
           if n else 'Rien à supprimer.', 'success' if n else 'info')
     return redirect(url_for('dashboard.trash'))

@@ -5,6 +5,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models import User
 from app.email_service import send_email, get_o365_auth_url, complete_o365_auth, is_o365_connected, get_o365_user_email, clear_o365_token
+from app.audit import record as audit_record
 from werkzeug.security import generate_password_hash
 
 bp = Blueprint('auth', __name__)
@@ -34,6 +35,7 @@ def login():
                 db.session.commit()
             login_user(user)
             session.permanent = True  # applique PERMANENT_SESSION_LIFETIME (inactivite)
+            audit_record('connexion', category='securite')
             next_page = request.args.get('next')
             return redirect(next_page or url_for('dashboard.index'))
 
@@ -46,9 +48,11 @@ def login():
             throttle.locked_until = now + timedelta(minutes=lockout_min)
             throttle.failed_count = 0
             db.session.commit()
+            audit_record('compte bloque', detail=f'identifiant: {username}', category='securite')
             flash(f'Trop de tentatives. Compte bloque {lockout_min} minute(s).', 'danger')
         else:
             db.session.commit()
+            audit_record('echec connexion', detail=f'identifiant: {username}', category='securite')
             restantes = max_attempts - throttle.failed_count
             flash(f'Identifiants incorrects ({restantes} tentative(s) restante(s)).', 'danger')
     return render_template('auth/login.html')
@@ -57,6 +61,7 @@ def login():
 @bp.route('/logout')
 @login_required
 def logout():
+    audit_record('deconnexion', category='securite')
     logout_user()
     return redirect(url_for('auth.login'))
 
@@ -80,6 +85,7 @@ def profile():
             else:
                 current_user.set_password(new)
                 db.session.commit()
+                audit_record('changement mot de passe', category='securite')
                 flash('Mot de passe modifie avec succes', 'success')
         return redirect(url_for('auth.profile'))
     return render_template('auth/profile.html')
@@ -121,6 +127,7 @@ def preferences():
             method = request.form.get('mail_method', 'smtp')
             _update_env_file({'MAIL_METHOD': method})
             current_app.config['MAIL_METHOD'] = method
+            audit_record('config messagerie', detail=f'methode={method}', category='preferences')
             flash(f'Methode de messagerie changee en {method.upper()}', 'success')
 
         elif action == 'save_o365':
@@ -144,6 +151,7 @@ def preferences():
             current_app.config['O365_TENANT_ID'] = tenant_id
             current_app.config['O365_SENDER_EMAIL'] = sender_email
             current_app.config['O365_REDIRECT_URI'] = redirect_uri
+            audit_record('config messagerie', detail='Office 365', category='preferences')
             flash('Configuration Office 365 enregistree', 'success')
 
         elif action == 'disconnect_o365':
@@ -175,6 +183,7 @@ def preferences():
             current_app.config['MAIL_DEFAULT_SENDER'] = sender
             if password:
                 current_app.config['MAIL_PASSWORD'] = password
+            audit_record('config messagerie', detail=f'SMTP {server}', category='preferences')
             flash('Configuration SMTP enregistree', 'success')
 
         elif action == 'save_recipients':
@@ -184,6 +193,7 @@ def preferences():
             recipients = list(dict.fromkeys(parts))  # dedoublonne en gardant l'ordre
             _update_env_file({'ALERT_RECIPIENTS': ','.join(recipients)})
             current_app.config['ALERT_RECIPIENTS'] = recipients
+            audit_record('destinataires alertes', detail=f'{len(recipients)} adresse(s)', category='preferences')
             flash(f'{len(recipients)} destinataire(s) enregistre(s)', 'success')
 
         elif action == 'test_email':
@@ -205,6 +215,7 @@ def preferences():
             from app.db_backup import backup_database
             try:
                 path = backup_database(current_app)
+                audit_record('sauvegarde base', detail=os.path.basename(path), category='base')
                 flash(f"Base sauvegardee : {os.path.basename(path)}", 'success')
             except Exception as e:
                 flash(f"Erreur sauvegarde base : {e}", 'danger')
@@ -212,7 +223,9 @@ def preferences():
         elif action == 'delete_db_backup':
             from app.db_backup import delete_backup
             try:
-                delete_backup(current_app, request.form.get('name', ''))
+                _name = request.form.get('name', '')
+                delete_backup(current_app, _name)
+                audit_record('suppression sauvegarde base', detail=_name, category='base')
                 flash('Sauvegarde supprimee', 'success')
             except Exception as e:
                 flash(f"Suppression impossible : {e}", 'danger')
