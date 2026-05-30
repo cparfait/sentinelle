@@ -18,8 +18,10 @@ def audit():
                             ActionLog)
     rows = []
 
+    CAP = 3000  # borne par source pour limiter la memoire
+
     def collect(model, fk, cat, endpoint):
-        for h in model.query.order_by(model.performed_at.desc()).limit(200).all():
+        for h in model.query.order_by(model.performed_at.desc()).limit(CAP).all():
             rows.append({
                 'when': h.performed_at, 'cat': cat, 'action': h.action,
                 'comment': getattr(h, 'comment', None), 'by': h.performed_by,
@@ -35,14 +37,34 @@ def audit():
     collect(UpdateHistory, 'update_id', 'Mise a jour', 'updates.detail')
 
     # Journal d'actions central (login, corbeille, roles, config...) sans lien.
-    for a in ActionLog.query.order_by(ActionLog.performed_at.desc()).limit(200).all():
+    for a in ActionLog.query.order_by(ActionLog.performed_at.desc()).limit(CAP).all():
         rows.append({
             'when': a.performed_at, 'cat': a.category or 'Système', 'action': a.action,
             'comment': a.detail, 'by': a.username, 'url': None,
         })
 
+    # Recherche plein-texte simple (action / detail / auteur / categorie)
+    q = (request.args.get('q') or '').strip()
+    if q:
+        ql = q.lower()
+        rows = [r for r in rows if ql in ' '.join(
+            str(r.get(k) or '') for k in ('action', 'comment', 'by', 'cat')).lower()]
+
     rows.sort(key=lambda r: r['when'], reverse=True)
-    return render_template('users/audit.html', rows=rows[:200])
+
+    # Pagination
+    per_page = 50
+    try:
+        page = max(1, int(request.args.get('page', 1)))
+    except (TypeError, ValueError):
+        page = 1
+    total = len(rows)
+    pages = max(1, (total + per_page - 1) // per_page)
+    page = min(page, pages)
+    start = (page - 1) * per_page
+    page_rows = rows[start:start + per_page]
+    return render_template('users/audit.html', rows=page_rows, q=q,
+                           page=page, pages=pages, total=total)
 
 
 @bp.route('/roles')

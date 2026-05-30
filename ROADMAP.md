@@ -42,7 +42,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 
 ## Ergonomie / UX
 - ✅ **Tri & filtres** sur les listes — tri automatique par criticité + surlignage + **filtres interactifs par statut** (barre Tous/Critique/Attention/À surveiller/OK générée en JS sur les tableaux `js-filterable`).
-- ⬜ **Pagination / recherche** dans les longues listes.
+- 🚧 **Pagination / recherche** — faites sur le **journal d'audit** (50/page + recherche plein-texte, plus de plafond à 200). Reste à étendre aux listes métier si besoin.
 - ✅ **Badges de compteur** dans la sidebar — nombre d'éléments critiques (rouges) par section (comptes, certificats, domaines, backups, tests).
 - ✅ **Corbeille** — page listant les éléments supprimés (désactivés) par catégorie, avec restauration (droit d'édition) et **suppression définitive** / **vider la corbeille** (droit de suppression). Confirmations en place.
 
