@@ -14,11 +14,13 @@ bp = Blueprint('dashboard', __name__)
 def index():
     today = datetime.now(timezone.utc).date()
 
-    accounts = Account.query.filter_by(is_active=True).all()
-    certificates = Certificate.query.filter_by(is_active=True).all()
-    domains = Domain.query.filter_by(is_active=True).all()
-    backups = Backup.query.filter_by(is_active=True).all()
-    tests = TestTask.query.filter_by(is_active=True).all()
+    # On ne charge que les categories que l'utilisateur a le droit de voir,
+    # afin que stats, urgences et tableau des backups n'exposent rien d'interdit.
+    accounts = Account.query.filter_by(is_active=True).all() if current_user.can_view('accounts') else []
+    certificates = Certificate.query.filter_by(is_active=True).all() if current_user.can_view('certificates') else []
+    domains = Domain.query.filter_by(is_active=True).all() if current_user.can_view('domains') else []
+    backups = Backup.query.filter_by(is_active=True).all() if current_user.can_view('backups') else []
+    tests = TestTask.query.filter_by(is_active=True).all() if current_user.can_view('tests') else []
 
     acc_danger = sum(1 for a in accounts if a.status() == 'danger')
     acc_warning = sum(1 for a in accounts if a.status() == 'warning')

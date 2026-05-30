@@ -14,6 +14,7 @@
 </div>
 
 <div class="row g-3 mb-4">
+    {% if current_user.can_view('accounts') %}
     <div class="col-md-3">
         <a href="{{ url_for('accounts.list') }}" class="text-decoration-none">
         <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ stats.accounts.danger }} compte(s) en critique, {{ stats.accounts.warning }} en alerte - Cliquer pour voir les comptes">
@@ -34,6 +35,8 @@
         </div>
         </a>
     </div>
+    {% endif %}
+    {% if current_user.can_view('certificates') %}
     <div class="col-md-3">
         <a href="{{ url_for('certificates.list') }}" class="text-decoration-none">
         <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ stats.certificates.danger }} certificat(s) en critique, {{ stats.certificates.warning }} en alerte - Cliquer pour voir les certificats">
@@ -54,6 +57,8 @@
         </div>
         </a>
     </div>
+    {% endif %}
+    {% if current_user.can_view('domains') %}
     <div class="col-md-3">
         <a href="{{ url_for('domains.list') }}" class="text-decoration-none">
         <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ stats.domains.danger }} domaine(s) en critique, {{ stats.domains.warning }} en alerte - Cliquer pour voir les domaines">
@@ -74,6 +79,8 @@
         </div>
         </a>
     </div>
+    {% endif %}
+    {% if current_user.can_view('backups') %}
     <div class="col-md-3">
         <a href="{{ url_for('backups.list') }}" class="text-decoration-none">
         <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ stats.backups.danger }} backup(s) echoue(s) - Cliquer pour voir les backups">
@@ -93,6 +100,8 @@
         </div>
         </a>
     </div>
+    {% endif %}
+    {% if current_user.can_view('tests') %}
     <div class="col-md-3">
         <a href="{{ url_for('tests.list') }}" class="text-decoration-none">
         <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ stats.tests.danger }} test(s) en retard - Cliquer pour voir les tests">
@@ -113,6 +122,7 @@
         </div>
         </a>
     </div>
+    {% endif %}
 </div>
 
 {% if backups %}
