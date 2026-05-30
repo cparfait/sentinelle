@@ -28,14 +28,26 @@ def login():
             flash(f'Trop de tentatives. Reessayez dans {mins} minute(s).', 'danger')
             return render_template('auth/login.html')
 
+        # Authentification hybride : mot de passe local d'abord, puis LDAP/AD.
         user = User.query.filter_by(username=username).first()
-        if user and user.check_password(password):
+        authed = bool(user and user.check_password(password))
+        ldap_used = False
+        if not authed:
+            from app.ldap_auth import ldap_authenticate
+            info = ldap_authenticate(username, password)
+            if info is not None:
+                authed = True
+                ldap_used = True
+                if user is None:
+                    user = _provision_ldap_user(username, info)
+
+        if authed and user is not None:
             if throttle:
                 db.session.delete(throttle)
                 db.session.commit()
             login_user(user)
             session.permanent = True  # applique PERMANENT_SESSION_LIFETIME (inactivite)
-            audit_record('connexion', category='securite')
+            audit_record('connexion' + (' (LDAP)' if ldap_used else ''), category='securite')
             next_page = request.args.get('next')
             return redirect(next_page or url_for('dashboard.index'))
 
@@ -56,6 +68,24 @@ def login():
             restantes = max_attempts - throttle.failed_count
             flash(f'Identifiants incorrects ({restantes} tentative(s) restante(s)).', 'danger')
     return render_template('auth/login.html')
+
+
+def _provision_ldap_user(username, info):
+    """Cree un compte local pour un utilisateur AD valide (mot de passe local
+    inutilisable ; il s'authentifiera toujours via LDAP)."""
+    import secrets
+    role = current_app.config.get('LDAP_DEFAULT_ROLE', 'viewer')
+    domain = current_app.config.get('LDAP_DOMAIN') or 'ldap.local'
+    email = (info or {}).get('email') or f'{username}@{domain}'
+    if User.query.filter_by(email=email).first():
+        email = f'{username}@ldap.local'
+    u = User(username=username, email=email, role=role)
+    u.set_password(secrets.token_urlsafe(24))
+    db.session.add(u)
+    db.session.commit()
+    audit_record('creation utilisateur (LDAP)', detail=f'{username} (role {role})',
+                 category='utilisateurs')
+    return u
 
 
 @bp.route('/logout')
@@ -230,6 +260,28 @@ def preferences():
             except Exception as e:
                 flash(f"Suppression impossible : {e}", 'danger')
 
+        elif action == 'save_ldap':
+            enabled = request.form.get('ldap_enabled') == 'on'
+            use_ssl = request.form.get('ldap_ssl') == 'on'
+            port = request.form.get('ldap_port', '389').strip() or '389'
+            updates = {
+                'LDAP_ENABLED': 'true' if enabled else 'false',
+                'LDAP_SERVER': request.form.get('ldap_server', '').strip(),
+                'LDAP_PORT': port,
+                'LDAP_USE_SSL': 'true' if use_ssl else 'false',
+                'LDAP_DOMAIN': request.form.get('ldap_domain', '').strip(),
+                'LDAP_BASE_DN': request.form.get('ldap_base_dn', '').strip(),
+                'LDAP_DEFAULT_ROLE': request.form.get('ldap_default_role', 'viewer'),
+            }
+            _update_env_file(updates)
+            current_app.config.update(
+                LDAP_ENABLED=enabled, LDAP_SERVER=updates['LDAP_SERVER'],
+                LDAP_PORT=int(port), LDAP_USE_SSL=use_ssl,
+                LDAP_DOMAIN=updates['LDAP_DOMAIN'], LDAP_BASE_DN=updates['LDAP_BASE_DN'],
+                LDAP_DEFAULT_ROLE=updates['LDAP_DEFAULT_ROLE'])
+            audit_record('config LDAP', detail=f'actif={enabled}', category='preferences')
+            flash('Configuration LDAP enregistree', 'success')
+
         elif action == 'save_thresholds':
             def _parse3(prefix, default):
                 out = []
@@ -295,6 +347,15 @@ def preferences():
         'domain': current_app.config.get('THRESHOLD_DOMAIN', (30, 60, 90)),
         'task': current_app.config.get('THRESHOLD_TASK', (7, 15, 30)),
     }
+    ldap_config = {
+        'enabled': current_app.config.get('LDAP_ENABLED', False),
+        'server': current_app.config.get('LDAP_SERVER', ''),
+        'port': current_app.config.get('LDAP_PORT', 389),
+        'ssl': current_app.config.get('LDAP_USE_SSL', False),
+        'domain': current_app.config.get('LDAP_DOMAIN', ''),
+        'base_dn': current_app.config.get('LDAP_BASE_DN', ''),
+        'default_role': current_app.config.get('LDAP_DEFAULT_ROLE', 'viewer'),
+    }
 
     o365_app_configured = all([o365_config['client_id'], o365_config['client_secret'],
                                o365_config['tenant_id']])
@@ -312,7 +373,8 @@ def preferences():
                            o365_user_email=o365_user_email,
                            o365_app_configured=o365_app_configured,
                            alert_recipients=alert_recipients,
-                           db_backups=db_backups, thresholds=thresholds)
+                           db_backups=db_backups, thresholds=thresholds,
+                           ldap_config=ldap_config)
 
 
 @bp.route('/auth/o365/callback')

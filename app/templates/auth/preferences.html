@@ -211,6 +211,56 @@
             </form>
 
             <hr>
+            <h6 class="fw-bold mb-3"><i class="bi bi-diagram-3 me-2"></i>Authentification LDAP / Active Directory</h6>
+            <form method="POST" action="{{ url_for('auth.preferences') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="save_ldap">
+                <div class="form-check form-switch mb-2">
+                    <input type="checkbox" class="form-check-input" name="ldap_enabled" id="ldapEnabled"
+                           {{ 'checked' if ldap_config.enabled }}>
+                    <label class="form-check-label" for="ldapEnabled">Activer l'authentification LDAP/AD
+                        <span class="text-muted small">(les comptes locaux restent utilisables en parallèle)</span></label>
+                </div>
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label small">Serveur</label>
+                        <input type="text" name="ldap_server" class="form-control form-control-sm"
+                               value="{{ ldap_config.server }}" placeholder="ldap://dc.chatillon.lan">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Port</label>
+                        <input type="number" name="ldap_port" class="form-control form-control-sm" value="{{ ldap_config.port }}">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="ldap_ssl" id="ldapSsl" {{ 'checked' if ldap_config.ssl }}>
+                            <label class="form-check-label small" for="ldapSsl">SSL (LDAPS)</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">Domaine (UPN)</label>
+                        <input type="text" name="ldap_domain" class="form-control form-control-sm"
+                               value="{{ ldap_config.domain }}" placeholder="chatillon.lan">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label small">Base DN (recherche)</label>
+                        <input type="text" name="ldap_base_dn" class="form-control form-control-sm"
+                               value="{{ ldap_config.base_dn }}" placeholder="DC=chatillon,DC=lan">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Rôle par défaut</label>
+                        <select name="ldap_default_role" class="form-select form-select-sm">
+                            {% for r in all_roles %}
+                            <option value="{{ r.name }}" {{ 'selected' if ldap_config.default_role == r.name }}>{{ role_label(r.name) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary mt-2"><i class="bi bi-check-lg me-1"></i> Enregistrer LDAP</button>
+                <small class="text-muted d-block mt-1">Les utilisateurs AD validés sont créés automatiquement avec le rôle par défaut.</small>
+            </form>
+
+            <hr>
             <h6 class="fw-bold mb-3"><i class="bi bi-sliders me-2"></i>Seuils d'alerte (jours restants)</h6>
             <form method="POST" action="{{ url_for('auth.preferences') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

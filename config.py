@@ -30,6 +30,16 @@ class Config:
     # Longueur minimale des mots de passe.
     PASSWORD_MIN_LENGTH = int(os.getenv('PASSWORD_MIN_LENGTH', 8))
 
+    # Authentification LDAP / Active Directory (cohabite avec le compte local).
+    LDAP_ENABLED = os.getenv('LDAP_ENABLED', 'false').lower() in ('true', '1', 'yes')
+    LDAP_SERVER = os.getenv('LDAP_SERVER', '')          # ex: ldap://dc.chatillon.lan
+    LDAP_PORT = int(os.getenv('LDAP_PORT', 389))
+    LDAP_USE_SSL = os.getenv('LDAP_USE_SSL', 'false').lower() in ('true', '1', 'yes')
+    LDAP_DOMAIN = os.getenv('LDAP_DOMAIN', '')           # ex: chatillon.lan (pour le bind UPN)
+    LDAP_BASE_DN = os.getenv('LDAP_BASE_DN', '')         # ex: DC=chatillon,DC=lan (recherche email)
+    LDAP_USER_DN_TEMPLATE = os.getenv('LDAP_USER_DN_TEMPLATE', '')  # alternative au bind UPN
+    LDAP_DEFAULT_ROLE = os.getenv('LDAP_DEFAULT_ROLE', 'viewer')    # role des comptes AD provisionnes
+
     # Seuils de statut en jours restants : (danger <=, attention <=, proche <=).
     THRESHOLD_EXPIRY = _triplet('THRESHOLD_EXPIRY', (7, 15, 30))   # comptes, certificats
     THRESHOLD_DOMAIN = _triplet('THRESHOLD_DOMAIN', (30, 60, 90))  # noms de domaine
