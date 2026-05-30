@@ -9,6 +9,48 @@ from app.decorators import require_edit
 bp = Blueprint('dashboard', __name__)
 
 
+@bp.route('/agenda')
+@login_required
+def agenda():
+    """Echeances a venir (rotations MDP, certificats, domaines, tests),
+    regroupees par horizon et filtrees selon les droits de l'utilisateur."""
+    today = datetime.now(timezone.utc).date()
+    items = []
+
+    def add(cat, icon, name, date, detail, url):
+        if not date:
+            return
+        items.append({'cat': cat, 'icon': icon, 'name': name, 'date': date,
+                      'days': (date - today).days, 'detail': detail, 'url': url})
+
+    if current_user.can_view('accounts'):
+        for a in Account.query.filter_by(is_active=True).all():
+            add('Comptes', 'key', f'{a.service_name} ({a.username})',
+                a.next_password_change, 'Rotation du mot de passe', f'/accounts/{a.id}')
+    if current_user.can_view('certificates'):
+        for c in Certificate.query.filter_by(is_active=True).all():
+            add('Certificats', 'award', f'{c.service_name} - {c.domain}',
+                c.expiry_date, 'Expiration du certificat', f'/certificates/{c.id}')
+    if current_user.can_view('domains'):
+        for d in Domain.query.filter_by(is_active=True).all():
+            add('Domaines', 'globe', d.name, d.expiry_date,
+                'Expiration du domaine', f'/domains/{d.id}')
+    if current_user.can_view('tests'):
+        for t in TestTask.query.filter_by(is_active=True).all():
+            add('Tests', 'clipboard-check', t.name, t.next_due,
+                'Test a effectuer', f'/tests/{t.id}')
+
+    items.sort(key=lambda x: x['date'])
+    buckets = [
+        ('En retard', [i for i in items if i['days'] < 0], 'danger'),
+        ('Cette semaine', [i for i in items if 0 <= i['days'] <= 7], 'danger'),
+        ('Ce mois-ci', [i for i in items if 7 < i['days'] <= 31], 'warning'),
+        ('Dans les 90 jours', [i for i in items if 31 < i['days'] <= 90], 'info'),
+    ]
+    buckets = [(label, lst, color) for label, lst, color in buckets if lst]
+    return render_template('agenda.html', buckets=buckets, today=today)
+
+
 @bp.route('/')
 @login_required
 def index():

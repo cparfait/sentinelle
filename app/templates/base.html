@@ -32,6 +32,10 @@
                     <i class="bi bi-grid-1x2"></i>
                     <span>Tableau de bord</span>
                 </a>
+                <a href="{{ url_for('dashboard.agenda') }}" class="sidebar-link {% if request.endpoint == 'dashboard.agenda' %}active{% endif %}">
+                    <i class="bi bi-calendar-event"></i>
+                    <span>À venir</span>
+                </a>
             </div>
 
             <div class="sidebar-section">

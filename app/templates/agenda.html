@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}À venir - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-calendar-event me-2"></i>À venir</h4>
+        <small class="text-muted">Échéances des prochaines semaines</small>
+    </div>
+    <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-grid-1x2 me-1"></i> Tableau de bord
+    </a>
+</div>
+
+{% if not buckets %}
+<div class="data-card p-5 text-center text-muted">
+    <i class="bi bi-calendar-check" style="font-size: 2.5rem;"></i>
+    <p class="mt-2 mb-0">Aucune échéance dans les 90 prochains jours.</p>
+</div>
+{% endif %}
+
+{% for label, lst, color in buckets %}
+<div class="data-card mb-3">
+    <div class="card-header-custom d-flex align-items-center justify-content-between">
+        <h6 class="fw-bold mb-0">
+            <span class="badge-status badge-{{ color }} me-2">{{ label }}</span>
+            <span class="text-muted small">{{ lst|length }} échéance(s)</span>
+        </h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <tbody>
+                {% for i in lst %}
+                <tr class="row-{{ color }}">
+                    <td style="width: 130px;">
+                        <span class="fw-medium">{{ i.date.strftime('%d/%m/%Y') }}</span>
+                    </td>
+                    <td style="width: 110px;">
+                        {% if i.days < 0 %}<span class="text-danger fw-bold">{{ i.days }}j</span>
+                        {% else %}<span class="fw-bold {% if i.days <= 7 %}text-danger{% elif i.days <= 31 %}text-warning{% else %}text-info{% endif %}">{{ i.days }}j</span>{% endif %}
+                    </td>
+                    <td>
+                        <i class="bi bi-{{ i.icon }} me-1 text-muted"></i>
+                        <a href="{{ i.url }}" class="text-decoration-none fw-medium">{{ i.name }}</a>
+                        <span class="text-muted small ms-1">— {{ i.detail }}</span>
+                    </td>
+                    <td style="width: 120px;"><span class="badge bg-light text-dark border">{{ i.cat }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

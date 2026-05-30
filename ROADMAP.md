@@ -17,7 +17,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 ## Reporting & visualisation
 - ✅ **Export CSV** — bouton « CSV » sur chaque liste (comptes, certificats, domaines, backups, tests) : export UTF‑8/Excel‑FR.
 - ⬜ **Vue tendances** — évolution des statuts dans le temps (graphes).
-- ⬜ **Page « à venir cette semaine / ce mois »** — agenda des échéances.
+- ✅ **Page « À venir »** — agenda des échéances (rotations MDP, certificats, domaines, tests) groupé par horizon (en retard / cette semaine / ce mois / 90 j), filtré selon les droits.
 - ⬜ **Widgets dashboard** — taux de conformité, top urgences, compteurs.
 
 ## Exploitation & fiabilité de l'outil
