@@ -3,6 +3,24 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from app import db
 
+# Categories soumises aux permissions par role (les sections Utilisateurs et
+# Preferences restent reservees aux administrateurs via is_admin).
+PERMISSION_CATEGORIES = ['accounts', 'certificates', 'domains', 'backups', 'tests', 'alerts']
+CATEGORY_LABELS = {
+    'accounts': 'Comptes', 'certificates': 'Certificats', 'domains': 'Domaines',
+    'backups': 'Backups', 'tests': 'Tests', 'alerts': 'Alertes',
+}
+# Niveaux : 0 aucun, 1 lecture, 2 ecriture, 3 suppression (cumulatifs)
+PERMISSION_LEVELS = {0: 'Aucun', 1: 'Lecture', 2: 'Écriture', 3: 'Suppression'}
+
+
+class Role(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(40), unique=True, nullable=False)
+    description = db.Column(db.String(200))
+    is_admin = db.Column(db.Boolean, default=False)  # acces total + sections admin
+    permissions = db.Column(db.JSON, default=dict)   # {categorie: niveau 0-3}
+
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -12,19 +30,43 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), default='viewer')
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
+    def _role_obj(self):
+        return Role.query.filter_by(name=self.role).first() if self.role else None
+
     @property
     def is_admin(self):
+        r = self._role_obj()
+        if r is not None:
+            return bool(r.is_admin)
         return self.role == 'admin'
 
-    def can_edit(self):
-        return self.role in ('admin', 'editor')
-
-    def can_view(self, section=None):
+    def perm_level(self, category):
+        """Niveau de droit (0-3) sur une categorie."""
+        r = self._role_obj()
+        if r is not None:
+            if r.is_admin:
+                return 3
+            return int((r.permissions or {}).get(category, 0))
+        # Repli si aucun enregistrement Role (compat heritee)
         if self.role == 'admin':
+            return 3
+        if self.role == 'editor':
+            return 1 if category == 'alerts' else 3
+        return 1  # viewer : lecture seule
+
+    def can_view(self, category=None):
+        if category is None:
             return True
-        if not section:
-            return True
-        return True
+        return self.perm_level(category) >= 1
+
+    def can_edit(self, category=None):
+        if category is None:
+            return self.is_admin or any(
+                self.perm_level(c) >= 2 for c in PERMISSION_CATEGORIES)
+        return self.perm_level(category) >= 2
+
+    def can_delete(self, category):
+        return self.perm_level(category) >= 3
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

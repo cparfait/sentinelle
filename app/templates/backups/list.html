@@ -8,7 +8,7 @@
         <small class="text-muted">Configuration des sauvegardes a surveiller</small>
     </div>
     <div class="d-flex gap-2">
-        {% if current_user.can_edit() %}
+        {% if current_user.can_edit('backups') %}
         <a href="{{ url_for('backups.daily') }}" class="btn btn-outline-success">
             <i class="bi bi-check2-square me-1"></i> Check quotidien
         </a>
@@ -16,7 +16,7 @@
         <a href="{{ url_for('backups.stats') }}" class="btn btn-outline-info">
             <i class="bi bi-bar-chart me-1"></i> Statistiques
         </a>
-        {% if config.BACKUP_INBOX_DIR and current_user.can_edit() %}
+        {% if config.BACKUP_INBOX_DIR and current_user.can_edit('backups') %}
         <form method="POST" action="{{ url_for('backups.scan_inbox_now') }}" class="d-inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-outline-secondary" title="Lire les mails de backup du repertoire">
@@ -25,7 +25,7 @@
         </form>
         {% endif %}
         {% with csv_key='backups' %}{% include '_csv_toolbar.html' %}{% endwith %}
-        {% if current_user.can_edit() %}
+        {% if current_user.can_edit('backups') %}
         <a href="{{ url_for('backups.create') }}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-1"></i> Ajouter
         </a>

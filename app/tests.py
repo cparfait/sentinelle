@@ -4,8 +4,13 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import TestTask, TestHistory
 
-from app.decorators import require_edit
+from app.decorators import require_edit, require_delete, view_guard
 bp = Blueprint('tests', __name__)
+
+
+@bp.before_request
+def _guard_view():
+    return view_guard('tests')
 
 TEST_TYPES = [
     ('restoration', 'Test de restauration'),
@@ -111,7 +116,7 @@ def complete(id):
 
 @bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
-@require_edit
+@require_delete
 def delete(id):
     test = TestTask.query.get_or_404(id)
     test.is_active = False

@@ -108,8 +108,10 @@ def index():
 
 @bp.route('/quick-check', methods=['POST'])
 @login_required
-@require_edit
 def quick_check():
+    if not current_user.can_edit('backups'):
+        flash("Vous n'avez pas les droits pour valider un backup.", 'danger')
+        return redirect(url_for('dashboard.index'))
     backup_id = request.form.get('backup_id')
     status = request.form.get('status', 'ok')
     comment = request.form.get('comment', '')

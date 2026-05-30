@@ -67,7 +67,7 @@
     </div>
 
     <div class="col-md-4">
-        {% if current_user.can_edit() %}
+        {% if current_user.can_edit('backups') %}
         <div class="data-card p-4 mb-3">
             <h6 class="fw-bold mb-3"><i class="bi bi-check-circle me-2 text-success"></i>Enregistrer un check</h6>
             <form method="POST" action="{{ url_for('backups.check', id=backup.id) }}">

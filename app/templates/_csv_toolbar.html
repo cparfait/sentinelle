@@ -7,7 +7,7 @@
         <a class="btn btn-sm btn-outline-primary w-100 mb-2" href="{{ url_for('data_io.export', key=csv_key) }}">
             <i class="bi bi-download me-1"></i> Exporter
         </a>
-        {% if current_user.can_edit() %}
+        {% if current_user.can_edit(csv_key) %}
         <hr class="my-2">
         <form method="POST" action="{{ url_for('data_io.import_csv', key=csv_key) }}" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

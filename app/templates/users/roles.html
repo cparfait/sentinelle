@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Rôles & permissions - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-shield-lock me-2"></i>Rôles & permissions</h4>
+        <small class="text-muted">Droits par catégorie : Aucun / Lecture / Écriture / Suppression</small>
+    </div>
+    <a href="{{ url_for('users.list') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-people me-1"></i> Utilisateurs
+    </a>
+</div>
+
+{% for role in roles %}
+<div class="data-card p-4 mb-3">
+    <form method="POST" action="{{ url_for('users.roles_save', id=role.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+                <h6 class="fw-bold mb-0">
+                    {{ role.name }}
+                    {% if role.is_admin %}<span class="badge bg-danger ms-1">Admin (accès total)</span>{% endif %}
+                    <span class="badge bg-secondary ms-1">{{ counts.get(role.name, 0) }} utilisateur(s)</span>
+                </h6>
+                <input type="text" name="description" value="{{ role.description or '' }}"
+                       class="form-control form-control-sm mt-2" style="max-width: 420px;"
+                       placeholder="Description du rôle">
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i> Enregistrer</button>
+                {% if role.name not in ['admin', 'editor', 'viewer'] %}
+                <button type="submit" form="del-{{ role.id }}" class="btn btn-sm btn-outline-danger"
+                        onclick="return confirm('Supprimer ce rôle ?')"><i class="bi bi-trash"></i></button>
+                {% endif %}
+            </div>
+        </div>
+        {% if role.is_admin %}
+        <p class="text-muted small mb-0">Ce rôle dispose de tous les droits sur toutes les catégories ainsi que des sections d'administration.</p>
+        {% else %}
+        <div class="row g-2">
+            {% for cat in categories %}
+            <div class="col-md-4 col-lg-2">
+                <label class="form-label small mb-1">{{ labels[cat] }}</label>
+                <select name="perm_{{ cat }}" class="form-select form-select-sm">
+                    {% set current = (role.permissions or {}).get(cat, 0) %}
+                    {% for lvl, lbl in levels.items() %}
+                    <option value="{{ lvl }}" {% if current == lvl %}selected{% endif %}>{{ lbl }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </form>
+    {% if role.name not in ['admin', 'editor', 'viewer'] %}
+    <form id="del-{{ role.id }}" method="POST" action="{{ url_for('users.roles_delete', id=role.id) }}" class="d-none">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    </form>
+    {% endif %}
+</div>
+{% endfor %}
+
+<div class="data-card p-4">
+    <h6 class="fw-bold mb-3"><i class="bi bi-plus-circle me-2"></i>Nouveau rôle</h6>
+    <form method="POST" action="{{ url_for('users.roles_create') }}" class="row g-2 align-items-end">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="col-md-4">
+            <label class="form-label small">Nom (ex. gestion-backups)</label>
+            <input type="text" name="name" class="form-control form-control-sm" required placeholder="nom-du-role">
+        </div>
+        <div class="col-md-5">
+            <label class="form-label small">Description</label>
+            <input type="text" name="description" class="form-control form-control-sm" placeholder="À quoi sert ce rôle">
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-plus-lg me-1"></i> Créer le rôle</button>
+        </div>
+    </form>
+    <small class="text-muted d-block mt-2">Le nouveau rôle démarre sans aucun droit ; ajustez ses permissions puis assignez-le à des utilisateurs.</small>
+</div>
+{% endblock %}

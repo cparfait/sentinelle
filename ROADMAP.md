@@ -28,6 +28,8 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ⬜ **Fichier de logs applicatif** — journalisation avec rotation (au lieu du print console).
 
 ## Sécurité & conformité
+- ✅ **Rôles & permissions granulaires** — rôles par défaut (admin/editor/viewer) **+ rôles personnalisés**, droits par catégorie (Aucun / Lecture / Écriture / Suppression), appliqués aux routes (lecture, écriture, suppression), au menu, aux boutons et à l'import CSV. Page d'admin « Rôles & permissions ».
+- 🚧 Listes mises en avant : tri par criticité + surlignage (fait) ; filtres interactifs à venir.
 - ✅ **Finir le rôle « lecture seule »** — boutons d'édition/création/suppression, import CSV, snooze, check rapide et colonnes d'actions des fiches masqués pour les viewers (RBAC déjà appliqué côté serveur). Export CSV reste accessible.
 - ✅ **Verrouillage après N échecs de login** — table `LoginThrottle`, blocage temporaire configurable (`LOGIN_MAX_ATTEMPTS`=5, `LOGIN_LOCKOUT_MINUTES`=15), messages d'erreur désormais affichés sur la page de login.
 - ⬜ **Journal d'audit global** — vue centralisée « qui a modifié quoi ».

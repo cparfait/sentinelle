@@ -6,8 +6,17 @@ from app import db, csrf
 from app.models import Backup, BackupCheck, BackupHistory
 from sqlalchemy import func
 
-from app.decorators import require_edit
+from app.decorators import require_edit, require_delete, view_guard
 bp = Blueprint('backups', __name__)
+
+
+@bp.before_request
+def _guard_view():
+    # La route d'ingestion (machine, sans session) n'est pas concernee :
+    # view_guard ne bloque que les utilisateurs CONNECTES sans droit de lecture.
+    if request.endpoint == 'backups.ingest':
+        return None
+    return view_guard('backups')
 
 
 @bp.route('/ingest', methods=['POST'])
@@ -254,7 +263,7 @@ def check(id):
 
 @bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
-@require_edit
+@require_delete
 def delete(id):
     backup = Backup.query.get_or_404(id)
     backup.is_active = False

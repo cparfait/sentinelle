@@ -4,8 +4,13 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import Account, AccountHistory
 
-from app.decorators import require_edit
+from app.decorators import require_edit, require_delete, view_guard
 bp = Blueprint('accounts', __name__)
+
+
+@bp.before_request
+def _guard_view():
+    return view_guard('accounts')
 
 
 @bp.route('/')
@@ -97,7 +102,7 @@ def password_changed(id):
 
 @bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
-@require_edit
+@require_delete
 def delete(id):
     account = Account.query.get_or_404(id)
     account.is_active = False

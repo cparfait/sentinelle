@@ -36,43 +36,59 @@
 
             <div class="sidebar-section">
                 <div class="sidebar-section-title">GESTION</div>
+                {% if current_user.can_view('accounts') %}
                 <a href="{{ url_for('accounts.list') }}" class="sidebar-link {% if 'accounts' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-key"></i>
                     <span>Comptes</span>
                     {% if nav_counts and nav_counts.accounts %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.accounts }}</span>{% endif %}
                 </a>
+                {% endif %}
+                {% if current_user.can_view('certificates') %}
                 <a href="{{ url_for('certificates.list') }}" class="sidebar-link {% if 'certificates' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-award"></i>
                     <span>Certificats</span>
                     {% if nav_counts and nav_counts.certificates %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.certificates }}</span>{% endif %}
                 </a>
+                {% endif %}
+                {% if current_user.can_view('domains') %}
                 <a href="{{ url_for('domains.list') }}" class="sidebar-link {% if 'domains' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-globe"></i>
                     <span>Domaines</span>
                     {% if nav_counts and nav_counts.domains %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.domains }}</span>{% endif %}
                 </a>
+                {% endif %}
+                {% if current_user.can_view('backups') %}
                 <a href="{{ url_for('backups.list') }}" class="sidebar-link {% if 'backups' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-cloud-arrow-up"></i>
                     <span>Backups</span>
                     {% if nav_counts and nav_counts.backups %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.backups }}</span>{% endif %}
                 </a>
+                {% endif %}
+                {% if current_user.can_view('tests') %}
                 <a href="{{ url_for('tests.list') }}" class="sidebar-link {% if 'tests' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-clipboard-check"></i>
                     <span>Tests</span>
                     {% if nav_counts and nav_counts.tests %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.tests }}</span>{% endif %}
                 </a>
+                {% endif %}
+                {% if current_user.can_view('alerts') %}
                 <a href="{{ url_for('alerts.list') }}" class="sidebar-link {% if 'alerts' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-bell"></i>
                     <span>Alertes</span>
                 </a>
+                {% endif %}
             </div>
 
             {% if current_user.is_admin %}
             <div class="sidebar-section">
                 <div class="sidebar-section-title">ADMINISTRATION</div>
-                <a href="{{ url_for('users.list') }}" class="sidebar-link {% if 'users' in request.endpoint %}active{% endif %}">
+                <a href="{{ url_for('users.list') }}" class="sidebar-link {% if request.endpoint == 'users.list' or request.endpoint == 'users.create' or request.endpoint == 'users.edit' %}active{% endif %}">
                     <i class="bi bi-people"></i>
                     <span>Utilisateurs</span>
+                </a>
+                <a href="{{ url_for('users.roles') }}" class="sidebar-link {% if 'roles' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-shield-lock"></i>
+                    <span>Rôles & permissions</span>
                 </a>
                 <a href="{{ url_for('auth.preferences') }}" class="sidebar-link {% if request.endpoint == 'auth.preferences' %}active{% endif %}">
                     <i class="bi bi-sliders"></i>

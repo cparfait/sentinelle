@@ -5,8 +5,13 @@ from app import db
 from app.models import Certificate, CertificateHistory
 from app.cert_checker import fetch_cert_info
 
-from app.decorators import require_edit
+from app.decorators import require_edit, require_delete, view_guard
 bp = Blueprint('certificates', __name__)
+
+
+@bp.before_request
+def _guard_view():
+    return view_guard('certificates')
 
 
 def refresh_certificate_tls(cert, performed_by):
@@ -150,7 +155,7 @@ def check_tls(id):
 
 @bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
-@require_edit
+@require_delete
 def delete(id):
     cert = Certificate.query.get_or_404(id)
     cert.is_active = False

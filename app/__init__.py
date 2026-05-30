@@ -43,7 +43,7 @@ def create_app(config_class=Config):
         from flask_login import current_user
         if not current_user.is_authenticated:
             return {}
-        from app.models import Account, Certificate, Domain, Backup, TestTask
+        from app.models import Account, Certificate, Domain, Backup, TestTask, Role
 
         def _danger(items, method):
             return sum(1 for i in items if getattr(i, method)() == 'danger')
@@ -55,7 +55,7 @@ def create_app(config_class=Config):
             'backups': _danger(Backup.query.filter_by(is_active=True).all(), 'computed_status'),
             'tests': _danger(TestTask.query.filter_by(is_active=True).all(), 'computed_status'),
         }
-        return {'nav_counts': counts}
+        return {'nav_counts': counts, 'all_roles': Role.query.order_by(Role.name).all()}
 
     from app.models import User
 
@@ -98,6 +98,7 @@ def create_app(config_class=Config):
 
     with app.app_context():
         db.create_all()
+        _seed_roles()
         _seed_default_user()
 
     from app.scheduler import start_scheduler
@@ -105,6 +106,25 @@ def create_app(config_class=Config):
         start_scheduler(app)
 
     return app
+
+
+def _seed_roles():
+    from app.models import Role, PERMISSION_CATEGORIES
+    defaults = {
+        'admin': {'description': 'Acces total', 'is_admin': True, 'permissions': {}},
+        'editor': {'description': 'Gestion des donnees', 'is_admin': False,
+                   'permissions': {c: (1 if c == 'alerts' else 3) for c in PERMISSION_CATEGORIES}},
+        'viewer': {'description': 'Lecture seule', 'is_admin': False,
+                   'permissions': {c: 1 for c in PERMISSION_CATEGORIES}},
+    }
+    created = False
+    for name, cfg in defaults.items():
+        if not Role.query.filter_by(name=name).first():
+            db.session.add(Role(name=name, description=cfg['description'],
+                                is_admin=cfg['is_admin'], permissions=cfg['permissions']))
+            created = True
+    if created:
+        db.session.commit()
 
 
 def _seed_default_user():

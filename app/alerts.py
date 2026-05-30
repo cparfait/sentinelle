@@ -6,7 +6,7 @@ from app import db
 from app.models import AlertLog
 from app.email_service import send_email, render_alert_email
 from app.snooze import set_snooze, clear_snooze, VALID_TYPES
-from app.decorators import require_edit
+from app.decorators import view_guard
 
 bp = Blueprint('alerts', __name__)
 
@@ -20,6 +20,19 @@ _DETAIL_ENDPOINT = {
 }
 
 
+@bp.before_request
+def _guard_view():
+    # Seule la consultation du journal d'alertes exige le droit de voir
+    # "alerts". Le snooze depend de la categorie de l'element vise (voir plus bas).
+    if request.endpoint == 'alerts.list':
+        return view_guard('alerts')
+    return None
+
+
+def _entity_category(entity_type):
+    return entity_type + 's'  # account -> accounts, etc.
+
+
 @bp.route('/')
 @login_required
 def list():
@@ -29,7 +42,6 @@ def list():
 
 @bp.route('/snooze', methods=['POST'])
 @login_required
-@require_edit
 def snooze():
     entity_type = request.form.get('entity_type', '')
     entity_id = request.form.get('entity_id', '')
@@ -38,6 +50,9 @@ def snooze():
     if entity_type not in VALID_TYPES or not entity_id.isdigit() or not days.isdigit():
         flash('Report impossible : parametres invalides.', 'danger')
         return redirect(request.referrer or url_for('dashboard.index'))
+    if not current_user.can_edit(_entity_category(entity_type)):
+        flash("Vous n'avez pas les droits pour reporter cette alerte.", 'danger')
+        return redirect(request.referrer or url_for('dashboard.index'))
     until = set_snooze(entity_type, entity_id, int(days), reason, current_user.username)
     flash(f"Alerte reportee jusqu'au {until.strftime('%d/%m/%Y')}.", 'success')
     return redirect(url_for(_DETAIL_ENDPOINT[entity_type], id=int(entity_id)))
@@ -45,12 +60,14 @@ def snooze():
 
 @bp.route('/unsnooze', methods=['POST'])
 @login_required
-@require_edit
 def unsnooze():
     entity_type = request.form.get('entity_type', '')
     entity_id = request.form.get('entity_id', '')
     if entity_type not in VALID_TYPES or not entity_id.isdigit():
         flash('Operation impossible.', 'danger')
+        return redirect(request.referrer or url_for('dashboard.index'))
+    if not current_user.can_edit(_entity_category(entity_type)):
+        flash("Vous n'avez pas les droits pour cette action.", 'danger')
         return redirect(request.referrer or url_for('dashboard.index'))
     clear_snooze(entity_type, entity_id)
     flash('Report annule, les alertes reprennent.', 'success')

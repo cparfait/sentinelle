@@ -5,9 +5,14 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import Domain, DomainHistory
 from app.domain_checker import fetch_domain_info
-from app.decorators import require_edit
+from app.decorators import require_edit, require_delete, view_guard
 
 bp = Blueprint('domains', __name__)
+
+
+@bp.before_request
+def _guard_view():
+    return view_guard('domains')
 
 
 def refresh_domain_rdap(domain, performed_by):
@@ -128,7 +133,7 @@ def check_rdap(id):
 
 @bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
-@require_edit
+@require_delete
 def delete(id):
     domain = Domain.query.get_or_404(id)
     domain.is_active = False

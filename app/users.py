@@ -1,9 +1,77 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
-from app.models import User
+from app.models import (User, Role, PERMISSION_CATEGORIES, CATEGORY_LABELS,
+                        PERMISSION_LEVELS)
+from app.decorators import require_admin
 
 bp = Blueprint('users', __name__)
+
+
+@bp.route('/roles')
+@login_required
+@require_admin
+def roles():
+    roles = Role.query.order_by(Role.id).all()
+    counts = {r.name: User.query.filter_by(role=r.name).count() for r in roles}
+    return render_template('users/roles.html', roles=roles, counts=counts,
+                           categories=PERMISSION_CATEGORIES, labels=CATEGORY_LABELS,
+                           levels=PERMISSION_LEVELS)
+
+
+@bp.route('/roles/<int:id>/save', methods=['POST'])
+@login_required
+@require_admin
+def roles_save(id):
+    role = Role.query.get_or_404(id)
+    role.description = request.form.get('description', role.description)
+    if not role.is_admin:
+        perms = {}
+        for c in PERMISSION_CATEGORIES:
+            try:
+                lvl = int(request.form.get(f'perm_{c}', 0))
+            except (TypeError, ValueError):
+                lvl = 0
+            perms[c] = max(0, min(3, lvl))
+        role.permissions = perms
+    db.session.commit()
+    flash(f'Role « {role.name} » enregistre', 'success')
+    return redirect(url_for('users.roles'))
+
+
+@bp.route('/roles/create', methods=['POST'])
+@login_required
+@require_admin
+def roles_create():
+    name = (request.form.get('name') or '').strip().lower()
+    if not name:
+        flash('Nom de role requis.', 'danger')
+        return redirect(url_for('users.roles'))
+    if Role.query.filter_by(name=name).first():
+        flash('Ce role existe deja.', 'danger')
+        return redirect(url_for('users.roles'))
+    db.session.add(Role(name=name, description=request.form.get('description', ''),
+                        is_admin=False, permissions={c: 0 for c in PERMISSION_CATEGORIES}))
+    db.session.commit()
+    flash(f'Role « {name} » cree.', 'success')
+    return redirect(url_for('users.roles'))
+
+
+@bp.route('/roles/<int:id>/delete', methods=['POST'])
+@login_required
+@require_admin
+def roles_delete(id):
+    role = Role.query.get_or_404(id)
+    if role.name in ('admin', 'editor', 'viewer'):
+        flash('Les roles par defaut ne peuvent pas etre supprimes.', 'danger')
+        return redirect(url_for('users.roles'))
+    if User.query.filter_by(role=role.name).count() > 0:
+        flash('Role utilise par des utilisateurs : reassignez-les d abord.', 'danger')
+        return redirect(url_for('users.roles'))
+    db.session.delete(role)
+    db.session.commit()
+    flash('Role supprime.', 'success')
+    return redirect(url_for('users.roles'))
 
 
 @bp.route('/')
