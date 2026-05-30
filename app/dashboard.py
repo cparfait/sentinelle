@@ -10,6 +10,24 @@ from app.decorators import require_edit
 bp = Blueprint('dashboard', __name__)
 
 
+@bp.route('/trash')
+@login_required
+def trash():
+    from app.trash import list_trashed
+    return render_template('trash.html', groups=list_trashed(current_user))
+
+
+@bp.route('/trash/restore', methods=['POST'])
+@login_required
+def trash_restore():
+    from app.trash import restore
+    ok = restore(current_user, request.form.get('entity_type', ''),
+                 request.form.get('entity_id', '0'), current_user.username)
+    flash('Élément restauré.' if ok else 'Restauration impossible.',
+          'success' if ok else 'danger')
+    return redirect(url_for('dashboard.trash'))
+
+
 @bp.route('/agenda')
 @login_required
 def agenda():

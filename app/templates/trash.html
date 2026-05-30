@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Corbeille - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-trash3 me-2"></i>Corbeille</h4>
+        <small class="text-muted">Éléments supprimés — restaurables</small>
+    </div>
+    <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-grid-1x2 me-1"></i> Tableau de bord
+    </a>
+</div>
+
+{% if not groups %}
+<div class="data-card p-5 text-center text-muted">
+    <i class="bi bi-trash3" style="font-size: 2.5rem;"></i>
+    <p class="mt-2 mb-0">La corbeille est vide.</p>
+</div>
+{% endif %}
+
+{% for g in groups %}
+<div class="data-card mb-3">
+    <div class="card-header-custom"><h6 class="fw-bold mb-0">{{ g.label }} <span class="text-muted small">({{ g['items']|length }})</span></h6></div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <tbody>
+                {% for it in g['items'] %}
+                <tr>
+                    <td>{{ it.name }}</td>
+                    <td class="text-muted" style="width: 160px;">{{ it.date.strftime('%d/%m/%Y %H:%M') if it.date else '' }}</td>
+                    <td style="width: 130px;">
+                        <form method="POST" action="{{ url_for('dashboard.trash_restore') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="entity_type" value="{{ g.etype }}">
+                            <input type="hidden" name="entity_id" value="{{ it.id }}">
+                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> Restaurer
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
