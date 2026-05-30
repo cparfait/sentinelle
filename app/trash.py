@@ -36,10 +36,45 @@ def list_trashed(user):
         if items:
             groups.append({
                 'etype': etype, 'label': s['label'],
+                'can_purge': user.can_delete(s['cat']),
                 'items': [{'id': o.id, 'name': s['name'](o),
                            'date': o.updated_at} for o in items],
             })
     return groups
+
+
+def _purge_obj(etype, obj):
+    """Suppression definitive d'un objet + nettoyage du snooze associe."""
+    from app.snooze import clear_snooze
+    clear_snooze(etype, obj.id)
+    db.session.delete(obj)
+
+
+def purge_one(user, etype, entity_id):
+    s = SPECS.get(etype)
+    if not s or not str(entity_id).isdigit() or not user.can_delete(s['cat']):
+        return False
+    obj = s['model'].query.filter_by(id=int(entity_id), is_active=False).first()
+    if not obj:
+        return False
+    _purge_obj(etype, obj)
+    db.session.commit()
+    return True
+
+
+def purge_all(user):
+    """Supprime definitivement tous les elements en corbeille des categories
+    sur lesquelles l'utilisateur a le droit de suppression. Retourne le total."""
+    total = 0
+    for etype, s in SPECS.items():
+        if not user.can_delete(s['cat']):
+            continue
+        for obj in s['model'].query.filter_by(is_active=False).all():
+            _purge_obj(etype, obj)
+            total += 1
+    if total:
+        db.session.commit()
+    return total
 
 
 def restore(user, etype, entity_id, performed_by):

@@ -28,6 +28,27 @@ def trash_restore():
     return redirect(url_for('dashboard.trash'))
 
 
+@bp.route('/trash/purge-one', methods=['POST'])
+@login_required
+def trash_purge_one():
+    from app.trash import purge_one
+    ok = purge_one(current_user, request.form.get('entity_type', ''),
+                   request.form.get('entity_id', '0'))
+    flash('Élément supprimé définitivement.' if ok else 'Suppression impossible.',
+          'success' if ok else 'danger')
+    return redirect(url_for('dashboard.trash'))
+
+
+@bp.route('/trash/purge', methods=['POST'])
+@login_required
+def trash_purge():
+    from app.trash import purge_all
+    n = purge_all(current_user)
+    flash(f'Corbeille vidée ({n} élément(s) supprimé(s) définitivement).'
+          if n else 'Rien à supprimer.', 'success' if n else 'info')
+    return redirect(url_for('dashboard.trash'))
+
+
 @bp.route('/agenda')
 @login_required
 def agenda():

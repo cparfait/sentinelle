@@ -44,7 +44,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ✅ **Tri & filtres** sur les listes — tri automatique par criticité + surlignage + **filtres interactifs par statut** (barre Tous/Critique/Attention/À surveiller/OK générée en JS sur les tableaux `js-filterable`).
 - ⬜ **Pagination / recherche** dans les longues listes.
 - ✅ **Badges de compteur** dans la sidebar — nombre d'éléments critiques (rouges) par section (comptes, certificats, domaines, backups, tests).
-- ✅ **Corbeille** — page listant les éléments supprimés (désactivés) par catégorie, avec restauration (selon droits d'édition). Confirmations de suppression déjà en place sur les fiches.
+- ✅ **Corbeille** — page listant les éléments supprimés (désactivés) par catégorie, avec restauration (droit d'édition) et **suppression définitive** / **vider la corbeille** (droit de suppression). Confirmations en place.
 
 ## Technique / intégrations
 - ✅ **Retirer Flask‑Mail** — supprimé (code + dépendance), l'envoi passe par smtplib directement.
