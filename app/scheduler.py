@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from app import db
 from app.models import (Account, Certificate, Backup, BackupCheck, TestTask, Domain,
                         AccessReview, SystemUpdate)
@@ -252,6 +253,26 @@ def scan_backup_inbox():
         scan_inbox(directory)
 
 
+def _on_job_event(event):
+    """Enregistre chaque execution de job (succes/erreur) pour diagnostic."""
+    if _app is None:
+        return
+    with _app.app_context():
+        from app.models import SchedulerRun
+        try:
+            db.session.add(SchedulerRun(
+                job_id=event.job_id,
+                status='error' if event.exception else 'ok',
+                message=str(event.exception) if event.exception else None))
+            # purge : ne garde que les 500 dernieres executions
+            old = SchedulerRun.query.order_by(SchedulerRun.id.desc()).offset(500).all()
+            for r in old:
+                db.session.delete(r)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+
 def start_scheduler(app):
     """Demarre le scheduler avec l'app reelle (sans la recreer dans les jobs)."""
     global _app
@@ -259,6 +280,8 @@ def start_scheduler(app):
 
     if scheduler.running:
         return
+
+    scheduler.add_listener(_on_job_event, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
     if app.config.get('BACKUP_INBOX_DIR'):
         scheduler.add_job(scan_backup_inbox, 'interval', minutes=30,

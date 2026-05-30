@@ -25,7 +25,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ⬜ **Widgets dashboard** — taux de conformité, top urgences, compteurs.
 
 ## Exploitation & fiabilité de l'outil
-- ⬜ **Historique d'exécution du scheduler** — tracer chaque run des jobs.
+- ✅ **Historique d'exécution du scheduler** — page admin « Tâches planifiées » : prochaines exécutions + dernières exécutions (succès/erreur) via un écouteur APScheduler (`SchedulerRun`, purge à 500).
 - ✅ **Import CSV** — import en masse depuis le bouton « CSV » de chaque liste + **modèle d'import téléchargeable** (détection séparateur, dates JJ/MM/AAAA ou AAAA‑MM‑JJ).
 - ✅ **Auto-sauvegarde de la base SQLite** — copie horodatée cohérente (API sqlite3) quotidienne (01h00) + rotation (N copies) + bouton « Sauvegarder maintenant », liste et **suppression** dans Préférences.
 - ✅ **Export total de secours (clé USB)** — archive ZIP (base + CSV + page HTML consultable hors-ligne + LISEZMOI) pour PRA en cas de crash/attaque. Bouton « Export complet » (admin).

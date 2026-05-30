@@ -67,6 +67,19 @@ def audit():
                            page=page, pages=pages, total=total)
 
 
+@bp.route('/scheduler')
+@login_required
+@require_admin
+def scheduler_status():
+    from app.scheduler import scheduler as sched
+    from app.models import SchedulerRun
+    jobs = sorted(({'id': j.id, 'next': j.next_run_time} for j in sched.get_jobs()),
+                  key=lambda x: x['next'] or x['id'])
+    runs = SchedulerRun.query.order_by(SchedulerRun.run_at.desc()).limit(100).all()
+    return render_template('users/scheduler.html', jobs=jobs, runs=runs,
+                           running=sched.running)
+
+
 @bp.route('/roles')
 @login_required
 @require_admin

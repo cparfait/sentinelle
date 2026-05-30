@@ -421,6 +421,15 @@ class UpdateHistory(db.Model):
     performed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+class SchedulerRun(db.Model):
+    """Trace d'execution d'un job planifie (diagnostic des alertes)."""
+    id = db.Column(db.Integer, primary_key=True)
+    job_id = db.Column(db.String(64))
+    status = db.Column(db.String(20))  # ok / error
+    message = db.Column(db.Text)
+    run_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
 class ActionLog(db.Model):
     """Journal d'actions central et persistant (survit a la suppression des
     entites) : qui a fait quoi, et quand."""
