@@ -22,7 +22,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ✅ **Export CSV** — bouton « CSV » sur chaque liste (comptes, certificats, domaines, backups, tests) : export UTF‑8/Excel‑FR.
 - ⬜ **Vue tendances** — évolution des statuts dans le temps (graphes).
 - ✅ **Page « À venir »** — agenda des échéances (rotations MDP, certificats, domaines, tests) groupé par horizon (en retard / cette semaine / ce mois / 90 j), filtré selon les droits.
-- ⬜ **Widgets dashboard** — taux de conformité, top urgences, compteurs.
+- ✅ **Widgets dashboard** — bandeau de **conformité globale** (% OK + barre de progression + compteurs), en plus des cartes par catégorie et de la liste des urgences déjà présentes.
 
 ## Exploitation & fiabilité de l'outil
 - ✅ **Historique d'exécution du scheduler** — page admin « Tâches planifiées » : prochaines exécutions + dernières exécutions (succès/erreur) via un écouteur APScheduler (`SchedulerRun`, purge à 500).

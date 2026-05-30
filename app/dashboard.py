@@ -228,9 +228,16 @@ def index():
         'updates': {'total': len(updates), 'danger': upd_danger, 'warning': upd_warning, 'ok': upd_ok},
     }
 
+    totals = {'total': 0, 'ok': 0, 'warning': 0, 'danger': 0}
+    for v in stats.values():
+        for k in totals:
+            totals[k] += v[k]
+    conformity = round(100 * totals['ok'] / totals['total']) if totals['total'] else 100
+
     return render_template('dashboard.html', stats=stats, urgent_items=urgent_items,
                            recent_alerts=recent_alerts, backups=backups,
-                           backup_checks=backup_checks, today=today)
+                           backup_checks=backup_checks, today=today,
+                           totals=totals, conformity=conformity)
 
 
 @bp.route('/quick-check', methods=['POST'])
