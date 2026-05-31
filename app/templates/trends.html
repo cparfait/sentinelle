@@ -2,36 +2,130 @@
 {% block title %}Tendances - Sentinelle{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h4 class="fw-bold mb-0"><i class="bi bi-graph-up me-2"></i>Tendances</h4>
         <small class="text-muted">Évolution sur les 30 derniers jours</small>
     </div>
-    <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
+    <a href="{{ url_for('dashboard.index') }}" class="btn btn-sm btn-outline-secondary">
         <i class="bi bi-grid-1x2 me-1"></i> Tableau de bord
     </a>
 </div>
 
-<div class="row g-3">
-    <div class="col-lg-6">
-        <div class="data-card p-3">
-            <h6 class="fw-bold mb-3">Répartition par statut</h6>
-            <canvas id="chartDist" height="180"></canvas>
+{% set total = dist.danger + dist.warning + dist.info + dist.success %}
+{% set conformity = ((dist.success / total * 100) | round | int) if total else 0 %}
+{% set conf_color = 'success' if conformity >= 90 else ('warning' if conformity >= 70 else 'danger') %}
+{% set alerts_total = alerts | sum %}
+{% set b_ok = backups.ok | sum %}
+{% set b_warn = backups.warning | sum %}
+{% set b_fail = backups.failed | sum %}
+{% set b_tot = b_ok + b_warn + b_fail %}
+{% set b_rate = ((b_ok / b_tot * 100) | round | int) if b_tot else 0 %}
+
+<!-- Bandeau d'indicateurs -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted d-block">Éléments suivis</small>
+                    <span class="stat-number">{{ total }}</span>
+                </div>
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-collection"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted d-block">Conformité globale</small>
+                    <span class="stat-number text-{{ conf_color }}">{{ conformity }}%</span>
+                </div>
+                <div class="stat-icon bg-{{ conf_color }} bg-opacity-10 text-{{ conf_color }}"><i class="bi bi-shield-check"></i></div>
+            </div>
+            <div class="progress mt-2" style="height: 6px;">
+                <div class="progress-bar bg-{{ conf_color }}" style="width: {{ conformity }}%;"></div>
+            </div>
         </div>
     </div>
     {% if show_alerts %}
-    <div class="col-lg-6">
-        <div class="data-card p-3">
-            <h6 class="fw-bold mb-3">Alertes envoyées par jour</h6>
-            <canvas id="chartAlerts" height="180"></canvas>
+    <div class="col-sm-6 col-lg-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted d-block">Alertes (30 j)</small>
+                    <span class="stat-number text-danger">{{ alerts_total }}</span>
+                </div>
+                <div class="stat-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-bell"></i></div>
+            </div>
         </div>
     </div>
     {% endif %}
     {% if show_backups %}
+    <div class="col-sm-6 col-lg-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted d-block">Backups réussis (30 j)</small>
+                    <span class="stat-number text-success">{{ b_rate }}%</span>
+                </div>
+                <div class="stat-icon bg-success bg-opacity-10 text-success"><i class="bi bi-cloud-check"></i></div>
+            </div>
+            <small class="text-muted">{{ b_ok }} OK · {{ b_warn }} warn · {{ b_fail }} échec</small>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Graphiques -->
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="data-card h-100">
+            <div class="card-header-custom">
+                <h6 class="fw-bold mb-0"><i class="bi bi-pie-chart me-2 text-primary"></i>Répartition par statut</h6>
+            </div>
+            <div class="p-3">
+                {% if total %}
+                <div style="position: relative; height: 280px;">
+                    <canvas id="chartDist"></canvas>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                    <p class="mb-0 mt-2">Aucun élément suivi pour le moment.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if show_alerts %}
+    <div class="col-lg-7">
+        <div class="data-card h-100">
+            <div class="card-header-custom">
+                <h6 class="fw-bold mb-0"><i class="bi bi-activity me-2 text-danger"></i>Alertes envoyées par jour</h6>
+            </div>
+            <div class="p-3">
+                <div style="position: relative; height: 280px;">
+                    <canvas id="chartAlerts"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if show_backups %}
     <div class="col-12">
-        <div class="data-card p-3">
-            <h6 class="fw-bold mb-3">Checks de backup par jour</h6>
-            <canvas id="chartBackups" height="90"></canvas>
+        <div class="data-card">
+            <div class="card-header-custom">
+                <h6 class="fw-bold mb-0"><i class="bi bi-bar-chart me-2 text-info"></i>Checks de backup par jour</h6>
+            </div>
+            <div class="p-3">
+                <div style="position: relative; height: 240px;">
+                    <canvas id="chartBackups"></canvas>
+                </div>
+            </div>
         </div>
     </div>
     {% endif %}
@@ -40,41 +134,110 @@
 <script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
 <script>
 const LABELS = {{ labels | tojson }};
-const C = {danger: '#ef4444', warning: '#f59e0b', info: '#3b82f6', success: '#10b981'};
+const STATUS = {danger: '#ef4444', warning: '#f59e0b', info: '#3b82f6', success: '#10b981'};
+let trendCharts = [];
 
-new Chart(document.getElementById('chartDist'), {
-    type: 'doughnut',
-    data: {
-        labels: ['Critique', 'Attention', 'Proche', 'OK'],
-        datasets: [{
-            data: [{{ dist.danger }}, {{ dist.warning }}, {{ dist.info }}, {{ dist.success }}],
-            backgroundColor: [C.danger, C.warning, C.info, C.success],
-        }]
-    },
-    options: {responsive: true, plugins: {legend: {position: 'bottom'}}}
-});
+function cssVar(name, fallback) {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || fallback;
+}
 
-{% if show_alerts %}
-new Chart(document.getElementById('chartAlerts'), {
-    type: 'line',
-    data: {labels: LABELS, datasets: [{
-        label: 'Alertes', data: {{ alerts | tojson }},
-        borderColor: C.danger, backgroundColor: 'rgba(239,68,68,.15)', fill: true, tension: .3
-    }]},
-    options: {responsive: true, plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true, ticks: {precision: 0}}}}
-});
-{% endif %}
+function hexToRgba(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
 
-{% if show_backups %}
-new Chart(document.getElementById('chartBackups'), {
-    type: 'bar',
-    data: {labels: LABELS, datasets: [
-        {label: 'OK', data: {{ backups.ok | tojson }}, backgroundColor: C.success},
-        {label: 'Warning', data: {{ backups.warning | tojson }}, backgroundColor: C.warning},
-        {label: 'Échec', data: {{ backups.failed | tojson }}, backgroundColor: C.danger},
-    ]},
-    options: {responsive: true, scales: {x: {stacked: true}, y: {stacked: true, beginAtZero: true, ticks: {precision: 0}}}}
-});
-{% endif %}
+function buildCharts() {
+    trendCharts.forEach(c => c.destroy());
+    trendCharts = [];
+
+    const tick = cssVar('--text-light', '#94a3b8');
+    const grid = hexToRgba('#94a3b8', 0.18);
+    const cardBg = cssVar('--card-bg', '#ffffff');
+
+    Chart.defaults.color = tick;
+    Chart.defaults.font.family = cssVar('--font-sans', 'system-ui, sans-serif');
+    Chart.defaults.font.size = 12;
+    Chart.defaults.plugins.tooltip.padding = 10;
+    Chart.defaults.plugins.tooltip.cornerRadius = 8;
+    Chart.defaults.plugins.tooltip.boxPadding = 4;
+
+    const distEl = document.getElementById('chartDist');
+    if (distEl) {
+        trendCharts.push(new Chart(distEl, {
+            type: 'doughnut',
+            data: {
+                labels: ['Critique', 'Attention', 'À surveiller', 'OK'],
+                datasets: [{
+                    data: [{{ dist.danger }}, {{ dist.warning }}, {{ dist.info }}, {{ dist.success }}],
+                    backgroundColor: [STATUS.danger, STATUS.warning, STATUS.info, STATUS.success],
+                    borderColor: cardBg,
+                    borderWidth: 3,
+                    hoverOffset: 8,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '66%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 16, boxWidth: 8 } }
+                }
+            }
+        }));
+    }
+
+    {% if show_alerts %}
+    const alertsEl = document.getElementById('chartAlerts');
+    if (alertsEl) {
+        const ctx = alertsEl.getContext('2d');
+        const grad = ctx.createLinearGradient(0, 0, 0, 280);
+        grad.addColorStop(0, hexToRgba(STATUS.danger, 0.28));
+        grad.addColorStop(1, hexToRgba(STATUS.danger, 0));
+        trendCharts.push(new Chart(alertsEl, {
+            type: 'line',
+            data: { labels: LABELS, datasets: [{
+                label: 'Alertes', data: {{ alerts | tojson }},
+                borderColor: STATUS.danger, backgroundColor: grad,
+                fill: true, tension: 0.35, borderWidth: 2.5,
+                pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: STATUS.danger,
+            }]},
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { maxTicksLimit: 10, autoSkip: true } },
+                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: grid, drawBorder: false } }
+                }
+            }
+        }));
+    }
+    {% endif %}
+
+    {% if show_backups %}
+    const backupsEl = document.getElementById('chartBackups');
+    if (backupsEl) {
+        trendCharts.push(new Chart(backupsEl, {
+            type: 'bar',
+            data: { labels: LABELS, datasets: [
+                { label: 'OK', data: {{ backups.ok | tojson }}, backgroundColor: STATUS.success, borderRadius: 4, maxBarThickness: 18 },
+                { label: 'Warning', data: {{ backups.warning | tojson }}, backgroundColor: STATUS.warning, borderRadius: 4, maxBarThickness: 18 },
+                { label: 'Échec', data: {{ backups.failed | tojson }}, backgroundColor: STATUS.danger, borderRadius: 4, maxBarThickness: 18 },
+            ]},
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 14, boxWidth: 8 } } },
+                scales: {
+                    x: { stacked: true, grid: { display: false }, ticks: { maxTicksLimit: 12, autoSkip: true } },
+                    y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: grid, drawBorder: false } }
+                }
+            }
+        }));
+    }
+    {% endif %}
+}
+
+document.addEventListener('DOMContentLoaded', buildCharts);
+// Redessine les graphiques quand le thème change (clair/sombre)
+new MutationObserver(buildCharts).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 </script>
 {% endblock %}
