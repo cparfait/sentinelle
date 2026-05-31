@@ -52,7 +52,7 @@
             {% if setup_secret %}
             <p class="small text-muted mb-2">Scannez ce QR code avec votre application (Google / Microsoft Authenticator, etc.), puis saisissez le code à 6 chiffres pour activer.</p>
             <div class="d-flex gap-3 align-items-center flex-wrap mb-2">
-                <div style="width:160px;">{{ qr_svg | safe }}</div>
+                <div class="qr-box" style="width:160px;">{{ qr_svg | safe }}</div>
                 <div>
                     <small class="text-muted d-block">Clé manuelle :</small>
                     <code style="word-break:break-all;">{{ setup_secret }}</code>
