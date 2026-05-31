@@ -256,8 +256,21 @@
                         </select>
                     </div>
                 </div>
+                <div class="row g-2 mt-1">
+                    <div class="col-12"><small class="text-muted">Compte de service (lecture seule) — pour la synchro d'expiration des mots de passe AD :</small></div>
+                    <div class="col-md-6">
+                        <label class="form-label small">Identifiant du compte de service</label>
+                        <input type="text" name="ldap_bind_user" class="form-control form-control-sm"
+                               value="{{ ldap_config.bind_user }}" placeholder="svc-sentinelle@chatillon.lan">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">Mot de passe {% if ldap_config.bind_set %}<span class="text-success">(défini)</span>{% endif %}</label>
+                        <input type="password" name="ldap_bind_password" class="form-control form-control-sm"
+                               placeholder="{{ 'laisser vide pour ne pas changer' if ldap_config.bind_set else 'mot de passe du compte de service' }}">
+                    </div>
+                </div>
                 <button type="submit" class="btn btn-sm btn-primary mt-2"><i class="bi bi-check-lg me-1"></i> Enregistrer LDAP</button>
-                <small class="text-muted d-block mt-1">Les utilisateurs AD validés sont créés automatiquement avec le rôle par défaut.</small>
+                <small class="text-muted d-block mt-1">Les utilisateurs AD validés sont créés automatiquement avec le rôle par défaut. La synchro des expirations utilise le compte de service + le Base DN.</small>
             </form>
 
             <hr>

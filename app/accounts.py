@@ -22,6 +22,19 @@ def list():
     return render_template('accounts/list.html', accounts=accounts)
 
 
+@bp.route('/sync-ad', methods=['POST'])
+@login_required
+@require_edit
+def sync_ad():
+    from app.ldap_auth import sync_password_expirations
+    updated, errors = sync_password_expirations()
+    if errors:
+        flash('Synchro AD : ' + ' | '.join(errors[:3]), 'warning')
+    flash(f'{updated} compte(s) mis a jour depuis l\'AD.',
+          'success' if updated else 'info')
+    return redirect(url_for('accounts.list'))
+
+
 @bp.route('/create', methods=['GET', 'POST'])
 @login_required
 @require_edit

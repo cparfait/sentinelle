@@ -8,6 +8,15 @@
         <small class="text-muted">Gestion des rotations de mots de passe</small>
     </div>
     <div class="d-flex gap-2">
+        {% if config.LDAP_ENABLED and config.LDAP_BIND_USER and current_user.can_edit('accounts') %}
+        <form method="POST" action="{{ url_for('accounts.sync_ad') }}" class="d-inline"
+              onsubmit="return confirm('Synchroniser les expirations de mots de passe depuis l\'AD ?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-secondary" title="Synchroniser depuis Active Directory">
+                <i class="bi bi-arrow-repeat me-1"></i> Synchroniser AD
+            </button>
+        </form>
+        {% endif %}
         {% with csv_key='accounts' %}{% include '_csv_toolbar.html' %}{% endwith %}
         {% if current_user.can_edit('accounts') %}
         <a href="{{ url_for('accounts.create') }}" class="btn btn-primary">

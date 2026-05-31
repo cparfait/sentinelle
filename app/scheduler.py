@@ -155,6 +155,18 @@ def refresh_domains_rdap():
                 db.session.rollback()
 
 
+def sync_ad_passwords():
+    """Synchronise l'expiration des mots de passe depuis l'AD (compte de service)."""
+    with _app.app_context():
+        from app.ldap_auth import sync_password_expirations
+        try:
+            updated, errors = sync_password_expirations()
+            _app.logger.info('Synchro AD : %s compte(s) mis a jour, %s erreur(s)',
+                             updated, len(errors))
+        except Exception as e:
+            _app.logger.error('Echec synchro AD : %s', e)
+
+
 def check_reviews():
     with _app.app_context():
         today = datetime.now(timezone.utc).date()
@@ -290,6 +302,9 @@ def start_scheduler(app):
     scheduler.add_job(backup_database_job, 'cron', hour=1, minute=0,
                       id='backup_database_job', replace_existing=True)
 
+    if app.config.get('LDAP_ENABLED') and app.config.get('LDAP_BIND_USER'):
+        scheduler.add_job(sync_ad_passwords, 'cron', hour=6, minute=0,
+                          id='sync_ad_passwords', replace_existing=True)
     scheduler.add_job(refresh_certificates_tls, 'cron', hour=7, minute=0,
                       id='refresh_certificates_tls', replace_existing=True)
     scheduler.add_job(refresh_domains_rdap, 'cron', hour=7, minute=10,

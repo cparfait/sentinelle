@@ -350,13 +350,20 @@ def preferences():
                 'LDAP_DOMAIN': request.form.get('ldap_domain', '').strip(),
                 'LDAP_BASE_DN': request.form.get('ldap_base_dn', '').strip(),
                 'LDAP_DEFAULT_ROLE': request.form.get('ldap_default_role', 'viewer'),
+                'LDAP_BIND_USER': request.form.get('ldap_bind_user', '').strip(),
             }
+            bind_pw = request.form.get('ldap_bind_password', '')
+            if bind_pw:
+                updates['LDAP_BIND_PASSWORD'] = bind_pw
             _update_env_file(updates)
             current_app.config.update(
                 LDAP_ENABLED=enabled, LDAP_SERVER=updates['LDAP_SERVER'],
                 LDAP_PORT=int(port), LDAP_USE_SSL=use_ssl,
                 LDAP_DOMAIN=updates['LDAP_DOMAIN'], LDAP_BASE_DN=updates['LDAP_BASE_DN'],
-                LDAP_DEFAULT_ROLE=updates['LDAP_DEFAULT_ROLE'])
+                LDAP_DEFAULT_ROLE=updates['LDAP_DEFAULT_ROLE'],
+                LDAP_BIND_USER=updates['LDAP_BIND_USER'])
+            if bind_pw:
+                current_app.config['LDAP_BIND_PASSWORD'] = bind_pw
             audit_record('config LDAP', detail=f'actif={enabled}', category='preferences')
             flash('Configuration LDAP enregistree', 'success')
 
@@ -433,6 +440,8 @@ def preferences():
         'domain': current_app.config.get('LDAP_DOMAIN', ''),
         'base_dn': current_app.config.get('LDAP_BASE_DN', ''),
         'default_role': current_app.config.get('LDAP_DEFAULT_ROLE', 'viewer'),
+        'bind_user': current_app.config.get('LDAP_BIND_USER', ''),
+        'bind_set': bool(current_app.config.get('LDAP_BIND_PASSWORD')),
     }
 
     o365_app_configured = all([o365_config['client_id'], o365_config['client_secret'],

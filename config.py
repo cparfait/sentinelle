@@ -39,6 +39,9 @@ class Config:
     LDAP_BASE_DN = os.getenv('LDAP_BASE_DN', '')         # ex: DC=chatillon,DC=lan (recherche email)
     LDAP_USER_DN_TEMPLATE = os.getenv('LDAP_USER_DN_TEMPLATE', '')  # alternative au bind UPN
     LDAP_DEFAULT_ROLE = os.getenv('LDAP_DEFAULT_ROLE', 'viewer')    # role des comptes AD provisionnes
+    # Compte de service pour la synchro d'expiration des mots de passe AD (lecture seule).
+    LDAP_BIND_USER = os.getenv('LDAP_BIND_USER', '')        # ex: svc-sentinelle@chatillon.lan
+    LDAP_BIND_PASSWORD = os.getenv('LDAP_BIND_PASSWORD', '')
 
     # Seuils de statut en jours restants : (danger <=, attention <=, proche <=).
     THRESHOLD_EXPIRY = _triplet('THRESHOLD_EXPIRY', (7, 15, 30))   # comptes, certificats

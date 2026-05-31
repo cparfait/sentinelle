@@ -51,7 +51,7 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ✅ **Retirer Flask‑Mail** — supprimé (code + dépendance), l'envoi passe par smtplib directement.
 - ✅ **CI GitHub Actions** — workflow `.github/workflows/ci.yml` : install deps + compilation + smoke test (`ci_smoke.py`) à chaque push/PR.
 - ✅ **LDAP / Active Directory** — authentification **hybride** : mot de passe local d'abord, puis bind LDAP/AD (ldap3). Utilisateurs AD provisionnés automatiquement (rôle par défaut). Configurable dans Préférences. Comptes locaux et AD utilisables en même temps.
-- ⬜ **Synchronisation des comptes AD** — expiration réelle des mots de passe AD.
+- ✅ **Synchronisation des comptes AD** — synchro de l'expiration réelle des mots de passe depuis l'AD (`msDS-UserPasswordExpiryTimeComputed`) via un compte de service : job quotidien (6h00) + bouton « Synchroniser AD » sur la liste des comptes.
 
 ---
 
