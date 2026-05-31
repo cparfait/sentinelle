@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
     <title>{% block title %}Admin Dashboard{% endblock %}</title>
+    {# Anti-FOUC : applique le thème enregistré avant le premier rendu #}
+    <script>(function(){try{var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
     <link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='vendor/bootstrap-icons.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
@@ -11,6 +14,19 @@
 </head>
 <body>
     {% if current_user.is_authenticated %}
+    <a href="#main-content" class="skip-link">Aller au contenu</a>
+
+    <div class="app-topbar">
+        <button class="topbar-toggle" type="button" onclick="toggleSidebar()" aria-label="Ouvrir le menu">
+            <i class="bi bi-list"></i>
+        </button>
+        <span class="topbar-title">Sentinelle</span>
+        <span class="theme-toggle" onclick="toggleTheme()" title="Changer le theme" role="button" tabindex="0">
+            <i class="bi bi-moon js-theme-icon"></i>
+        </span>
+    </div>
+    <div class="sidebar-backdrop" onclick="closeSidebar()"></div>
+
     <div class="sidebar">
         <div class="sidebar-header">
             <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" class="sidebar-logo-icon">
@@ -145,8 +161,8 @@
                         <div class="sidebar-role">{{ 'Administrateur' if current_user.is_admin else 'Utilisateur' }}</div>
                     </div>
                 </div>
-                <span class="theme-toggle" onclick="toggleTheme()" title="Changer le theme">
-                    <i id="theme-icon" class="bi bi-moon"></i>
+                <span class="theme-toggle" onclick="toggleTheme()" title="Changer le theme" role="button" tabindex="0">
+                    <i id="theme-icon" class="bi bi-moon js-theme-icon"></i>
                 </span>
             </div>
             <div class="sidebar-footer-actions">
@@ -160,20 +176,23 @@
         </div>
     </div>
 
-    <div class="main-content">
+    <main class="main-content" id="main-content">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
+        {% set flash_icons = {'success': 'check-circle-fill', 'danger': 'exclamation-octagon-fill', 'warning': 'exclamation-triangle-fill', 'info': 'info-circle-fill'} %}
         {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        {% set cat = category if category in ['success', 'danger', 'warning', 'info'] else 'info' %}
+        <div class="alert alert-{{ cat }} alert-dismissible fade show d-flex align-items-center gap-2 js-autodismiss" role="alert">
+            <i class="bi bi-{{ flash_icons[cat] }}"></i>
+            <div class="flex-grow-1">{{ message }}</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
         </div>
         {% endfor %}
         {% endif %}
         {% endwith %}
 
         {% block content %}{% endblock %}
-    </div>
+    </main>
     {% else %}
     {% block login_content %}{% endblock %}
     {% endif %}

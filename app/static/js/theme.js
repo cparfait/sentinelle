@@ -1,22 +1,62 @@
+function applyThemeIcons(theme) {
+    const cls = theme === 'dark' ? 'bi bi-sun js-theme-icon' : 'bi bi-moon js-theme-icon';
+    document.querySelectorAll('.js-theme-icon').forEach(function(icon) {
+        icon.className = cls;
+    });
+}
+
 function toggleTheme() {
     const html = document.documentElement;
-    const current = html.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
+    const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-    const icon = document.getElementById('theme-icon');
-    if (icon) {
-        icon.className = next === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
-    }
+    try { localStorage.setItem('theme', next); } catch (e) {}
+    applyThemeIcons(next);
+}
+
+/* ---- Menu latéral mobile (off-canvas) ---- */
+function openSidebar() {
+    document.querySelector('.sidebar')?.classList.add('open');
+    document.querySelector('.sidebar-backdrop')?.classList.add('show');
+}
+function closeSidebar() {
+    document.querySelector('.sidebar')?.classList.remove('open');
+    document.querySelector('.sidebar-backdrop')?.classList.remove('show');
+}
+function toggleSidebar() {
+    document.querySelector('.sidebar')?.classList.contains('open') ? closeSidebar() : openSidebar();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    const saved = localStorage.getItem('theme') || 'light';
+    const saved = (function() { try { return localStorage.getItem('theme'); } catch (e) { return null; } })() || 'light';
     document.documentElement.setAttribute('data-theme', saved);
-    const icon = document.getElementById('theme-icon');
-    if (icon) {
-        icon.className = saved === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
-    }
+    applyThemeIcons(saved);
+
+    // Fermer le menu mobile après un clic sur un lien de navigation
+    document.querySelectorAll('.sidebar-link').forEach(function(link) {
+        link.addEventListener('click', closeSidebar);
+    });
+    // Revenir en mode bureau : réinitialiser l'état mobile
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 991) closeSidebar();
+    });
+    // Permettre Échap pour fermer le menu
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeSidebar();
+    });
+
+    // Auto-fermeture des messages flash de succès/info après 6 s
+    document.querySelectorAll('.alert.js-autodismiss').forEach(function(el) {
+        if (/alert-(success|info)/.test(el.className)) {
+            setTimeout(function() {
+                if (window.bootstrap && bootstrap.Alert) {
+                    bootstrap.Alert.getOrCreateInstance(el).close();
+                } else {
+                    el.classList.remove('show');
+                }
+            }, 6000);
+        }
+    });
+
     initStatusFilters();
 });
 
