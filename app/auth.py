@@ -338,6 +338,20 @@ def preferences():
             except Exception as e:
                 flash(f"Suppression impossible : {e}", 'danger')
 
+        elif action == 'save_teams':
+            url = request.form.get('teams_webhook', '').strip()
+            _update_env_file({'TEAMS_WEBHOOK_URL': url})
+            current_app.config['TEAMS_WEBHOOK_URL'] = url
+            audit_record('config Teams', detail='actif' if url else 'desactive', category='preferences')
+            flash('Configuration Teams enregistree', 'success')
+
+        elif action == 'test_teams':
+            from app.notify import send_teams
+            ok = send_teams('Test Teams', 'Notification de test depuis Sentinelle.',
+                            status='info', url=current_app.config.get('APP_BASE_URL'))
+            flash('Notification Teams envoyee.' if ok else "Echec de l'envoi Teams (verifier l'URL du webhook).",
+                  'success' if ok else 'danger')
+
         elif action == 'save_ldap':
             enabled = request.form.get('ldap_enabled') == 'on'
             use_ssl = request.form.get('ldap_ssl') == 'on'
@@ -427,6 +441,7 @@ def preferences():
     }
 
     alert_recipients = ', '.join(current_app.config.get('ALERT_RECIPIENTS', []) or [])
+    teams_webhook = current_app.config.get('TEAMS_WEBHOOK_URL', '')
 
     from app.db_backup import list_backups
     db_backups = list_backups(current_app)
@@ -467,7 +482,7 @@ def preferences():
                            o365_app_configured=o365_app_configured,
                            alert_recipients=alert_recipients,
                            db_backups=db_backups, thresholds=thresholds,
-                           ldap_config=ldap_config)
+                           ldap_config=ldap_config, teams_webhook=teams_webhook)
 
 
 @bp.route('/auth/o365/callback')

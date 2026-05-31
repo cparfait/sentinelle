@@ -187,6 +187,26 @@
             </form>
 
             <hr>
+            <h6 class="fw-bold mb-3"><i class="bi bi-microsoft-teams me-2"></i>Notifications Microsoft Teams <span class="text-muted small">(optionnel)</span></h6>
+            <form method="POST" action="{{ url_for('auth.preferences') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label class="form-label small">URL du webhook entrant (Incoming Webhook) du canal
+                    {% if teams_webhook %}<span class="text-success">— configuré</span>{% endif %}</label>
+                <input type="url" name="teams_webhook" class="form-control form-control-sm"
+                       value="{{ teams_webhook }}" placeholder="https://...webhook.office.com/...">
+                <div class="d-flex gap-2 mt-2">
+                    <button type="submit" name="action" value="save_teams" class="btn btn-sm btn-primary">
+                        <i class="bi bi-check-lg me-1"></i> Enregistrer
+                    </button>
+                    <button type="submit" name="action" value="test_teams" class="btn btn-sm btn-outline-primary"
+                            {% if not teams_webhook %}disabled{% endif %}>
+                        <i class="bi bi-send me-1"></i> Tester Teams
+                    </button>
+                </div>
+                <small class="text-muted d-block mt-1">Les alertes seront aussi postées dans ce canal Teams, en plus du mail.</small>
+            </form>
+
+            <hr>
             <h6 class="fw-bold mb-3"><i class="bi bi-send me-2"></i>Test d'envoi</h6>
             <form method="POST" action="{{ url_for('auth.preferences') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
