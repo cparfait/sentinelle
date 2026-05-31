@@ -71,11 +71,14 @@ def list():
     backups = Backup.query.filter_by(is_active=True).all()
     rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
     backups.sort(key=lambda b: rank.get(b.computed_status(), 4))
+    from app.paging import paginate
+    backups, page, pages, total = paginate(backups)
     today = datetime.now(timezone.utc).date()
     today_checks = {}
     for b in backups:
         today_checks[b.id] = b.today_check()
-    return render_template('backups/list.html', backups=backups, today_checks=today_checks, today=today)
+    return render_template('backups/list.html', backups=backups, today_checks=today_checks,
+                           today=today, page=page, pages=pages, total=total)
 
 
 @bp.route('/daily', methods=['GET', 'POST'])

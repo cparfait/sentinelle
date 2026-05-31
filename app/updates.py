@@ -26,8 +26,11 @@ def list():
     updates = SystemUpdate.query.filter_by(is_active=True).order_by(SystemUpdate.name).all()
     rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
     updates.sort(key=lambda u: rank.get(u.status_color(), 4))
+    from app.paging import paginate
+    updates, page, pages, total = paginate(updates)
     return render_template('updates/list.html', updates=updates,
-                           status_choices=STATUS_CHOICES, type_choices=TYPE_CHOICES)
+                           status_choices=STATUS_CHOICES, type_choices=TYPE_CHOICES,
+                           page=page, pages=pages, total=total)
 
 
 @bp.route('/create', methods=['GET', 'POST'])

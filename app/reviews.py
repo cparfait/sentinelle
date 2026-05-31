@@ -20,7 +20,9 @@ def list():
         AccessReview.next_review.asc().nullsfirst()).all()
     rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
     reviews.sort(key=lambda r: rank.get(r.computed_status(), 4))
-    return render_template('reviews/list.html', reviews=reviews)
+    from app.paging import paginate
+    reviews, page, pages, total = paginate(reviews)
+    return render_template('reviews/list.html', reviews=reviews, page=page, pages=pages, total=total)
 
 
 @bp.route('/create', methods=['GET', 'POST'])

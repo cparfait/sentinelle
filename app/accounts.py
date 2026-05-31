@@ -19,7 +19,9 @@ def list():
     accounts = Account.query.filter_by(is_active=True).order_by(Account.next_password_change.asc()).all()
     rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
     accounts.sort(key=lambda a: rank.get(a.status(), 4))
-    return render_template('accounts/list.html', accounts=accounts)
+    from app.paging import paginate
+    accounts, page, pages, total = paginate(accounts)
+    return render_template('accounts/list.html', accounts=accounts, page=page, pages=pages, total=total)
 
 
 @bp.route('/sync-ad', methods=['POST'])

@@ -27,7 +27,9 @@ def list():
     tests = TestTask.query.filter_by(is_active=True).order_by(TestTask.next_due.asc().nullsfirst()).all()
     rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
     tests.sort(key=lambda t: rank.get(t.computed_status(), 4))
-    return render_template('tests/list.html', tests=tests, test_types=TEST_TYPES)
+    from app.paging import paginate
+    tests, page, pages, total = paginate(tests)
+    return render_template('tests/list.html', tests=tests, test_types=TEST_TYPES, page=page, pages=pages, total=total)
 
 
 @bp.route('/create', methods=['GET', 'POST'])

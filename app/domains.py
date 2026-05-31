@@ -51,7 +51,9 @@ def list():
         Domain.expiry_date.asc().nullslast()).all()
     rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
     domains.sort(key=lambda d: rank.get(d.status(), 4))
-    return render_template('domains/list.html', domains=domains)
+    from app.paging import paginate
+    domains, page, pages, total = paginate(domains)
+    return render_template('domains/list.html', domains=domains, page=page, pages=pages, total=total)
 
 
 @bp.route('/check-rdap-domain')
