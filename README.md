@@ -1,75 +1,164 @@
-# Sentinelle — Météo de la DSI
+<div align="center">
 
-Tableau de bord interne de supervision pour une DSI. Sentinelle donne en un coup d'œil
-la « météo » opérationnelle et envoie des alertes mail avant que les échéances ne deviennent
-critiques.
+# 🛡️ Sentinelle
 
-## Ce qui est suivi
+**La météo de votre DSI — supervision proactive des échéances et de la conformité.**
 
-| Domaine | Suivi |
-|---|---|
-| **Comptes** | Rotation des mots de passe (échéance selon `rotation_days`) |
-| **Certificats** | Dates d'expiration TLS, auto-renouvellement |
-| **Backups** | Check quotidien manuel, taux de réussite, série (« streak ») |
-| **Tests** | Tests récurrents : restauration, PCA/PRA, intégrité… |
-| **Alertes** | Historique des notifications envoyées |
+[![CI](https://github.com/cparfait/sentinelle/actions/workflows/ci.yml/badge.svg)](https://github.com/cparfait/sentinelle/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3.13-blue)
+![Flask](https://img.shields.io/badge/Flask-3.1-black)
+![Licence](https://img.shields.io/badge/usage-interne-lightgrey)
 
-Un tableau de bord agrège les statuts (vert / info / orange / rouge) et liste les éléments urgents.
+</div>
 
-## Stack
+---
 
-Flask 3 · SQLAlchemy · Flask-Login · Flask-WTF (CSRF) · APScheduler · Bootstrap 5.
-Base de données SQLite par défaut. Envoi de mail via **SMTP** ou **Microsoft Graph (Office 365 / OAuth2)**.
+Sentinelle est un tableau de bord web qui surveille, **en un coup d'œil**, les points qui font mal
+quand on les oublie dans une DSI : mots de passe à renouveler, certificats TLS et noms de domaine
+qui expirent, sauvegardes non vérifiées, tests récurrents (PRA…), revues de droits et mises à jour
+applicatives. Le tout avec des **alertes automatiques** (mail + Teams), un **récap quotidien**, une
+**traçabilité complète** et une **gestion fine des accès**.
 
-## Installation
+## ✨ Fonctionnalités
 
-> Nécessite Python 3.13 (le venv du dépôt a été créé avec cette version).
+### Surveillance
+- **Comptes** — rotation des mots de passe (avec **synchro de l'expiration depuis Active Directory**).
+- **Certificats** — expiration TLS, **lecture automatique de la date réelle** en se connectant au domaine.
+- **Domaines** — expiration des noms de domaine via **RDAP** (successeur du WHOIS).
+- **Backups** — check quotidien, **détection de retard selon la fréquence** (quotidien/hebdo/mensuel),
+  **connecteur mail** (lit les comptes-rendus Veeam / scripts déposés dans un dossier ou poussés par webhook).
+- **Tests** — activités récurrentes (restauration, PCA/PRA, intégrité…).
+- **Revue de droits** — revue périodique des accès aux applications métiers.
+- **Mises à jour** — suivi des versions et du statut (à jour / disponible / critique) + qui a fait la MàJ.
+
+### Pilotage & alertes
+- **Tableau de bord** : conformité globale (%), compteurs par catégorie, éléments urgents.
+- **Récap quotidien** par mail, **alertes** par seuils (mail + **Microsoft Teams**), avec **anti-doublon** et **report (snooze)**.
+- **Page « À venir »** (agenda des échéances) et **Tendances** (graphes 30 jours).
+- **Seuils d'alerte configurables**, **liens cliquables** dans les mails.
+
+### Sécurité & exploitation
+- **Rôles & permissions granulaires** par catégorie (Aucun / Lecture / Écriture / Suppression) + **rôles personnalisés**.
+- **Authentification hybride** : comptes locaux **et** LDAP/Active Directory (**LDAPS** géré), en même temps.
+- **2FA (TOTP)**, **verrouillage** après N échecs, **expiration de session**, **politique de mot de passe**.
+- **Journal d'audit** complet (qui a fait quoi), paginé et cherchable.
+- **Corbeille** (restauration + suppression définitive), **import/export CSV**, **bilan PDF (COPIL)**.
+- **Auto-sauvegarde** de la base + **export total de secours** (clé USB), **logs applicatifs** avec rotation.
+
+## 🧱 Stack
+
+Flask 3 · SQLAlchemy · Flask-Login · Flask-WTF (CSRF) · APScheduler · Bootstrap 5 · Chart.js ·
+reportlab (PDF) · ldap3 (AD) · pyotp/qrcode (2FA) · waitress (prod). Base **SQLite**.
+**Aucune dépendance Internet à l'exécution** (assets servis en local).
+
+## 🚀 Installation (développement)
+
+> Nécessite **Python 3.13**.
 
 ```powershell
 py -3.13 -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-copy .env.example .env   # puis éditer .env
-python run.py
+copy .env.example .env        # puis éditer .env (voir ci-dessous)
+python run.py                 # http://127.0.0.1:5000
 ```
 
-L'application écoute par défaut sur http://127.0.0.1:5000.
+Au **premier démarrage**, un compte `admin` est créé avec un **mot de passe aléatoire affiché une
+seule fois dans la console** (ou via `ADMIN_INITIAL_PASSWORD`). Connectez-vous puis changez-le.
 
-## Configuration (`.env`)
+## ▶️ Lancement en production
 
-Voir [.env.example](.env.example). Points importants :
+```powershell
+.\venv\Scripts\python.exe run_prod.py     # serveur WSGI waitress
+```
 
-- **`SECRET_KEY`** : doit être une valeur forte. En dehors du mode debug, l'application
-  refuse de démarrer si la clé est restée une valeur de dev.
-  Générer : `python -c "import secrets; print(secrets.token_hex(32))"`
-- **`MAIL_METHOD`** : `smtp` ou `o365`. La config O365 se fait ensuite dans l'UI
-  (Préférences, réservé aux admins).
-- **`ALERT_RECIPIENTS`** : destinataires des alertes, séparés par des virgules.
-- **`ADMIN_INITIAL_PASSWORD`** (optionnel) : mot de passe initial du compte `admin`.
+- ⚠️ **Un seul process** : le planificateur d'alertes tourne *dans* l'application ; waitress
+  fonctionne en **1 process multi-threads**, ce qui garantit l'**absence d'alertes en double**.
+  Ne lancez pas plusieurs instances en parallèle.
+- Mettez `APP_DEBUG=false` et un **`SECRET_KEY` fort** (le démarrage est refusé sinon, hors debug).
+- Pour tourner en continu : déclarez `run_prod.py` comme **service** (Tâche planifiée Windows au
+  démarrage, NSSM, ou systemd sous Linux).
 
-## Premier démarrage / compte admin
+## ⚙️ Configuration (`.env`)
 
-Au premier lancement, un compte `admin` est créé avec un **mot de passe aléatoire affiché
-une seule fois dans la console** (ou la valeur de `ADMIN_INITIAL_PASSWORD` si définie).
-Si un ancien compte `admin` possède encore le mot de passe par défaut `admin`, il est
-automatiquement réinitialisé (nouveau mot de passe affiché dans la console).
+Voir [`.env.example`](.env.example). Principaux réglages :
 
-Connectez-vous puis changez le mot de passe via votre profil.
+| Variable | Rôle |
+|---|---|
+| `SECRET_KEY` | Clé de session (obligatoire en prod). `python -c "import secrets;print(secrets.token_hex(32))"` |
+| `APP_BASE_URL` | URL publique de l'app (liens cliquables dans les mails) |
+| `MAIL_METHOD` / `MAIL_SERVER`… | Envoi mail : **SMTP** ou **Direct Send M365** (sans auth) |
+| `ALERT_RECIPIENTS` | Destinataires des alertes (gérables aussi dans l'UI) |
+| `TEAMS_WEBHOOK_URL` | Webhook Teams (notifications en plus du mail) |
+| `LDAP_*` | Authentification AD / LDAPS, compte de service pour la synchro mdp |
+| `THRESHOLD_*` | Seuils de statut (jours) par groupe |
+| `BACKUP_INBOX_DIR` / `BACKUP_INGEST_TOKEN` | Connecteurs backup (dossier / webhook) |
+| `BACKUP_DB_DIR` / `BACKUP_DB_KEEP` | Auto-sauvegarde de la base |
+| `SESSION_LIFETIME_MINUTES`, `PASSWORD_MIN_LENGTH`, `LOGIN_*` | Sécurité |
 
-## Rôles
+> La plupart de ces réglages sont aussi modifiables **dans l'interface** (Préférences, réservé admin).
 
-- **admin** : tout, y compris gestion des utilisateurs et des préférences mail.
-- **editor** : peut créer / modifier / supprimer comptes, certificats, backups, tests.
-- **viewer** : lecture seule.
+## 🔐 Rôles & accès
 
-## Tâches planifiées
+| Rôle (par défaut) | Droits |
+|---|---|
+| **Administrateur** | Tout, y compris utilisateurs, rôles, préférences |
+| **Éditeur** | Création / modification / suppression des données |
+| **Lecteur** | Lecture seule |
 
-APScheduler envoie chaque matin les alertes (mots de passe 08:00, certificats 08:15,
-backups 08:30, tests 08:45). Le scheduler démarre avec l'application
-(`start_scheduler(app)` dans `app/__init__.py`).
+Les rôles sont **éditables** et on peut **créer des rôles personnalisés** (matrice par catégorie)
+dans *Rôles & permissions*. Authentification **locale + LDAP/AD** simultanées ; **2FA** activable
+par chaque utilisateur depuis son profil.
 
-## Schéma de base de données
+## ⏰ Tâches planifiées (quotidiennes)
 
-Le schéma est créé automatiquement via `db.create_all()` au démarrage. Pas de système
-de migrations (Flask-Migrate a été retiré). Pour faire évoluer le schéma sur une base
-existante, recréer la base ou appliquer le changement manuellement.
+| Heure | Tâche |
+|---|---|
+| 01h00 | Auto-sauvegarde de la base |
+| 06h00 | Synchro expiration mots de passe AD *(si configuré)* |
+| 07h00 / 07h10 | Rafraîchissement TLS des certificats / RDAP des domaines |
+| 07h30 | Envoi du récap quotidien |
+| 08h00–08h55 | Alertes (mots de passe, certificats, backups, tests, domaines, revues, MàJ) |
+| toutes les 30 min | Scan du dossier de mails de backup *(si configuré)* |
+
+État et historique d'exécution visibles dans *Tâches planifiées* (admin).
+
+## 🗂️ Structure du projet
+
+```
+app/
+  __init__.py        # application factory, contexte, seeds, auto-migration SQLite
+  models.py          # modèles + logique de statut (couleurs) + permissions
+  auth.py            # login (local + LDAP + 2FA), profil, préférences
+  accounts.py certificates.py domains.py backups.py tests.py reviews.py updates.py  (blueprints)
+  alerts.py          # envoi d'alertes (mail + Teams), snooze
+  scheduler.py       # jobs APScheduler
+  email_service.py   # SMTP / Direct Send / Microsoft Graph
+  ldap_auth.py       # LDAP/AD (auth, LDAPS, synchro mdp)
+  notify.py          # webhook Teams
+  cert_checker.py / domain_checker.py   # TLS / RDAP
+  backup_ingest.py   # connecteur mails de backup
+  csv_io.py / data_io.py   # import / export CSV
+  pdf_report.py / digest.py / trash.py / audit.py / paging.py
+  decorators.py      # RBAC (require_edit / require_delete / view_guard)
+  templates/ static/ (dont static/vendor : assets hors-ligne)
+config.py · run.py (dev) · run_prod.py (waitress) · ci_smoke.py
+tools/devmail.py     # serveur SMTP de test local
+```
+
+## 🧰 Outils & exploitation
+
+- **Tester l'envoi de mail hors réseau** : `python tools/devmail.py` (faux serveur SMTP local sur `:1025`),
+  puis Préférences → SMTP = `localhost:1025`.
+- **Sauvegarde / restauration** : auto-sauvegarde quotidienne + bouton *Export complet* (ZIP base + CSV +
+  page HTML consultable hors-ligne) à garder sur clé USB.
+- **CI** : compilation + smoke test à chaque push (voir l'onglet *Actions*).
+
+## 📌 Notes
+- Pas de migrations : `db.create_all()` au démarrage **+ auto-migration SQLite** (ajout des colonnes manquantes).
+- Données sensibles (`.env`, base, tokens, sauvegardes, logs) **exclues du dépôt**.
+- Langue de l'interface : **français**.
+
+---
+
+<div align="center"><sub>Sentinelle — outil interne de supervision DSI.</sub></div>
