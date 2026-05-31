@@ -338,18 +338,25 @@ def preferences():
             except Exception as e:
                 flash(f"Suppression impossible : {e}", 'danger')
 
-        elif action == 'save_teams':
-            url = request.form.get('teams_webhook', '').strip()
-            _update_env_file({'TEAMS_WEBHOOK_URL': url})
-            current_app.config['TEAMS_WEBHOOK_URL'] = url
-            audit_record('config Teams', detail='actif' if url else 'desactive', category='preferences')
-            flash('Configuration Teams enregistree', 'success')
+        elif action == 'save_webhooks':
+            mapping = {
+                'TEAMS_WEBHOOK_URL': request.form.get('teams_webhook', '').strip(),
+                'SLACK_WEBHOOK_URL': request.form.get('slack_webhook', '').strip(),
+                'DISCORD_WEBHOOK_URL': request.form.get('discord_webhook', '').strip(),
+            }
+            _update_env_file(mapping)
+            current_app.config.update(mapping)
+            audit_record('config notifications', category='preferences')
+            flash('Notifications enregistrees', 'success')
 
-        elif action == 'test_teams':
-            from app.notify import send_teams
-            ok = send_teams('Test Teams', 'Notification de test depuis Sentinelle.',
-                            status='info', url=current_app.config.get('APP_BASE_URL'))
-            flash('Notification Teams envoyee.' if ok else "Echec de l'envoi Teams (verifier l'URL du webhook).",
+        elif action in ('test_teams', 'test_slack', 'test_discord'):
+            from app import notify
+            fn = {'test_teams': notify.send_teams, 'test_slack': notify.send_slack,
+                  'test_discord': notify.send_discord}[action]
+            ok = fn('Test de notification', 'Notification de test depuis Sentinelle.',
+                    status='info', url=current_app.config.get('APP_BASE_URL'))
+            canal = action.split('_')[1].capitalize()
+            flash(f'Notification {canal} envoyee.' if ok else f"Echec {canal} (verifier l'URL du webhook).",
                   'success' if ok else 'danger')
 
         elif action == 'save_ldap':
@@ -441,7 +448,11 @@ def preferences():
     }
 
     alert_recipients = ', '.join(current_app.config.get('ALERT_RECIPIENTS', []) or [])
-    teams_webhook = current_app.config.get('TEAMS_WEBHOOK_URL', '')
+    webhooks = {
+        'teams': current_app.config.get('TEAMS_WEBHOOK_URL', ''),
+        'slack': current_app.config.get('SLACK_WEBHOOK_URL', ''),
+        'discord': current_app.config.get('DISCORD_WEBHOOK_URL', ''),
+    }
 
     from app.db_backup import list_backups
     db_backups = list_backups(current_app)
@@ -482,7 +493,7 @@ def preferences():
                            o365_app_configured=o365_app_configured,
                            alert_recipients=alert_recipients,
                            db_backups=db_backups, thresholds=thresholds,
-                           ldap_config=ldap_config, teams_webhook=teams_webhook)
+                           ldap_config=ldap_config, webhooks=webhooks)
 
 
 @bp.route('/auth/o365/callback')

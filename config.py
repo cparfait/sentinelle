@@ -80,8 +80,10 @@ class Config:
     # URL publique de l'application, utilisee pour les liens dans les emails.
     APP_BASE_URL = os.getenv('APP_BASE_URL', f"http://{os.getenv('APP_HOST', '127.0.0.1')}:{os.getenv('APP_PORT', 5000)}")
 
-    # Notifications Microsoft Teams (Incoming Webhook) - optionnel, en plus du mail.
+    # Notifications par webhook (optionnel, en plus du mail) : Teams / Slack / Discord.
     TEAMS_WEBHOOK_URL = os.getenv('TEAMS_WEBHOOK_URL', '')
+    SLACK_WEBHOOK_URL = os.getenv('SLACK_WEBHOOK_URL', '')
+    DISCORD_WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK_URL', '')
 
     # Jeton secret pour l'ingestion des mails recap de backup (POST /backups/ingest).
     # Laisser vide pour desactiver le point d'entree.

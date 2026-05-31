@@ -106,11 +106,10 @@ def send_alert(subject, body, entity_type=None, entity_id=None, entity_name=None
         html_body = render_alert_email(subject, body, status=status, url=url)
         send_email(subject, recipients, body, html_body=html_body)
 
-        # Canal additionnel (best-effort) : Microsoft Teams
+        # Canaux additionnels (best-effort) : Teams / Slack / Discord
         try:
-            from app.notify import send_teams, teams_enabled
-            if teams_enabled():
-                send_teams(subject, body, status=status, url=url)
+            from app.notify import notify_all
+            notify_all(subject, body, status=status, url=url)
         except Exception:
             pass
 

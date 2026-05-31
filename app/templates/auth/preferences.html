@@ -187,23 +187,42 @@
             </form>
 
             <hr>
-            <h6 class="fw-bold mb-3"><i class="bi bi-microsoft-teams me-2"></i>Notifications Microsoft Teams <span class="text-muted small">(optionnel)</span></h6>
+            <h6 class="fw-bold mb-3"><i class="bi bi-bell me-2"></i>Notifications (webhooks) <span class="text-muted small">(optionnel, en plus du mail)</span></h6>
             <form method="POST" action="{{ url_for('auth.preferences') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <label class="form-label small">URL du webhook entrant (Incoming Webhook) du canal
-                    {% if teams_webhook %}<span class="text-success">— configuré</span>{% endif %}</label>
-                <input type="url" name="teams_webhook" class="form-control form-control-sm"
-                       value="{{ teams_webhook }}" placeholder="https://...webhook.office.com/...">
-                <div class="d-flex gap-2 mt-2">
-                    <button type="submit" name="action" value="save_teams" class="btn btn-sm btn-primary">
-                        <i class="bi bi-check-lg me-1"></i> Enregistrer
-                    </button>
-                    <button type="submit" name="action" value="test_teams" class="btn btn-sm btn-outline-primary"
-                            {% if not teams_webhook %}disabled{% endif %}>
-                        <i class="bi bi-send me-1"></i> Tester Teams
-                    </button>
+                <div class="row g-2">
+                    <div class="col-md-9">
+                        <label class="form-label small"><i class="bi bi-microsoft-teams me-1"></i>Microsoft Teams {% if webhooks.teams %}<span class="text-success">— configuré</span>{% endif %}</label>
+                        <input type="url" name="teams_webhook" class="form-control form-control-sm"
+                               value="{{ webhooks.teams }}" placeholder="https://...webhook.office.com/...">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" name="action" value="test_teams" class="btn btn-sm btn-outline-primary w-100"
+                                {% if not webhooks.teams %}disabled{% endif %}><i class="bi bi-send me-1"></i> Tester</button>
+                    </div>
+                    <div class="col-md-9">
+                        <label class="form-label small"><i class="bi bi-slack me-1"></i>Slack {% if webhooks.slack %}<span class="text-success">— configuré</span>{% endif %}</label>
+                        <input type="url" name="slack_webhook" class="form-control form-control-sm"
+                               value="{{ webhooks.slack }}" placeholder="https://hooks.slack.com/services/...">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" name="action" value="test_slack" class="btn btn-sm btn-outline-primary w-100"
+                                {% if not webhooks.slack %}disabled{% endif %}><i class="bi bi-send me-1"></i> Tester</button>
+                    </div>
+                    <div class="col-md-9">
+                        <label class="form-label small"><i class="bi bi-discord me-1"></i>Discord {% if webhooks.discord %}<span class="text-success">— configuré</span>{% endif %}</label>
+                        <input type="url" name="discord_webhook" class="form-control form-control-sm"
+                               value="{{ webhooks.discord }}" placeholder="https://discord.com/api/webhooks/...">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" name="action" value="test_discord" class="btn btn-sm btn-outline-primary w-100"
+                                {% if not webhooks.discord %}disabled{% endif %}><i class="bi bi-send me-1"></i> Tester</button>
+                    </div>
                 </div>
-                <small class="text-muted d-block mt-1">Les alertes seront aussi postées dans ce canal Teams, en plus du mail.</small>
+                <button type="submit" name="action" value="save_webhooks" class="btn btn-sm btn-primary mt-2">
+                    <i class="bi bi-check-lg me-1"></i> Enregistrer les notifications
+                </button>
+                <small class="text-muted d-block mt-1">Les alertes sont postées dans tous les canaux renseignés, en plus du mail.</small>
             </form>
 
             <hr>
