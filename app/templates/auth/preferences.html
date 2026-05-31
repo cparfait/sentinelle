@@ -232,10 +232,21 @@
                         <input type="number" name="ldap_port" class="form-control form-control-sm" value="{{ ldap_config.port }}">
                     </div>
                     <div class="col-md-4 d-flex align-items-end">
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" name="ldap_ssl" id="ldapSsl" {{ 'checked' if ldap_config.ssl }}>
-                            <label class="form-check-label small" for="ldapSsl">SSL (LDAPS)</label>
+                        <div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" name="ldap_ssl" id="ldapSsl" {{ 'checked' if ldap_config.ssl }}>
+                                <label class="form-check-label small" for="ldapSsl">SSL / LDAPS (port 636)</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" name="ldap_validate_cert" id="ldapValidate" {{ 'checked' if ldap_config.validate_cert }}>
+                                <label class="form-check-label small" for="ldapValidate">Valider le certificat</label>
+                            </div>
                         </div>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small">Certificat CA (PEM) <span class="text-muted">— optionnel, si CA interne</span></label>
+                        <input type="text" name="ldap_ca_cert" class="form-control form-control-sm"
+                               value="{{ ldap_config.ca_cert }}" placeholder="C:\chemin\vers\ca.pem">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small">Domaine (UPN)</label>

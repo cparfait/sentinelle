@@ -11,12 +11,33 @@ def ldap_enabled():
     return bool(current_app.config.get('LDAP_ENABLED') and current_app.config.get('LDAP_SERVER'))
 
 
+def build_server(cfg):
+    """Construit le Server ldap3 avec gestion LDAPS (TLS) : port 636 par defaut,
+    validation du certificat configurable, CA optionnelle."""
+    import ssl
+    from ldap3 import Server, Tls, ALL
+    host = (cfg.get('LDAP_SERVER') or '').strip()
+    use_ssl = bool(cfg.get('LDAP_USE_SSL')) or host.lower().startswith('ldaps://')
+    port = int(cfg.get('LDAP_PORT') or 0) or (636 if use_ssl else 389)
+    if use_ssl and port == 389:  # port en clair laisse par defaut -> LDAPS standard
+        port = 636
+    tls = None
+    if use_ssl:
+        if cfg.get('LDAP_VALIDATE_CERT', True):
+            validate = ssl.CERT_REQUIRED
+        else:
+            validate = ssl.CERT_NONE
+        ca = cfg.get('LDAP_CA_CERT') or None
+        tls = Tls(validate=validate, ca_certs_file=ca)
+    return Server(host, port=port, use_ssl=use_ssl, tls=tls, get_info=ALL, connect_timeout=8)
+
+
 def ldap_authenticate(username, password):
     """Tente un bind LDAP. Retourne un dict d'infos (succès) ou None (échec/désactivé)."""
     if not ldap_enabled() or not username or not password:
         return None
     try:
-        from ldap3 import Server, Connection, ALL
+        from ldap3 import Connection
     except ImportError:
         current_app.logger.error('ldap3 non installe')
         return None
@@ -33,9 +54,7 @@ def ldap_authenticate(username, password):
         bind_user = username
 
     try:
-        server = Server(cfg['LDAP_SERVER'], port=int(cfg.get('LDAP_PORT', 389) or 389),
-                        use_ssl=bool(cfg.get('LDAP_USE_SSL', False)), get_info=ALL,
-                        connect_timeout=8)
+        server = build_server(cfg)
         conn = Connection(server, user=bind_user, password=password, auto_bind=True)
     except Exception as e:
         current_app.logger.info('Echec bind LDAP pour %s : %s', username, e)
@@ -89,9 +108,8 @@ def sync_password_expirations():
     if not ldap_enabled() or not cfg.get('LDAP_BIND_USER') or not cfg.get('LDAP_BASE_DN'):
         return 0, ['LDAP/compte de service/Base DN non configures']
     try:
-        from ldap3 import Server, Connection, ALL
-        server = Server(cfg['LDAP_SERVER'], port=int(cfg.get('LDAP_PORT', 389) or 389),
-                        use_ssl=bool(cfg.get('LDAP_USE_SSL', False)), get_info=ALL, connect_timeout=8)
+        from ldap3 import Connection
+        server = build_server(cfg)
         conn = Connection(server, user=cfg['LDAP_BIND_USER'],
                           password=cfg['LDAP_BIND_PASSWORD'], auto_bind=True)
     except Exception as e:

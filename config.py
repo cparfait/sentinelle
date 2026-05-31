@@ -34,7 +34,10 @@ class Config:
     LDAP_ENABLED = os.getenv('LDAP_ENABLED', 'false').lower() in ('true', '1', 'yes')
     LDAP_SERVER = os.getenv('LDAP_SERVER', '')          # ex: ldap://dc.chatillon.lan
     LDAP_PORT = int(os.getenv('LDAP_PORT', 389))
-    LDAP_USE_SSL = os.getenv('LDAP_USE_SSL', 'false').lower() in ('true', '1', 'yes')
+    LDAP_USE_SSL = os.getenv('LDAP_USE_SSL', 'false').lower() in ('true', '1', 'yes')  # LDAPS
+    # Validation du certificat serveur en LDAPS (desactiver si AD avec CA interne/auto-signe)
+    LDAP_VALIDATE_CERT = os.getenv('LDAP_VALIDATE_CERT', 'true').lower() in ('true', '1', 'yes')
+    LDAP_CA_CERT = os.getenv('LDAP_CA_CERT', '')  # chemin d'un fichier CA (PEM), optionnel
     LDAP_DOMAIN = os.getenv('LDAP_DOMAIN', '')           # ex: chatillon.lan (pour le bind UPN)
     LDAP_BASE_DN = os.getenv('LDAP_BASE_DN', '')         # ex: DC=chatillon,DC=lan (recherche email)
     LDAP_USER_DN_TEMPLATE = os.getenv('LDAP_USER_DN_TEMPLATE', '')  # alternative au bind UPN

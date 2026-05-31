@@ -341,12 +341,15 @@ def preferences():
         elif action == 'save_ldap':
             enabled = request.form.get('ldap_enabled') == 'on'
             use_ssl = request.form.get('ldap_ssl') == 'on'
+            validate_cert = request.form.get('ldap_validate_cert') == 'on'
             port = request.form.get('ldap_port', '389').strip() or '389'
             updates = {
                 'LDAP_ENABLED': 'true' if enabled else 'false',
                 'LDAP_SERVER': request.form.get('ldap_server', '').strip(),
                 'LDAP_PORT': port,
                 'LDAP_USE_SSL': 'true' if use_ssl else 'false',
+                'LDAP_VALIDATE_CERT': 'true' if validate_cert else 'false',
+                'LDAP_CA_CERT': request.form.get('ldap_ca_cert', '').strip(),
                 'LDAP_DOMAIN': request.form.get('ldap_domain', '').strip(),
                 'LDAP_BASE_DN': request.form.get('ldap_base_dn', '').strip(),
                 'LDAP_DEFAULT_ROLE': request.form.get('ldap_default_role', 'viewer'),
@@ -359,6 +362,7 @@ def preferences():
             current_app.config.update(
                 LDAP_ENABLED=enabled, LDAP_SERVER=updates['LDAP_SERVER'],
                 LDAP_PORT=int(port), LDAP_USE_SSL=use_ssl,
+                LDAP_VALIDATE_CERT=validate_cert, LDAP_CA_CERT=updates['LDAP_CA_CERT'],
                 LDAP_DOMAIN=updates['LDAP_DOMAIN'], LDAP_BASE_DN=updates['LDAP_BASE_DN'],
                 LDAP_DEFAULT_ROLE=updates['LDAP_DEFAULT_ROLE'],
                 LDAP_BIND_USER=updates['LDAP_BIND_USER'])
@@ -437,6 +441,8 @@ def preferences():
         'server': current_app.config.get('LDAP_SERVER', ''),
         'port': current_app.config.get('LDAP_PORT', 389),
         'ssl': current_app.config.get('LDAP_USE_SSL', False),
+        'validate_cert': current_app.config.get('LDAP_VALIDATE_CERT', True),
+        'ca_cert': current_app.config.get('LDAP_CA_CERT', ''),
         'domain': current_app.config.get('LDAP_DOMAIN', ''),
         'base_dn': current_app.config.get('LDAP_BASE_DN', ''),
         'default_role': current_app.config.get('LDAP_DEFAULT_ROLE', 'viewer'),
