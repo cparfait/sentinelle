@@ -47,23 +47,89 @@
     </div>
 </div>
 
-<div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
-    <ul class="nav nav-pills gap-1">
-        {% set tabs = [('', 'Tous', total), ('vm', 'VM', counts.vm), ('physical', 'Physiques', counts.physical), ('nas', 'NAS', counts.nas)] %}
-        {% for val, lbl, cnt in tabs %}
-        <li class="nav-item"><a class="nav-link py-1 px-3 {% if kind == val %}active{% endif %}" href="{{ url_for('inventory.list', kind=val, q=q) }}">{{ lbl }} <span class="opacity-75">{{ cnt }}</span></a></li>
-        {% endfor %}
-    </ul>
-    <form method="GET" class="d-flex">
-        <input type="hidden" name="kind" value="{{ kind }}">
-        <div class="input-group input-group-sm" style="max-width: 320px;">
-            <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Rechercher...">
-            <button class="btn btn-primary" type="submit">OK</button>
-            {% if q %}<a href="{{ url_for('inventory.list', kind=kind) }}" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i></a>{% endif %}
+{% set status_choices = [('danger', 'Critique'), ('warning', 'À surveiller'), ('info', 'Proche'), ('success', 'OK')] %}
+<form method="GET">
+    <input type="hidden" name="kind" value="{{ kind }}">
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
+        <ul class="nav nav-pills gap-1">
+            {% set tabs = [('', 'Tous', total), ('vm', 'VM', counts.vm), ('physical', 'Physiques', counts.physical), ('nas', 'NAS', counts.nas)] %}
+            {% for val, lbl, cnt in tabs %}
+            <li class="nav-item"><a class="nav-link py-1 px-3 {% if kind == val %}active{% endif %}" href="{{ url_for('inventory.list', kind=val, q=q) }}">{{ lbl }} <span class="opacity-75">{{ cnt }}</span></a></li>
+            {% endfor %}
+        </ul>
+        <div class="d-flex gap-2">
+            <div class="input-group input-group-sm" style="max-width: 280px;">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Rechercher...">
+                <button class="btn btn-primary" type="submit">OK</button>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#advFilter">
+                <i class="bi bi-funnel me-1"></i> Filtre avancé{% if active_filters %} <span class="badge bg-primary">{{ active_filters }}</span>{% endif %}
+            </button>
+            {% if q or active_filters %}<a href="{{ url_for('inventory.list', kind=kind) }}" class="btn btn-sm btn-outline-secondary" title="Effacer"><i class="bi bi-x-lg"></i></a>{% endif %}
         </div>
-    </form>
-</div>
+    </div>
+
+    <div class="collapse {% if active_filters %}show{% endif %}" id="advFilter">
+        <div class="data-card p-3 mb-3">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label small mb-1">Environnement</label>
+                    <select name="environment" class="form-select form-select-sm">
+                        {% for v, l in env_choices %}<option value="{{ v }}" {{ 'selected' if filters.environment == v }}>{{ l }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1">Criticité</label>
+                    <select name="criticality" class="form-select form-select-sm">
+                        <option value="">—</option>
+                        {% for lvl, lbl in crit_labels_dict.items() %}<option value="{{ lvl }}" {{ 'selected' if filters.criticality == lvl|string }}>{{ lvl }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1">Statut</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">—</option>
+                        {% for v, l in status_choices %}<option value="{{ v }}" {{ 'selected' if filters.status == v }}>{{ l }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-1">OS contient</label>
+                    <input type="text" name="os" value="{{ filters.os }}" class="form-control form-control-sm" placeholder="ex: Windows">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-1">Hyperviseur contient</label>
+                    <input type="text" name="hypervisor" value="{{ filters.hypervisor }}" class="form-control form-control-sm" placeholder="ex: VMware">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1">Supervision</label>
+                    <select name="supervision" class="form-select form-select-sm">
+                        <option value="">—</option>
+                        <option value="yes" {{ 'selected' if filters.supervision == 'yes' }}>Supervisé</option>
+                        <option value="no" {{ 'selected' if filters.supervision == 'no' }}>Non supervisé</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1">Garantie</label>
+                    <select name="warranty" class="form-select form-select-sm">
+                        <option value="">—</option>
+                        <option value="expiring" {{ 'selected' if filters.warranty == 'expiring' }}>Expire ≤ 90 j</option>
+                        <option value="expired" {{ 'selected' if filters.warranty == 'expired' }}>Expirée</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-center pt-3">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" name="no_backup" value="1" id="noBackup" {{ 'checked' if filters.no_backup == '1' }}>
+                        <label class="form-check-label small" for="noBackup">Sans sauvegarde</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-funnel me-1"></i> Filtrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
 
 <div class="data-card">
     <div class="table-responsive">

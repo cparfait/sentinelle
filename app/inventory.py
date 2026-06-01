@@ -101,10 +101,51 @@ def list():
     items = Equipment.query.filter_by(is_active=True).order_by(Equipment.name).all()
     q = request.args.get('q', '').strip()
     kind = request.args.get('kind', '').strip()
+    # Filtre avance
+    f = {
+        'environment': request.args.get('environment', '').strip(),
+        'criticality': request.args.get('criticality', '').strip(),
+        'status': request.args.get('status', '').strip(),
+        'os': request.args.get('os', '').strip(),
+        'hypervisor': request.args.get('hypervisor', '').strip(),
+        'supervision': request.args.get('supervision', '').strip(),   # yes / no
+        'warranty': request.args.get('warranty', '').strip(),         # expiring / expired
+        'no_backup': request.args.get('no_backup', '').strip(),       # 1
+    }
     if kind in ('vm', 'physical', 'nas'):
         items = [e for e in items if e.kind == kind]
     from app.paging import paginate, text_search
     items = text_search(items, q, SEARCH_FIELDS)
+
+    def keep(e):
+        if f['environment'] and e.environment != f['environment']:
+            return False
+        if f['criticality'] and str(e.criticality or '') != f['criticality']:
+            return False
+        if f['status'] and e.computed_status() != f['status']:
+            return False
+        if f['os'] and f['os'].lower() not in (e.os or '').lower():
+            return False
+        if f['hypervisor'] and f['hypervisor'].lower() not in (e.hypervisor or '').lower():
+            return False
+        if f['supervision'] == 'yes' and not (e.supervised or e.supervision):
+            return False
+        if f['supervision'] == 'no' and (e.supervised or e.supervision):
+            return False
+        if f['no_backup'] == '1' and (e.backup1 or e.backup2):
+            return False
+        if f['warranty'] in ('expiring', 'expired'):
+            d = e.warranty_days_left()
+            if d is None:
+                return False
+            if f['warranty'] == 'expired' and d >= 0:
+                return False
+            if f['warranty'] == 'expiring' and not (0 <= d <= 90):
+                return False
+        return True
+
+    items = [e for e in items if keep(e)]
+    active_filters = sum(1 for v in f.values() if v)
     rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
     items.sort(key=lambda e: rank.get(e.computed_status(), 4))
     items, page, pages, total = paginate(items)
@@ -112,6 +153,8 @@ def list():
               for k in ('vm', 'physical', 'nas')}
     return render_template('inventory/list.html', items=items, q=q, kind=kind, counts=counts,
                            kind_labels=EQUIPMENT_KIND_LABELS, crit_labels=CRITICALITY_LABELS,
+                           filters=f, active_filters=active_filters,
+                           env_choices=ENV_CHOICES, crit_labels_dict=CRITICALITY_LABELS,
                            page=page, pages=pages, total=total)
 
 
