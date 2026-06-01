@@ -29,7 +29,7 @@
             <div class="row">
                 <div class="col-md-6">
                     <table class="table table-borderless table-sm">
-                        <tr><td class="text-muted" style="width: 40%">Service</td><td class="fw-medium">{{ certificate.service_name }}</td></tr>
+                        <tr><td class="text-muted">Service</td><td class="fw-medium">{{ certificate.service_name }}</td></tr>
                         <tr><td class="text-muted">Domaine</td><td class="fw-medium"><code>{{ certificate.domain }}</code></td></tr>
                         <tr><td class="text-muted">Emetteur</td><td class="fw-medium">{{ certificate.issuer or '-' }}</td></tr>
                         <tr><td class="text-muted">Auto-renouvellement</td>
@@ -39,7 +39,7 @@
                 </div>
                 <div class="col-md-6">
                     <table class="table table-borderless table-sm">
-                        <tr><td class="text-muted" style="width: 50%">Date emission</td><td class="fw-medium">{{ certificate.issued_at.strftime('%d/%m/%Y') if certificate.issued_at else '-' }}</td></tr>
+                        <tr><td class="text-muted">Date emission</td><td class="fw-medium">{{ certificate.issued_at.strftime('%d/%m/%Y') if certificate.issued_at else '-' }}</td></tr>
                         <tr><td class="text-muted">Expiration</td><td class="fw-medium {% if certificate.status() == 'danger' %}text-danger{% endif %}">{{ certificate.expiry_date.strftime('%d/%m/%Y') }}</td></tr>
                         <tr><td class="text-muted">Jours restants</td>
                             <td class="fw-bold {% if certificate.status() == 'danger' %}text-danger{% elif certificate.status() == 'warning' %}text-warning{% else %}text-success{% endif %}">

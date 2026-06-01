@@ -29,7 +29,7 @@
             <div class="row">
                 <div class="col-md-6">
                     <table class="table table-borderless table-sm">
-                        <tr><td class="text-muted" style="width: 40%">Service</td><td class="fw-medium">{{ account.service_name }}</td></tr>
+                        <tr><td class="text-muted">Service</td><td class="fw-medium">{{ account.service_name }}</td></tr>
                         <tr><td class="text-muted">Utilisateur</td><td class="fw-medium">{{ account.username }}</td></tr>
                         <tr><td class="text-muted">URL</td><td class="fw-medium">{{ account.url or '-' }}</td></tr>
                         <tr><td class="text-muted">Priorite</td>
@@ -41,7 +41,7 @@
                 </div>
                 <div class="col-md-6">
                     <table class="table table-borderless table-sm">
-                        <tr><td class="text-muted" style="width: 50%">Dernier changement</td><td class="fw-medium">{{ account.last_password_change.strftime('%d/%m/%Y') if account.last_password_change else '-' }}</td></tr>
+                        <tr><td class="text-muted">Dernier changement</td><td class="fw-medium">{{ account.last_password_change.strftime('%d/%m/%Y') if account.last_password_change else '-' }}</td></tr>
                         <tr><td class="text-muted">Prochain changement</td><td class="fw-medium {% if account.status() == 'danger' %}text-danger{% endif %}">{{ account.next_password_change.strftime('%d/%m/%Y') if account.next_password_change else '-' }}</td></tr>
                         <tr><td class="text-muted">Rotation</td><td class="fw-medium">Tous les {{ account.rotation_days }} jours</td></tr>
                         <tr><td class="text-muted">Jours restants</td>

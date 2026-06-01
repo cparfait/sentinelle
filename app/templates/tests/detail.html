@@ -33,7 +33,7 @@
             <div class="row">
                 <div class="col-md-6">
                     <table class="table table-borderless table-sm">
-                        <tr><td class="text-muted" style="width: 40%">Nom</td><td class="fw-medium">{{ test.name }}</td></tr>
+                        <tr><td class="text-muted">Nom</td><td class="fw-medium">{{ test.name }}</td></tr>
                         <tr><td class="text-muted">Type</td>
                             <td class="fw-medium">
                                 {% for value, label in test_types %}
@@ -51,7 +51,7 @@
                 </div>
                 <div class="col-md-6">
                     <table class="table table-borderless table-sm">
-                        <tr><td class="text-muted" style="width: 50%">Derniere execution</td><td class="fw-medium">{{ test.last_performed.strftime('%d/%m/%Y') if test.last_performed else '-' }}</td></tr>
+                        <tr><td class="text-muted">Derniere execution</td><td class="fw-medium">{{ test.last_performed.strftime('%d/%m/%Y') if test.last_performed else '-' }}</td></tr>
                         <tr><td class="text-muted">Prochaine echeance</td><td class="fw-medium {% if test.computed_status() == 'danger' %}text-danger{% endif %}">{{ test.next_due.strftime('%d/%m/%Y') if test.next_due else '-' }}</td></tr>
                         <tr><td class="text-muted">Jours restants</td>
                             <td class="fw-bold {% if test.computed_status() == 'danger' %}text-danger{% elif test.computed_status() == 'warning' %}text-warning{% else %}text-success{% endif %}">

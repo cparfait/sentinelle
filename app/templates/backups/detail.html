@@ -29,7 +29,7 @@
             <div class="row">
                 <div class="col-md-6">
                     <table class="table table-borderless table-sm">
-                        <tr><td class="text-muted" style="width: 40%">Service</td><td class="fw-medium">{{ backup.service_name }}</td></tr>
+                        <tr><td class="text-muted">Service</td><td class="fw-medium">{{ backup.service_name }}</td></tr>
                         <tr><td class="text-muted">Type</td><td class="fw-medium">{{ {'full': 'Complet', 'incremental': 'Incremental', 'differential': 'Differentiel', 'snapshot': 'Snapshot'}.get(backup.backup_type, backup.backup_type or '-') }}</td></tr>
                         <tr><td class="text-muted">Emplacement</td><td class="fw-medium">{{ backup.location or '-' }}</td></tr>
                         <tr><td class="text-muted">Frequence</td><td class="fw-medium">{{ {'daily': 'Quotidien', 'weekly': 'Hebdomadaire', 'monthly': 'Mensuel'}.get(backup.frequency, backup.frequency or '-') }}</td></tr>
@@ -37,7 +37,7 @@
                 </div>
                 <div class="col-md-6">
                     <table class="table table-borderless table-sm">
-                        <tr><td class="text-muted" style="width: 50%">Heure prevue</td><td class="fw-medium">{{ backup.expected_time or '-' }}</td></tr>
+                        <tr><td class="text-muted">Heure prevue</td><td class="fw-medium">{{ backup.expected_time or '-' }}</td></tr>
                         <tr><td class="text-muted">Priorite</td>
                             <td><span class="badge bg-{% if backup.priority == 'high' %}danger{% elif backup.priority == 'medium' %}warning{% else %}secondary{% endif %}">
                                 {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(backup.priority, backup.priority) }}

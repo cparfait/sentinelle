@@ -732,9 +732,19 @@ a.badge-status:hover { filter: brightness(0.96); }
     border-color: var(--border-strong) !important;
 }
 
-/* Correctif : ne pas forcer de bordure sur les tableaux .table-borderless */
+/* Tables compactes : padding reellement reduit (sinon ecrase par .table td) */
+.table-sm td,
+.table-sm th { padding: 7px 12px; }
+
+/* Tableaux clé/valeur (.table-borderless) : sans bordure, compacts, colonne
+   libellé de largeur uniforme sur toutes les pages de détail. */
 .table-borderless td,
-.table-borderless th { border: 0 !important; }
+.table-borderless th { border: 0 !important; padding: 7px 10px; }
+.table-borderless td:first-child {
+    width: 42%;
+    color: var(--text-light);
+    font-weight: 500;
+}
 
 /* ---- Calendrier / heatmap des backups (thème-aware) ---- */
 .heat-cell {
