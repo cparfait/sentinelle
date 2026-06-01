@@ -125,7 +125,7 @@
                 {% if not (tc and tc.status == 'ok') %}
                 {% set ns.shown = ns.shown + 1 %}
                 <tr>
-                    <td class="fw-medium">{{ backup.service_name }}</td>
+                    <td><a href="{{ url_for('backups.detail', id=backup.id) }}" class="fw-medium text-decoration-none">{{ backup.service_name }}</a></td>
                     <td><small>{{ {'full': 'Complet', 'incremental': 'Incremental', 'differential': 'Differentiel', 'snapshot': 'Snapshot'}.get(backup.backup_type, backup.backup_type or '-') }}</small></td>
                     <td>{{ backup.expected_time or '-' }}</td>
                     <td>
