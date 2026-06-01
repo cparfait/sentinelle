@@ -215,6 +215,21 @@ def edit(id):
     return render_template('users/form.html', user=user)
 
 
+@bp.route('/<int:id>/reset-2fa', methods=['POST'])
+@login_required
+@require_admin
+def reset_2fa(id):
+    user = User.query.get_or_404(id)
+    if not user.has_2fa:
+        flash(f"La 2FA n'est pas active pour {user.username}.", 'info')
+        return redirect(url_for('users.list'))
+    user.totp_secret = None
+    db.session.commit()
+    audit_record('reinitialisation 2FA', detail=user.username, category='utilisateurs')
+    flash(f'2FA desactivee pour {user.username}. Il pourra la reactiver depuis son profil.', 'success')
+    return redirect(url_for('users.list'))
+
+
 @bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
 def delete(id):

@@ -189,7 +189,7 @@ tr.row-warning > td { background: rgba(var(--warning-rgb), 0.05); }
 /* ============================ SIDEBAR ============================ */
 .sidebar {
     background: var(--sidebar);
-    min-height: 100vh;
+    height: 100vh;
     width: 250px;
     position: fixed;
     top: 0;

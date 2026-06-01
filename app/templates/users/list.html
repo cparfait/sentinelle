@@ -25,6 +25,7 @@
                     <th>Utilisateur</th>
                     <th>Email</th>
                     <th>Role</th>
+                    <th>2FA</th>
                     <th>Cree le</th>
                     <th>Actions</th>
                 </tr>
@@ -41,14 +42,27 @@
                             {{ role_label(user.role) }}
                         </span>
                     </td>
+                    <td>
+                        {% if user.has_2fa %}
+                        <span class="badge-status badge-success"><i class="bi bi-shield-check me-1"></i>Activée</span>
+                        {% else %}
+                        <span class="badge-status badge-info"><i class="bi bi-shield-slash me-1"></i>Non</span>
+                        {% endif %}
+                    </td>
                     <td>{{ user.created_at.strftime('%d/%m/%Y') }}</td>
                     <td>
                         <div class="d-flex gap-1">
-                            <a href="{{ url_for('users.edit', id=user.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                            <a href="{{ url_for('users.edit', id=user.id) }}" class="btn btn-sm btn-outline-primary" title="Modifier"><i class="bi bi-pencil"></i></a>
+                            {% if user.has_2fa %}
+                            <form method="POST" action="{{ url_for('users.reset_2fa', id=user.id) }}" onsubmit="return confirm('Désactiver la 2FA de {{ user.username }} ? Il devra la reconfigurer.')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Réinitialiser la 2FA"><i class="bi bi-shield-x"></i></button>
+                            </form>
+                            {% endif %}
                             {% if user.username != 'admin' and user.id != current_user.id %}
                             <form method="POST" action="{{ url_for('users.delete', id=user.id) }}" onsubmit="return confirm('Supprimer cet utilisateur ?')">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer"><i class="bi bi-trash"></i></button>
                             </form>
                             {% endif %}
                         </div>
