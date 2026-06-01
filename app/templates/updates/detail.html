@@ -55,6 +55,7 @@
             <p class="text-muted small mb-2">Passe le statut à « À jour », aligne la version actuelle sur la dernière et date la mise à jour.</p>
             <form method="POST" action="{{ url_for('updates.mark_updated', id=update.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="text" name="comment" class="form-control form-control-sm mb-2" placeholder="Commentaire (optionnel) : qui, quoi...">
                 <button type="submit" class="btn btn-success btn-sm w-100"><i class="bi bi-check-lg me-1"></i> Marquer à jour</button>
             </form>
         </div>

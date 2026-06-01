@@ -106,9 +106,12 @@ def mark_updated(id):
         update.current_version = update.latest_version
     update.status = 'up_to_date'
     update.last_update = today
+    note = (request.form.get('comment', '') or '').strip()
+    comment = f'Mis a jour en version {update.current_version or "?"}'
+    if note:
+        comment += f' — {note}'
     db.session.add(UpdateHistory(update_id=update.id, action='updated',
-                                 comment=f'Mis a jour en version {update.current_version or "?"}',
-                                 performed_by=current_user.username))
+                                 comment=comment, performed_by=current_user.username))
     db.session.commit()
     flash('Marque comme a jour', 'success')
     return redirect(url_for('updates.detail', id=id))
