@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request
 from flask_login import login_required
 from sqlalchemy import or_
 from app.models import (Account, Certificate, Backup, TestTask, Domain,
-                        AccessReview, SystemUpdate)
+                        AccessReview, SystemUpdate, Equipment)
 from app import db
 
 bp = Blueprint('search', __name__)
@@ -139,11 +139,31 @@ def search():
                 'badge': u.status_color(),
             })
 
+        equipments = Equipment.query.filter(
+            Equipment.is_active == True,
+            or_(
+                Equipment.name.ilike(like),
+                Equipment.ip_address.ilike(like),
+                Equipment.os.ilike(like),
+                Equipment.role_principal.ilike(like),
+                Equipment.serial_number.ilike(like),
+                Equipment.host_server.ilike(like),
+            )
+        ).all()
+        for e in equipments:
+            results.append({
+                'type': 'inventaire', 'icon': 'bi-hdd-stack',
+                'label': e.name,
+                'detail': f'{e.kind_label()}{" - " + e.ip_address if e.ip_address else ""}',
+                'url': f'/inventory/{e.id}',
+                'badge': e.computed_status(),
+            })
+
     # Visibilite : ne montrer que les categories autorisees pour l'utilisateur
     from flask_login import current_user
     _cat_perm = {'account': 'accounts', 'certificate': 'certificates',
                  'backup': 'backups', 'test': 'tests', 'domaine': 'domains',
-                 'revue': 'reviews', 'mise à jour': 'updates'}
+                 'revue': 'reviews', 'mise à jour': 'updates', 'inventaire': 'inventory'}
     results = [r for r in results
                if current_user.can_view(_cat_perm.get(r['type']))]
 

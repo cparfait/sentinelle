@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Inventaire - Sentinelle{% endblock %}
+
+{% set status_labels = {'danger': 'Critique', 'warning': 'À surveiller', 'info': 'Proche', 'success': 'OK'} %}
+{% set crit_colors = {1: 'secondary', 2: 'info', 3: 'warning', 4: 'danger'} %}
+{% set kind_icons = {'vm': 'bi-pc-display', 'physical': 'bi-server', 'nas': 'bi-hdd-network'} %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-hdd-stack me-2"></i>Inventaire</h4>
+        <small class="text-muted">VM, serveurs physiques et NAS — {{ total }} équipement(s)</small>
+    </div>
+    <div class="d-flex gap-2">
+        {% if current_user.can_edit('inventory') %}
+        <a href="{{ url_for('inventory.import_xlsx') }}" class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel me-1"></i> Importer Excel
+        </a>
+        <a href="{{ url_for('inventory.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Ajouter
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
+    <ul class="nav nav-pills gap-1">
+        {% set tabs = [('', 'Tous', total), ('vm', 'VM', counts.vm), ('physical', 'Physiques', counts.physical), ('nas', 'NAS', counts.nas)] %}
+        {% for val, lbl, cnt in tabs %}
+        <li class="nav-item">
+            <a class="nav-link py-1 px-3 {% if kind == val %}active{% endif %}"
+               href="{{ url_for('inventory.list', kind=val, q=q) }}">{{ lbl }} <span class="opacity-75">{{ cnt }}</span></a>
+        </li>
+        {% endfor %}
+    </ul>
+    <form method="GET" class="d-flex">
+        <input type="hidden" name="kind" value="{{ kind }}">
+        <div class="input-group input-group-sm" style="max-width: 320px;">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Rechercher...">
+            <button class="btn btn-primary" type="submit">OK</button>
+            {% if q %}<a href="{{ url_for('inventory.list', kind=kind) }}" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i></a>{% endif %}
+        </div>
+    </form>
+</div>
+
+<div class="data-card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 js-filterable">
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Type</th>
+                    <th>Env.</th>
+                    <th>Criticité</th>
+                    <th>OS</th>
+                    <th>Adresse / Hôte</th>
+                    <th>Garantie</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in items %}
+                <tr class="row-{{ e.computed_status() }}">
+                    <td>
+                        <a href="{{ url_for('inventory.detail', id=e.id) }}" class="fw-medium text-decoration-none">{{ e.name }}</a>
+                        {% if e.role_principal %}<br><small class="text-muted">{{ e.role_principal }}</small>{% endif %}
+                    </td>
+                    <td><span class="text-nowrap"><i class="bi {{ kind_icons.get(e.kind, 'bi-box') }} me-1 text-muted"></i>{{ e.kind_label() }}</span></td>
+                    <td>{% if e.environment %}<small>{{ e.env_label() }}</small>{% else %}-{% endif %}</td>
+                    <td>{% if e.criticality %}<span class="badge bg-{{ crit_colors.get(e.criticality, 'secondary') }}">{{ e.criticality }}</span>{% else %}-{% endif %}</td>
+                    <td><small>{{ e.os or '-' }}{% if e.os_version %} {{ e.os_version }}{% endif %}</small></td>
+                    <td><small>{{ e.ip_address or e.host_server or '-' }}</small></td>
+                    <td>
+                        {% if e.warranty_end %}
+                        {% set d = e.warranty_days_left() %}
+                        <small class="{% if d < 0 %}text-danger fw-bold{% elif d <= 60 %}text-warning{% endif %}">{{ e.warranty_end.strftime('%d/%m/%Y') }}</small>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td><span class="badge-status badge-{{ e.computed_status() }}">{{ status_labels.get(e.computed_status(), e.computed_status()) }}</span></td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{{ url_for('inventory.detail', id=e.id) }}" class="btn btn-sm btn-outline-primary" title="Voir"><i class="bi bi-eye"></i></a>
+                            {% if current_user.can_edit('inventory') %}
+                            <a href="{{ url_for('inventory.edit', id=e.id) }}" class="btn btn-sm btn-outline-secondary" title="Modifier"><i class="bi bi-pencil"></i></a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" class="text-center py-4 text-muted">
+                    <i class="bi bi-hdd-stack" style="font-size: 2rem;"></i>
+                    <p class="mt-2 mb-0">Aucun équipement.
+                        {% if current_user.can_edit('inventory') %}<a href="{{ url_for('inventory.import_xlsx') }}">Importer votre fichier Excel</a> ou <a href="{{ url_for('inventory.create') }}">en ajouter un</a>.{% endif %}
+                    </p>
+                </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% include '_pagination.html' %}
+{% endblock %}

@@ -115,6 +115,13 @@
                     {% if nav_counts and nav_counts.updates %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.updates }}</span>{% endif %}
                 </a>
                 {% endif %}
+                {% if current_user.can_view('inventory') %}
+                <a href="{{ url_for('inventory.list') }}" class="sidebar-link {% if 'inventory' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-hdd-stack"></i>
+                    <span>Inventaire</span>
+                    {% if nav_counts and nav_counts.inventory %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.inventory }}</span>{% endif %}
+                </a>
+                {% endif %}
                 {% if current_user.can_view('alerts') %}
                 <a href="{{ url_for('alerts.list') }}" class="sidebar-link {% if 'alerts' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-bell"></i>

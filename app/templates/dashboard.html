@@ -93,6 +93,9 @@
     {% if current_user.can_view('updates') %}
     {{ stat_card(url_for('updates.list'), 'Mises à jour', 'bi-arrow-up-circle', '#ec4899', stats.updates, ok_label='à jour', warning_label='dispo') }}
     {% endif %}
+    {% if current_user.can_view('inventory') %}
+    {{ stat_card(url_for('inventory.list'), 'Inventaire', 'bi-hdd-stack', '#0ea5e9', stats.inventory) }}
+    {% endif %}
 </div>
 
 {% if backups %}

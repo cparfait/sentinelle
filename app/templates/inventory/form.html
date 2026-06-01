@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifier' if item else 'Ajouter' }} un équipement - Sentinelle{% endblock %}
+
+{% macro val(attr) %}{{ item[attr] if item and item[attr] is not none else '' }}{% endmacro %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0"><i class="bi bi-hdd-stack me-2"></i>{{ 'Modifier' if item else 'Ajouter' }} un équipement</h4>
+    <a href="{{ url_for('inventory.list') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Retour</a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="data-card p-4">
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <h6 class="fw-bold mb-3"><i class="bi bi-tag me-2 text-primary"></i>Identification</h6>
+                <div class="row g-3 mb-2">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-medium">Type *</label>
+                        <select name="kind" id="kind" class="form-select">
+                            {% for v, l in kind_choices %}<option value="{{ v }}" {{ 'selected' if (item and item.kind == v) or (not item and v == 'vm') }}>{{ l }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label small fw-medium">Nom *</label>
+                        <input type="text" name="name" class="form-control" required value="{{ val('name') }}" placeholder="ex: SRV-APP01">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-medium">Environnement</label>
+                        <select name="environment" class="form-select">
+                            {% for v, l in env_choices %}<option value="{{ v }}" {{ 'selected' if item and item.environment == v }}>{{ l }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-medium">Criticité</label>
+                        <select name="criticality" class="form-select">
+                            <option value="">—</option>
+                            {% for lvl, lbl in crit_labels.items() %}<option value="{{ lvl }}" {{ 'selected' if item and item.criticality == lvl }}>{{ lbl }}</option>{% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <hr>
+                <h6 class="fw-bold mb-3"><i class="bi bi-cpu me-2 text-primary"></i>Système</h6>
+                <div class="row g-3 mb-2">
+                    <div class="col-md-4"><label class="form-label small">OS</label><input type="text" name="os" class="form-control" value="{{ val('os') }}" placeholder="Windows Server, Debian..."></div>
+                    <div class="col-md-3"><label class="form-label small">Version</label><input type="text" name="os_version" class="form-control" value="{{ val('os_version') }}"></div>
+                    <div class="col-md-3"><label class="form-label small">Dernière MAJ OS</label><input type="date" name="os_last_update" class="form-control" value="{{ item.os_last_update.strftime('%Y-%m-%d') if item and item.os_last_update else '' }}"></div>
+                    <div class="col-md-2 kind-section" data-kinds="physical nas"><label class="form-label small">Supervision</label><input type="text" name="supervision" class="form-control" value="{{ val('supervision') }}" placeholder="outil"></div>
+                </div>
+                <div class="row g-3 mb-2 kind-section" data-kinds="vm">
+                    <div class="col-12 d-flex gap-4 flex-wrap">
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="supervised" id="supervised" {{ 'checked' if item and item.supervised }}><label class="form-check-label small" for="supervised">Supervision</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="cyberwatch" id="cyberwatch" {{ 'checked' if item and item.cyberwatch }}><label class="form-check-label small" for="cyberwatch">Cyberwatch</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="ninja_one" id="ninja_one" {{ 'checked' if item and item.ninja_one }}><label class="form-check-label small" for="ninja_one">Ninja One</label></div>
+                    </div>
+                </div>
+
+                <div class="kind-section" data-kinds="vm nas">
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="bi bi-diagram-3 me-2 text-primary"></i>Réseau</h6>
+                    <div class="row g-3 mb-2">
+                        <div class="col-md-4"><label class="form-label small">Adresse IP</label><input type="text" name="ip_address" class="form-control" value="{{ val('ip_address') }}"></div>
+                        <div class="col-md-4 kind-section" data-kinds="vm"><label class="form-label small">Masque</label><input type="text" name="netmask" class="form-control" value="{{ val('netmask') }}"></div>
+                        <div class="col-md-4 kind-section" data-kinds="vm"><label class="form-label small">VLAN</label><input type="text" name="vlan" class="form-control" value="{{ val('vlan') }}"></div>
+                    </div>
+                </div>
+
+                <div class="kind-section" data-kinds="vm">
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="bi bi-pc-display me-2 text-primary"></i>Hôte & ressources</h6>
+                    <div class="row g-3 mb-2">
+                        <div class="col-md-4"><label class="form-label small">Serveur hôte</label><input type="text" name="host_server" class="form-control" value="{{ val('host_server') }}"></div>
+                        <div class="col-md-2"><label class="form-label small">Hyperviseur</label><input type="text" name="hypervisor" class="form-control" value="{{ val('hypervisor') }}" placeholder="VMware/HV"></div>
+                        <div class="col-md-2"><label class="form-label small">vCPU</label><input type="number" name="vcpu" class="form-control" value="{{ val('vcpu') }}"></div>
+                        <div class="col-md-2"><label class="form-label small">RAM (Go)</label><input type="number" step="any" name="ram_go" class="form-control" value="{{ val('ram_go') }}"></div>
+                    </div>
+                    <div class="row g-3 mb-2">
+                        <div class="col-md-4"><label class="form-label small">Stockage HDD 1 (Go)</label><input type="number" step="any" name="hdd1_go" class="form-control" value="{{ val('hdd1_go') }}"></div>
+                        <div class="col-md-4"><label class="form-label small">Stockage HDD 2 (Go)</label><input type="number" step="any" name="hdd2_go" class="form-control" value="{{ val('hdd2_go') }}"></div>
+                        <div class="col-md-4"><label class="form-label small">Stockage HDD 3 (Go)</label><input type="number" step="any" name="hdd3_go" class="form-control" value="{{ val('hdd3_go') }}"></div>
+                    </div>
+                </div>
+
+                <div class="kind-section" data-kinds="physical nas">
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="bi bi-tools me-2 text-primary"></i>Matériel & garantie</h6>
+                    <div class="row g-3 mb-2">
+                        <div class="col-md-4 kind-section" data-kinds="physical"><label class="form-label small">Constructeur / Modèle</label><input type="text" name="manufacturer_model" class="form-control" value="{{ val('manufacturer_model') }}"></div>
+                        <div class="col-md-4 kind-section" data-kinds="physical"><label class="form-label small">N° de série</label><input type="text" name="serial_number" class="form-control" value="{{ val('serial_number') }}"></div>
+                        <div class="col-md-4 kind-section" data-kinds="physical"><label class="form-label small">Date achat / mise en service</label><input type="date" name="purchase_date" class="form-control" value="{{ item.purchase_date.strftime('%Y-%m-%d') if item and item.purchase_date else '' }}"></div>
+                        <div class="col-md-4"><label class="form-label small">Fin de garantie</label><input type="date" name="warranty_end" class="form-control" value="{{ item.warranty_end.strftime('%Y-%m-%d') if item and item.warranty_end else '' }}"></div>
+                        <div class="col-md-4"><label class="form-label small">Contrat de maintenance</label><input type="text" name="maintenance_contract" class="form-control" value="{{ val('maintenance_contract') }}"></div>
+                    </div>
+                </div>
+
+                <div class="kind-section" data-kinds="nas">
+                    <hr>
+                    <h6 class="fw-bold mb-3"><i class="bi bi-hdd-network me-2 text-primary"></i>Stockage NAS</h6>
+                    <div class="row g-3 mb-2">
+                        <div class="col-md-4"><label class="form-label small">Protocoles</label><input type="text" name="protocols" class="form-control" value="{{ val('protocols') }}" placeholder="SMB/NFS/iSCSI"></div>
+                        <div class="col-md-2"><label class="form-label small">Capacité (To)</label><input type="number" step="any" name="capacity_to" class="form-control" value="{{ val('capacity_to') }}"></div>
+                        <div class="col-md-2"><label class="form-label small">Utilisé (To)</label><input type="number" step="any" name="used_to" class="form-control" value="{{ val('used_to') }}"></div>
+                        <div class="col-md-4"><label class="form-label small">RAID</label><input type="text" name="raid" class="form-control" value="{{ val('raid') }}"></div>
+                        <div class="col-12"><label class="form-label small">Accès (utilisateurs / groupes)</label><input type="text" name="access" class="form-control" value="{{ val('access') }}"></div>
+                    </div>
+                </div>
+
+                <hr>
+                <h6 class="fw-bold mb-3"><i class="bi bi-gear-wide-connected me-2 text-primary"></i>Rôle & logiciels</h6>
+                <div class="row g-3 mb-2">
+                    <div class="col-md-4"><label class="form-label small">Rôle principal</label><input type="text" name="role_principal" class="form-control" value="{{ val('role_principal') }}"></div>
+                    <div class="col-md-4"><label class="form-label small">Logiciels métiers</label><input type="text" name="business_software" class="form-control" value="{{ val('business_software') }}"></div>
+                    <div class="col-md-4 kind-section" data-kinds="vm physical"><label class="form-label small">Services utilisateurs</label><input type="text" name="user_services" class="form-control" value="{{ val('user_services') }}"></div>
+                    <div class="col-12 kind-section" data-kinds="nas"><label class="form-label small">Usage principal / données stockées</label><input type="text" name="usage" class="form-control" value="{{ val('usage') }}"></div>
+                </div>
+
+                <hr>
+                <h6 class="fw-bold mb-3"><i class="bi bi-shield-check me-2 text-primary"></i>Continuité & sécurité</h6>
+                <div class="row g-3 mb-2">
+                    <div class="col-md-6 kind-section" data-kinds="physical"><label class="form-label small">PRA / PCA</label><input type="text" name="pra_pca" class="form-control" value="{{ val('pra_pca') }}"></div>
+                    <div class="col-md-3"><label class="form-label small">Sauvegarde 1</label><input type="text" name="backup1" class="form-control" value="{{ val('backup1') }}" placeholder="outil"></div>
+                    <div class="col-md-3"><label class="form-label small">Fréquence 1</label><input type="text" name="backup1_freq" class="form-control" value="{{ val('backup1_freq') }}"></div>
+                    <div class="col-md-3 kind-section" data-kinds="vm"><label class="form-label small">Sauvegarde 2</label><input type="text" name="backup2" class="form-control" value="{{ val('backup2') }}"></div>
+                    <div class="col-md-3 kind-section" data-kinds="vm"><label class="form-label small">Fréquence 2</label><input type="text" name="backup2_freq" class="form-control" value="{{ val('backup2_freq') }}"></div>
+                    <div class="col-12"><label class="form-label small">Observations</label><textarea name="observations" rows="2" class="form-control">{{ val('observations') }}</textarea></div>
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if item else 'Ajouter' }}</button>
+                    <a href="{{ url_for('inventory.list') }}" class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var kindSel = document.getElementById('kind');
+    function refresh() {
+        var k = kindSel.value;
+        document.querySelectorAll('.kind-section').forEach(function (el) {
+            var kinds = (el.dataset.kinds || '').split(' ');
+            el.style.display = kinds.indexOf(k) === -1 ? 'none' : '';
+        });
+    }
+    kindSel.addEventListener('change', refresh);
+    refresh();
+})();
+</script>
+{% endblock %}

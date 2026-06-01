@@ -19,7 +19,11 @@ _DETAIL_ENDPOINT = {
     'domain': 'domains.detail',
     'review': 'reviews.detail',
     'update': 'updates.detail',
+    'equipment': 'inventory.detail',
 }
+
+# Prefixe d'URL quand il differe de entity_type + 's' (pour les liens des emails)
+_URL_PREFIX = {'equipment': 'inventory'}
 
 
 @bp.before_request
@@ -102,7 +106,8 @@ def send_alert(subject, body, entity_type=None, entity_id=None, entity_name=None
         if entity_type and entity_id:
             base = current_app.config.get('APP_BASE_URL', '').rstrip('/')
             if base:
-                url = f"{base}/{entity_type}s/{entity_id}"
+                prefix = _URL_PREFIX.get(entity_type, f"{entity_type}s")
+                url = f"{base}/{prefix}/{entity_id}"
         html_body = render_alert_email(subject, body, status=status, url=url)
         send_email(subject, recipients, body, html_body=html_body)
 

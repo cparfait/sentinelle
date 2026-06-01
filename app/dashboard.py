@@ -2,7 +2,7 @@ from datetime import datetime, timezone, timedelta
 from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
 from flask_login import login_required, current_user
 from app.models import (Account, Certificate, Backup, BackupCheck, TestTask,
-                        AlertLog, Domain, AccessReview, SystemUpdate)
+                        AlertLog, Domain, AccessReview, SystemUpdate, Equipment)
 from app.snooze import is_snoozed
 from app import db
 
@@ -84,6 +84,7 @@ def by_status(status):
         ('tests', 'Tests', TestTask, lambda o: o.name, 'tests', lambda o: o.computed_status()),
         ('reviews', 'Revue de droits', AccessReview, lambda o: o.application, 'reviews', lambda o: o.computed_status()),
         ('updates', 'Mises à jour', SystemUpdate, lambda o: o.name, 'updates', lambda o: o.status_color()),
+        ('inventory', 'Inventaire', Equipment, lambda o: o.name, 'inventory', lambda o: o.computed_status()),
     ]
     items = []
     for cat, label, model, namef, prefix, statusf in sources:
@@ -204,6 +205,11 @@ def index():
     tests = TestTask.query.filter_by(is_active=True).all() if current_user.can_view('tests') else []
     reviews = AccessReview.query.filter_by(is_active=True).all() if current_user.can_view('reviews') else []
     updates = SystemUpdate.query.filter_by(is_active=True).all() if current_user.can_view('updates') else []
+    equipments = Equipment.query.filter_by(is_active=True).all() if current_user.can_view('inventory') else []
+
+    inv_danger = sum(1 for e in equipments if e.computed_status() == 'danger')
+    inv_warning = sum(1 for e in equipments if e.computed_status() == 'warning')
+    inv_ok = sum(1 for e in equipments if e.computed_status() == 'success')
 
     acc_danger = sum(1 for a in accounts if a.status() == 'danger')
     acc_warning = sum(1 for a in accounts if a.status() == 'warning')
@@ -310,6 +316,7 @@ def index():
         'tests': {'total': len(tests), 'danger': tst_danger, 'warning': tst_warning, 'ok': tst_ok},
         'reviews': {'total': len(reviews), 'danger': rev_danger, 'warning': rev_warning, 'ok': rev_ok},
         'updates': {'total': len(updates), 'danger': upd_danger, 'warning': upd_warning, 'ok': upd_ok},
+        'inventory': {'total': len(equipments), 'danger': inv_danger, 'warning': inv_warning, 'ok': inv_ok},
     }
 
     totals = {'total': 0, 'ok': 0, 'warning': 0, 'danger': 0}

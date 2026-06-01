@@ -202,6 +202,40 @@ def check_updates():
             send_alert(subject, body, 'update', upd.id, upd.name)
 
 
+def check_inventory():
+    with _app.app_context():
+        from app.models import Equipment
+        today = datetime.now(timezone.utc).date()
+        offsets = (90, 60, 30, 15, 7, 3, 1, 0, -1)
+        is_monday = today.weekday() == 0
+        for e in Equipment.query.filter_by(is_active=True).all():
+            if is_snoozed('equipment', e.id):
+                continue
+            reasons = []
+            if e.warranty_end:
+                d = (e.warranty_end - today).days
+                if d in offsets:
+                    reasons.append('Garantie EXPIRÉE' if d < 0
+                                   else f"Garantie expire dans {d} jour(s) ({e.warranty_end.strftime('%d/%m/%Y')})")
+            # Points hebdomadaires (le lundi) pour eviter le bruit quotidien.
+            if is_monday and e.missing_backup():
+                reasons.append('Criticité élevée sans sauvegarde renseignée')
+            if is_monday and e.os_update_stale():
+                reasons.append('Mise à jour OS absente ou trop ancienne')
+            if not reasons:
+                continue
+            subject = f"Alerte inventaire - {e.name}"
+            body = (
+                f"L'équipement suivant nécessite une attention :\n\n"
+                f"Nom : {e.name}\n"
+                f"Type : {e.kind_label()}\n"
+                f"Criticité : {e.criticality or 'N/A'}\n\n"
+                + '\n'.join(f"- {r}" for r in reasons) + "\n"
+            )
+            send_alert(subject, body, 'equipment', e.id, e.name,
+                       status='danger' if e.computed_status() == 'danger' else 'warning')
+
+
 def refresh_certificates_tls():
     """Lit en direct la date d'expiration reelle de chaque certificat actif et
     met a jour les fiches. Tourne avant l'alerte certificats du matin."""
@@ -325,5 +359,7 @@ def start_scheduler(app):
                       id='check_reviews', replace_existing=True)
     scheduler.add_job(check_updates, 'cron', hour=8, minute=55,
                       id='check_updates', replace_existing=True)
+    scheduler.add_job(check_inventory, 'cron', hour=8, minute=58,
+                      id='check_inventory', replace_existing=True)
 
     scheduler.start()

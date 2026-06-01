@@ -50,6 +50,9 @@ class Config:
     THRESHOLD_EXPIRY = _triplet('THRESHOLD_EXPIRY', (7, 15, 30))   # comptes, certificats
     THRESHOLD_DOMAIN = _triplet('THRESHOLD_DOMAIN', (30, 60, 90))  # noms de domaine
     THRESHOLD_TASK = _triplet('THRESHOLD_TASK', (7, 15, 30))       # tests, revues de droits
+    THRESHOLD_WARRANTY = _triplet('THRESHOLD_WARRANTY', (30, 60, 90))  # fin de garantie (inventaire)
+    # Au-dela de ce nombre de jours sans MAJ OS, l'equipement est signale.
+    OS_STALE_DAYS = int(os.getenv('OS_STALE_DAYS', 365))
 
     MAIL_METHOD = os.getenv('MAIL_METHOD', 'smtp')
 

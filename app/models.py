@@ -26,11 +26,11 @@ def _status_from_days(days_left, key, default):
 # Categories soumises aux permissions par role (les sections Utilisateurs et
 # Preferences restent reservees aux administrateurs via is_admin).
 PERMISSION_CATEGORIES = ['accounts', 'certificates', 'domains', 'backups', 'tests',
-                         'reviews', 'updates', 'alerts']
+                         'reviews', 'updates', 'inventory', 'alerts']
 CATEGORY_LABELS = {
     'accounts': 'Comptes', 'certificates': 'Certificats', 'domains': 'Domaines',
     'backups': 'Backups', 'tests': 'Tests', 'reviews': 'Revue de droits',
-    'updates': 'Mises à jour', 'alerts': 'Alertes',
+    'updates': 'Mises à jour', 'inventory': 'Inventaire', 'alerts': 'Alertes',
 }
 # Niveaux : 0 aucun, 1 lecture, 2 ecriture, 3 suppression (cumulatifs)
 PERMISSION_LEVELS = {0: 'Aucun', 1: 'Lecture', 2: 'Écriture', 3: 'Suppression'}
@@ -420,6 +420,136 @@ class Asset(db.Model):
 
     def type_label(self):
         return ASSET_TYPE_LABELS.get(self.asset_type, self.asset_type)
+
+
+EQUIPMENT_KIND_LABELS = {'vm': 'VM', 'physical': 'Serveur physique', 'nas': 'NAS'}
+ENVIRONMENT_LABELS = {'prod': 'Production', 'preprod': 'Préproduction', 'dev': 'Développement'}
+CRITICALITY_LABELS = {1: '1 - Faible', 2: '2 - Modérée', 3: '3 - Élevée', 4: '4 - Vitale'}
+
+
+class Equipment(db.Model):
+    """Inventaire unifie : VM, serveurs physiques et NAS.
+    Les champs specifiques a un type restent vides pour les autres."""
+    id = db.Column(db.Integer, primary_key=True)
+    kind = db.Column(db.String(16), default='vm', nullable=False)  # vm / physical / nas
+    name = db.Column(db.String(128), nullable=False)
+    environment = db.Column(db.String(16))      # prod / preprod / dev
+    criticality = db.Column(db.Integer)          # 1 a 4 (criticite cyber)
+
+    # Systeme
+    os = db.Column(db.String(128))
+    os_version = db.Column(db.String(64))
+    os_last_update = db.Column(db.Date)
+    supervision = db.Column(db.String(128))      # outil de supervision (physique/nas)
+    supervised = db.Column(db.Boolean, default=False)   # VM : supervision
+    cyberwatch = db.Column(db.Boolean, default=False)   # VM : Cyberwatch
+    ninja_one = db.Column(db.Boolean, default=False)    # VM : Ninja One
+
+    # Reseau (VM / NAS)
+    ip_address = db.Column(db.String(64))
+    netmask = db.Column(db.String(64))
+    vlan = db.Column(db.String(32))
+
+    # Hote (VM)
+    host_server = db.Column(db.String(128))
+    hypervisor = db.Column(db.String(64))
+
+    # Ressources (VM)
+    vcpu = db.Column(db.Integer)
+    ram_go = db.Column(db.Float)
+    hdd1_go = db.Column(db.Float)
+    hdd2_go = db.Column(db.Float)
+    hdd3_go = db.Column(db.Float)
+
+    # Materiel & garantie (physique / nas)
+    manufacturer_model = db.Column(db.String(128))
+    serial_number = db.Column(db.String(128))
+    purchase_date = db.Column(db.Date)
+    warranty_end = db.Column(db.Date)
+    maintenance_contract = db.Column(db.String(128))
+
+    # Stockage (NAS)
+    protocols = db.Column(db.String(128))
+    access = db.Column(db.Text)
+    capacity_to = db.Column(db.Float)
+    used_to = db.Column(db.Float)
+    raid = db.Column(db.String(64))
+
+    # Role & logiciels
+    role_principal = db.Column(db.String(128))
+    business_software = db.Column(db.Text)
+    user_services = db.Column(db.Text)
+    usage = db.Column(db.Text)                   # usage principal / donnees (NAS)
+
+    # Continuite & securite
+    pra_pca = db.Column(db.String(128))
+    backup1 = db.Column(db.String(128))
+    backup1_freq = db.Column(db.String(64))
+    backup2 = db.Column(db.String(128))
+    backup2_freq = db.Column(db.String(64))
+    observations = db.Column(db.Text)
+
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    def kind_label(self):
+        return EQUIPMENT_KIND_LABELS.get(self.kind, self.kind)
+
+    def env_label(self):
+        return ENVIRONMENT_LABELS.get(self.environment, self.environment or '')
+
+    def warranty_days_left(self):
+        if not self.warranty_end:
+            return None
+        return (self.warranty_end - datetime.now(timezone.utc).date()).days
+
+    def warranty_status(self):
+        if not self.warranty_end:
+            return None
+        return _status_from_days(self.warranty_days_left(), 'THRESHOLD_WARRANTY', (30, 60, 90))
+
+    def os_update_stale(self):
+        """MAJ OS jamais renseignee ou trop ancienne (seuil configurable)."""
+        from flask import current_app
+        try:
+            limit = int(current_app.config.get('OS_STALE_DAYS', 365))
+        except Exception:
+            limit = 365
+        if not self.os and not self.os_last_update:
+            return False
+        if not self.os_last_update:
+            return True
+        return (datetime.now(timezone.utc).date() - self.os_last_update).days > limit
+
+    def missing_backup(self):
+        return (self.criticality or 0) >= 3 and not (self.backup1 or self.backup2)
+
+    def computed_status(self):
+        found = set()
+        ws = self.warranty_status()
+        if ws:
+            found.add(ws)
+        if self.missing_backup():
+            found.add('danger')
+        if self.os_update_stale():
+            found.add('warning')
+        for s in ('danger', 'warning', 'info', 'success'):
+            if s in found:
+                return s
+        return 'success'
+
+    def status_reasons(self):
+        """Liste lisible des points d'attention (pour fiche et alertes)."""
+        out = []
+        d = self.warranty_days_left()
+        if d is not None and d <= 90:
+            out.append(('Garantie expirée' if d < 0 else f'Garantie expire dans {d} j'))
+        if self.missing_backup():
+            out.append('Criticité élevée sans sauvegarde')
+        if self.os_update_stale():
+            out.append('MAJ OS absente ou trop ancienne')
+        return out
 
 
 class SchedulerRun(db.Model):

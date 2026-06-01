@@ -6,7 +6,7 @@ from flask_login import current_user
 _BP_CATEGORY = {
     'accounts': 'accounts', 'certificates': 'certificates', 'domains': 'domains',
     'backups': 'backups', 'tests': 'tests', 'reviews': 'reviews',
-    'updates': 'updates', 'alerts': 'alerts',
+    'updates': 'updates', 'inventory': 'inventory', 'alerts': 'alerts',
 }
 
 

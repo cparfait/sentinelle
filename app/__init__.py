@@ -48,7 +48,7 @@ def create_app(config_class=Config):
         if not current_user.is_authenticated:
             return {}
         from app.models import (Account, Certificate, Domain, Backup, TestTask,
-                                AccessReview, SystemUpdate, Role)
+                                AccessReview, SystemUpdate, Equipment, Role)
 
         def _danger(items, method):
             return sum(1 for i in items if getattr(i, method)() == 'danger')
@@ -61,11 +61,13 @@ def create_app(config_class=Config):
             'tests': _danger(TestTask.query.filter_by(is_active=True).all(), 'computed_status'),
             'reviews': _danger(AccessReview.query.filter_by(is_active=True).all(), 'computed_status'),
             'updates': _danger(SystemUpdate.query.filter_by(is_active=True).all(), 'status_color'),
+            'inventory': _danger(Equipment.query.filter_by(is_active=True).all(), 'computed_status'),
         }
         # Nombre d'elements en corbeille sur les categories editables par l'utilisateur
         trash_models = [('accounts', Account), ('certificates', Certificate),
                         ('domains', Domain), ('backups', Backup), ('tests', TestTask),
-                        ('reviews', AccessReview), ('updates', SystemUpdate)]
+                        ('reviews', AccessReview), ('updates', SystemUpdate),
+                        ('inventory', Equipment)]
         counts['trash'] = sum(
             m.query.filter_by(is_active=False).count()
             for cat, m in trash_models if current_user.can_edit(cat))
@@ -103,6 +105,9 @@ def create_app(config_class=Config):
 
     from app.updates import bp as updates_bp
     app.register_blueprint(updates_bp, url_prefix='/updates')
+
+    from app.inventory import bp as inventory_bp
+    app.register_blueprint(inventory_bp, url_prefix='/inventory')
 
     from app.alerts import bp as alerts_bp
     app.register_blueprint(alerts_bp, url_prefix='/alerts')
