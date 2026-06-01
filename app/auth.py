@@ -423,6 +423,31 @@ def preferences():
             except Exception as e:
                 flash(f'Erreur envoi recap: {str(e)}', 'danger')
 
+        elif action == 'add_asset':
+            from app.models import Asset
+            name = request.form.get('asset_name', '').strip()
+            atype = request.form.get('asset_type', 'application')
+            if atype not in ('application', 'server'):
+                atype = 'application'
+            if not name:
+                flash('Le nom est obligatoire.', 'danger')
+            else:
+                db.session.add(Asset(name=name, asset_type=atype,
+                                     description=request.form.get('asset_description', '').strip() or None))
+                db.session.commit()
+                audit_record('ajout catalogue', detail=f'{name} ({atype})', category='preferences')
+                flash('Élément ajouté au catalogue', 'success')
+
+        elif action == 'delete_asset':
+            from app.models import Asset
+            a = Asset.query.get(request.form.get('asset_id', type=int))
+            if a:
+                name = a.name
+                db.session.delete(a)
+                db.session.commit()
+                audit_record('suppression catalogue', detail=name, category='preferences')
+                flash('Élément retiré du catalogue', 'success')
+
         return redirect(url_for('auth.preferences'))
 
     mail_method = current_app.config.get('MAIL_METHOD', 'smtp')
@@ -456,6 +481,9 @@ def preferences():
 
     from app.db_backup import list_backups
     db_backups = list_backups(current_app)
+
+    from app.models import Asset, ASSET_TYPE_LABELS
+    assets = Asset.query.order_by(Asset.asset_type, Asset.name).all()
 
     thresholds = {
         'expiry': current_app.config.get('THRESHOLD_EXPIRY', (7, 15, 30)),
@@ -493,7 +521,8 @@ def preferences():
                            o365_app_configured=o365_app_configured,
                            alert_recipients=alert_recipients,
                            db_backups=db_backups, thresholds=thresholds,
-                           ldap_config=ldap_config, webhooks=webhooks)
+                           ldap_config=ldap_config, webhooks=webhooks,
+                           assets=assets, asset_type_labels=ASSET_TYPE_LABELS)
 
 
 @bp.route('/auth/o365/callback')

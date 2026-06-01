@@ -405,6 +405,23 @@ class UpdateHistory(db.Model):
     performed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+ASSET_TYPE_LABELS = {'application': 'Application', 'server': 'Serveur'}
+
+
+class Asset(db.Model):
+    """Catalogue d'applications et de systemes/serveurs, defini dans les
+    preferences. Alimente les listes deroulantes des mises a jour et revues."""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=False)
+    asset_type = db.Column(db.String(20), default='application')  # application / server
+    description = db.Column(db.String(256))
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def type_label(self):
+        return ASSET_TYPE_LABELS.get(self.asset_type, self.asset_type)
+
+
 class SchedulerRun(db.Model):
     """Trace d'execution d'un job planifie (diagnostic des alertes)."""
     id = db.Column(db.Integer, primary_key=True)

@@ -25,11 +25,13 @@ TEST_TYPES = [
 @login_required
 def list():
     tests = TestTask.query.filter_by(is_active=True).order_by(TestTask.next_due.asc().nullsfirst()).all()
+    q = request.args.get('q', '').strip()
+    from app.paging import paginate, text_search
+    tests = text_search(tests, q, ['name', 'test_type', 'description'])
     rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
     tests.sort(key=lambda t: rank.get(t.computed_status(), 4))
-    from app.paging import paginate
     tests, page, pages, total = paginate(tests)
-    return render_template('tests/list.html', tests=tests, test_types=TEST_TYPES, page=page, pages=pages, total=total)
+    return render_template('tests/list.html', tests=tests, test_types=TEST_TYPES, q=q, page=page, pages=pages, total=total)
 
 
 @bp.route('/create', methods=['GET', 'POST'])

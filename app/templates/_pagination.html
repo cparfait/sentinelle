@@ -1,15 +1,18 @@
-{# Contrôles de pagination. Variables : page, pages #}
+{# Contrôles de pagination. Variables : page, pages. Préserve les filtres (ex. q). #}
 {% if pages and pages > 1 %}
+{% set base_args = request.args.to_dict() %}
 <div class="d-flex justify-content-between align-items-center mt-3">
     <small class="text-muted">Page {{ page }} / {{ pages }}</small>
     <div class="btn-group">
         {% if page > 1 %}
-        <a href="{{ url_for(request.endpoint, page=page-1) }}" class="btn btn-sm btn-outline-secondary">
+        {% set _ = base_args.update({'page': page - 1}) %}
+        <a href="{{ url_for(request.endpoint, **base_args) }}" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-chevron-left"></i> Précédent
         </a>
         {% endif %}
         {% if page < pages %}
-        <a href="{{ url_for(request.endpoint, page=page+1) }}" class="btn btn-sm btn-outline-secondary">
+        {% set _ = base_args.update({'page': page + 1}) %}
+        <a href="{{ url_for(request.endpoint, **base_args) }}" class="btn btn-sm btn-outline-secondary">
             Suivant <i class="bi bi-chevron-right"></i>
         </a>
         {% endif %}

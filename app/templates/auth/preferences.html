@@ -272,6 +272,71 @@
                 </div>
             </div>
 
+            {# ===================== CATALOGUE APPLICATIONS & SYSTÈMES ===================== #}
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secAssets" aria-expanded="false" aria-controls="secAssets">
+                        <i class="bi bi-hdd-stack me-2"></i>Applications &amp; systèmes
+                        <span class="badge bg-secondary ms-2">{{ assets|length }}</span>
+                    </button>
+                </h2>
+                <div id="secAssets" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
+                    <div class="accordion-body">
+                        <p class="text-muted small">Ce catalogue alimente les listes déroulantes des <strong>mises à jour</strong> et des <strong>revues de droits</strong> (selon le type choisi : application ou serveur).</p>
+
+                        <form method="POST" action="{{ url_for('auth.preferences') }}" class="row g-2 align-items-end mb-3">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="add_asset">
+                            <div class="col-md-4">
+                                <label class="form-label small">Nom *</label>
+                                <input type="text" name="asset_name" class="form-control form-control-sm" required placeholder="ex: GLPI, Windows Server 2022...">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Type</label>
+                                <select name="asset_type" class="form-select form-select-sm">
+                                    <option value="application">Application</option>
+                                    <option value="server">Serveur</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Description</label>
+                                <input type="text" name="asset_description" class="form-control form-control-sm" placeholder="optionnel">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-plus-lg me-1"></i> Ajouter</button>
+                            </div>
+                        </form>
+
+                        {% if assets %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm mb-0">
+                                <thead><tr><th>Nom</th><th>Type</th><th>Description</th><th></th></tr></thead>
+                                <tbody>
+                                    {% for a in assets %}
+                                    <tr>
+                                        <td class="fw-medium">{{ a.name }}</td>
+                                        <td><span class="badge bg-{{ 'info' if a.asset_type == 'application' else 'secondary' }}">{{ asset_type_labels.get(a.asset_type, a.asset_type) }}</span></td>
+                                        <td class="text-muted">{{ a.description or '-' }}</td>
+                                        <td class="text-end">
+                                            <form method="POST" action="{{ url_for('auth.preferences') }}" onsubmit="return confirm('Retirer « {{ a.name }} » du catalogue ?')">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="action" value="delete_asset">
+                                                <input type="hidden" name="asset_id" value="{{ a.id }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Retirer"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted small mb-0">Aucun élément pour le moment.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
             {# ===================== LDAP / ACTIVE DIRECTORY ===================== #}
             <div class="accordion-item">
                 <h2 class="accordion-header">

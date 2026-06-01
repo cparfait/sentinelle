@@ -13,18 +13,28 @@
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="row">
-                    <div class="col-md-8 mb-3">
-                        <label class="form-label fw-medium">Nom *</label>
-                        <input type="text" name="name" class="form-control" required
-                               value="{{ update.name if update else '' }}" placeholder="ex: Windows Server 2022, Nginx, GLPI...">
-                    </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-medium">Type</label>
-                        <select name="system_type" class="form-select">
+                        <select name="system_type" id="systemType" class="form-select">
                             {% for val, lbl in type_choices %}
                             <option value="{{ val }}" {{ 'selected' if update and update.system_type == val }}>{{ lbl }}</option>
                             {% endfor %}
                         </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-medium">Depuis le catalogue</label>
+                        <select id="assetPicker" class="form-select">
+                            <option value="">— Choisir —</option>
+                            {% for a in assets %}
+                            <option value="{{ a.name }}" data-type="{{ a.asset_type }}">{{ a.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Catalogue géré dans Préférences.</small>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-medium">Nom *</label>
+                        <input type="text" name="name" id="assetName" class="form-control" required
+                               value="{{ update.name if update else '' }}" placeholder="ou saisie libre">
                     </div>
                 </div>
                 <div class="row">
@@ -90,4 +100,25 @@
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    var typeSel = document.getElementById('systemType');
+    var picker = document.getElementById('assetPicker');
+    var nameInput = document.getElementById('assetName');
+    if (!typeSel || !picker || !nameInput) return;
+    var MAP = {application: 'application', system: 'server'};
+    function filterPicker() {
+        var want = MAP[typeSel.value] || typeSel.value;
+        Array.prototype.forEach.call(picker.options, function (o) {
+            if (!o.value) { o.hidden = false; return; }
+            o.hidden = (o.dataset.type !== want);
+        });
+        if (picker.selectedOptions[0] && picker.selectedOptions[0].hidden) picker.value = '';
+    }
+    picker.addEventListener('change', function () { if (picker.value) nameInput.value = picker.value; });
+    typeSel.addEventListener('change', filterPicker);
+    filterPicker();
+})();
+</script>
 {% endblock %}

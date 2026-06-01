@@ -4,6 +4,21 @@ from flask import request
 PER_PAGE = 25
 
 
+def text_search(items, q, fields):
+    """Filtre une liste d'objets : garde ceux dont l'un des champs contient q."""
+    if not q:
+        return items
+    ql = q.strip().lower()
+    out = []
+    for it in items:
+        for f in fields:
+            v = getattr(it, f, None)
+            if v and ql in str(v).lower():
+                out.append(it)
+                break
+    return out
+
+
 def paginate(items):
     """Retourne (page_items, page, pages, total) selon ?page=N."""
     try:

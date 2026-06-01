@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
-from app.models import AccessReview, ReviewHistory
+from app.models import AccessReview, ReviewHistory, Asset
 from app.decorators import require_edit, require_delete, view_guard
 
 bp = Blueprint('reviews', __name__)
@@ -18,11 +18,13 @@ def _guard_view():
 def list():
     reviews = AccessReview.query.filter_by(is_active=True).order_by(
         AccessReview.next_review.asc().nullsfirst()).all()
+    q = request.args.get('q', '').strip()
+    from app.paging import paginate, text_search
+    reviews = text_search(reviews, q, ['application', 'responsible', 'scope'])
     rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
     reviews.sort(key=lambda r: rank.get(r.computed_status(), 4))
-    from app.paging import paginate
     reviews, page, pages, total = paginate(reviews)
-    return render_template('reviews/list.html', reviews=reviews, page=page, pages=pages, total=total)
+    return render_template('reviews/list.html', reviews=reviews, q=q, page=page, pages=pages, total=total)
 
 
 @bp.route('/create', methods=['GET', 'POST'])
@@ -52,7 +54,7 @@ def create():
         db.session.commit()
         flash('Revue de droits ajoutee', 'success')
         return redirect(url_for('reviews.list'))
-    return render_template('reviews/form.html', review=None)
+    return render_template('reviews/form.html', review=None, assets=_app_assets())
 
 
 @bp.route('/<int:id>')
@@ -79,7 +81,7 @@ def edit(id):
         db.session.commit()
         flash('Revue modifiee', 'success')
         return redirect(url_for('reviews.detail', id=id))
-    return render_template('reviews/form.html', review=review)
+    return render_template('reviews/form.html', review=review, assets=_app_assets())
 
 
 @bp.route('/<int:id>/complete', methods=['POST'])
@@ -112,6 +114,11 @@ def delete(id):
     db.session.commit()
     flash('Revue supprimee', 'success')
     return redirect(url_for('reviews.list'))
+
+
+def _app_assets():
+    """Revues de droits : seulement les actifs de type application."""
+    return Asset.query.filter_by(is_active=True, asset_type='application').order_by(Asset.name).all()
 
 
 def _parse_date(value):

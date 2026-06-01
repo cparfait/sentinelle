@@ -15,8 +15,15 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Application métier *</label>
-                        <input type="text" name="application" class="form-control" required
+                        <input type="text" name="application" id="reviewApp" class="form-control" required
                                value="{{ review.application if review else '' }}" placeholder="ex: SIRH, Finances, GED...">
+                        {% if assets %}
+                        <select id="reviewPicker" class="form-select form-select-sm mt-1">
+                            <option value="">— Choisir dans le catalogue —</option>
+                            {% for a in assets %}<option value="{{ a.name }}">{{ a.name }}</option>{% endfor %}
+                        </select>
+                        <small class="text-muted">Catalogue géré dans Préférences.</small>
+                        {% endif %}
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Responsable</label>
@@ -62,4 +69,14 @@
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    var picker = document.getElementById('reviewPicker');
+    var input = document.getElementById('reviewApp');
+    if (picker && input) {
+        picker.addEventListener('change', function () { if (picker.value) input.value = picker.value; });
+    }
+})();
+</script>
 {% endblock %}

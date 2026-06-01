@@ -43,11 +43,13 @@ def refresh_certificate_tls(cert, performed_by):
 @login_required
 def list():
     certificates = Certificate.query.filter_by(is_active=True).order_by(Certificate.expiry_date.asc()).all()
+    q = request.args.get('q', '').strip()
+    from app.paging import paginate, text_search
+    certificates = text_search(certificates, q, ['service_name', 'domain', 'issuer', 'description'])
     rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
     certificates.sort(key=lambda c: rank.get(c.status(), 4))
-    from app.paging import paginate
     certificates, page, pages, total = paginate(certificates)
-    return render_template('certificates/list.html', certificates=certificates, page=page, pages=pages, total=total)
+    return render_template('certificates/list.html', certificates=certificates, q=q, page=page, pages=pages, total=total)
 
 
 @bp.route('/check-domain')

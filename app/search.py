@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request
 from flask_login import login_required
 from sqlalchemy import or_
-from app.models import Account, Certificate, Backup, TestTask
+from app.models import (Account, Certificate, Backup, TestTask, Domain,
+                        AccessReview, SystemUpdate)
 from app import db
 
 bp = Blueprint('search', __name__)
@@ -84,5 +85,66 @@ def search():
                 'url': f'/tests/{t.id}',
                 'badge': 'info'
             })
+
+        domains = Domain.query.filter(
+            Domain.is_active == True,
+            or_(
+                Domain.name.ilike(like),
+                Domain.registrar.ilike(like),
+                Domain.description.ilike(like),
+            )
+        ).all()
+        for d in domains:
+            results.append({
+                'type': 'domaine', 'icon': 'bi-globe',
+                'label': d.name,
+                'detail': f'Domaine - {d.registrar or ""}',
+                'url': f'/domains/{d.id}',
+                'badge': 'info'
+            })
+
+        reviews = AccessReview.query.filter(
+            AccessReview.is_active == True,
+            or_(
+                AccessReview.application.ilike(like),
+                AccessReview.responsible.ilike(like),
+                AccessReview.scope.ilike(like),
+            )
+        ).all()
+        for r in reviews:
+            results.append({
+                'type': 'revue', 'icon': 'bi-person-check',
+                'label': r.application,
+                'detail': f'Revue de droits{" - " + r.responsible if r.responsible else ""}',
+                'url': f'/reviews/{r.id}',
+                'badge': 'warning'
+            })
+
+        updates = SystemUpdate.query.filter(
+            SystemUpdate.is_active == True,
+            or_(
+                SystemUpdate.name.ilike(like),
+                SystemUpdate.current_version.ilike(like),
+                SystemUpdate.latest_version.ilike(like),
+                SystemUpdate.updated_by.ilike(like),
+                SystemUpdate.description.ilike(like),
+            )
+        ).all()
+        for u in updates:
+            results.append({
+                'type': 'mise à jour', 'icon': 'bi-arrow-up-circle',
+                'label': u.name,
+                'detail': f'MàJ - {u.current_version or "?"}',
+                'url': f'/updates/{u.id}',
+                'badge': u.status_color(),
+            })
+
+    # Visibilite : ne montrer que les categories autorisees pour l'utilisateur
+    from flask_login import current_user
+    _cat_perm = {'account': 'accounts', 'certificate': 'certificates',
+                 'backup': 'backups', 'test': 'tests', 'domaine': 'domains',
+                 'revue': 'reviews', 'mise à jour': 'updates'}
+    results = [r for r in results
+               if current_user.can_view(_cat_perm.get(r['type']))]
 
     return render_template('search.html', results=results, q=q)

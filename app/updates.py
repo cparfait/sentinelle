@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
-from app.models import SystemUpdate, UpdateHistory
+from app.models import SystemUpdate, UpdateHistory, Asset
 from app.decorators import require_edit, require_delete, view_guard
 
 bp = Blueprint('updates', __name__)
@@ -24,13 +24,16 @@ def _guard_view():
 @login_required
 def list():
     updates = SystemUpdate.query.filter_by(is_active=True).order_by(SystemUpdate.name).all()
+    q = request.args.get('q', '').strip()
+    from app.paging import paginate, text_search
+    updates = text_search(updates, q, ['name', 'current_version', 'latest_version',
+                                       'updated_by', 'description'])
     rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
     updates.sort(key=lambda u: rank.get(u.status_color(), 4))
-    from app.paging import paginate
     updates, page, pages, total = paginate(updates)
     return render_template('updates/list.html', updates=updates,
                            status_choices=STATUS_CHOICES, type_choices=TYPE_CHOICES,
-                           page=page, pages=pages, total=total)
+                           q=q, page=page, pages=pages, total=total)
 
 
 @bp.route('/create', methods=['GET', 'POST'])
@@ -57,7 +60,7 @@ def create():
         db.session.commit()
         flash('Mise a jour ajoutee', 'success')
         return redirect(url_for('updates.list'))
-    return render_template('updates/form.html', update=None,
+    return render_template('updates/form.html', update=None, assets=_active_assets(),
                            status_choices=STATUS_CHOICES, type_choices=TYPE_CHOICES)
 
 
@@ -89,7 +92,7 @@ def edit(id):
         db.session.commit()
         flash('Mise a jour modifiee', 'success')
         return redirect(url_for('updates.detail', id=id))
-    return render_template('updates/form.html', update=update,
+    return render_template('updates/form.html', update=update, assets=_active_assets(),
                            status_choices=STATUS_CHOICES, type_choices=TYPE_CHOICES)
 
 
@@ -122,6 +125,10 @@ def delete(id):
     db.session.commit()
     flash('Entree supprimee', 'success')
     return redirect(url_for('updates.list'))
+
+
+def _active_assets():
+    return Asset.query.filter_by(is_active=True).order_by(Asset.name).all()
 
 
 def _parse_date(value):

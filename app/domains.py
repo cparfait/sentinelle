@@ -49,11 +49,13 @@ def refresh_domain_rdap(domain, performed_by):
 def list():
     domains = Domain.query.filter_by(is_active=True).order_by(
         Domain.expiry_date.asc().nullslast()).all()
+    q = request.args.get('q', '').strip()
+    from app.paging import paginate, text_search
+    domains = text_search(domains, q, ['name', 'registrar', 'description'])
     rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
     domains.sort(key=lambda d: rank.get(d.status(), 4))
-    from app.paging import paginate
     domains, page, pages, total = paginate(domains)
-    return render_template('domains/list.html', domains=domains, page=page, pages=pages, total=total)
+    return render_template('domains/list.html', domains=domains, q=q, page=page, pages=pages, total=total)
 
 
 @bp.route('/check-rdap-domain')
