@@ -1,49 +1,73 @@
 {% extends "base.html" %}
 {% block title %}Rôles & permissions - Sentinelle{% endblock %}
 
+{% set cat_icons = {
+    'accounts': 'bi-key', 'certificates': 'bi-award', 'domains': 'bi-globe',
+    'backups': 'bi-cloud-arrow-up', 'tests': 'bi-clipboard-check',
+    'reviews': 'bi-person-check', 'updates': 'bi-arrow-up-circle', 'alerts': 'bi-bell'
+} %}
+{% set role_icons = {'admin': 'bi-shield-lock', 'editor': 'bi-pencil-square', 'viewer': 'bi-eye'} %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h4 class="fw-bold mb-0"><i class="bi bi-shield-lock me-2"></i>Rôles & permissions</h4>
-        <small class="text-muted">Droits par catégorie : Aucun / Lecture / Écriture / Suppression</small>
+        <small class="text-muted">Définissez les droits de chaque rôle, catégorie par catégorie.</small>
     </div>
-    <a href="{{ url_for('users.list') }}" class="btn btn-outline-secondary">
+    <a href="{{ url_for('users.list') }}" class="btn btn-sm btn-outline-secondary">
         <i class="bi bi-people me-1"></i> Utilisateurs
     </a>
 </div>
 
+<div class="data-card p-3 mb-3">
+    <div class="perm-legend">
+        <strong class="small text-muted me-2">Niveaux :</strong>
+        <span><span class="dot" style="background: var(--text-light)"></span> Aucun</span>
+        <span><span class="dot" style="background: var(--info)"></span> Lecture</span>
+        <span><span class="dot" style="background: var(--warning)"></span> Écriture</span>
+        <span><span class="dot" style="background: var(--danger)"></span> Suppression</span>
+        <span class="ms-auto"><i class="bi bi-info-circle me-1"></i>Les niveaux sont cumulatifs (Suppression inclut Écriture et Lecture).</span>
+    </div>
+</div>
+
 {% for role in roles %}
-<div class="data-card p-4 mb-3">
+<div class="data-card p-4 mb-3 role-card {{ 'is-admin' if role.is_admin }}">
     <form method="POST" action="{{ url_for('users.roles_save', id=role.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="d-flex justify-content-between align-items-start mb-3">
-            <div>
-                <h6 class="fw-bold mb-0">
-                    {{ role_label(role.name) }} <span class="text-muted small">({{ role.name }})</span>
-                    {% if role.is_admin %}<span class="badge bg-danger ms-1">Admin (accès total)</span>{% endif %}
-                    <span class="badge bg-secondary ms-1">{{ counts.get(role.name, 0) }} utilisateur(s)</span>
-                </h6>
+        <div class="role-head mb-3">
+            <div class="role-avatar"><i class="bi {{ role_icons.get(role.name, 'bi-person-gear') }}"></i></div>
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                    <h5 class="fw-bold mb-0">{{ role_label(role.name) }}</h5>
+                    <span class="text-muted small">{{ role.name }}</span>
+                    {% if role.is_admin %}<span class="badge bg-danger"><i class="bi bi-stars me-1"></i>Accès total</span>{% endif %}
+                    <span class="badge-status badge-info"><i class="bi bi-people me-1"></i>{{ counts.get(role.name, 0) }} utilisateur(s)</span>
+                </div>
                 <input type="text" name="description" value="{{ role.description or '' }}"
-                       class="form-control form-control-sm mt-2" style="max-width: 420px;"
+                       class="form-control form-control-sm" style="max-width: 480px;"
                        placeholder="Description du rôle">
             </div>
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i> Enregistrer</button>
                 {% if role.name not in ['admin', 'editor', 'viewer'] %}
                 <button type="submit" form="del-{{ role.id }}" class="btn btn-sm btn-outline-danger"
-                        onclick="return confirm('Supprimer ce rôle ?')"><i class="bi bi-trash"></i></button>
+                        onclick="return confirm('Supprimer ce rôle ?')" title="Supprimer le rôle"><i class="bi bi-trash"></i></button>
                 {% endif %}
             </div>
         </div>
+
         {% if role.is_admin %}
-        <p class="text-muted small mb-0">Ce rôle dispose de tous les droits sur toutes les catégories ainsi que des sections d'administration.</p>
+        <div class="alert alert-danger d-flex align-items-center gap-2 mb-0 py-2">
+            <i class="bi bi-shield-fill-check fs-5"></i>
+            <div class="small">Ce rôle dispose de <strong>tous les droits</strong> sur toutes les catégories, ainsi que de l'accès aux sections d'administration.</div>
+        </div>
         {% else %}
-        <div class="row g-2">
+        <div class="perm-grid">
             {% for cat in categories %}
-            <div class="col-md-4 col-lg-2">
-                <label class="form-label small mb-1">{{ labels[cat] }}</label>
-                <select name="perm_{{ cat }}" class="form-select form-select-sm">
-                    {% set current = (role.permissions or {}).get(cat, 0) %}
+            {% set current = (role.permissions or {}).get(cat, 0) %}
+            <div class="perm-tile">
+                <div class="perm-tile-head"><i class="bi {{ cat_icons.get(cat, 'bi-folder') }}"></i> {{ labels[cat] }}</div>
+                <select name="perm_{{ cat }}" class="form-select form-select-sm lvl-select lvl-{{ current }}">
                     {% for lvl, lbl in levels.items() %}
                     <option value="{{ lvl }}" {% if current == lvl %}selected{% endif %}>{{ lbl }}</option>
                     {% endfor %}
@@ -62,7 +86,7 @@
 {% endfor %}
 
 <div class="data-card p-4">
-    <h6 class="fw-bold mb-3"><i class="bi bi-plus-circle me-2"></i>Nouveau rôle</h6>
+    <h6 class="fw-bold mb-3"><i class="bi bi-plus-circle me-2 text-primary"></i>Nouveau rôle</h6>
     <form method="POST" action="{{ url_for('users.roles_create') }}" class="row g-2 align-items-end">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="col-md-4">
@@ -79,4 +103,12 @@
     </form>
     <small class="text-muted d-block mt-2">Le nouveau rôle démarre sans aucun droit ; ajustez ses permissions puis assignez-le à des utilisateurs.</small>
 </div>
+
+<script>
+document.querySelectorAll('.lvl-select').forEach(function (sel) {
+    sel.addEventListener('change', function () {
+        sel.className = sel.className.replace(/\blvl-\d\b/, 'lvl-' + sel.value);
+    });
+});
+</script>
 {% endblock %}

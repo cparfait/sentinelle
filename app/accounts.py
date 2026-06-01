@@ -103,10 +103,14 @@ def edit(id):
 @require_edit
 def password_changed(id):
     account = Account.query.get_or_404(id)
-    today = datetime.now(timezone.utc).date()
-    account.last_password_change = today
-    account.next_password_change = today + timedelta(days=account.rotation_days)
-    comment = request.form.get('comment', 'Mot de passe changé')
+    raw = request.form.get('changed_on', '')
+    try:
+        when = datetime.strptime(raw, '%Y-%m-%d').date() if raw else datetime.now(timezone.utc).date()
+    except ValueError:
+        when = datetime.now(timezone.utc).date()
+    account.last_password_change = when
+    account.next_password_change = when + timedelta(days=account.rotation_days)
+    comment = request.form.get('comment', '').strip() or f"Mot de passe changé le {when.strftime('%d/%m/%Y')}"
     h = AccountHistory(
         account_id=account.id, action='password_changed',
         comment=comment, performed_by=current_user.username

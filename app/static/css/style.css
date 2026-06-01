@@ -775,6 +775,59 @@ a.badge-status:hover { filter: brightness(0.96); }
     line-height: 0;
 }
 
+/* ============================ RÔLES & PERMISSIONS ============================ */
+.role-card { position: relative; overflow: hidden; }
+.role-card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--primary), var(--primary-dark));
+}
+.role-card.is-admin::before { background: linear-gradient(180deg, #ef4444, #b91c1c); }
+
+.role-head { display: flex; align-items: flex-start; gap: 14px; }
+
+.role-avatar {
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 1.3rem; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    box-shadow: var(--shadow-sm);
+}
+.role-card.is-admin .role-avatar { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+
+.perm-legend { display: flex; flex-wrap: wrap; gap: 14px; }
+.perm-legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-light); }
+.perm-legend .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+.perm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+    gap: 10px;
+}
+.perm-tile {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 11px;
+    background: var(--body-bg);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.perm-tile:hover { box-shadow: var(--shadow-sm); }
+.perm-tile-head {
+    font-size: 0.8rem; font-weight: 600; color: var(--text);
+    margin-bottom: 7px; display: flex; align-items: center; gap: 6px;
+}
+.perm-tile-head i { color: var(--text-light); font-size: 0.95rem; }
+
+/* Code couleur du niveau (bordure gauche du select) */
+.lvl-select { border-left-width: 4px !important; font-weight: 500; }
+.lvl-select.lvl-0 { border-left-color: var(--text-light) !important; }
+.lvl-select.lvl-1 { border-left-color: var(--info) !important; }
+.lvl-select.lvl-2 { border-left-color: var(--warning) !important; }
+.lvl-select.lvl-3 { border-left-color: var(--danger) !important; }
+
 /* ============================ RESPONSIVE ============================ */
 @media (max-width: 991.98px) {
     .app-topbar { display: flex; }
