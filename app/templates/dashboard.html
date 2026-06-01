@@ -41,155 +41,57 @@
 </div>
 {% endif %}
 
+{% macro stat_card(url, label, icon, color, s, ok_label='OK', danger_label='crit.', warning_label='alerte') %}
+{% set total = s.total or 0 %}
+<div class="col-6 col-lg-4 col-xxl-3">
+    <a href="{{ url }}" class="text-decoration-none">
+        <div class="stat-card h-100" style="--cat-color: {{ color }};">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon"><i class="bi {{ icon }}"></i></div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="stat-number">{{ total }}</div>
+                    <small class="text-muted d-block text-truncate">{{ label }}</small>
+                </div>
+            </div>
+            <div class="mini-bar mt-3">
+                {% if total %}
+                {% if s.danger %}<span class="seg" style="width: {{ (s.danger / total * 100)|round(1) }}%; background: var(--danger);"></span>{% endif %}
+                {% if s.warning %}<span class="seg" style="width: {{ (s.warning / total * 100)|round(1) }}%; background: var(--warning);"></span>{% endif %}
+                {% if s.ok %}<span class="seg" style="width: {{ (s.ok / total * 100)|round(1) }}%; background: var(--success);"></span>{% endif %}
+                {% endif %}
+            </div>
+            <div class="stat-legend mt-2">
+                {% if s.danger %}<span class="text-danger">● {{ s.danger }} {{ danger_label }}</span>{% endif %}
+                {% if s.warning %}<span class="text-warning">● {{ s.warning }} {{ warning_label }}</span>{% endif %}
+                {% if s.ok %}<span class="text-success">● {{ s.ok }} {{ ok_label }}</span>{% endif %}
+                {% if not total %}<span class="text-muted">Aucun élément</span>{% endif %}
+            </div>
+        </div>
+    </a>
+</div>
+{% endmacro %}
+
 <div class="row g-3 mb-4">
     {% if current_user.can_view('accounts') %}
-    <div class="col-md-3">
-        <a href="{{ url_for('accounts.list') }}" class="text-decoration-none">
-        <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ stats.accounts.danger }} compte(s) en critique, {{ stats.accounts.warning }} en alerte - Cliquer pour voir les comptes">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <small class="text-muted d-block">Comptes</small>
-                    <span class="stat-number text-primary">{{ stats.accounts.total }}</span>
-                </div>
-                <div class="stat-icon bg-primary bg-opacity-10 text-primary">
-                    <i class="bi bi-key"></i>
-                </div>
-            </div>
-            <div class="d-flex gap-2 mt-2">
-                {% if stats.accounts.danger %}<span class="badge-status badge-danger">{{ stats.accounts.danger }} critique(s)</span>{% endif %}
-                {% if stats.accounts.warning %}<span class="badge-status badge-warning">{{ stats.accounts.warning }} alerte(s)</span>{% endif %}
-                {% if stats.accounts.ok %}<span class="badge-status badge-success">{{ stats.accounts.ok }} OK</span>{% endif %}
-            </div>
-        </div>
-        </a>
-    </div>
+    {{ stat_card(url_for('accounts.list'), 'Comptes', 'bi-key', '#6366f1', stats.accounts) }}
     {% endif %}
     {% if current_user.can_view('certificates') %}
-    <div class="col-md-3">
-        <a href="{{ url_for('certificates.list') }}" class="text-decoration-none">
-        <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ stats.certificates.danger }} certificat(s) en critique, {{ stats.certificates.warning }} en alerte - Cliquer pour voir les certificats">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <small class="text-muted d-block">Certificats</small>
-                    <span class="stat-number text-success">{{ stats.certificates.total }}</span>
-                </div>
-                <div class="stat-icon bg-success bg-opacity-10 text-success">
-                    <i class="bi bi-award"></i>
-                </div>
-            </div>
-            <div class="d-flex gap-2 mt-2">
-                {% if stats.certificates.danger %}<span class="badge-status badge-danger">{{ stats.certificates.danger }} critique(s)</span>{% endif %}
-                {% if stats.certificates.warning %}<span class="badge-status badge-warning">{{ stats.certificates.warning }} alerte(s)</span>{% endif %}
-                {% if stats.certificates.ok %}<span class="badge-status badge-success">{{ stats.certificates.ok }} OK</span>{% endif %}
-            </div>
-        </div>
-        </a>
-    </div>
+    {{ stat_card(url_for('certificates.list'), 'Certificats', 'bi-award', '#10b981', stats.certificates) }}
     {% endif %}
     {% if current_user.can_view('domains') %}
-    <div class="col-md-3">
-        <a href="{{ url_for('domains.list') }}" class="text-decoration-none">
-        <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ stats.domains.danger }} domaine(s) en critique, {{ stats.domains.warning }} en alerte - Cliquer pour voir les domaines">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <small class="text-muted d-block">Domaines</small>
-                    <span class="stat-number text-primary">{{ stats.domains.total }}</span>
-                </div>
-                <div class="stat-icon bg-primary bg-opacity-10 text-primary">
-                    <i class="bi bi-globe"></i>
-                </div>
-            </div>
-            <div class="d-flex gap-2 mt-2">
-                {% if stats.domains.danger %}<span class="badge-status badge-danger">{{ stats.domains.danger }} critique(s)</span>{% endif %}
-                {% if stats.domains.warning %}<span class="badge-status badge-warning">{{ stats.domains.warning }} alerte(s)</span>{% endif %}
-                {% if stats.domains.ok %}<span class="badge-status badge-success">{{ stats.domains.ok }} OK</span>{% endif %}
-            </div>
-        </div>
-        </a>
-    </div>
+    {{ stat_card(url_for('domains.list'), 'Domaines', 'bi-globe', '#3b82f6', stats.domains) }}
     {% endif %}
     {% if current_user.can_view('backups') %}
-    <div class="col-md-3">
-        <a href="{{ url_for('backups.list') }}" class="text-decoration-none">
-        <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ stats.backups.danger }} backup(s) echoue(s) - Cliquer pour voir les backups">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <small class="text-muted d-block">Backups</small>
-                    <span class="stat-number text-info">{{ stats.backups.total }}</span>
-                </div>
-                <div class="stat-icon bg-info bg-opacity-10 text-info">
-                    <i class="bi bi-cloud-arrow-up"></i>
-                </div>
-            </div>
-            <div class="d-flex gap-2 mt-2">
-                {% if stats.backups.danger %}<span class="badge-status badge-danger">{{ stats.backups.danger }} echoue(s)</span>{% endif %}
-                {% if stats.backups.ok %}<span class="badge-status badge-success">{{ stats.backups.ok }} OK</span>{% endif %}
-            </div>
-        </div>
-        </a>
-    </div>
+    {{ stat_card(url_for('backups.list'), 'Backups', 'bi-cloud-arrow-up', '#06b6d4', stats.backups, danger_label='échoué(s)') }}
     {% endif %}
     {% if current_user.can_view('tests') %}
-    <div class="col-md-3">
-        <a href="{{ url_for('tests.list') }}" class="text-decoration-none">
-        <div class="stat-card" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ stats.tests.danger }} test(s) en retard - Cliquer pour voir les tests">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <small class="text-muted d-block">Tests</small>
-                    <span class="stat-number text-warning">{{ stats.tests.total }}</span>
-                </div>
-                <div class="stat-icon bg-warning bg-opacity-10 text-warning">
-                    <i class="bi bi-clipboard-check"></i>
-                </div>
-            </div>
-            <div class="d-flex gap-2 mt-2">
-                {% if stats.tests.danger %}<span class="badge-status badge-danger">{{ stats.tests.danger }} en retard</span>{% endif %}
-                {% if stats.tests.warning %}<span class="badge-status badge-warning">{{ stats.tests.warning }} alerte(s)</span>{% endif %}
-                {% if stats.tests.ok %}<span class="badge-status badge-success">{{ stats.tests.ok }} OK</span>{% endif %}
-            </div>
-        </div>
-        </a>
-    </div>
+    {{ stat_card(url_for('tests.list'), 'Tests', 'bi-clipboard-check', '#f59e0b', stats.tests, danger_label='en retard') }}
     {% endif %}
     {% if current_user.can_view('reviews') %}
-    <div class="col-md-3">
-        <a href="{{ url_for('reviews.list') }}" class="text-decoration-none">
-        <div class="stat-card">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <small class="text-muted d-block">Revue de droits</small>
-                    <span class="stat-number text-primary">{{ stats.reviews.total }}</span>
-                </div>
-                <div class="stat-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-person-check"></i></div>
-            </div>
-            <div class="d-flex gap-2 mt-2">
-                {% if stats.reviews.danger %}<span class="badge-status badge-danger">{{ stats.reviews.danger }} critique(s)</span>{% endif %}
-                {% if stats.reviews.warning %}<span class="badge-status badge-warning">{{ stats.reviews.warning }} alerte(s)</span>{% endif %}
-                {% if stats.reviews.ok %}<span class="badge-status badge-success">{{ stats.reviews.ok }} OK</span>{% endif %}
-            </div>
-        </div>
-        </a>
-    </div>
+    {{ stat_card(url_for('reviews.list'), 'Revue de droits', 'bi-person-check', '#8b5cf6', stats.reviews) }}
     {% endif %}
     {% if current_user.can_view('updates') %}
-    <div class="col-md-3">
-        <a href="{{ url_for('updates.list') }}" class="text-decoration-none">
-        <div class="stat-card">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <small class="text-muted d-block">Mises à jour</small>
-                    <span class="stat-number text-info">{{ stats.updates.total }}</span>
-                </div>
-                <div class="stat-icon bg-info bg-opacity-10 text-info"><i class="bi bi-arrow-up-circle"></i></div>
-            </div>
-            <div class="d-flex gap-2 mt-2">
-                {% if stats.updates.danger %}<span class="badge-status badge-danger">{{ stats.updates.danger }} critique(s)</span>{% endif %}
-                {% if stats.updates.warning %}<span class="badge-status badge-warning">{{ stats.updates.warning }} dispo</span>{% endif %}
-                {% if stats.updates.ok %}<span class="badge-status badge-success">{{ stats.updates.ok }} à jour</span>{% endif %}
-            </div>
-        </div>
-        </a>
-    </div>
+    {{ stat_card(url_for('updates.list'), 'Mises à jour', 'bi-arrow-up-circle', '#ec4899', stats.updates, ok_label='à jour', warning_label='dispo') }}
     {% endif %}
 </div>
 
