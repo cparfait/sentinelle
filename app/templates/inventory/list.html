@@ -189,7 +189,9 @@
                         {% else %}<small>{{ vals[key] or '-' }}</small>{% endif %}
                     </td>
                     {% endfor %}
-                    <td><span class="badge-status badge-{{ e.computed_status() }}">{{ status_labels.get(e.computed_status(), e.computed_status()) }}</span></td>
+                    {% set reasons = e.status_reasons() %}
+                    <td><span class="badge-status badge-{{ e.computed_status() }}" data-bs-toggle="tooltip"
+                              title="{{ reasons | join(' · ') if reasons else 'Aucun point d’attention — équipement OK' }}">{{ status_labels.get(e.computed_status(), e.computed_status()) }}</span></td>
                     <td>
                         <div class="d-flex gap-1">
                             <a href="{{ url_for('inventory.detail', id=e.id) }}" class="btn btn-sm btn-outline-primary" title="Voir"><i class="bi bi-eye"></i></a>
@@ -245,5 +247,14 @@
         });
     });
 })();
+
+// Infobulles de statut (le bundle Bootstrap est charge en fin de body)
+window.addEventListener('load', function () {
+    if (window.bootstrap && bootstrap.Tooltip) {
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            new bootstrap.Tooltip(el);
+        });
+    }
+});
 </script>
 {% endblock %}
