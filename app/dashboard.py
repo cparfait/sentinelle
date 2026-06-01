@@ -302,6 +302,30 @@ def index():
 
     recent_alerts = AlertLog.query.order_by(AlertLog.sent_at.desc()).limit(10).all()
 
+    # Widget « À venir » : prochaines échéances (0 à 60 jours), toutes catégories
+    upcoming = []
+
+    def _add_up(date_val, label, icon, url):
+        if date_val:
+            dleft = (date_val - today).days
+            if 0 <= dleft <= 60:
+                upcoming.append({'days': dleft, 'label': label, 'icon': icon, 'url': url})
+
+    for a in accounts:
+        _add_up(a.next_password_change, a.service_name, 'bi-key', f'/accounts/{a.id}')
+    for c in certificates:
+        _add_up(c.expiry_date, c.service_name, 'bi-award', f'/certificates/{c.id}')
+    for d in domains:
+        _add_up(d.expiry_date, d.name, 'bi-globe', f'/domains/{d.id}')
+    for t in tests:
+        _add_up(t.next_due, t.name, 'bi-clipboard-check', f'/tests/{t.id}')
+    for r in reviews:
+        _add_up(r.next_review, r.application, 'bi-person-check', f'/reviews/{r.id}')
+    for e in equipments:
+        _add_up(e.warranty_end, f'{e.name} (garantie)', 'bi-hdd-stack', f'/inventory/{e.id}')
+    upcoming.sort(key=lambda x: x['days'])
+    upcoming = upcoming[:7]
+
     backup_checks = {}
     for b in backups:
         backup_checks[b.id] = BackupCheck.query.filter_by(
@@ -328,7 +352,7 @@ def index():
     return render_template('dashboard.html', stats=stats, urgent_items=urgent_items,
                            recent_alerts=recent_alerts, backups=backups,
                            backup_checks=backup_checks, today=today,
-                           totals=totals, conformity=conformity)
+                           totals=totals, conformity=conformity, upcoming=upcoming)
 
 
 @bp.route('/quick-check', methods=['POST'])

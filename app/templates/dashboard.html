@@ -119,7 +119,11 @@
                 </tr>
             </thead>
             <tbody>
+                {% set ns = namespace(shown=0) %}
                 {% for backup in backups %}
+                {% set tc = backup_checks.get(backup.id) %}
+                {% if not (tc and tc.status == 'ok') %}
+                {% set ns.shown = ns.shown + 1 %}
                 <tr>
                     <td class="fw-medium">{{ backup.service_name }}</td>
                     <td><small>{{ {'full': 'Complet', 'incremental': 'Incremental', 'differential': 'Differentiel', 'snapshot': 'Snapshot'}.get(backup.backup_type, backup.backup_type or '-') }}</small></td>
@@ -161,7 +165,11 @@
                         <td></td><td></td>
                     {% endif %}
                 </tr>
+                {% endif %}
                 {% endfor %}
+                {% if ns.shown == 0 %}
+                <tr><td colspan="6" class="text-center py-3 text-success"><i class="bi bi-check-circle me-1"></i>Tous les backups du jour sont validés.</td></tr>
+                {% endif %}
             </tbody>
         </table>
     </div>
@@ -208,6 +216,29 @@
     </div>
 
     <div class="col-lg-4">
+        <div class="data-card mb-3">
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-calendar-event me-2 text-primary"></i>À venir</h6>
+                <a href="{{ url_for('dashboard.agenda') }}" class="btn btn-sm btn-outline-primary">
+                    Voir tout <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+            <div class="p-3">
+                {% if upcoming %}
+                    {% for u in upcoming %}
+                    <a href="{{ u.url }}" class="text-decoration-none">
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                            <span class="text-truncate me-2"><i class="bi {{ u.icon }} me-2 text-muted"></i>{{ u.label }}</span>
+                            <span class="badge-status badge-{{ 'danger' if u.days <= 7 else ('warning' if u.days <= 30 else 'info') }} flex-shrink-0">{{ u.days }} j</span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center mb-0 py-2">Rien dans les 60 prochains jours.</p>
+                {% endif %}
+            </div>
+        </div>
+
         <div class="data-card">
             <div class="card-header-custom d-flex justify-content-between align-items-center">
                 <h6 class="fw-bold mb-0"><i class="bi bi-bell me-2 text-primary"></i>Dernieres alertes</h6>
