@@ -102,7 +102,10 @@ def two_factor():
 
 
 def _totp_qr_svg(secret, username):
+    """QR code TOTP renvoye comme <img> data-URI : robuste a l'insertion HTML
+    (le SVG inline cassait l'affichage a cause du prologue XML / namespaces)."""
     import io
+    import base64
     import pyotp
     import qrcode
     import qrcode.image.svg
@@ -110,7 +113,9 @@ def _totp_qr_svg(secret, username):
     img = qrcode.make(uri, image_factory=qrcode.image.svg.SvgImage)
     buf = io.BytesIO()
     img.save(buf)
-    return buf.getvalue().decode('utf-8')
+    b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+    return (f'<img src="data:image/svg+xml;base64,{b64}" alt="QR code 2FA" '
+            f'style="width:100%;height:auto;display:block;">')
 
 
 def _provision_ldap_user(username, info):
