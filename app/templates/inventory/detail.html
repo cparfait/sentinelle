@@ -54,7 +54,6 @@
                 </div>
                 <div class="col-md-6">
                     <table class="table table-borderless table-sm">
-                        {% if item.kind == 'vm' %}
                         {{ row('Serveur hôte', item.host_server) }}
                         {{ row('Hyperviseur', item.hypervisor) }}
                         {{ row('Adresse IP', item.ip_address) }}
@@ -63,23 +62,17 @@
                         {{ row('vCPU', item.vcpu) }}
                         {{ row('RAM (Go)', item.ram_go) }}
                         {{ row('Stockage (Go)', [item.hdd1_go, item.hdd2_go, item.hdd3_go]|select|join(' / ')) }}
-                        {% elif item.kind == 'physical' %}
                         {{ row('Constructeur / Modèle', item.manufacturer_model) }}
                         {{ row('N° de série', item.serial_number) }}
                         {{ row('Date achat / MES', item.purchase_date.strftime('%d/%m/%Y') if item.purchase_date else '') }}
                         {{ row('Fin de garantie', item.warranty_end.strftime('%d/%m/%Y') if item.warranty_end else '') }}
                         {{ row('Contrat de maintenance', item.maintenance_contract) }}
                         {{ row('PRA / PCA', item.pra_pca) }}
-                        {% elif item.kind == 'nas' %}
-                        {{ row('Adresse IP', item.ip_address) }}
                         {{ row('Protocoles', item.protocols) }}
                         {{ row('Accès', item.access) }}
                         {{ row('Capacité (To)', item.capacity_to) }}
                         {{ row('Utilisé (To)', item.used_to) }}
                         {{ row('RAID', item.raid) }}
-                        {{ row('Fin de garantie', item.warranty_end.strftime('%d/%m/%Y') if item.warranty_end else '') }}
-                        {{ row('Contrat de maintenance', item.maintenance_contract) }}
-                        {% endif %}
                     </table>
                 </div>
             </div>

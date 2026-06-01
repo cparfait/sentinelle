@@ -73,6 +73,8 @@ _RULES = [
     ('usage', 'usage', 'text'),
     ('observations', 'observations', 'text'),
     ('os', 'os', 'text'),
+    ('hostname', 'name', 'text'),
+    ("nom d'hote", 'name', 'text'),
     ('nom', 'name', 'text'),
 ]
 
@@ -229,7 +231,11 @@ def import_workbook(fileobj):
             for idx, (field, typ) in colmap.items():
                 if idx < len(r):
                     _assign(eq, r[idx], field, typ, kind)
+            # Repli : onglets Physiques/NAS sans colonne « Nom »
             if not (eq.name and eq.name.strip()):
+                eq.name = (eq.serial_number or eq.ip_address or eq.host_server
+                           or eq.manufacturer_model or '').strip() or None
+            if not eq.name:
                 continue
             db.session.add(eq)
             created += 1
