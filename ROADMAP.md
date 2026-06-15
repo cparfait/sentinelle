@@ -25,7 +25,21 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ✅ **Widgets dashboard** — bandeau de **conformité globale** (% OK + barre de progression + compteurs cliquables), en plus des cartes par catégorie et de la liste des urgences déjà présentes.
 - ✅ **Export PDF « bilan COPIL »** — bouton « Bilan PDF » : conformité globale, tableau par catégorie et éléments à traiter (reportlab), filtré selon les droits.
 
+## Modules métier (suite)
+- ✅ **Vue serveur 360°** — liaison optionnelle des certificats, sauvegardes et mises à jour à un équipement de l'inventaire (`equipment_id`). Select dans les formulaires, lien sur les fiches, section « Éléments liés » sur la fiche équipement. Un backup actif lié couvre désormais l'alerte « criticité élevée sans sauvegarde ».
+
 ## Exploitation & fiabilité de l'outil
+- ✅ **Sonde `/healthz`** — endpoint non authentifié pour la supervision (Zabbix/Centreon/NinjaOne) : app + base + scheduler (dernier job < 26 h). 200 = OK, 503 = problème.
+- ✅ **Calendrier ICS : téléchargement + abonnement** — bouton « Télécharger (.ics) » sur la page À venir, et **lien d'abonnement personnel** (jeton `User.ics_token`, génération/régénération/désactivation depuis la page) : Outlook/Thunderbird récupèrent le flux `/agenda.ics?token=…` automatiquement, filtré selon les droits du propriétaire du jeton. Plus besoin de réexporter.
+- ✅ **Corbeille : équipements restaurables** — l'inventaire est désormais géré par la page corbeille (restauration tracée dans le journal d'audit, purge avec détachement des certificats/backups/MàJ liés). Corrige l'incohérence badge sidebar vs page.
+- ✅ **Suite pytest** — `tests/` : paliers de statuts (comptes, certificats, domaines, tests, revues, garanties), fréquences de backup + tolérance, politique de rappel d'alertes, snooze, healthz, ICS, vue 360° (29 tests). Intégrée à la CI.
+- ✅ **Rattrapage d'alertes** — fin des déclenchements à jours exacts (30, 15, 7…) : une alerte ratée (job en erreur, serveur éteint) est désormais rattrapée. Rappel tous les 7 j en zone attention, 2 j en zone critique, quotidien une fois l'échéance dépassée (`should_send_reminder`, basé sur `AlertLog`). Fenêtres alignées sur les seuils configurés (`THRESHOLD_*`).
+- ✅ **Tolérance de retard des jobs** — `misfire_grace_time=1h` + `coalesce` sur tous les jobs APScheduler : un job en retard s'exécute quand même au lieu d'être perdu pour la journée.
+- ✅ **SQLite durci pour le multi-thread** — `journal_mode=WAL` + `busy_timeout=5s` (waitress 8 threads), plus d'erreurs `database is locked`.
+- ✅ **Index de base** — FK des historiques, `BackupCheck.check_date`, `AlertLog` (entité + date), `ActionLog.performed_at` ; créés automatiquement sur les bases existantes via `_auto_migrate_sqlite`.
+- ✅ **Performance des pages** — compteurs de la sidebar en cache (60 s) au lieu d'un rechargement complet de la base à chaque requête ; rôle utilisateur chargé une fois par requête (`flask.g`) ; statuts du dashboard calculés une seule fois par objet ; page Tendances en 2 requêtes groupées au lieu de 60.
+- ✅ **En-têtes de sécurité HTTP** — CSP, `X-Frame-Options`, `nosniff`, `Referrer-Policy` sur toutes les réponses ; `SESSION_COOKIE_SECURE` activable via `.env` (recommandé derrière un reverse proxy TLS).
+
 - ✅ **Historique d'exécution du scheduler** — page admin « Tâches planifiées » : prochaines exécutions + dernières exécutions (succès/erreur) via un écouteur APScheduler (`SchedulerRun`, purge à 500).
 - ✅ **Import CSV** — import en masse depuis le bouton « CSV » de chaque liste + **modèle d'import téléchargeable** (détection séparateur, dates JJ/MM/AAAA ou AAAA‑MM‑JJ).
 - ✅ **Auto-sauvegarde de la base SQLite** — copie horodatée cohérente (API sqlite3) quotidienne (01h00) + rotation (N copies) + bouton « Sauvegarder maintenant », liste et **suppression** dans Préférences.

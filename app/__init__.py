@@ -42,36 +42,79 @@ def create_app(config_class=Config):
                 'active_snooze': get_active_snooze,
                 'role_label': role_label}
 
+    # Compteurs de la sidebar : leur calcul charge toutes les tables et evalue
+    # chaque statut. On le fait au plus une fois par minute (cache process,
+    # waitress mono-process), pas a chaque requete. Les badges peuvent donc
+    # avoir jusqu'a 60 s de retard, sans impact metier.
+    _nav_cache = {'at': 0.0, 'danger': None, 'trash': None}
+    _NAV_TTL = 60
+
     @app.context_processor
     def inject_nav_counts():
+        import time
         from flask_login import current_user
         if not current_user.is_authenticated:
             return {}
         from app.models import (Account, Certificate, Domain, Backup, TestTask,
-                                AccessReview, SystemUpdate, Equipment, Role)
+                                AccessReview, SystemUpdate, Equipment, Role,
+                                Contract)
 
-        def _danger(items, method):
-            return sum(1 for i in items if getattr(i, method)() == 'danger')
-
-        counts = {
-            'accounts': _danger(Account.query.filter_by(is_active=True).all(), 'status'),
-            'certificates': _danger(Certificate.query.filter_by(is_active=True).all(), 'status'),
-            'domains': _danger(Domain.query.filter_by(is_active=True).all(), 'status'),
-            'backups': _danger(Backup.query.filter_by(is_active=True).all(), 'computed_status'),
-            'tests': _danger(TestTask.query.filter_by(is_active=True).all(), 'computed_status'),
-            'reviews': _danger(AccessReview.query.filter_by(is_active=True).all(), 'computed_status'),
-            'updates': _danger(SystemUpdate.query.filter_by(is_active=True).all(), 'status_color'),
-            'inventory': _danger(Equipment.query.filter_by(is_active=True).all(), 'computed_status'),
-        }
-        # Nombre d'elements en corbeille sur les categories editables par l'utilisateur
         trash_models = [('accounts', Account), ('certificates', Certificate),
                         ('domains', Domain), ('backups', Backup), ('tests', TestTask),
                         ('reviews', AccessReview), ('updates', SystemUpdate),
-                        ('inventory', Equipment)]
-        counts['trash'] = sum(
-            m.query.filter_by(is_active=False).count()
-            for cat, m in trash_models if current_user.can_edit(cat))
+                        ('inventory', Equipment), ('contracts', Contract)]
+
+        if _nav_cache['danger'] is None or time.monotonic() - _nav_cache['at'] > _NAV_TTL:
+            # Les elements snoozes sont exclus des badges, comme du digest :
+            # un report d'alerte acquitte ne doit plus compter en « danger ».
+            from app.models import AlertSnooze
+            today = datetime.now(timezone.utc).date()
+            snoozed = {}
+            for s in AlertSnooze.query.filter(AlertSnooze.snoozed_until >= today).all():
+                snoozed.setdefault(s.entity_type, set()).add(s.entity_id)
+
+            def _danger(items, method, etype):
+                skip = snoozed.get(etype, ())
+                return sum(1 for i in items
+                           if i.id not in skip and getattr(i, method)() == 'danger')
+
+            _nav_cache['danger'] = {
+                'accounts': _danger(Account.query.filter_by(is_active=True).all(), 'status', 'account'),
+                'certificates': _danger(Certificate.query.filter_by(is_active=True).all(), 'status', 'certificate'),
+                'domains': _danger(Domain.query.filter_by(is_active=True).all(), 'status', 'domain'),
+                'backups': _danger(Backup.query.filter_by(is_active=True).all(), 'computed_status', 'backup'),
+                'tests': _danger(TestTask.query.filter_by(is_active=True).all(), 'computed_status', 'test'),
+                'reviews': _danger(AccessReview.query.filter_by(is_active=True).all(), 'computed_status', 'review'),
+                'updates': _danger(SystemUpdate.query.filter_by(is_active=True).all(), 'status_color', 'update'),
+                'inventory': _danger(Equipment.query.filter_by(is_active=True).all(), 'computed_status', 'equipment'),
+                'contracts': _danger(Contract.query.filter_by(is_active=True).all(), 'status', 'contract'),
+            }
+            # Corbeille : compte par categorie (la somme visible depend des
+            # droits de chaque utilisateur, appliquee plus bas hors cache).
+            _nav_cache['trash'] = {cat: m.query.filter_by(is_active=False).count()
+                                   for cat, m in trash_models}
+            _nav_cache['at'] = time.monotonic()
+
+        counts = dict(_nav_cache['danger'])
+        counts['trash'] = sum(n for cat, n in _nav_cache['trash'].items()
+                              if current_user.can_edit(cat))
         return {'nav_counts': counts, 'all_roles': Role.query.order_by(Role.name).all()}
+
+    @app.after_request
+    def _security_headers(resp):
+        # Durcissement HTTP. Tous les assets sont servis en local (static/vendor),
+        # mais les templates utilisent des scripts/styles inline -> 'unsafe-inline'.
+        # img-src data: pour le QR code 2FA.
+        h = resp.headers
+        h.setdefault('X-Content-Type-Options', 'nosniff')
+        h.setdefault('X-Frame-Options', 'DENY')
+        h.setdefault('Referrer-Policy', 'same-origin')
+        h.setdefault('Content-Security-Policy',
+                     "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+                     "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+                     "font-src 'self'; connect-src 'self'; frame-ancestors 'none'; "
+                     "base-uri 'self'; form-action 'self'")
+        return resp
 
     from app.models import User
 
@@ -109,6 +152,12 @@ def create_app(config_class=Config):
     from app.inventory import bp as inventory_bp
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
 
+    from app.contracts import bp as contracts_bp
+    app.register_blueprint(contracts_bp, url_prefix='/contracts')
+
+    from app.suppliers import bp as suppliers_bp
+    app.register_blueprint(suppliers_bp, url_prefix='/suppliers')
+
     from app.alerts import bp as alerts_bp
     app.register_blueprint(alerts_bp, url_prefix='/alerts')
 
@@ -122,10 +171,18 @@ def create_app(config_class=Config):
     app.register_blueprint(data_io_bp, url_prefix='/data')
 
     with app.app_context():
+        _setup_sqlite()
         db.create_all()
         _auto_migrate_sqlite()
+        _migrate_data()
         _seed_roles()
         _seed_default_user()
+        # Configuration applicative persistee en base (messagerie, LDAP, seuils,
+        # webhooks...). seed_from_env migre l'existant .env au 1er demarrage,
+        # puis load() applique la base (source de verite) sur app.config.
+        from app import config_store
+        config_store.seed_from_env(app)
+        config_store.load(app)
 
     from app.scheduler import start_scheduler
     if not app.config.get('TESTING'):
@@ -155,9 +212,36 @@ def _setup_logging(app):
     app.logger.info('Sentinelle demarre')
 
 
+def _migrate_data():
+    """Petites migrations de donnees idempotentes (valeurs renommees)."""
+    from sqlalchemy import text
+    # Le type d'asset « server » est remplace par « divers » (les serveurs sont
+    # desormais geres dans l'inventaire).
+    db.session.execute(text("UPDATE asset SET asset_type='divers' WHERE asset_type='server'"))
+    db.session.commit()
+
+
+def _setup_sqlite():
+    """Pragmas SQLite pour le multi-thread (waitress) : WAL permet aux lectures
+    et ecritures de cohabiter, busy_timeout evite les 'database is locked'
+    quand deux ecritures se croisent."""
+    from sqlalchemy import event
+    if not db.engine.url.get_backend_name().startswith('sqlite'):
+        return
+
+    @event.listens_for(db.engine, 'connect')
+    def _pragmas(dbapi_conn, _record):
+        cur = dbapi_conn.cursor()
+        cur.execute('PRAGMA journal_mode=WAL')
+        cur.execute('PRAGMA busy_timeout=5000')
+        cur.execute('PRAGMA synchronous=NORMAL')
+        cur.close()
+
+
 def _auto_migrate_sqlite():
-    """Ajoute les colonnes manquantes aux tables SQLite existantes (create_all
-    ne modifie pas une table deja creee). Pratique a chaque ajout de champ."""
+    """Ajoute les colonnes et index manquants aux tables SQLite existantes
+    (create_all ne modifie pas une table deja creee). Pratique a chaque ajout
+    de champ ou d'index."""
     from sqlalchemy import inspect, text
     if not db.engine.url.get_backend_name().startswith('sqlite'):
         return
@@ -172,6 +256,13 @@ def _auto_migrate_sqlite():
                 coltype = col.type.compile(db.engine.dialect)
                 db.session.execute(text(
                     f'ALTER TABLE "{table.name}" ADD COLUMN "{col.name}" {coltype}'))
+        # Index declares dans les modeles (index=True / db.Index) : create_all
+        # ne les ajoute pas non plus sur une table existante.
+        for idx in table.indexes:
+            idx_cols = ', '.join(f'"{c.name}"' for c in idx.columns)
+            unique = 'UNIQUE ' if idx.unique else ''
+            db.session.execute(text(
+                f'CREATE {unique}INDEX IF NOT EXISTS "{idx.name}" ON "{table.name}" ({idx_cols})'))
     db.session.commit()
 
 
@@ -225,7 +316,7 @@ def _seed_default_user():
         action = 'cree' if created else 'reinitialise (mot de passe par defaut detecte)'
         print('\n' + '=' * 64)
         print(f"  COMPTE ADMIN {action}")
-        print(f"  Identifiant : admin")
+        print("  Identifiant : admin")
         print(f"  Mot de passe: {password}")
         print("  -> Connectez-vous puis changez-le via votre profil.")
         print('=' * 64 + '\n')

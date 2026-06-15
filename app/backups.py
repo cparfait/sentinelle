@@ -4,7 +4,8 @@ from flask import (Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db, csrf
 from app.models import Backup, BackupCheck, BackupHistory
-from sqlalchemy import func
+from app.inventory import active_equipments as _active_equipments
+from app.inventory import parse_equipment_id as _parse_equipment_id
 
 from app.decorators import require_edit, require_delete, view_guard
 bp = Blueprint('backups', __name__)
@@ -83,6 +84,39 @@ def list():
                            today=today, q=q, page=page, pages=pages, total=total)
 
 
+_STATUS_LABELS = {'ok': 'OK', 'warning': 'Warning', 'failed': 'Échec'}
+
+
+def record_backup_check(backup_id, check_date, status, comment, user):
+    """Cree ou met a jour le check d'un jour et trace l'action dans l'historique.
+    Le premier etat du jour (first_status) est fige a la creation."""
+    label = _STATUS_LABELS.get(status, status)
+    existing = BackupCheck.query.filter_by(backup_id=backup_id, check_date=check_date).first()
+    if existing:
+        old = existing.status
+        existing.status = status
+        if comment:
+            existing.comment = comment
+        existing.checked_by = user
+        if existing.first_status is None:
+            existing.first_status = old  # retro-compat : fige l'etat connu
+        if old != status:
+            note = (f"Statut du {check_date.strftime('%d/%m/%Y')} modifié : "
+                    f"{_STATUS_LABELS.get(old, old)} → {label}")
+        else:
+            note = f"Re-validation du {check_date.strftime('%d/%m/%Y')} : {label}"
+    else:
+        existing = BackupCheck(backup_id=backup_id, check_date=check_date, status=status,
+                               first_status=status, comment=comment or None, checked_by=user)
+        db.session.add(existing)
+        note = f"Check du {check_date.strftime('%d/%m/%Y')} : {label}"
+    if comment:
+        note += f" — {comment}"
+    db.session.add(BackupHistory(backup_id=backup_id, action='check', status=status,
+                                 comment=note, performed_by=user))
+    return existing
+
+
 @bp.route('/daily', methods=['GET', 'POST'])
 @login_required
 @require_edit
@@ -95,22 +129,7 @@ def daily():
             status = request.form.get(f'status_{b.id}')
             comment = request.form.get(f'comment_{b.id}', '')
             if status:
-                existing = BackupCheck.query.filter_by(
-                    backup_id=b.id, check_date=today
-                ).first()
-                if existing:
-                    existing.status = status
-                    existing.comment = comment
-                    existing.checked_by = current_user.username
-                else:
-                    check = BackupCheck(
-                        backup_id=b.id,
-                        check_date=today,
-                        status=status,
-                        comment=comment if comment else None,
-                        checked_by=current_user.username
-                    )
-                    db.session.add(check)
+                record_backup_check(b.id, today, status, comment, current_user.username)
         db.session.commit()
         flash('Checks quotidiens enregistres', 'success')
         return redirect(url_for('backups.daily'))
@@ -140,16 +159,24 @@ def stats():
         for i in range(29, -1, -1):
             d = today - timedelta(days=i)
             c = BackupCheck.query.filter_by(backup_id=b.id, check_date=d).first()
+            day_status = (c.first_status or c.status) if c else None
+            recovered = bool(c and c.first_status and c.first_status != c.status and c.status == 'ok')
             last_30.append({
                 'date': d.strftime('%Y-%m-%d'),
                 'date_display': d.strftime('%d/%m'),
-                'status': c.status if c else None,
+                'status': day_status,           # premier etat du jour (incident visible)
+                'recovered': recovered,         # repasse OK apres incident
                 'comment': c.comment if c else None
             })
 
-        total_ok = BackupCheck.query.filter_by(backup_id=b.id, status='ok').count()
-        total_failed = BackupCheck.query.filter_by(backup_id=b.id, status='failed').count()
-        total_warning = BackupCheck.query.filter_by(backup_id=b.id, status='warning').count()
+        # Totaux bases sur le premier etat de chaque jour
+        all_checks = b.checks.all()
+
+        def _fs(c):
+            return c.first_status or c.status
+        total_ok = sum(1 for c in all_checks if _fs(c) == 'ok')
+        total_failed = sum(1 for c in all_checks if _fs(c) == 'failed')
+        total_warning = sum(1 for c in all_checks if _fs(c) == 'warning')
 
         stats_data.append({
             'backup': b,
@@ -178,8 +205,15 @@ def stats():
 def detail(id):
     backup = Backup.query.get_or_404(id)
     checks = backup.checks.order_by(BackupCheck.check_date.desc()).limit(60).all()
+    # Toutes les saisies de statut (plusieurs possibles le meme jour), du plus
+    # recent au plus ancien : c'est l'historique detaille affiche dans la page.
+    check_events = (BackupHistory.query
+                    .filter_by(backup_id=id, action='check')
+                    .order_by(BackupHistory.performed_at.desc())
+                    .limit(200).all())
     histories = BackupHistory.query.filter_by(backup_id=id).order_by(BackupHistory.performed_at.desc()).all()
-    return render_template('backups/detail.html', backup=backup, checks=checks, histories=histories)
+    return render_template('backups/detail.html', backup=backup, checks=checks,
+                           check_events=check_events, histories=histories)
 
 
 @bp.route('/create', methods=['GET', 'POST'])
@@ -195,6 +229,7 @@ def create():
             expected_time=request.form.get('expected_time'),
             description=request.form.get('description'),
             priority=request.form.get('priority', 'medium'),
+            equipment_id=_parse_equipment_id(request.form.get('equipment_id')),
         )
         db.session.add(b)
         db.session.commit()
@@ -207,7 +242,8 @@ def create():
         db.session.commit()
         flash('Backup ajoute avec succes', 'success')
         return redirect(url_for('backups.list'))
-    return render_template('backups/form.html', backup=None)
+    return render_template('backups/form.html', backup=None,
+                           equipments=_active_equipments())
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
@@ -223,17 +259,19 @@ def edit(id):
         backup.expected_time = request.form.get('expected_time')
         backup.description = request.form.get('description')
         backup.priority = request.form.get('priority', 'medium')
+        backup.equipment_id = _parse_equipment_id(request.form.get('equipment_id'))
         db.session.commit()
         flash('Backup modifie avec succes', 'success')
         return redirect(url_for('backups.detail', id=id))
-    return render_template('backups/form.html', backup=backup)
+    return render_template('backups/form.html', backup=backup,
+                           equipments=_active_equipments())
 
 
 @bp.route('/<int:id>/check', methods=['POST'])
 @login_required
 @require_edit
 def check(id):
-    backup = Backup.query.get_or_404(id)
+    Backup.query.get_or_404(id)  # garde 404, l'objet n'est pas utilise ensuite
     today = datetime.now(timezone.utc).date()
     status = request.form.get('status', 'ok')
     comment = request.form.get('comment', '')
@@ -247,20 +285,7 @@ def check(id):
     else:
         check_date = today
 
-    existing = BackupCheck.query.filter_by(backup_id=id, check_date=check_date).first()
-    if existing:
-        existing.status = status
-        existing.comment = comment if comment else existing.comment
-        existing.checked_by = current_user.username
-    else:
-        c = BackupCheck(
-            backup_id=id,
-            check_date=check_date,
-            status=status,
-            comment=comment if comment else None,
-            checked_by=current_user.username
-        )
-        db.session.add(c)
+    record_backup_check(id, check_date, status, comment, current_user.username)
     db.session.commit()
     flash('Check enregistre', 'success')
     return redirect(url_for('backups.detail', id=id))

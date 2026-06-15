@@ -52,9 +52,9 @@
                 </div>
                 <div class="row g-3 mb-2 kind-section" data-kinds="vm">
                     <div class="col-12 d-flex gap-4 flex-wrap">
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="supervised" id="supervised" {{ 'checked' if item and item.supervised }}><label class="form-check-label small" for="supervised">Supervision</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="cyberwatch" id="cyberwatch" {{ 'checked' if item and item.cyberwatch }}><label class="form-check-label small" for="cyberwatch">Cyberwatch</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="ninja_one" id="ninja_one" {{ 'checked' if item and item.ninja_one }}><label class="form-check-label small" for="ninja_one">Ninja One</label></div>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="supervised" id="supervised" {{ 'checked' if item and item.supervised }}><label class="form-check-label small" for="supervised">Supervision</label></div>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="cyberwatch" id="cyberwatch" {{ 'checked' if item and item.cyberwatch }}><label class="form-check-label small" for="cyberwatch">Cyberwatch</label></div>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="ninja_one" id="ninja_one" {{ 'checked' if item and item.ninja_one }}><label class="form-check-label small" for="ninja_one">Ninja One</label></div>
                     </div>
                 </div>
 
@@ -93,6 +93,14 @@
                         <div class="col-md-4 kind-section" data-kinds="physical"><label class="form-label small">Date achat / mise en service</label><input type="date" name="purchase_date" class="form-control" value="{{ item.purchase_date.strftime('%Y-%m-%d') if item and item.purchase_date else '' }}"></div>
                         <div class="col-md-4"><label class="form-label small">Fin de garantie</label><input type="date" name="warranty_end" class="form-control" value="{{ item.warranty_end.strftime('%Y-%m-%d') if item and item.warranty_end else '' }}"></div>
                         <div class="col-md-4"><label class="form-label small">Contrat de maintenance</label><input type="text" name="maintenance_contract" class="form-control" value="{{ val('maintenance_contract') }}"></div>
+                        <div class="col-md-4"><label class="form-label small">Fournisseur / support</label>
+                            <select name="supplier_id" class="form-select">
+                                <option value="">— Sélectionner —</option>
+                                {% for s in suppliers %}
+                                <option value="{{ s.id }}" {{ 'selected' if item and item.supplier_id == s.id }}>{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
                 </div>
 

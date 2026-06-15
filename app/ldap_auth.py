@@ -16,8 +16,17 @@ def build_server(cfg):
     validation du certificat configurable, CA optionnelle."""
     import ssl
     from ldap3 import Server, Tls, ALL
-    host = (cfg.get('LDAP_SERVER') or '').strip()
-    use_ssl = bool(cfg.get('LDAP_USE_SSL')) or host.lower().startswith('ldaps://')
+    raw = (cfg.get('LDAP_SERVER') or '').strip()
+    # Schema optionnel : on accepte un simple FQDN/IP. Si l'utilisateur a saisi
+    # ldap:// ou ldaps://, on le detecte puis on le retire (ldap3 attend l'hote).
+    low = raw.lower()
+    scheme_ssl = None
+    if low.startswith('ldaps://'):
+        scheme_ssl, raw = True, raw[8:]
+    elif low.startswith('ldap://'):
+        scheme_ssl, raw = False, raw[7:]
+    host = raw.rstrip('/').strip()
+    use_ssl = bool(cfg.get('LDAP_USE_SSL')) or scheme_ssl is True
     port = int(cfg.get('LDAP_PORT') or 0) or (636 if use_ssl else 389)
     if use_ssl and port == 389:  # port en clair laisse par defaut -> LDAPS standard
         port = 636
@@ -30,6 +39,74 @@ def build_server(cfg):
         ca = cfg.get('LDAP_CA_CERT') or None
         tls = Tls(validate=validate, ca_certs_file=ca)
     return Server(host, port=port, use_ssl=use_ssl, tls=tls, get_info=ALL, connect_timeout=8)
+
+
+def test_ldap_connection(app=None):
+    """Teste la connexion LDAP (et le bind du compte de service si renseigne).
+    Retourne (ok: bool, message: str) pour affichage direct a l'admin."""
+    cfg = (app or current_app).config
+    if not cfg.get('LDAP_ENABLED'):
+        return False, "LDAP désactivé : activez-le puis enregistrez avant de tester."
+    if not cfg.get('LDAP_SERVER'):
+        return False, "Aucun serveur LDAP configuré."
+    try:
+        from ldap3 import Connection
+    except ImportError:
+        return False, "Module ldap3 non installé."
+    bind_user = cfg.get('LDAP_BIND_USER')
+    bind_pw = cfg.get('LDAP_BIND_PASSWORD')
+    try:
+        server = build_server(cfg)
+        if bind_user and bind_pw:
+            conn = Connection(server, user=bind_user, password=bind_pw, auto_bind=True)
+            base = cfg.get('LDAP_BASE_DN')
+            if base:
+                conn.search(base, '(objectClass=*)', search_scope='BASE')
+            conn.unbind()
+            return True, f"Connexion et authentification réussies (compte de service : {bind_user})."
+        conn = Connection(server, auto_bind=True)
+        conn.unbind()
+        return True, "Connexion au serveur LDAP réussie (aucun compte de service configuré)."
+    except Exception as e:
+        return False, f"Échec de connexion LDAP : {e}"
+
+
+def _esc(v):
+    """Echappe une valeur pour un filtre LDAP (RFC 4515)."""
+    out = (v or '')
+    for ch, rep in (('\\', '\\5c'), ('(', '\\28'), (')', '\\29'), ('*', '\\2a'), ('\x00', '\\00')):
+        out = out.replace(ch, rep)
+    return out
+
+
+def _user_in_group(conn, base, username, group):
+    """Vrai si l'utilisateur appartient au groupe AD (groupes imbriques inclus).
+    `group` peut etre un DN (CN=...,DC=...) ou un simple nom (cn/sAMAccountName)."""
+    group = (group or '').strip()
+    if not group:
+        return True
+    group_dn = group
+    try:
+        if '=' not in group:   # nom simple -> resoudre le DN du groupe
+            conn.search(base, '(&(objectClass=group)(|(cn=%s)(sAMAccountName=%s)))'
+                        % (_esc(group), _esc(group)), attributes=['cn'])
+            if not conn.entries:
+                return False
+            group_dn = conn.entries[0].entry_dn
+        # Appartenance recursive (matching rule AD LDAP_MATCHING_RULE_IN_CHAIN)
+        conn.search(base, '(&(sAMAccountName=%s)(memberOf:1.2.840.113556.1.4.1941:=%s))'
+                    % (_esc(username), group_dn), attributes=['cn'])
+        if conn.entries:
+            return True
+        # Repli : appartenance directe via memberOf
+        conn.search(base, '(sAMAccountName=%s)' % _esc(username), attributes=['memberOf'])
+        if conn.entries and 'memberOf' in conn.entries[0]:
+            mof = [str(x).lower() for x in conn.entries[0].memberOf]
+            return group_dn.lower() in mof
+    except Exception as e:
+        current_app.logger.info('Verif groupe LDAP echouee pour %s : %s', username, e)
+        return False
+    return False
 
 
 def ldap_authenticate(username, password):
@@ -60,11 +137,33 @@ def ldap_authenticate(username, password):
         current_app.logger.info('Echec bind LDAP pour %s : %s', username, e)
         return None
 
-    info = {'email': None, 'display_name': None}
     base = cfg.get('LDAP_BASE_DN')
+    required_group = (cfg.get('LDAP_REQUIRED_GROUP') or '').strip()
+
+    # Restriction d'acces a un groupe AD (fortement conseille) : si configure,
+    # seul un membre peut se connecter. Echec ferme si non verifiable.
+    if required_group:
+        if not base:
+            current_app.logger.warning(
+                'LDAP_REQUIRED_GROUP defini mais LDAP_BASE_DN vide : acces refuse a %s', username)
+            try:
+                conn.unbind()
+            except Exception:
+                pass
+            return None
+        if not _user_in_group(conn, base, username, required_group):
+            current_app.logger.info(
+                'Acces LDAP refuse pour %s : pas membre du groupe « %s »', username, required_group)
+            try:
+                conn.unbind()
+            except Exception:
+                pass
+            return None
+
+    info = {'email': None, 'display_name': None}
     if base:
         try:
-            conn.search(base, f'(sAMAccountName={username})',
+            conn.search(base, f'(sAMAccountName={_esc(username)})',
                         attributes=['mail', 'displayName'])
             if conn.entries:
                 entry = conn.entries[0]
@@ -123,7 +222,7 @@ def sync_password_expirations():
         if not uname:
             continue
         try:
-            conn.search(base, f'(sAMAccountName={uname})',
+            conn.search(base, f'(sAMAccountName={_esc(uname)})',
                         attributes=['msDS-UserPasswordExpiryTimeComputed'])
             if not conn.entries:
                 continue

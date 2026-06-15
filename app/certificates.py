@@ -4,6 +4,8 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import Certificate, CertificateHistory
 from app.cert_checker import fetch_cert_info
+from app.inventory import active_equipments as _active_equipments
+from app.inventory import parse_equipment_id as _parse_equipment_id
 
 from app.decorators import require_edit, require_delete, view_guard
 bp = Blueprint('certificates', __name__)
@@ -83,6 +85,7 @@ def create():
             auto_renew=request.form.get('auto_renew') == 'on',
             description=request.form.get('description'),
             priority=request.form.get('priority', 'medium'),
+            equipment_id=_parse_equipment_id(request.form.get('equipment_id')),
         )
         db.session.add(c)
         db.session.commit()
@@ -95,7 +98,8 @@ def create():
         db.session.commit()
         flash('Certificat ajouté avec succès', 'success')
         return redirect(url_for('certificates.list'))
-    return render_template('certificates/form.html', certificate=None)
+    return render_template('certificates/form.html', certificate=None,
+                           equipments=_active_equipments())
 
 
 @bp.route('/<int:id>')
@@ -120,10 +124,12 @@ def edit(id):
         cert.auto_renew = request.form.get('auto_renew') == 'on'
         cert.description = request.form.get('description')
         cert.priority = request.form.get('priority', 'medium')
+        cert.equipment_id = _parse_equipment_id(request.form.get('equipment_id'))
         db.session.commit()
         flash('Certificat modifié avec succès', 'success')
         return redirect(url_for('certificates.detail', id=id))
-    return render_template('certificates/form.html', certificate=cert)
+    return render_template('certificates/form.html', certificate=cert,
+                           equipments=_active_equipments())
 
 
 @bp.route('/<int:id>/renew', methods=['POST'])

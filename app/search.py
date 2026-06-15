@@ -2,8 +2,7 @@ from flask import Blueprint, render_template, request
 from flask_login import login_required
 from sqlalchemy import or_
 from app.models import (Account, Certificate, Backup, TestTask, Domain,
-                        AccessReview, SystemUpdate, Equipment)
-from app import db
+                        AccessReview, SystemUpdate, Equipment, Supplier, Contract)
 
 bp = Blueprint('search', __name__)
 
@@ -17,7 +16,7 @@ def search():
         like = f'%{q}%'
 
         accounts = Account.query.filter(
-            Account.is_active == True,
+            Account.is_active,
             or_(
                 Account.service_name.ilike(like),
                 Account.username.ilike(like),
@@ -35,7 +34,7 @@ def search():
             })
 
         certs = Certificate.query.filter(
-            Certificate.is_active == True,
+            Certificate.is_active,
             or_(
                 Certificate.service_name.ilike(like),
                 Certificate.domain.ilike(like),
@@ -53,7 +52,7 @@ def search():
             })
 
         backups = Backup.query.filter(
-            Backup.is_active == True,
+            Backup.is_active,
             or_(
                 Backup.service_name.ilike(like),
                 Backup.location.ilike(like),
@@ -70,7 +69,7 @@ def search():
             })
 
         tests = TestTask.query.filter(
-            TestTask.is_active == True,
+            TestTask.is_active,
             or_(
                 TestTask.name.ilike(like),
                 TestTask.description.ilike(like),
@@ -87,7 +86,7 @@ def search():
             })
 
         domains = Domain.query.filter(
-            Domain.is_active == True,
+            Domain.is_active,
             or_(
                 Domain.name.ilike(like),
                 Domain.registrar.ilike(like),
@@ -104,7 +103,7 @@ def search():
             })
 
         reviews = AccessReview.query.filter(
-            AccessReview.is_active == True,
+            AccessReview.is_active,
             or_(
                 AccessReview.application.ilike(like),
                 AccessReview.responsible.ilike(like),
@@ -121,7 +120,7 @@ def search():
             })
 
         updates = SystemUpdate.query.filter(
-            SystemUpdate.is_active == True,
+            SystemUpdate.is_active,
             or_(
                 SystemUpdate.name.ilike(like),
                 SystemUpdate.current_version.ilike(like),
@@ -140,7 +139,7 @@ def search():
             })
 
         equipments = Equipment.query.filter(
-            Equipment.is_active == True,
+            Equipment.is_active,
             or_(
                 Equipment.name.ilike(like),
                 Equipment.ip_address.ilike(like),
@@ -159,11 +158,48 @@ def search():
                 'badge': e.computed_status(),
             })
 
+        from urllib.parse import quote
+        suppliers = Supplier.query.filter(
+            Supplier.is_active,
+            or_(
+                Supplier.name.ilike(like),
+                Supplier.contact_name.ilike(like),
+                Supplier.email.ilike(like),
+                Supplier.customer_ref.ilike(like),
+            )
+        ).all()
+        for s in suppliers:
+            results.append({
+                'type': 'fournisseur', 'icon': 'bi-building',
+                'label': s.name,
+                'detail': f'Fournisseur - {s.kind_label()}',
+                'url': f'/suppliers/?q={quote(s.name)}',
+                'badge': 'info',
+            })
+
+        contracts = Contract.query.filter(
+            Contract.is_active,
+            or_(
+                Contract.name.ilike(like),
+                Contract.reference.ilike(like),
+                Contract.description.ilike(like),
+            )
+        ).all()
+        for c in contracts:
+            results.append({
+                'type': 'contrat', 'icon': 'bi-file-earmark-text',
+                'label': c.name,
+                'detail': f'Contrat - {c.kind_label()}',
+                'url': f'/contracts/{c.id}',
+                'badge': c.status(),
+            })
+
     # Visibilite : ne montrer que les categories autorisees pour l'utilisateur
     from flask_login import current_user
     _cat_perm = {'account': 'accounts', 'certificate': 'certificates',
                  'backup': 'backups', 'test': 'tests', 'domaine': 'domains',
-                 'revue': 'reviews', 'mise à jour': 'updates', 'inventaire': 'inventory'}
+                 'revue': 'reviews', 'mise à jour': 'updates', 'inventaire': 'inventory',
+                 'fournisseur': 'contracts', 'contrat': 'contracts'}
     results = [r for r in results
                if current_user.can_view(_cat_perm.get(r['type']))]
 

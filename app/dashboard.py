@@ -3,11 +3,40 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from flask_login import login_required, current_user
 from app.models import (Account, Certificate, Backup, BackupCheck, TestTask,
                         AlertLog, Domain, AccessReview, SystemUpdate, Equipment)
-from app.snooze import is_snoozed
 from app import db
 
-from app.decorators import require_edit
 bp = Blueprint('dashboard', __name__)
+
+
+@bp.route('/healthz')
+def healthz():
+    """Sonde de supervision (Zabbix/Centreon/NinjaOne...), sans authentification.
+    Verifie que l'app repond, que la base est accessible et que le scheduler a
+    execute au moins un job dans les dernieres 26 h. 200 = OK, 503 = probleme.
+    N'expose volontairement aucun detail metier."""
+    from flask import jsonify
+    from app.models import SchedulerRun
+    out = {'app': 'ok', 'database': 'ok', 'scheduler': 'ok'}
+    code = 200
+    try:
+        last = SchedulerRun.query.order_by(SchedulerRun.run_at.desc()).first()
+    except Exception:
+        out['database'] = 'error'
+        out['scheduler'] = 'unknown'
+        code = 503
+    else:
+        if last is None:
+            # Installation recente : aucun job n'a encore tourne (1er a 01h00).
+            out['scheduler'] = 'no_run_yet'
+        else:
+            age_h = (datetime.now(timezone.utc).replace(tzinfo=None)
+                     - last.run_at).total_seconds() / 3600
+            out['last_job_hours_ago'] = round(age_h, 1)
+            if age_h > 26:
+                out['scheduler'] = 'stale'
+                code = 503
+    out['status'] = 'ok' if code == 200 else 'error'
+    return jsonify(out), code
 
 
 @bp.route('/rapport.pdf')
@@ -29,21 +58,32 @@ def trends():
     days = [today - timedelta(days=i) for i in range(29, -1, -1)]
     labels = [d.strftime('%d/%m') for d in days]
 
+    # Series sur 30 jours : une requete groupee par serie (et non une par jour).
     backups = {'ok': [], 'warning': [], 'failed': []}
     show_backups = current_user.can_view('backups')
     if show_backups:
+        eff_status = func.coalesce(BackupCheck.first_status, BackupCheck.status)
+        rows = db.session.query(BackupCheck.check_date, eff_status, func.count()) \
+            .filter(BackupCheck.check_date >= days[0]) \
+            .group_by(BackupCheck.check_date, eff_status).all()
+        per_day = {}
+        for d, st, n in rows:
+            per_day.setdefault(d, {})[st] = n
         for d in days:
-            checks = BackupCheck.query.filter_by(check_date=d).all()
-            backups['ok'].append(sum(1 for c in checks if c.status == 'ok'))
-            backups['warning'].append(sum(1 for c in checks if c.status == 'warning'))
-            backups['failed'].append(sum(1 for c in checks if c.status == 'failed'))
+            counts = per_day.get(d, {})
+            backups['ok'].append(counts.get('ok', 0))
+            backups['warning'].append(counts.get('warning', 0))
+            backups['failed'].append(counts.get('failed', 0))
 
     alerts = []
     show_alerts = current_user.can_view('alerts')
     if show_alerts:
-        for d in days:
-            alerts.append(AlertLog.query.filter(
-                func.date(AlertLog.sent_at) == d, AlertLog.status == 'sent').count())
+        sent_day = func.date(AlertLog.sent_at)
+        rows = db.session.query(sent_day, func.count()) \
+            .filter(AlertLog.status == 'sent', sent_day >= days[0].isoformat()) \
+            .group_by(sent_day).all()
+        per_day = {str(d): n for d, n in rows}
+        alerts = [per_day.get(d.isoformat(), 0) for d in days]
 
     # Repartition globale par statut (categories visibles)
     sources = [
@@ -121,6 +161,9 @@ def trash_restore():
 @bp.route('/trash/purge-one', methods=['POST'])
 @login_required
 def trash_purge_one():
+    # Pas de @require_delete : il deduit la categorie du blueprint (ici
+    # « dashboard », donc aucune). Le droit can_delete(<categorie de
+    # l'element>) est verifie dans trash.purge_one().
     from app.trash import purge_one
     from app.audit import record
     res = purge_one(current_user, request.form.get('entity_type', ''),
@@ -135,6 +178,7 @@ def trash_purge_one():
 @bp.route('/trash/purge', methods=['POST'])
 @login_required
 def trash_purge():
+    # Droits verifies categorie par categorie dans trash.purge_all().
     from app.trash import purge_all
     from app.audit import record
     n = purge_all(current_user)
@@ -145,11 +189,10 @@ def trash_purge():
     return redirect(url_for('dashboard.trash'))
 
 
-@bp.route('/agenda')
-@login_required
-def agenda():
-    """Echeances a venir (rotations MDP, certificats, domaines, tests),
-    regroupees par horizon et filtrees selon les droits de l'utilisateur."""
+def _agenda_items(user):
+    """Echeances (rotations MDP, certificats, domaines, tests, revues) triees
+    par date et filtrees selon les droits de `user`. Partage entre la page
+    Agenda et le flux ICS (ou `user` peut venir d'un jeton, sans session)."""
     today = datetime.now(timezone.utc).date()
     items = []
 
@@ -159,28 +202,125 @@ def agenda():
         items.append({'cat': cat, 'icon': icon, 'name': name, 'date': date,
                       'days': (date - today).days, 'detail': detail, 'url': url})
 
-    if current_user.can_view('accounts'):
+    if user.can_view('accounts'):
         for a in Account.query.filter_by(is_active=True).all():
             add('Comptes', 'key', f'{a.service_name} ({a.username})',
                 a.next_password_change, 'Rotation du mot de passe', f'/accounts/{a.id}')
-    if current_user.can_view('certificates'):
+    if user.can_view('certificates'):
         for c in Certificate.query.filter_by(is_active=True).all():
             add('Certificats', 'award', f'{c.service_name} - {c.domain}',
                 c.expiry_date, 'Expiration du certificat', f'/certificates/{c.id}')
-    if current_user.can_view('domains'):
+    if user.can_view('domains'):
         for d in Domain.query.filter_by(is_active=True).all():
             add('Domaines', 'globe', d.name, d.expiry_date,
                 'Expiration du domaine', f'/domains/{d.id}')
-    if current_user.can_view('tests'):
+    if user.can_view('tests'):
         for t in TestTask.query.filter_by(is_active=True).all():
             add('Tests', 'clipboard-check', t.name, t.next_due,
                 'Test a effectuer', f'/tests/{t.id}')
-    if current_user.can_view('reviews'):
+    if user.can_view('reviews'):
         for r in AccessReview.query.filter_by(is_active=True).all():
             add('Revue de droits', 'person-check', r.application, r.next_review,
                 'Revue des acces', f'/reviews/{r.id}')
 
     items.sort(key=lambda x: x['date'])
+    return today, items
+
+
+@bp.route('/agenda.ics')
+def agenda_ics():
+    """Flux iCalendar des echeances, pour Outlook/Thunderbird.
+
+    Deux modes d'acces :
+      - utilisateur connecte (telechargement ponctuel depuis la page Agenda) ;
+      - ?token=<jeton personnel> : abonnement calendrier, sans session — le
+        client recupere le flux periodiquement et reste a jour tout seul.
+    Le flux est filtre selon les droits de l'utilisateur proprietaire du jeton."""
+    from flask import Response, current_app, abort
+    from app.models import User
+    token = (request.args.get('token') or '').strip()
+    if token:
+        user = User.query.filter_by(ics_token=token).first()
+        if user is None:
+            abort(403)
+    elif current_user.is_authenticated:
+        user = current_user
+    else:
+        return current_app.login_manager.unauthorized()
+
+    _, items = _agenda_items(user)
+    base = current_app.config.get('APP_BASE_URL', '').rstrip('/')
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+
+    def esc(text):
+        return (str(text).replace('\\', '\\\\').replace(';', '\\;')
+                .replace(',', '\\,').replace('\n', '\\n'))
+
+    def fold(line):
+        # RFC 5545 : lignes longues repliees (continuation = espace en tete).
+        out = []
+        while len(line) > 70:
+            out.append(line[:70])
+            line = ' ' + line[70:]
+        out.append(line)
+        return out
+
+    lines = ['BEGIN:VCALENDAR', 'VERSION:2.0',
+             'PRODID:-//Sentinelle//Agenda//FR', 'CALSCALE:GREGORIAN',
+             'X-WR-CALNAME:Sentinelle - Échéances',
+             # Suggestion de cadence de rafraichissement pour les clients abonnes.
+             'REFRESH-INTERVAL;VALUE=DURATION:PT12H', 'X-PUBLISHED-TTL:PT12H']
+    for it in items:
+        uid = 'sentinelle-' + it['url'].strip('/').replace('/', '-') + '@sentinelle'
+        ev = ['BEGIN:VEVENT',
+              f'UID:{uid}',
+              f'DTSTAMP:{stamp}',
+              f"DTSTART;VALUE=DATE:{it['date'].strftime('%Y%m%d')}",
+              f"SUMMARY:{esc('[' + it['cat'] + '] ' + it['name'])}",
+              f"DESCRIPTION:{esc(it['detail'])}"]
+        if base:
+            ev.append(f"URL:{base}{it['url']}")
+        ev.append('END:VEVENT')
+        for line in ev:
+            lines.extend(fold(line))
+    lines.append('END:VCALENDAR')
+    body = '\r\n'.join(lines) + '\r\n'
+    headers = {'Cache-Control': 'no-cache'}
+    if not token:
+        # Telechargement manuel : proposer un fichier. En abonnement, les
+        # clients calendrier consomment le flux directement.
+        headers['Content-Disposition'] = 'attachment; filename="sentinelle-agenda.ics"'
+    return Response(body, mimetype='text/calendar', headers=headers)
+
+
+@bp.route('/agenda/ics-token', methods=['POST'])
+@login_required
+def agenda_ics_token():
+    """Genere, regenere ou desactive le jeton d'abonnement ICS de l'utilisateur.
+    Regenerer invalide l'ancien lien (les abonnements existants cessent)."""
+    import secrets
+    if request.form.get('action') == 'disable':
+        current_user.ics_token = None
+        flash("Lien d'abonnement désactivé : les calendriers abonnés ne seront plus alimentés.", 'success')
+    else:
+        regen = current_user.ics_token is not None
+        current_user.ics_token = secrets.token_urlsafe(32)
+        flash("Nouveau lien d'abonnement généré." +
+              (" L'ancien lien ne fonctionne plus." if regen else ''), 'success')
+    db.session.commit()
+    return redirect(url_for('dashboard.agenda'))
+
+
+@bp.route('/agenda')
+@login_required
+def agenda():
+    """Echeances a venir (rotations MDP, certificats, domaines, tests),
+    regroupees par horizon et filtrees selon les droits de l'utilisateur."""
+    from flask import current_app
+    today, items = _agenda_items(current_user)
+    base = current_app.config.get('APP_BASE_URL', '').rstrip('/')
+    ics_url = (f"{base}{url_for('dashboard.agenda_ics')}?token={current_user.ics_token}"
+               if current_user.ics_token else None)
     buckets = [
         ('En retard', [i for i in items if i['days'] < 0], 'danger'),
         ('Cette semaine', [i for i in items if 0 <= i['days'] <= 7], 'danger'),
@@ -188,7 +328,7 @@ def agenda():
         ('Dans les 90 jours', [i for i in items if 31 < i['days'] <= 90], 'info'),
     ]
     buckets = [(label, lst, color) for label, lst, color in buckets if lst]
-    return render_template('agenda.html', buckets=buckets, today=today)
+    return render_template('agenda.html', buckets=buckets, today=today, ics_url=ics_url)
 
 
 @bp.route('/')
@@ -206,66 +346,54 @@ def index():
     reviews = AccessReview.query.filter_by(is_active=True).all() if current_user.can_view('reviews') else []
     updates = SystemUpdate.query.filter_by(is_active=True).all() if current_user.can_view('updates') else []
     equipments = Equipment.query.filter_by(is_active=True).all() if current_user.can_view('inventory') else []
+    contracts = Contract.query.filter_by(is_active=True).all() if current_user.can_view('contracts') else []
 
-    inv_danger = sum(1 for e in equipments if e.computed_status() == 'danger')
-    inv_warning = sum(1 for e in equipments if e.computed_status() == 'warning')
-    inv_ok = sum(1 for e in equipments if e.computed_status() == 'success')
+    # Statut calcule UNE seule fois par objet (computed_status() requete la
+    # base pour les backups et l'inventaire), puis reutilise pour les stats,
+    # les urgences et la conformite.
+    acc_st = [(a, a.status()) for a in accounts]
+    cert_st = [(c, c.status()) for c in certificates]
+    dom_st = [(d, d.status()) for d in domains]
+    bkp_st = [(b, b.computed_status()) for b in backups]
+    tst_st = [(t, t.computed_status()) for t in tests]
+    rev_st = [(r, r.computed_status()) for r in reviews]
+    upd_st = [(u, u.status_color()) for u in updates]
+    inv_st = [(e, e.computed_status()) for e in equipments]
+    ctr_st = [(c, c.status()) for c in contracts]
 
-    acc_danger = sum(1 for a in accounts if a.status() == 'danger')
-    acc_warning = sum(1 for a in accounts if a.status() == 'warning')
-    acc_ok = sum(1 for a in accounts if a.status() == 'success')
-
-    cert_danger = sum(1 for c in certificates if c.status() == 'danger')
-    cert_warning = sum(1 for c in certificates if c.status() == 'warning')
-    cert_ok = sum(1 for c in certificates if c.status() == 'success')
-
-    dom_danger = sum(1 for d in domains if d.status() == 'danger')
-    dom_warning = sum(1 for d in domains if d.status() == 'warning')
-    dom_ok = sum(1 for d in domains if d.status() == 'success')
-
-    bkp_danger = sum(1 for b in backups if b.computed_status() == 'danger')
-    bkp_warning = sum(1 for b in backups if b.computed_status() == 'warning')
-    bkp_ok = sum(1 for b in backups if b.computed_status() == 'success')
-
-    tst_danger = sum(1 for t in tests if t.computed_status() == 'danger')
-    tst_warning = sum(1 for t in tests if t.computed_status() == 'warning')
-    tst_ok = sum(1 for t in tests if t.computed_status() == 'success')
-
-    rev_danger = sum(1 for r in reviews if r.computed_status() == 'danger')
-    rev_warning = sum(1 for r in reviews if r.computed_status() == 'warning')
-    rev_ok = sum(1 for r in reviews if r.computed_status() == 'success')
-
-    upd_danger = sum(1 for u in updates if u.status_color() == 'danger')
-    upd_warning = sum(1 for u in updates if u.status_color() == 'warning')
-    upd_ok = sum(1 for u in updates if u.status_color() == 'success')
+    def _counts(pairs):
+        return {'total': len(pairs),
+                'danger': sum(1 for _, s in pairs if s == 'danger'),
+                'warning': sum(1 for _, s in pairs if s == 'warning'),
+                'ok': sum(1 for _, s in pairs if s == 'success')}
 
     urgent_items = []
-    for a in accounts:
-        if a.status() == 'danger':
+    for a, st in acc_st:
+        if st == 'danger':
             days = (a.next_password_change - today).days if a.next_password_change else 'N/A'
             urgent_items.append({
                 'type': 'account', 'name': f'{a.service_name} ({a.username})',
                 'detail': f'MDP a changer depuis {abs(days)} jour(s)' if isinstance(days, int) and days < 0 else f'MDP a changer dans {days} jour(s)',
                 'status': 'danger', 'url': f'/accounts/{a.id}'
             })
-    for c in certificates:
-        if c.status() in ('danger', 'warning'):
+    for c, st in cert_st:
+        if st in ('danger', 'warning'):
             days = (c.expiry_date - today).days
             urgent_items.append({
                 'type': 'certificate', 'name': f'{c.service_name} - {c.domain}',
                 'detail': f'Expire dans {days} jour(s)' if days >= 0 else f'Expire depuis {abs(days)} jour(s)',
-                'status': c.status(), 'url': f'/certificates/{c.id}'
+                'status': st, 'url': f'/certificates/{c.id}'
             })
-    for d in domains:
-        if d.status() in ('danger', 'warning') and d.expiry_date:
+    for d, st in dom_st:
+        if st in ('danger', 'warning') and d.expiry_date:
             days = (d.expiry_date - today).days
             urgent_items.append({
                 'type': 'domain', 'name': d.name,
                 'detail': f'Expire dans {days} jour(s)' if days >= 0 else f'Expire depuis {abs(days)} jour(s)',
-                'status': d.status(), 'url': f'/domains/{d.id}'
+                'status': st, 'url': f'/domains/{d.id}'
             })
-    for b in backups:
-        if b.computed_status() == 'danger':
+    for b, st in bkp_st:
+        if st == 'danger':
             tc = b.today_check()
             detail = 'Non verifie' if not tc else f'Check: {tc.status}'
             urgent_items.append({
@@ -273,29 +401,41 @@ def index():
                 'detail': detail,
                 'status': 'danger', 'url': f'/backups/{b.id}'
             })
-    for t in tests:
-        if t.computed_status() == 'danger':
+    for t, st in tst_st:
+        if st == 'danger':
             days = (t.next_due - today).days if t.next_due else 'N/A'
             urgent_items.append({
                 'type': 'test', 'name': t.name,
                 'detail': f'Test en retard de {abs(days)} jour(s)' if isinstance(days, int) and days < 0 else f'Test a faire dans {days} jour(s)',
                 'status': 'danger', 'url': f'/tests/{t.id}'
             })
-    for r in reviews:
-        if r.computed_status() in ('danger', 'warning'):
+    for r, st in rev_st:
+        if st in ('danger', 'warning'):
             days = (r.next_review - today).days if r.next_review else None
             detail = (f'Revue dans {days} j' if days is not None and days >= 0
                       else (f'Revue en retard de {abs(days)} j' if days is not None else 'Revue a planifier'))
             urgent_items.append({
                 'type': 'review', 'name': r.application, 'detail': detail,
-                'status': r.computed_status(), 'url': f'/reviews/{r.id}'
+                'status': st, 'url': f'/reviews/{r.id}'
             })
-    for u in updates:
-        if u.status_color() in ('danger', 'warning'):
+    for u, st in upd_st:
+        if st in ('danger', 'warning'):
             detail = 'Mise a jour critique' if u.status == 'critical' else 'Mise a jour disponible'
             urgent_items.append({
                 'type': 'update', 'name': u.name, 'detail': detail,
-                'status': u.status_color(), 'url': f'/updates/{u.id}'
+                'status': st, 'url': f'/updates/{u.id}'
+            })
+
+    for c, st in ctr_st:
+        if st in ('danger', 'warning'):
+            deadline = c.action_deadline()
+            days = (deadline - today).days if deadline else None
+            detail = (f'Agir avant {days} jour(s)' if days is not None and days >= 0
+                      else (f'Date limite depassee de {abs(days)} jour(s)' if days is not None
+                            else 'Echeance a renseigner'))
+            urgent_items.append({
+                'type': 'contract', 'name': c.name, 'detail': detail,
+                'status': st, 'url': f'/contracts/{c.id}'
             })
 
     urgent_items.sort(key=lambda x: {'danger': 0, 'warning': 1, 'info': 2}.get(x['status'], 3))
@@ -323,6 +463,8 @@ def index():
         _add_up(r.next_review, r.application, 'bi-person-check', f'/reviews/{r.id}')
     for e in equipments:
         _add_up(e.warranty_end, f'{e.name} (garantie)', 'bi-hdd-stack', f'/inventory/{e.id}')
+    for c in contracts:
+        _add_up(c.action_deadline(), f'{c.name} (contrat)', 'bi-file-earmark-text', f'/contracts/{c.id}')
     upcoming.sort(key=lambda x: x['days'])
     upcoming = upcoming[:7]
 
@@ -333,18 +475,25 @@ def index():
         ).first()
 
     stats = {
-        'accounts': {'total': len(accounts), 'danger': acc_danger, 'warning': acc_warning, 'ok': acc_ok},
-        'certificates': {'total': len(certificates), 'danger': cert_danger, 'warning': cert_warning, 'ok': cert_ok},
-        'domains': {'total': len(domains), 'danger': dom_danger, 'warning': dom_warning, 'ok': dom_ok},
-        'backups': {'total': len(backups), 'danger': bkp_danger, 'warning': bkp_warning, 'ok': bkp_ok},
-        'tests': {'total': len(tests), 'danger': tst_danger, 'warning': tst_warning, 'ok': tst_ok},
-        'reviews': {'total': len(reviews), 'danger': rev_danger, 'warning': rev_warning, 'ok': rev_ok},
-        'updates': {'total': len(updates), 'danger': upd_danger, 'warning': upd_warning, 'ok': upd_ok},
-        'inventory': {'total': len(equipments), 'danger': inv_danger, 'warning': inv_warning, 'ok': inv_ok},
+        'accounts': _counts(acc_st),
+        'certificates': _counts(cert_st),
+        'domains': _counts(dom_st),
+        'backups': _counts(bkp_st),
+        'tests': _counts(tst_st),
+        'reviews': _counts(rev_st),
+        'updates': _counts(upd_st),
+        'inventory': _counts(inv_st),
+        'contracts': _counts(ctr_st),
     }
 
+    # La conformite globale n'agrege que les categories selectionnees en config
+    # (toutes par defaut ; l'admin ajuste dans Administration > Parametres).
+    from app.app_settings import get_conformity_categories
+    included = set(get_conformity_categories())
     totals = {'total': 0, 'ok': 0, 'warning': 0, 'danger': 0}
-    for v in stats.values():
+    for cat, v in stats.items():
+        if cat not in included:
+            continue
         for k in totals:
             totals[k] += v[k]
     conformity = round(100 * totals['ok'] / totals['total']) if totals['total'] else 100
@@ -366,20 +515,8 @@ def quick_check():
     comment = request.form.get('comment', '')
     today = datetime.now(timezone.utc).date()
 
-    existing = BackupCheck.query.filter_by(backup_id=backup_id, check_date=today).first()
-    if existing:
-        existing.status = status
-        existing.comment = comment if comment else existing.comment
-        existing.checked_by = current_user.username
-    else:
-        check = BackupCheck(
-            backup_id=backup_id,
-            check_date=today,
-            status=status,
-            comment=comment if comment else None,
-            checked_by=current_user.username
-        )
-        db.session.add(check)
+    from app.backups import record_backup_check
+    record_backup_check(backup_id, today, status, comment, current_user.username)
     db.session.commit()
     flash('Backup valide', 'success')
     return redirect(url_for('dashboard.index'))

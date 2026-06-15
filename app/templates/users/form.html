@@ -31,13 +31,28 @@
                            value="{{ user.email if user else '' }}"
                            placeholder="email@domaine.com">
                 </div>
+                {% if user and user.is_ldap %}
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Mot de passe</label>
+                    <p class="text-muted small mb-0"><i class="bi bi-diagram-3 me-1"></i>Compte <strong>Active Directory</strong> : l'authentification et le mot de passe sont gérés par l'annuaire, pas ici.</p>
+                </div>
+                {% else %}
                 <div class="mb-3">
                     <label class="form-label fw-medium">Mot de passe {{ '(laisser vide pour ne pas changer)' if user else '*' }}</label>
-                    <input type="password" name="password" class="form-control"
+                    <input type="password" name="password" id="pw1" class="form-control"
                            {{ '' if user else 'required' }}
                            minlength="8"
                            placeholder="Minimum 8 caracteres">
                 </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Confirmer le mot de passe {{ '(idem)' if user else '*' }}</label>
+                    <input type="password" name="password_confirm" id="pw2" class="form-control"
+                           {{ '' if user else 'required' }}
+                           minlength="8"
+                           placeholder="Ressaisir le mot de passe">
+                    <small class="text-danger d-none" id="pwMismatch"><i class="bi bi-exclamation-triangle me-1"></i>Les deux mots de passe ne correspondent pas.</small>
+                </div>
+                {% endif %}
                 <div class="mb-3">
                     <label class="form-label fw-medium">Rôle *</label>
                     <select name="role" class="form-select" required>
@@ -59,4 +74,24 @@
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    var pw1 = document.getElementById('pw1'), pw2 = document.getElementById('pw2');
+    if (!pw1 || !pw2) return;
+    var msg = document.getElementById('pwMismatch');
+    var form = pw1.closest('form');
+    function check() {
+        var bad = pw2.value && pw1.value !== pw2.value;
+        if (msg) msg.classList.toggle('d-none', !bad);
+        pw2.setCustomValidity(bad ? 'Les mots de passe ne correspondent pas.' : '');
+        return !bad;
+    }
+    pw1.addEventListener('input', check);
+    pw2.addEventListener('input', check);
+    form.addEventListener('submit', function (e) {
+        if (!check()) { e.preventDefault(); pw2.focus(); }
+    });
+})();
+</script>
 {% endblock %}

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Domaines - Sentinelle{% endblock %}
+{% from '_macros.html' import status_badge %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -58,9 +59,7 @@
                         <span class="badge bg-secondary">Non</span>
                         {% endif %}
                     </td>
-                    <td><span class="badge-status badge-{{ d.status() }}">
-                        {{ {'danger': 'Critique', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK'}.get(d.status(), d.status()) }}
-                    </span></td>
+                    <td>{{ status_badge(d.status()) }}</td>
                     <td>
                         <div class="d-flex gap-1">
                             <a href="{{ url_for('domains.detail', id=d.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>

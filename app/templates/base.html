@@ -21,7 +21,7 @@
             <i class="bi bi-list"></i>
         </button>
         <span class="topbar-title">Sentinelle</span>
-        <span class="theme-toggle" onclick="toggleTheme()" title="Changer le theme" role="button" tabindex="0">
+        <span class="theme-toggle" onclick="toggleTheme()" title="Changer le theme" aria-label="Changer le theme" role="button" tabindex="0">
             <i class="bi bi-moon js-theme-icon"></i>
         </span>
     </div>
@@ -122,6 +122,17 @@
                     {% if nav_counts and nav_counts.inventory %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.inventory }}</span>{% endif %}
                 </a>
                 {% endif %}
+                {% if current_user.can_view('contracts') %}
+                <a href="{{ url_for('contracts.list') }}" class="sidebar-link {% if 'contracts' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>Contrats</span>
+                    {% if nav_counts and nav_counts.contracts %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.contracts }}</span>{% endif %}
+                </a>
+                <a href="{{ url_for('suppliers.list') }}" class="sidebar-link {% if 'suppliers' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-building"></i>
+                    <span>Fournisseurs</span>
+                </a>
+                {% endif %}
                 {% if current_user.can_view('alerts') %}
                 <a href="{{ url_for('alerts.list') }}" class="sidebar-link {% if 'alerts' in request.endpoint %}active{% endif %}">
                     <i class="bi bi-bell"></i>
@@ -151,7 +162,7 @@
                 </a>
                 <a href="{{ url_for('auth.preferences') }}" class="sidebar-link {% if request.endpoint == 'auth.preferences' %}active{% endif %}">
                     <i class="bi bi-sliders"></i>
-                    <span>Preferences</span>
+                    <span>Préférences</span>
                 </a>
             </div>
             {% endif %}
@@ -168,7 +179,7 @@
                         <div class="sidebar-role">{{ 'Administrateur' if current_user.is_admin else 'Utilisateur' }}</div>
                     </div>
                 </div>
-                <span class="theme-toggle" onclick="toggleTheme()" title="Changer le theme" role="button" tabindex="0">
+                <span class="theme-toggle" onclick="toggleTheme()" title="Changer le theme" aria-label="Changer le theme" role="button" tabindex="0">
                     <i id="theme-icon" class="bi bi-moon js-theme-icon"></i>
                 </span>
             </div>
@@ -177,7 +188,7 @@
                     <i class="bi bi-gear"></i> Mon profil
                 </a>
                 <a href="{{ url_for('auth.logout') }}" class="sidebar-footer-link sidebar-footer-link-danger">
-                    <i class="bi bi-box-arrow-right"></i> Deconnexion
+                    <i class="bi bi-box-arrow-right"></i> Déconnexion
                 </a>
             </div>
         </div>

@@ -72,8 +72,8 @@
     <div class="p-3">
         <div class="d-flex gap-1 flex-wrap">
             {% for day in item.calendar %}
-            <div class="text-center" style="width: 28px;" title="{{ day.date_display }}{% if day.comment %} - {{ day.comment }}{% endif %}">
-                <div class="heat-cell heat-{{ day.status if day.status in ['ok', 'failed', 'warning'] else 'empty' }}"></div>
+            <div class="text-center" style="width: 28px;" title="{{ day.date_display }}{% if day.recovered %} - incident corrige (repasse OK){% endif %}{% if day.comment %} - {{ day.comment }}{% endif %}">
+                <div class="heat-cell heat-{{ day.status if day.status in ['ok', 'failed', 'warning'] else 'empty' }}{% if day.recovered %} heat-recovered{% endif %}"></div>
                 <small class="text-muted" style="font-size: 0.55rem;">{{ day.date_display[:2] }}/{{ day.date_display[3:5] }}</small>
             </div>
             {% endfor %}
@@ -83,6 +83,7 @@
             <small><span class="heat-swatch heat-warning"></span> Warning</small>
             <small><span class="heat-swatch heat-failed"></span> Echoue</small>
             <small><span class="heat-swatch heat-empty"></span> Non verifie</small>
+            <small><span class="heat-swatch heat-failed heat-recovered"></span> Incident corrige</small>
         </div>
     </div>
 </div>

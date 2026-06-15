@@ -170,6 +170,7 @@ def create():
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
+        password_confirm = request.form.get('password_confirm')
         role = request.form.get('role', 'viewer')
         if User.query.filter_by(username=username).first():
             flash('Ce nom d\'utilisateur existe deja', 'danger')
@@ -180,6 +181,9 @@ def create():
         minlen = current_app.config.get('PASSWORD_MIN_LENGTH', 8)
         if len(password or '') < minlen:
             flash(f'Le mot de passe doit contenir au moins {minlen} caracteres', 'danger')
+            return render_template('users/form.html', user=None)
+        if password != password_confirm:
+            flash('Les deux mots de passe ne correspondent pas.', 'danger')
             return render_template('users/form.html', user=None)
         u = User(username=username, email=email, role=role)
         u.set_password(password)
@@ -202,12 +206,16 @@ def edit(id):
         user.email = request.form.get('email')
         user.role = request.form.get('role', 'viewer')
         new_password = request.form.get('password')
+        new_password_confirm = request.form.get('password_confirm')
         minlen = current_app.config.get('PASSWORD_MIN_LENGTH', 8)
-        if new_password and len(new_password) >= minlen:
-            user.set_password(new_password)
-        elif new_password and len(new_password) < minlen:
+        if new_password and len(new_password) < minlen:
             flash(f'Le mot de passe doit contenir au moins {minlen} caracteres', 'danger')
             return render_template('users/form.html', user=user)
+        if new_password and new_password != new_password_confirm:
+            flash('Les deux mots de passe ne correspondent pas.', 'danger')
+            return render_template('users/form.html', user=user)
+        if new_password:
+            user.set_password(new_password)
         db.session.commit()
         audit_record('modification utilisateur', detail=f'{user.username} (role {user.role})', category='utilisateurs')
         flash(f'Utilisateur {user.username} modifie', 'success')

@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}{{ contract.name }} - Sentinelle{% endblock %}
+{% from '_macros.html' import status_badge %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-file-earmark-text me-2"></i>{{ contract.name }}</h4>
+        <small class="text-muted">{{ contract.kind_label() }}{% if contract.supplier %} — {{ contract.supplier.name }}{% endif %}</small>
+    </div>
+    <div class="d-flex gap-2">
+        {% if current_user.can_edit('contracts') %}
+        <a href="{{ url_for('contracts.edit', id=contract.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil me-1"></i> Modifier
+        </a>
+        {% endif %}
+        <a href="{{ url_for('contracts.list') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+        </a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="data-card p-4 mb-3">
+            <div class="row">
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Statut</small>
+                    {{ status_badge(contract.status()) }}
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Échéance</small>
+                    <span class="fw-medium">{{ contract.end_date.strftime('%d/%m/%Y') if contract.end_date else 'Non renseignée' }}</span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Agir avant <span class="text-muted">(échéance − préavis {{ contract.notice_days or 0 }}j)</span></small>
+                    {% set days = contract.days_left() %}
+                    {% if days is not none %}
+                    <span class="fw-bold">{{ contract.action_deadline().strftime('%d/%m/%Y') }}
+                        ({{ days }}j restant{{ 's' if days > 1 }})</span>
+                    {% else %}<span class="text-muted">-</span>{% endif %}
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Tacite reconduction</small>
+                    <span class="fw-medium">{{ 'Oui' if contract.auto_renew else 'Non' }}</span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">N° de contrat / marché</small>
+                    <span class="fw-medium">{{ contract.reference or '-' }}</span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Coût annuel</small>
+                    <span class="fw-medium">{{ ('%.0f' | format(contract.cost_yearly)) ~ ' €' if contract.cost_yearly else '-' }}</span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Début</small>
+                    <span class="fw-medium">{{ contract.start_date.strftime('%d/%m/%Y') if contract.start_date else '-' }}</span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Responsable</small>
+                    <span class="fw-medium">{{ contract.responsible or '-' }}</span>
+                </div>
+                {% if contract.equipment %}
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Équipement couvert</small>
+                    <a href="{{ url_for('inventory.detail', id=contract.equipment_id) }}">{{ contract.equipment.name }}</a>
+                </div>
+                {% endif %}
+            </div>
+            {% if contract.description %}
+            <div class="mt-2 pt-2 border-top">
+                <small class="text-muted d-block">Description</small>
+                <p class="mb-0">{{ contract.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="data-card">
+            <div class="card-header-custom">
+                <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Date</th><th>Action</th><th>Commentaire</th><th>Par</th></tr></thead>
+                    <tbody>
+                        {% for h in histories %}
+                        <tr>
+                            <td class="text-nowrap">{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>{{ h.action }}</td>
+                            <td>{{ h.comment or '-' }}</td>
+                            <td class="text-nowrap">{{ h.performed_by or '-' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center py-3 text-muted">Aucun historique</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        {% if contract.supplier %}
+        <div class="data-card p-4 mb-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-building me-2 text-info"></i>Support fournisseur</h6>
+            <div class="fw-medium mb-1">{{ contract.supplier.name }}</div>
+            <ul class="list-unstyled small mb-2">
+                {% if contract.supplier.support_phone or contract.supplier.phone %}
+                <li><i class="bi bi-telephone me-1"></i>
+                    <a href="tel:{{ (contract.supplier.support_phone or contract.supplier.phone) | replace(' ', '') }}">
+                        {{ contract.supplier.support_phone or contract.supplier.phone }}</a>
+                    {% if contract.supplier.hours %}<span class="text-muted">({{ contract.supplier.hours }})</span>{% endif %}</li>
+                {% endif %}
+                {% if contract.supplier.email %}<li><i class="bi bi-envelope me-1"></i><a href="mailto:{{ contract.supplier.email }}">{{ contract.supplier.email }}</a></li>{% endif %}
+                {% if contract.supplier.customer_ref %}<li><i class="bi bi-person-badge me-1"></i>N° client : <code>{{ contract.supplier.customer_ref }}</code></li>{% endif %}
+            </ul>
+            {% if contract.supplier.support_url %}
+            <a href="{{ contract.supplier.support_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Portail support
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if current_user.can_edit('contracts') %}
+        <div class="data-card p-4 mb-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-arrow-repeat me-2 text-success"></i>Renouvellement</h6>
+            <form method="POST" action="{{ url_for('contracts.renew', id=contract.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label class="form-label small" for="newEndDate">Nouvelle échéance</label>
+                <input type="date" name="new_end_date" id="newEndDate" class="form-control form-control-sm mb-2" required>
+                <input type="text" name="comment" class="form-control form-control-sm mb-2" placeholder="Commentaire (optionnel)">
+                <button type="submit" class="btn btn-outline-success btn-sm w-100">
+                    <i class="bi bi-check-lg me-1"></i> Marquer renouvelé
+                </button>
+            </form>
+        </div>
+        {% with entity_type='contract', entity_id=contract.id %}{% include '_snooze_card.html' %}{% endwith %}
+        <div class="data-card p-4">
+            <form method="POST" action="{{ url_for('contracts.delete', id=contract.id) }}"
+                  onsubmit="return confirm('Supprimer ce contrat ?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                    <i class="bi bi-trash me-1"></i> Supprimer
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

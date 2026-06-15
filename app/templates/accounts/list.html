@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Comptes - Sentinelle{% endblock %}
+{% from '_macros.html' import status_badge %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -70,15 +71,13 @@
                             {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(account.priority, account.priority) }}
                         </span>
                     </td>
-                    <td><span class="badge-status badge-{{ account.status() }}">
-                        {{ {'danger': 'Critique', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK'}.get(account.status(), account.status()) }}
-                    </span></td>
+                    <td>{{ status_badge(account.status()) }}</td>
                     <td>
                         <div class="d-flex gap-1">
-                            <a href="{{ url_for('accounts.detail', id=account.id) }}" class="btn btn-sm btn-outline-primary" title="Voir">
+                            <a href="{{ url_for('accounts.detail', id=account.id) }}" class="btn btn-sm btn-outline-primary" title="Voir" aria-label="Voir">
                                 <i class="bi bi-eye"></i>
                             </a>
-                            <a href="{{ url_for('accounts.edit', id=account.id) }}" class="btn btn-sm btn-outline-secondary" title="Modifier">
+                            <a href="{{ url_for('accounts.edit', id=account.id) }}" class="btn btn-sm btn-outline-secondary" title="Modifier" aria-label="Modifier">
                                 <i class="bi bi-pencil"></i>
                             </a>
                         </div>

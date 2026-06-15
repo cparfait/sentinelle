@@ -18,9 +18,15 @@ peu d'utilisateurs.
 
 # Vérifier qu'un fichier compile
 .\venv\Scripts\python.exe -m py_compile app\<fichier>.py
+
+# Lancer les tests
+.\venv\Scripts\python.exe -m pytest -q
 ```
 
-Il n'y a pas (encore) de suite de tests pytest.
+Les tests vivent sous `tests/` (fixtures dans `conftest.py`, base SQLite mémoire,
+pytest dans `requirements-dev.txt`). Toute évolution de la logique de statut
+(`status()`, `computed_status()`) ou de la politique d'alerte
+(`should_send_reminder`) doit être couverte par un test.
 
 ## Architecture
 
@@ -44,9 +50,10 @@ Il n'y a pas (encore) de suite de tests pytest.
 - **Scheduler** : ne PAS appeler `create_app()` dans un job. `start_scheduler(app)` reçoit
   l'app et les jobs utilisent `with _app.app_context()`. Les jobs sont enregistrés avec
   `replace_existing=True`.
-- **Base de données** : `db.create_all()` au démarrage, pas de migrations. Ajouter une
-  colonne à un modèle ne modifie pas une base SQLite existante — recréer la base ou
-  altérer manuellement.
+- **Base de données** : `db.create_all()` au démarrage, pas de migrations Alembic.
+  `_auto_migrate_sqlite()` (dans `app/__init__.py`) ajoute automatiquement les colonnes
+  et index manquants aux tables existantes — déclarer simplement le champ dans le modèle.
+  Renommages et suppressions restent manuels.
 - **Compte admin** : `_seed_default_user()` génère un mot de passe aléatoire (affiché en
   console) et réinitialise tout admin ayant encore le mot de passe `admin`. Ne jamais
   réintroduire un mot de passe par défaut en clair.

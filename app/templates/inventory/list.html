@@ -22,51 +22,53 @@
 {% set default_cols = ['kind', 'environment', 'criticality', 'os', 'ip_address', 'warranty_end'] %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <div>
-        <h4 class="fw-bold mb-0"><i class="bi bi-hdd-stack me-2"></i>Inventaire</h4>
-        <small class="text-muted">VM, serveurs physiques et NAS — {{ total }} équipement(s)</small>
-    </div>
-    <div class="d-flex gap-2">
-        <div class="dropdown">
-            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-                <i class="bi bi-layout-three-columns me-1"></i> Colonnes
-            </button>
-            <div class="dropdown-menu dropdown-menu-end p-2" style="max-height: 320px; overflow-y: auto;">
-                {% for key, label in columns %}
-                <label class="dropdown-item d-flex align-items-center gap-2 mb-0">
-                    <input type="checkbox" class="form-check-input mt-0 col-toggle" value="{{ key }}"> {{ label }}
-                </label>
-                {% endfor %}
-            </div>
-        </div>
-        {% if current_user.can_edit('inventory') %}
-        <a href="{{ url_for('inventory.import_xlsx') }}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel me-1"></i> Importer Excel</a>
-        <a href="{{ url_for('inventory.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Ajouter</a>
-        {% endif %}
-    </div>
+<div class="mb-3">
+    <h4 class="fw-bold mb-0"><i class="bi bi-hdd-stack me-2"></i>Inventaire</h4>
+    <small class="text-muted">VM, serveurs physiques et NAS — {{ total }} équipement(s)</small>
 </div>
 
 {% set status_choices = [('danger', 'Critique'), ('warning', 'À surveiller'), ('info', 'Proche'), ('success', 'OK')] %}
 <form method="GET">
     <input type="hidden" name="kind" value="{{ kind }}">
-    <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
-        <ul class="nav nav-pills gap-1">
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <input type="hidden" name="dir" value="{{ dir }}">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div class="seg-tabs">
             {% set tabs = [('', 'Tous', total), ('vm', 'VM', counts.vm), ('physical', 'Physiques', counts.physical), ('nas', 'NAS', counts.nas)] %}
             {% for val, lbl, cnt in tabs %}
-            <li class="nav-item"><a class="nav-link py-1 px-3 {% if kind == val %}active{% endif %}" href="{{ url_for('inventory.list', kind=val, q=q) }}">{{ lbl }} <span class="opacity-75">{{ cnt }}</span></a></li>
+            <a class="seg-tab {% if kind == val %}active{% endif %}" href="{{ url_for('inventory.list', kind=val, q=q) }}">{{ lbl }} <span class="seg-tab-count">{{ cnt }}</span></a>
             {% endfor %}
-        </ul>
-        <div class="d-flex gap-2">
-            <div class="input-group input-group-sm" style="max-width: 280px;">
+        </div>
+        <div class="ms-auto d-flex flex-wrap align-items-center gap-2">
+            <div class="input-group input-group-sm" style="max-width: 240px;">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
                 <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Rechercher...">
                 <button class="btn btn-primary" type="submit">OK</button>
             </div>
-            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#advFilter">
-                <i class="bi bi-funnel me-1"></i> Filtre avancé{% if active_filters %} <span class="badge bg-primary">{{ active_filters }}</span>{% endif %}
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#advFilter" title="Filtre avancé" aria-label="Filtre avancé">
+                <i class="bi bi-funnel"></i>{% if active_filters %} <span class="badge bg-primary">{{ active_filters }}</span>{% endif %}
             </button>
-            {% if q or active_filters %}<a href="{{ url_for('inventory.list', kind=kind) }}" class="btn btn-sm btn-outline-secondary" title="Effacer"><i class="bi bi-x-lg"></i></a>{% endif %}
+            {% if q or active_filters %}<a href="{{ url_for('inventory.list', kind=kind) }}" class="btn btn-sm btn-outline-secondary" title="Effacer" aria-label="Effacer"><i class="bi bi-x-lg"></i></a>{% endif %}
+            <select name="per_page" class="form-select form-select-sm inv-perpage" onchange="this.form.submit()" title="Lignes par page">
+                {% for n in per_page_choices %}<option value="{{ n }}" {{ 'selected' if per_page == n }}>{{ n }}/page</option>{% endfor %}
+                <option value="all" {{ 'selected' if per_page is none }}>Tous</option>
+            </select>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                    <i class="bi bi-layout-three-columns me-1"></i> Colonnes
+                </button>
+                <div class="dropdown-menu dropdown-menu-end p-2" style="max-height: 320px; overflow-y: auto;">
+                    {% for key, label in columns %}
+                    <label class="dropdown-item d-flex align-items-center gap-2 mb-0">
+                        <input type="checkbox" class="form-check-input mt-0 col-toggle" value="{{ key }}"> {{ label }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% if current_user.can_edit('inventory') %}
+            <a href="{{ url_for('inventory.import_xlsx') }}" class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-excel me-1"></i> Importer Excel</a>
+            <a href="{{ url_for('inventory.create') }}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i> Ajouter</a>
+            {% endif %}
         </div>
     </div>
 
@@ -98,8 +100,8 @@
                     <input type="text" name="os" value="{{ filters.os }}" class="form-control form-control-sm" placeholder="ex: Windows">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small mb-1">Hyperviseur contient</label>
-                    <input type="text" name="hypervisor" value="{{ filters.hypervisor }}" class="form-control form-control-sm" placeholder="ex: VMware">
+                    <label class="form-label small mb-1">VLAN contient</label>
+                    <input type="text" name="vlan" value="{{ filters.vlan }}" class="form-control form-control-sm" placeholder="ex: 10, prod...">
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small mb-1">Supervision</label>
@@ -131,14 +133,21 @@
     </div>
 </form>
 
+{% macro sorth(key, label) %}
+    {%- set a = request.args.to_dict() -%}
+    {%- set _ = a.update({'sort': key, 'dir': 'desc' if (sort == key and dir == 'asc') else 'asc'}) -%}
+    {%- set _ = a.pop('page', None) -%}
+    <a href="{{ url_for('inventory.list', **a) }}" class="th-sort">{{ label }}{% if sort == key %} <i class="bi bi-caret-{{ 'down' if dir == 'desc' else 'up' }}-fill"></i>{% else %} <i class="bi bi-arrow-down-up th-sort-idle"></i>{% endif %}</a>
+{%- endmacro %}
+
 <div class="data-card">
     <div class="table-responsive">
         <table class="table table-hover table-striped mb-0" id="invTable">
             <thead>
                 <tr>
-                    <th>Nom</th>
-                    {% for key, label in columns %}<th data-col="{{ key }}">{{ label }}</th>{% endfor %}
-                    <th>Statut</th>
+                    <th>{{ sorth('name', 'Nom') }}</th>
+                    {% for key, label in columns %}<th data-col="{{ key }}">{{ sorth(key, label) }}</th>{% endfor %}
+                    <th>{{ sorth('status', 'Statut') }}</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -178,7 +187,7 @@
                     'backup2': (e.backup2 or '') ~ (' (' ~ e.backup2_freq ~ ')' if e.backup2_freq else ''),
                     'observations': e.observations or ''
                 } %}
-                <tr class="row-{{ e.computed_status() }}">
+                <tr class="row-{{ e.computed_status() }}{% if e.environment == 'decommissioned' %} inv-decommissioned{% endif %}">
                     <td>
                         <a href="{{ url_for('inventory.detail', id=e.id) }}" class="fw-medium text-decoration-none">{{ e.name }}</a>
                     </td>
@@ -194,14 +203,14 @@
                               title="{{ reasons | join(' · ') if reasons else 'Aucun point d’attention — équipement OK' }}">{{ status_labels.get(e.computed_status(), e.computed_status()) }}</span></td>
                     <td>
                         <div class="d-flex gap-1">
-                            <a href="{{ url_for('inventory.detail', id=e.id) }}" class="btn btn-sm btn-outline-primary" title="Voir"><i class="bi bi-eye"></i></a>
+                            <a href="{{ url_for('inventory.detail', id=e.id) }}" class="btn btn-sm btn-outline-primary" title="Voir" aria-label="Voir"><i class="bi bi-eye"></i></a>
                             {% if current_user.can_edit('inventory') %}
-                            <a href="{{ url_for('inventory.edit', id=e.id) }}" class="btn btn-sm btn-outline-secondary" title="Modifier"><i class="bi bi-pencil"></i></a>
+                            <a href="{{ url_for('inventory.edit', id=e.id) }}" class="btn btn-sm btn-outline-secondary" title="Modifier" aria-label="Modifier"><i class="bi bi-pencil"></i></a>
                             {% endif %}
                             {% if current_user.can_delete('inventory') %}
                             <form method="POST" action="{{ url_for('inventory.delete', id=e.id) }}" onsubmit="return confirm('Supprimer « {{ e.name }} » ?')">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer"><i class="bi bi-trash"></i></button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer" aria-label="Supprimer"><i class="bi bi-trash"></i></button>
                             </form>
                             {% endif %}
                         </div>
@@ -256,5 +265,129 @@ window.addEventListener('load', function () {
         });
     }
 });
+
+// Filtre « a la Excel » par colonne : agit sur les lignes affichees (utiliser
+// « Tous » dans le selecteur de lignes pour filtrer tout l'inventaire).
+(function () {
+    var table = document.getElementById('invTable');
+    if (!table || !table.tHead) return;
+    var ths = Array.prototype.slice.call(table.tHead.rows[0].cells);
+    var filters = {};            // index colonne -> {text:'', values:Set|null}
+    var panel = null;
+
+    function rows() {
+        return Array.prototype.filter.call(table.tBodies[0].rows, function (r) {
+            return !r.querySelector('td[colspan]');
+        });
+    }
+    function cellText(tr, ci) {
+        var c = tr.cells[ci];
+        return c ? c.textContent.trim() : '';
+    }
+    function isActive(f) { return f && (f.text || f.values); }
+    function cleanup(ci) { if (filters[ci] && !filters[ci].text && !filters[ci].values) delete filters[ci]; }
+    function apply() {
+        rows().forEach(function (tr) {
+            var show = true;
+            for (var ci in filters) {
+                var f = filters[ci];
+                if (!f) continue;
+                var v = cellText(tr, ci);
+                if (f.text && v.toLowerCase().indexOf(f.text.toLowerCase()) === -1) { show = false; break; }
+                if (f.values && !f.values.has(v)) { show = false; break; }
+            }
+            tr.style.display = show ? '' : 'none';
+        });
+        ths.forEach(function (th, ci) {
+            var b = th.querySelector('.inv-colfilter-btn');
+            if (b) b.classList.toggle('active', isActive(filters[ci]));
+        });
+    }
+    function closePanel() { if (panel) { panel.remove(); panel = null; } }
+
+    function openPanel(ci, btn) {
+        closePanel();
+        var f = filters[ci] || {text: '', values: null};
+        var present = {};
+        rows().forEach(function (tr) { present[cellText(tr, ci)] = true; });
+        var keys = Object.keys(present).sort(function (a, b) { return a.localeCompare(b, 'fr', {numeric: true}); });
+        panel = document.createElement('div');
+        panel.className = 'inv-colfilter-panel';
+        panel.dataset.ci = ci;
+        var h = '<input type="text" class="form-control form-control-sm mb-2 cf-search" placeholder="Contient... (ex: 172.16)">';
+        h += '<div class="cf-list">';
+        keys.forEach(function (k) {
+            var checked = (!f.values || f.values.has(k)) ? 'checked' : '';
+            var lbl = (k === '' ? '(vide)' : k).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+            h += '<label class="cf-item d-flex align-items-center gap-2"><input type="checkbox" class="form-check-input mt-0 cf-cb" ' + checked + ' data-v="' + encodeURIComponent(k) + '"><span>' + lbl + '</span></label>';
+        });
+        h += '</div><div class="d-flex justify-content-between align-items-center mt-2">';
+        h += '<button type="button" class="btn btn-sm btn-link p-0 cf-all">Tout</button>';
+        h += '<button type="button" class="btn btn-sm btn-link p-0 cf-none">Aucun</button>';
+        h += '<button type="button" class="btn btn-sm btn-primary py-0 px-2 cf-ok">OK</button></div>';
+        h += '<button type="button" class="btn btn-sm btn-link p-0 mt-1 text-danger cf-clear" style="font-size:.75rem;">Effacer le filtre</button>';
+        panel.innerHTML = h;
+        document.body.appendChild(panel);
+        var r = btn.getBoundingClientRect();
+        panel.style.top = (window.scrollY + r.bottom + 4) + 'px';
+        panel.style.left = (window.scrollX + Math.min(r.left, document.documentElement.clientWidth - 245)) + 'px';
+        panel.addEventListener('click', function (e) { e.stopPropagation(); });
+
+        var search = panel.querySelector('.cf-search');
+        search.value = f.text || '';
+        // Saisie = filtre « contient » applique en direct aux lignes (et a la liste).
+        search.addEventListener('input', function () {
+            var q = this.value;
+            var ql = q.toLowerCase();
+            panel.querySelectorAll('.cf-item').forEach(function (it) {
+                it.style.display = it.textContent.toLowerCase().indexOf(ql) === -1 ? 'none' : '';
+            });
+            filters[ci] = filters[ci] || {text: '', values: null};
+            filters[ci].text = q;
+            cleanup(ci);
+            apply();
+        });
+        function visibleCbs() {
+            return Array.prototype.filter.call(panel.querySelectorAll('.cf-cb'), function (c) {
+                return c.closest('.cf-item').style.display !== 'none';
+            });
+        }
+        panel.querySelector('.cf-all').addEventListener('click', function () { visibleCbs().forEach(function (c) { c.checked = true; }); });
+        panel.querySelector('.cf-none').addEventListener('click', function () { visibleCbs().forEach(function (c) { c.checked = false; }); });
+        panel.querySelector('.cf-ok').addEventListener('click', function () {
+            var sel = new Set(), all = true;
+            panel.querySelectorAll('.cf-cb').forEach(function (c) {
+                if (c.checked) sel.add(decodeURIComponent(c.dataset.v)); else all = false;
+            });
+            filters[ci] = filters[ci] || {text: '', values: null};
+            filters[ci].values = all ? null : sel;
+            cleanup(ci);
+            apply();
+            closePanel();
+        });
+        panel.querySelector('.cf-clear').addEventListener('click', function () {
+            delete filters[ci];
+            apply();
+            closePanel();
+        });
+    }
+
+    ths.forEach(function (th, ci) {
+        if (ci === ths.length - 1) return;   // colonne Actions : pas de filtre
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'inv-colfilter-btn';
+        btn.title = 'Filtrer cette colonne';
+        btn.innerHTML = '<i class="bi bi-funnel-fill"></i>';
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var open = panel && panel.dataset.ci == ci;
+            closePanel();
+            if (!open) openPanel(ci, btn);
+        });
+        th.appendChild(btn);
+    });
+    document.addEventListener('click', closePanel);
+})();
 </script>
 {% endblock %}

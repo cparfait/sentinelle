@@ -138,11 +138,12 @@ def get_o365_access_token():
     return None
 
 
-def send_email(subject, recipients, body, html_body=None):
+def send_email(subject, recipients, body, html_body=None, attachments=None):
+    """attachments : liste de tuples (nom_fichier, contenu_bytes, mimetype)."""
     method = current_app.config.get('MAIL_METHOD', 'smtp')
     if method == 'o365':
-        return _send_via_graph(subject, recipients, body, html_body)
-    return _send_via_smtp(subject, recipients, body, html_body)
+        return _send_via_graph(subject, recipients, body, html_body, attachments)
+    return _send_via_smtp(subject, recipients, body, html_body, attachments)
 
 
 _STATUS_COLORS = {
@@ -186,7 +187,7 @@ def render_alert_email(title, body, status='danger', url=None):
     )
 
 
-def _send_via_smtp(subject, recipients, body, html_body=None):
+def _send_via_smtp(subject, recipients, body, html_body=None, attachments=None):
     """Envoi SMTP, compatible aussi bien avec un serveur authentifie qu'avec
     le "Direct Send" Microsoft 365 (relais par IP, sans identifiants).
 
@@ -220,6 +221,9 @@ def _send_via_smtp(subject, recipients, body, html_body=None):
     msg.set_content(body)
     if html_body:
         msg.add_alternative(html_body, subtype='html')
+    for name, data, mimetype in (attachments or []):
+        maintype, _, subtype = (mimetype or 'application/octet-stream').partition('/')
+        msg.add_attachment(data, maintype=maintype, subtype=subtype, filename=name)
 
     # local_hostname force en ASCII : evite un EHLO avec un nom de machine
     # accentue qui ferait planter smtplib ('ascii' codec can't encode...).
@@ -234,7 +238,7 @@ def _send_via_smtp(subject, recipients, body, html_body=None):
     return True
 
 
-def _send_via_graph(subject, recipients, body, html_body=None):
+def _send_via_graph(subject, recipients, body, html_body=None, attachments=None):
     access_token = get_o365_access_token()
     if not access_token:
         raise Exception("Token O365 expire. Reconnectez-vous via Preferences.")
@@ -256,6 +260,15 @@ def _send_via_graph(subject, recipients, body, html_body=None):
             ]
         }
     }
+    if attachments:
+        import base64
+        email_data["message"]["attachments"] = [
+            {"@odata.type": "#microsoft.graph.fileAttachment",
+             "name": name,
+             "contentType": mimetype or 'application/octet-stream',
+             "contentBytes": base64.b64encode(data).decode('ascii')}
+            for name, data, mimetype in attachments
+        ]
 
     headers = {
         "Authorization": f"Bearer {access_token}",

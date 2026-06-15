@@ -19,13 +19,22 @@ jobs:
       - name: Installer les dépendances
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.txt -r requirements-dev.txt
 
       - name: Compilation (syntaxe)
         run: python -m compileall -q app config.py run.py
+
+      - name: Lint (ruff)
+        run: python -m ruff check app tests config.py run.py seed_demo.py
 
       - name: Test de démarrage (smoke test)
         env:
           SECRET_KEY: ci-test-secret-key
           APP_DEBUG: "true"
         run: python ci_smoke.py
+
+      - name: Tests unitaires (pytest + couverture)
+        env:
+          SECRET_KEY: ci-test-secret-key
+          APP_DEBUG: "true"
+        run: python -m pytest -q --cov=app --cov-report=term-missing:skip-covered

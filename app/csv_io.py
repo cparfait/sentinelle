@@ -5,7 +5,7 @@ detecte le separateur (';' ou ',') et accepte les dates JJ/MM/AAAA ou AAAA-MM-JJ
 """
 import io
 import csv
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from app import db
 from app.models import (Account, Certificate, Domain, Backup, TestTask,

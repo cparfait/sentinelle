@@ -24,7 +24,7 @@
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-medium">Depuis le catalogue</label>
                         <select id="assetPicker" class="form-select">
-                            <option value="">— Choisir —</option>
+                            <option value="">— Sélectionner —</option>
                             {% for a in assets %}
                             <option value="{{ a.name }}" data-type="{{ a.asset_type }}">{{ a.name }}</option>
                             {% endfor %}
@@ -88,6 +88,11 @@
                     </div>
                 </div>
                 <div class="mb-3">
+                    {% with selected_id = update.equipment_id if update else none %}
+                    {% include '_equipment_select.html' %}
+                    {% endwith %}
+                </div>
+                <div class="mb-3">
                     <label class="form-label fw-medium">Description / notes</label>
                     <textarea name="description" class="form-control" rows="3"
                               placeholder="Notes de version, criticité, dépendances...">{{ update.description if update and update.description else '' }}</textarea>
@@ -107,7 +112,7 @@
     var picker = document.getElementById('assetPicker');
     var nameInput = document.getElementById('assetName');
     if (!typeSel || !picker || !nameInput) return;
-    var MAP = {application: 'application', system: 'server'};
+    var MAP = {application: 'application', system: 'divers'};
     function filterPicker() {
         var want = MAP[typeSel.value] || typeSel.value;
         Array.prototype.forEach.call(picker.options, function (o) {

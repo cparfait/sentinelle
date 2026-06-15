@@ -97,3 +97,35 @@ def build_pdf(user):
     SimpleDocTemplate(buf, pagesize=A4, topMargin=1.5 * cm, bottomMargin=1.5 * cm,
                       leftMargin=1.5 * cm, rightMargin=1.5 * cm).build(story)
     return buf.getvalue()
+
+
+def send_report(recipients=None):
+    """Genere le bilan PDF et l'envoie par mail (job planifie ou bouton
+    « Envoyer maintenant » des Preferences). Retourne les destinataires."""
+    from flask import current_app
+    from app.models import User
+    from app.email_service import send_email
+
+    recipients = [r.strip() for r in (recipients
+                  or current_app.config.get('REPORT_RECIPIENTS')
+                  or current_app.config.get('ALERT_RECIPIENTS') or [])
+                  if r and r.strip()]
+    if not recipients:
+        raise Exception('Aucun destinataire configure pour le bilan PDF.')
+
+    # Vision complete : le rapport planifie est genere avec les droits admin.
+    admin = next((u for u in User.query.all() if u.is_admin), None)
+    if admin is None:
+        raise Exception('Aucun compte administrateur trouve.')
+
+    pdf = build_pdf(admin)
+    stamp = datetime.now(timezone.utc).strftime('%d/%m/%Y')
+    send_email(
+        subject=f'Bilan de supervision DSI du {stamp}',
+        recipients=recipients,
+        body=("Veuillez trouver ci-joint le bilan de supervision Sentinelle "
+              f"genere le {stamp}.\n\nCe message est envoye automatiquement."),
+        attachments=[(f"sentinelle-bilan-{datetime.now(timezone.utc).strftime('%Y%m%d')}.pdf",
+                      pdf, 'application/pdf')],
+    )
+    return recipients

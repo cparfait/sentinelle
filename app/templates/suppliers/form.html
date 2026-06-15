@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifier' if supplier else 'Ajouter' }} un fournisseur - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">
+        <i class="bi bi-building me-2"></i>{{ 'Modifier le fournisseur' if supplier else 'Ajouter un fournisseur' }}
+    </h4>
+    <a href="{{ url_for('suppliers.list') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Retour
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="data-card p-4">
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-7">
+                        <label class="form-label fw-medium">Nom *</label>
+                        <input type="text" name="name" class="form-control" required
+                               value="{{ supplier.name if supplier else '' }}" placeholder="ex: Dell, OVH, SSII locale...">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label fw-medium">Type</label>
+                        <select name="kind" class="form-select">
+                            {% for value, label in kind_labels.items() %}
+                            <option value="{{ value }}" {{ 'selected' if supplier and supplier.kind == value }}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-medium">Interlocuteur habituel</label>
+                        <input type="text" name="contact_name" class="form-control"
+                               value="{{ supplier.contact_name or '' if supplier else '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-medium">Email</label>
+                        <input type="email" name="email" class="form-control"
+                               value="{{ supplier.email or '' if supplier else '' }}">
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-medium">Téléphone (standard)</label>
+                        <input type="text" name="phone" class="form-control"
+                               value="{{ supplier.phone or '' if supplier else '' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-medium">Hotline support</label>
+                        <input type="text" name="support_phone" class="form-control"
+                               value="{{ supplier.support_phone or '' if supplier else '' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-medium">Horaires du support</label>
+                        <input type="text" name="hours" class="form-control" placeholder="ex: 8h-18h jours ouvrés"
+                               value="{{ supplier.hours or '' if supplier else '' }}">
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-7">
+                        <label class="form-label fw-medium">Portail support (URL)</label>
+                        <input type="url" name="support_url" class="form-control" placeholder="https://support.exemple.fr"
+                               value="{{ supplier.support_url or '' if supplier else '' }}">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label fw-medium">N° client / identifiant support</label>
+                        <input type="text" name="customer_ref" class="form-control"
+                               value="{{ supplier.customer_ref or '' if supplier else '' }}">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Notes</label>
+                    <textarea name="notes" class="form-control" rows="3"
+                              placeholder="Procédure d'ouverture de ticket, escalade, infos contrat...">{{ supplier.notes or '' if supplier else '' }}</textarea>
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{{ url_for('suppliers.list') }}" class="btn btn-outline-secondary">Annuler</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if supplier else 'Ajouter' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

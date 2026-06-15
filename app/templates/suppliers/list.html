@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Fournisseurs - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-building me-2"></i>Fournisseurs &amp; supports</h4>
+        <small class="text-muted">Qui appeler en cas d'incident : hotlines, n° client, portails</small>
+    </div>
+    <div class="d-flex gap-2">
+        {% if current_user.can_edit('contracts') %}
+        <a href="{{ url_for('suppliers.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Ajouter un fournisseur
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{% include '_list_search.html' %}
+
+<div class="data-card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Fournisseur</th>
+                    <th>Type</th>
+                    <th>Hotline support</th>
+                    <th>Email</th>
+                    <th>N° client</th>
+                    <th>Portail</th>
+                    <th>Contrats</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in suppliers %}
+                <tr>
+                    <td>
+                        <span class="fw-medium">{{ s.name }}</span>
+                        {% if s.contact_name %}<br><small class="text-muted">{{ s.contact_name }}</small>{% endif %}
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ s.kind_label() }}</span></td>
+                    <td>
+                        {% if s.support_phone %}<a href="tel:{{ s.support_phone | replace(' ', '') }}" class="fw-bold"><i class="bi bi-telephone me-1"></i>{{ s.support_phone }}</a>
+                        {% elif s.phone %}<a href="tel:{{ s.phone | replace(' ', '') }}"><i class="bi bi-telephone me-1"></i>{{ s.phone }}</a>
+                        {% else %}<span class="text-muted">-</span>{% endif %}
+                        {% if s.hours %}<br><small class="text-muted">{{ s.hours }}</small>{% endif %}
+                    </td>
+                    <td>{% if s.email %}<a href="mailto:{{ s.email }}">{{ s.email }}</a>{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                    <td>{% if s.customer_ref %}<code>{{ s.customer_ref }}</code>{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                    <td>
+                        {% if s.support_url %}
+                        <a href="{{ s.support_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary" title="Ouvrir le portail support" aria-label="Ouvrir le portail support">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                        </a>
+                        {% else %}<span class="text-muted">-</span>{% endif %}
+                    </td>
+                    <td>
+                        {% set n = s.contracts.filter_by(is_active=True).count() %}
+                        {% if n %}<span class="badge bg-light text-dark border">{{ n }}</span>{% else %}<span class="text-muted">-</span>{% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            {% if current_user.can_edit('contracts') %}
+                            <a href="{{ url_for('suppliers.edit', id=s.id) }}" class="btn btn-sm btn-outline-secondary" title="Modifier" aria-label="Modifier"><i class="bi bi-pencil"></i></a>
+                            {% endif %}
+                            {% if current_user.can_delete('contracts') %}
+                            <form method="POST" action="{{ url_for('suppliers.delete', id=s.id) }}" onsubmit="return confirm('Supprimer ce fournisseur ?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer" aria-label="Supprimer"><i class="bi bi-trash"></i></button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">
+                        <i class="bi bi-building" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">Aucun fournisseur.
+                            {% if current_user.can_edit('contracts') %}
+                            <a href="{{ url_for('suppliers.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a>
+                            {% endif %}
+                        </p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

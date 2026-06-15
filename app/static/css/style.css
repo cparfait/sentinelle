@@ -104,7 +104,20 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: -0.005em;
+    /* Bascule clair/sombre sans a-coup */
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
+
+/* Barres de defilement fines et themees (contenu principal et panneaux) */
+* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: var(--radius-pill);
+    border: 2px solid var(--body-bg);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-light); }
 
 h1, h2, h3, h4, h5, h6 { color: var(--text-strong); }
 
@@ -462,7 +475,7 @@ a:hover .stat-card,
 }
 
 .card-header-custom {
-    background: transparent;
+    background: rgba(var(--primary-rgb), 0.04);
     border-bottom: 1px solid var(--border);
     padding: 13px 18px;
     display: flex;
@@ -470,6 +483,27 @@ a:hover .stat-card,
     justify-content: space-between;
 }
 .card-header-custom h6 { font-size: 0.9rem; }
+
+/* ---- Titres de blocs (cartes & sections) : barre d'accent + texte renforce
+   pour qu'ils se detachent clairement du contenu de la carte. ---- */
+.card-header-custom > h6,
+.data-card h6.fw-bold {
+    position: relative;
+    padding-left: 14px;
+    font-weight: 700;
+    color: var(--text);
+}
+.card-header-custom > h6::before,
+.data-card h6.fw-bold::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.12em;
+    bottom: 0.12em;
+    width: 4px;
+    border-radius: 3px;
+    background: var(--primary);
+}
 
 /* ---- Tables ---- */
 .table {
@@ -491,22 +525,93 @@ a:hover .stat-card,
 
 .table thead th {
     border-top: none;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    font-size: 0.69rem;
+    font-size: 0.7rem;
     letter-spacing: 0.06em;
-    color: var(--text-light);
+    color: #fff;
     padding: 12px 18px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: none;
     white-space: nowrap;
-    background: var(--table-hover);
+    background: var(--primary);
 }
 
 [data-theme="dark"] .table thead th {
-    background: #18283d;
-    color: #94a3b8;
-    border-bottom-color: var(--border);
+    background: #3730a3;
+    color: #fff;
+    border-bottom: none;
 }
+/* En-tetes a code couleur (ex. seuils Critique/Attention/Proche) : teintes
+   claires lisibles sur le fond indigo plein, tout en gardant la semantique. */
+/* En-tetes triables : lien blanc, fleche d'inactivite estompee. */
+.table thead th a.th-sort { color: #fff; text-decoration: none; white-space: nowrap; }
+.table thead th a.th-sort:hover { text-decoration: underline; }
+.table thead th a.th-sort .th-sort-idle { opacity: 0.35; font-size: 0.85em; }
+
+/* Materiel decommissionne : ligne grisee/attenuee dans l'inventaire */
+#invTable tbody tr.inv-decommissioned td {
+    color: var(--text-light);
+    opacity: 0.6;
+    font-style: italic;
+}
+#invTable tbody tr.inv-decommissioned td .badge,
+#invTable tbody tr.inv-decommissioned td .badge-status { filter: grayscale(0.7); }
+
+/* Selecteur « lignes par page » : compact, aligne sur les boutons btn-sm */
+.inv-perpage {
+    width: auto;
+    font-size: 0.78rem;
+    padding: 3px 26px 3px 9px;
+    color: var(--text-light);
+    background-color: transparent;
+    border-color: var(--border-strong);
+}
+.inv-perpage:focus { color: var(--text); }
+
+/* Filtre type Excel par colonne */
+.inv-colfilter-btn {
+    background: transparent;
+    border: 0;
+    color: #fff;
+    opacity: 0.55;
+    padding: 0 2px;
+    margin-left: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+    line-height: 1;
+}
+.inv-colfilter-btn:hover { opacity: 1; }
+.inv-colfilter-btn.active { opacity: 1; color: #fde68a; }
+.inv-colfilter-panel {
+    position: absolute;
+    z-index: 1080;
+    width: 230px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md, 0 6px 24px rgba(0,0,0,.18));
+    padding: 10px;
+}
+.inv-colfilter-panel .cf-list {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 6px;
+}
+.inv-colfilter-panel .cf-item {
+    font-size: 0.82rem;
+    padding: 2px 2px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.table thead th.text-danger  { color: #fecaca !important; }
+.table thead th.text-warning { color: #fde68a !important; }
+.table thead th.text-info    { color: #bfdbfe !important; }
+.table thead th.text-success { color: #bbf7d0 !important; }
 
 .table td {
     padding: 12px 18px;
@@ -558,6 +663,115 @@ a.badge-status:hover { filter: brightness(0.96); }
 [data-theme="dark"] .badge-danger { background: #7f1d1d; color: #fca5a5; }
 [data-theme="dark"] .badge-info { background: #1e3a5f; color: #93c5fd; }
 
+/* ---- Pills de filtre par statut (barre au-dessus des listes) ---- */
+.status-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px 3px 9px;
+    border-radius: var(--radius-pill);
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.3;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.status-filter::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.85;
+    flex-shrink: 0;
+}
+.status-filter .status-filter-count {
+    font-size: 0.66rem;
+    font-weight: 700;
+    padding: 0 5px;
+    border-radius: var(--radius-pill);
+    background: rgba(0, 0, 0, 0.06);
+}
+.status-filter:hover { border-color: currentColor; }
+
+/* Couleur propre a chaque statut (texte = couleur, point herite via currentColor) */
+.status-filter-secondary { color: var(--text-light); }
+.status-filter-danger    { color: #b91c1c; }
+.status-filter-warning   { color: #b45309; }
+.status-filter-info      { color: #1d4ed8; }
+.status-filter-success   { color: #047857; }
+
+/* Etat actif : fond teinte plein dans la couleur du statut */
+.status-filter.active { border-color: transparent; }
+.status-filter-secondary.active { background: var(--table-hover); color: var(--text); }
+.status-filter-danger.active    { background: #fee2e2; color: #991b1b; }
+.status-filter-warning.active   { background: #fef3c7; color: #92400e; }
+.status-filter-info.active      { background: #dbeafe; color: #1e40af; }
+.status-filter-success.active   { background: #d1fae5; color: #065f46; }
+.status-filter.active .status-filter-count { background: rgba(0, 0, 0, 0.08); }
+
+[data-theme="dark"] .status-filter-danger    { color: #f87171; }
+[data-theme="dark"] .status-filter-warning   { color: #fbbf24; }
+[data-theme="dark"] .status-filter-info      { color: #60a5fa; }
+[data-theme="dark"] .status-filter-success   { color: #34d399; }
+[data-theme="dark"] .status-filter .status-filter-count { background: rgba(255, 255, 255, 0.1); }
+/* ---- Preferences : accordeon en cartes espacees, classables via flex order
+   (l'ordre DOM est conserve, l'ordre visuel est defini par style="order:N"). ---- */
+#prefsAccordion {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+#prefsAccordion .accordion-item {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+/* ---- Controle segmente (onglets type : Tous / VM / Physiques / NAS) ---- */
+.seg-tabs {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    background: var(--table-hover);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+}
+.seg-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 14px;
+    border-radius: var(--radius-pill);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-light);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+.seg-tab:hover { color: var(--text); background: rgba(var(--primary-rgb), 0.08); }
+.seg-tab.active { background: var(--primary); color: #fff; }
+.seg-tab-count {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0 6px;
+    border-radius: var(--radius-pill);
+    background: rgba(0, 0, 0, 0.06);
+}
+.seg-tab.active .seg-tab-count { background: rgba(255, 255, 255, 0.22); }
+[data-theme="dark"] .seg-tab-count { background: rgba(255, 255, 255, 0.1); }
+
+[data-theme="dark"] .status-filter-secondary.active { background: var(--table-hover); color: var(--text); }
+[data-theme="dark"] .status-filter-danger.active    { background: #7f1d1d; color: #fca5a5; }
+[data-theme="dark"] .status-filter-warning.active   { background: #78350f; color: #fcd34d; }
+[data-theme="dark"] .status-filter-info.active      { background: #1e3a5f; color: #93c5fd; }
+[data-theme="dark"] .status-filter-success.active   { background: #064e3b; color: #6ee7b7; }
+
 /* ---- Boutons ---- */
 .btn {
     border-radius: var(--radius-sm);
@@ -579,6 +793,14 @@ a.badge-status:hover { filter: brightness(0.96); }
     box-shadow: var(--shadow-sm);
 }
 
+/* Boutons compacts : padding/typo reellement reduits, y compris pour les
+   variantes pleines (.btn-primary impose son propre padding plus haut, on le
+   ramene ici a une taille coherente avec le reste de l'app). */
+.btn-sm {
+    padding: 3px 10px;
+    font-size: 0.78rem;
+}
+
 .btn-outline-primary.active { background: var(--primary); border-color: var(--primary); color: #fff; }
 
 [data-theme="dark"] .btn-outline-primary { color: var(--primary); border-color: var(--primary); }
@@ -592,7 +814,9 @@ a.badge-status:hover { filter: brightness(0.96); }
 [data-theme="dark"] .btn-outline-info { color: #60a5fa; border-color: #1e3a5f; }
 [data-theme="dark"] .btn-outline-info:hover { background: #1e3a5f; color: #93c5fd; }
 
-/* ---- Formulaires ---- */
+/* ============================ FORMULAIRES ============================
+   Tous les controles partagent : bordure --border-strong, fond --input-bg,
+   survol = bordure primaire attenuee, focus = bordure primaire + anneau. */
 .form-control, .form-select {
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-strong);
@@ -602,10 +826,128 @@ a.badge-status:hover { filter: brightness(0.96); }
     font-size: 0.85rem;
 }
 
+.form-control:hover:not(:focus):not(:disabled),
+.form-select:hover:not(:focus):not(:disabled) {
+    border-color: rgba(var(--primary-rgb), 0.55);
+}
+
+.form-control::placeholder { color: var(--text-light); opacity: 0.8; }
 [data-theme="dark"] .form-control::placeholder,
 [data-theme="dark"] .form-select::placeholder { color: #64748b; }
 
-.form-label { font-weight: 500; color: var(--text); }
+.form-control:disabled,
+.form-select:disabled {
+    background-color: var(--table-hover);
+    color: var(--text-light);
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+textarea.form-control { min-height: 70px; }
+
+.form-select { cursor: pointer; }
+/* Chevron du select : invisible en theme sombre avec le SVG Bootstrap par
+   defaut (trait #343a40) -> variante claire. */
+[data-theme="dark"] .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.82rem;
+    margin-bottom: 5px;
+}
+.form-text { color: var(--text-light); }
+
+/* Saisie de date/heure : pictogramme cliquable, inverse en theme sombre */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.65; }
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(0.8); }
+
+/* Champ fichier : bouton interne aligne sur le design system */
+.form-control[type="file"] { padding: 5px 11px; }
+.form-control[type="file"]::file-selector-button {
+    background: var(--table-hover);
+    color: var(--text);
+    border: 0;
+    border-right: 1px solid var(--border-strong);
+    border-radius: 5px 0 0 5px;
+    padding: 5px 12px;
+    margin: -5px 12px -5px -11px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+.form-control[type="file"]:hover::file-selector-button { background: rgba(var(--primary-rgb), 0.1); }
+
+/* Autocomplete navigateur : fond/texte coherents en theme sombre */
+[data-theme="dark"] input:-webkit-autofill,
+[data-theme="dark"] input:-webkit-autofill:hover,
+[data-theme="dark"] input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px var(--input-bg) inset;
+    -webkit-text-fill-color: var(--text);
+    caret-color: var(--text);
+}
+
+/* Prefixe/suffixe de champ (icones login, unites...) */
+.input-group-text {
+    background: var(--table-hover);
+    border-color: var(--border-strong);
+    color: var(--text-light);
+    border-radius: var(--radius-sm);
+}
+
+/* ---- Cases a cocher, radios, interrupteurs ----
+   Bootstrap les laisse au bleu par defaut : on les rallie a la couleur
+   primaire, avec une taille confortable et un vrai retour visuel. */
+.form-check { min-height: 1.45rem; }
+.form-check-input {
+    width: 1.15em;
+    height: 1.15em;
+    margin-top: 0.16em;
+    flex-shrink: 0;
+    background-color: var(--input-bg);
+    border: 1.5px solid var(--border-strong);
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.form-check-input:hover:not(:disabled):not(:checked) { border-color: var(--primary); }
+.form-check-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.25);
+}
+.form-check-input:checked {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+.form-check-input:disabled { cursor: not-allowed; }
+.form-check-label { cursor: pointer; user-select: none; }
+.form-check-input:disabled ~ .form-check-label { cursor: not-allowed; }
+
+/* Interrupteurs (booleens on/off) : piste plus large, pouce contraste */
+.form-switch .form-check-input {
+    width: 2.1em;
+    height: 1.15em;
+    border-radius: var(--radius-pill);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%2394a3b8'/%3e%3c/svg%3e");
+    background-position: left center;
+    transition: background-position 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.15s ease;
+}
+.form-switch .form-check-input:checked {
+    background-position: right center;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+}
+[data-theme="dark"] .form-switch .form-check-input:not(:checked) {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%2364748b'/%3e%3c/svg%3e");
+}
 
 /* ---- Accordéon (préférences) ---- */
 .accordion {
@@ -781,6 +1123,22 @@ a.badge-status:hover { filter: brightness(0.96); }
 .heat-warning { background: var(--warning); }
 .heat-failed { background: var(--danger); }
 .heat-empty { background: var(--border-strong); }
+/* Jour avec incident corrige dans la journee : pastille verte d'angle
+   par-dessus la couleur de l'incident d'origine. */
+.heat-recovered {
+    position: relative;
+}
+.heat-recovered::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 0 1px var(--bg-card, #fff);
+}
 
 .heat-swatch {
     display: inline-block;

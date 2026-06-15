@@ -2,12 +2,16 @@ from datetime import datetime, timezone
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from app import db
-from app.models import (Account, Certificate, Backup, BackupCheck, TestTask, Domain,
+from app.models import (Account, Certificate, Backup, TestTask, Domain,
                         AccessReview, SystemUpdate)
-from app.alerts import send_alert
+from app.alerts import send_alert, should_send_reminder
 from app.snooze import is_snoozed
 
-scheduler = BackgroundScheduler()
+# coalesce : si plusieurs executions ont ete manquees, une seule est rattrapee.
+# misfire_grace_time : un job en retard (demarrage tardif, process occupe)
+# s'execute quand meme dans l'heure au lieu d'etre perdu pour la journee.
+scheduler = BackgroundScheduler(job_defaults={'coalesce': True,
+                                              'misfire_grace_time': 3600})
 
 # Application Flask conservee pour fournir un contexte aux jobs planifies.
 # On NE recree PAS l'app dans chaque job : cela relancait db.create_all(),
@@ -18,6 +22,7 @@ _app = None
 def check_passwords():
     with _app.app_context():
         today = datetime.now(timezone.utc).date()
+        thresholds = _app.config.get('THRESHOLD_EXPIRY', (7, 15, 30))
         accounts = Account.query.filter_by(is_active=True).all()
         for account in accounts:
             if not account.next_password_change:
@@ -25,7 +30,7 @@ def check_passwords():
             if is_snoozed('account', account.id):
                 continue
             days_left = (account.next_password_change - today).days
-            if days_left in (30, 15, 7, 3, 1, 0):
+            if should_send_reminder('account', account.id, days_left, thresholds):
                 urgency = 'EXPIRÉ' if days_left <= 0 else f'expire dans {days_left} jour(s)'
                 subject = f"Alerte mot de passe - {account.service_name}"
                 body = (
@@ -42,12 +47,13 @@ def check_passwords():
 def check_certificates():
     with _app.app_context():
         today = datetime.now(timezone.utc).date()
+        thresholds = _app.config.get('THRESHOLD_EXPIRY', (7, 15, 30))
         certs = Certificate.query.filter_by(is_active=True).all()
         for cert in certs:
             if is_snoozed('certificate', cert.id):
                 continue
             days_left = (cert.expiry_date - today).days
-            if days_left in (30, 15, 7, 3, 1, 0, -1):
+            if should_send_reminder('certificate', cert.id, days_left, thresholds):
                 urgency = 'EXPIRÉ' if days_left < 0 else f'expire dans {days_left} jour(s)'
                 subject = f"Alerte certificat - {cert.domain}"
                 body = (
@@ -102,6 +108,7 @@ def check_backups():
 def check_tests():
     with _app.app_context():
         today = datetime.now(timezone.utc).date()
+        thresholds = _app.config.get('THRESHOLD_TASK', (7, 15, 30))
         tests = TestTask.query.filter_by(is_active=True).all()
         for test in tests:
             if is_snoozed('test', test.id):
@@ -109,7 +116,7 @@ def check_tests():
             if not test.next_due:
                 continue
             days_left = (test.next_due - today).days
-            if days_left in (7, 3, 1, 0):
+            if should_send_reminder('test', test.id, days_left, thresholds):
                 urgency = 'EN RETARD' if days_left < 0 else f'prévu dans {days_left} jour(s)'
                 subject = f"Alerte test - {test.name}"
                 body = (
@@ -125,11 +132,12 @@ def check_tests():
 def check_domains():
     with _app.app_context():
         today = datetime.now(timezone.utc).date()
+        thresholds = _app.config.get('THRESHOLD_DOMAIN', (30, 60, 90))
         for domain in Domain.query.filter_by(is_active=True).all():
             if not domain.expiry_date or is_snoozed('domain', domain.id):
                 continue
             days_left = (domain.expiry_date - today).days
-            if days_left in (90, 60, 30, 15, 7, 3, 1, 0, -1):
+            if should_send_reminder('domain', domain.id, days_left, thresholds):
                 urgency = 'EXPIRÉ' if days_left < 0 else f'expire dans {days_left} jour(s)'
                 subject = f"Alerte domaine - {domain.name}"
                 body = (
@@ -141,6 +149,36 @@ def check_domains():
                     f"Renouvellement auto: {'Oui' if domain.auto_renew else 'Non'}\n"
                 )
                 send_alert(subject, body, 'domain', domain.id, domain.name)
+
+
+def check_contracts():
+    """Alerte sur les contrats dont la date limite d'action approche
+    (echeance - preavis de resiliation)."""
+    with _app.app_context():
+        from app.models import Contract
+        thresholds = _app.config.get('THRESHOLD_CONTRACT', (60, 90, 180))
+        for contract in Contract.query.filter_by(is_active=True).all():
+            days_left = contract.days_left()
+            if days_left is None or is_snoozed('contract', contract.id):
+                continue
+            if should_send_reminder('contract', contract.id, days_left, thresholds):
+                if days_left < 0:
+                    urgency = 'DEPASSEE'
+                else:
+                    urgency = f'dans {days_left} jour(s)'
+                deadline = contract.action_deadline()
+                body = (
+                    f"La date limite d'action du contrat suivant est {urgency}:\n\n"
+                    f"Contrat: {contract.name}\n"
+                    f"Type: {contract.kind_label()}\n"
+                    f"Fournisseur: {contract.supplier.name if contract.supplier else 'N/A'}\n"
+                    f"Echeance: {contract.end_date.strftime('%d/%m/%Y')}\n"
+                    f"Preavis de resiliation: {contract.notice_days or 0} jour(s)\n"
+                    f"Agir avant le: {deadline.strftime('%d/%m/%Y')}\n"
+                    f"Tacite reconduction: {'Oui' if contract.auto_renew else 'Non'}\n"
+                )
+                send_alert(f"Alerte contrat - {contract.name}", body,
+                           'contract', contract.id, contract.name)
 
 
 def refresh_domains_rdap():
@@ -170,11 +208,12 @@ def sync_ad_passwords():
 def check_reviews():
     with _app.app_context():
         today = datetime.now(timezone.utc).date()
+        thresholds = _app.config.get('THRESHOLD_TASK', (7, 15, 30))
         for review in AccessReview.query.filter_by(is_active=True).all():
             if not review.next_review or is_snoozed('review', review.id):
                 continue
             days_left = (review.next_review - today).days
-            if days_left in (30, 15, 7, 3, 1, 0):
+            if should_send_reminder('review', review.id, days_left, thresholds):
                 urgency = 'EN RETARD' if days_left < 0 else f'prevue dans {days_left} jour(s)'
                 subject = f"Alerte revue de droits - {review.application}"
                 body = (
@@ -206,7 +245,7 @@ def check_inventory():
     with _app.app_context():
         from app.models import Equipment
         today = datetime.now(timezone.utc).date()
-        offsets = (90, 60, 30, 15, 7, 3, 1, 0, -1)
+        thresholds = _app.config.get('THRESHOLD_WARRANTY', (30, 60, 90))
         is_monday = today.weekday() == 0
         for e in Equipment.query.filter_by(is_active=True).all():
             if is_snoozed('equipment', e.id):
@@ -214,7 +253,7 @@ def check_inventory():
             reasons = []
             if e.warranty_end:
                 d = (e.warranty_end - today).days
-                if d in offsets:
+                if should_send_reminder('equipment', e.id, d, thresholds):
                     reasons.append('Garantie EXPIRÉE' if d < 0
                                    else f"Garantie expire dans {d} jour(s) ({e.warranty_end.strftime('%d/%m/%Y')})")
             # Points hebdomadaires (le lundi) pour eviter le bruit quotidien.
@@ -250,10 +289,18 @@ def refresh_certificates_tls():
                 db.session.rollback()
 
 
+def refresh_eol_cache():
+    """Rafraichit le cache des fins de support OS (endoflife.date).
+    Tourne avant les verifications du matin pour des statuts a jour."""
+    with _app.app_context():
+        from app import eol
+        ok, total = eol.refresh_all()
+        _app.logger.info('Cache EOL rafraichi : %d/%d produits', ok, total)
+
+
 def send_daily_digest():
     """Envoie le recapitulatif quotidien de la meteo DSI (un seul email)."""
     with _app.app_context():
-        from flask import current_app
         from app.digest import build_daily_digest
         from app.email_service import send_email
         from app.models import AlertLog
@@ -275,6 +322,33 @@ def send_daily_digest():
         db.session.add(AlertLog(
             alert_type='digest', entity_type='digest', entity_name='Meteo quotidienne',
             message=message, recipients=', '.join(recipients), status=status))
+        db.session.commit()
+
+
+def send_scheduled_report():
+    """Envoie le bilan PDF selon la planification configuree :
+    weekly = chaque lundi, monthly = le 1er du mois, off = jamais.
+    Le job tourne tous les jours et decide lui-meme (la planification est
+    modifiable a chaud dans Preferences, sans redemarrage)."""
+    with _app.app_context():
+        schedule = (_app.config.get('REPORT_SCHEDULE') or 'off').lower()
+        today = datetime.now(timezone.utc).date()
+        due = (schedule == 'weekly' and today.weekday() == 0) or \
+              (schedule == 'monthly' and today.day == 1)
+        if not due:
+            return
+        from app.pdf_report import send_report
+        from app.models import AlertLog
+        try:
+            recipients = send_report()
+            db.session.add(AlertLog(
+                alert_type='report', entity_type='report', entity_name='Bilan PDF',
+                message=f'Bilan PDF envoye ({schedule})',
+                recipients=', '.join(recipients), status='sent'))
+        except Exception as e:
+            db.session.add(AlertLog(
+                alert_type='report', entity_type='report', entity_name='Bilan PDF',
+                message=f'ERREUR: {e}', recipients='', status='failed'))
         db.session.commit()
 
 
@@ -339,12 +413,16 @@ def start_scheduler(app):
     if app.config.get('LDAP_ENABLED') and app.config.get('LDAP_BIND_USER'):
         scheduler.add_job(sync_ad_passwords, 'cron', hour=6, minute=0,
                           id='sync_ad_passwords', replace_existing=True)
+    scheduler.add_job(refresh_eol_cache, 'cron', hour=6, minute=50,
+                      id='refresh_eol_cache', replace_existing=True)
     scheduler.add_job(refresh_certificates_tls, 'cron', hour=7, minute=0,
                       id='refresh_certificates_tls', replace_existing=True)
     scheduler.add_job(refresh_domains_rdap, 'cron', hour=7, minute=10,
                       id='refresh_domains_rdap', replace_existing=True)
     scheduler.add_job(send_daily_digest, 'cron', hour=7, minute=30,
                       id='send_daily_digest', replace_existing=True)
+    scheduler.add_job(send_scheduled_report, 'cron', hour=7, minute=40,
+                      id='send_scheduled_report', replace_existing=True)
     scheduler.add_job(check_domains, 'cron', hour=8, minute=20,
                       id='check_domains', replace_existing=True)
     scheduler.add_job(check_passwords, 'cron', hour=8, minute=0,
@@ -361,5 +439,7 @@ def start_scheduler(app):
                       id='check_updates', replace_existing=True)
     scheduler.add_job(check_inventory, 'cron', hour=8, minute=58,
                       id='check_inventory', replace_existing=True)
+    scheduler.add_job(check_contracts, 'cron', hour=8, minute=40,
+                      id='check_contracts', replace_existing=True)
 
     scheduler.start()

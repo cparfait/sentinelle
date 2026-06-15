@@ -6,13 +6,24 @@ from app import db
 from app.models import User
 from app.email_service import send_email, get_o365_auth_url, complete_o365_auth, is_o365_connected, get_o365_user_email, clear_o365_token
 from app.audit import record as audit_record
-from werkzeug.security import generate_password_hash
+from app.decorators import require_admin
 
 bp = Blueprint('auth', __name__)
 
 
+def _safe_next(value):
+    """Ne garde le parametre `next` que s'il s'agit d'un chemin interne
+    (evite la redirection ouverte vers un site externe apres connexion)."""
+    if value and value.startswith('/') and not value.startswith('//'):
+        return value
+    return None
+
+
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
+    # Deja connecte : la page de login n'a pas de sens (et rendait une page vide)
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard.index'))
     if request.method == 'POST':
         from datetime import datetime, timezone, timedelta
         from app.models import LoginThrottle
@@ -49,12 +60,12 @@ def login():
                 # 2FA active : on differe la connexion jusqu'a verification du code
                 session['pending_2fa_uid'] = user.id
                 session['pending_2fa_ldap'] = ldap_used
-                session['pending_2fa_next'] = request.args.get('next')
+                session['pending_2fa_next'] = _safe_next(request.args.get('next'))
                 return redirect(url_for('auth.two_factor'))
             login_user(user)
             session.permanent = True  # applique PERMANENT_SESSION_LIFETIME (inactivite)
             audit_record('connexion' + (' (LDAP)' if ldap_used else ''), category='securite')
-            next_page = request.args.get('next')
+            next_page = _safe_next(request.args.get('next'))
             return redirect(next_page or url_for('dashboard.index'))
 
         # echec : incremente le compteur
@@ -90,7 +101,7 @@ def two_factor():
         code = (request.form.get('code') or '').strip().replace(' ', '')
         if pyotp.TOTP(user.totp_secret).verify(code, valid_window=1):
             ldap_used = session.pop('pending_2fa_ldap', False)
-            nxt = session.pop('pending_2fa_next', None)
+            nxt = _safe_next(session.pop('pending_2fa_next', None))
             session.pop('pending_2fa_uid', None)
             login_user(user)
             session.permanent = True
@@ -127,7 +138,7 @@ def _provision_ldap_user(username, info):
     email = (info or {}).get('email') or f'{username}@{domain}'
     if User.query.filter_by(email=email).first():
         email = f'{username}@ldap.local'
-    u = User(username=username, email=email, role=role)
+    u = User(username=username, email=email, role=role, auth_source='ldap')
     u.set_password(secrets.token_urlsafe(24))
     db.session.add(u)
     db.session.commit()
@@ -204,41 +215,23 @@ def profile():
     return render_template('auth/profile.html')
 
 
-def _update_env_file(updates):
-    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env')
-    lines = []
-    if os.path.exists(env_path):
-        with open(env_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-    keys_written = set()
-    for i, line in enumerate(lines):
-        stripped = line.strip()
-        if '=' in stripped and not stripped.startswith('#'):
-            key = stripped.split('=', 1)[0].strip()
-            if key in updates:
-                val = updates[key]
-                lines[i] = f"{key}={val}\n"
-                keys_written.add(key)
-    for key, val in updates.items():
-        if key not in keys_written:
-            lines.append(f"{key}={val}\n")
-    with open(env_path, 'w', encoding='utf-8') as f:
-        f.writelines(lines)
+def _persist_config(updates):
+    """Persiste les reglages applicatifs en base (table AppConfig, secrets
+    chiffres). Remplace l'ancienne ecriture dans .env."""
+    from app import config_store
+    config_store.save(updates)
 
 
 @bp.route('/preferences', methods=['GET', 'POST'])
 @login_required
+@require_admin
 def preferences():
-    if not current_user.is_admin:
-        flash('Acces reserve aux administrateurs', 'danger')
-        return redirect(url_for('dashboard.index'))
-
     if request.method == 'POST':
         action = request.form.get('action')
 
         if action == 'set_mail_method':
             method = request.form.get('mail_method', 'smtp')
-            _update_env_file({'MAIL_METHOD': method})
+            _persist_config({'MAIL_METHOD': method})
             current_app.config['MAIL_METHOD'] = method
             audit_record('config messagerie', detail=f'methode={method}', category='preferences')
             flash(f'Methode de messagerie changee en {method.upper()}', 'success')
@@ -257,7 +250,7 @@ def preferences():
                 'O365_SENDER_EMAIL': sender_email,
                 'O365_REDIRECT_URI': redirect_uri,
             }
-            _update_env_file(updates)
+            _persist_config(updates)
             current_app.config['MAIL_METHOD'] = 'o365'
             current_app.config['O365_CLIENT_ID'] = client_id
             current_app.config['O365_CLIENT_SECRET'] = client_secret
@@ -288,7 +281,7 @@ def preferences():
             }
             if password:
                 updates['MAIL_PASSWORD'] = password
-            _update_env_file(updates)
+            _persist_config(updates)
             current_app.config['MAIL_METHOD'] = 'smtp'
             current_app.config['MAIL_SERVER'] = server
             current_app.config['MAIL_PORT'] = int(port)
@@ -300,14 +293,47 @@ def preferences():
             flash('Configuration SMTP enregistree', 'success')
 
         elif action == 'save_recipients':
-            raw = request.form.get('alert_recipients', '')
-            # accepte virgules, points-virgules, espaces et retours a la ligne
-            parts = [p.strip() for p in re.split(r'[,;\s]+', raw) if p.strip()]
-            recipients = list(dict.fromkeys(parts))  # dedoublonne en gardant l'ordre
-            _update_env_file({'ALERT_RECIPIENTS': ','.join(recipients)})
+            from app.config_store import ALERT_CATEGORIES
+
+            def _parse_emails(raw):
+                # accepte virgules, points-virgules, espaces et retours a la ligne
+                parts = [p.strip() for p in re.split(r'[,;\s]+', raw or '') if p.strip()]
+                return list(dict.fromkeys(parts))  # dedoublonne en gardant l'ordre
+
+            recipients = _parse_emails(request.form.get('alert_recipients', ''))
+            updates = {'ALERT_RECIPIENTS': ','.join(recipients)}
             current_app.config['ALERT_RECIPIENTS'] = recipients
-            audit_record('destinataires alertes', detail=f'{len(recipients)} adresse(s)', category='preferences')
-            flash(f'{len(recipients)} destinataire(s) enregistre(s)', 'success')
+            # Listes par categorie (vide = repli sur la liste globale)
+            for cat in ALERT_CATEGORIES:
+                cat_recipients = _parse_emails(request.form.get(f'alert_recipients_{cat}', ''))
+                key = f'ALERT_RECIPIENTS_{cat.upper()}'
+                updates[key] = ','.join(cat_recipients)
+                current_app.config[key] = cat_recipients
+            _persist_config(updates)
+            audit_record('destinataires alertes', detail=f'{len(recipients)} adresse(s) globales', category='preferences')
+            flash('Destinataires enregistrés', 'success')
+
+        elif action == 'save_report':
+            schedule = request.form.get('report_schedule', 'off')
+            if schedule not in ('off', 'weekly', 'monthly'):
+                schedule = 'off'
+            parts = [p.strip() for p in re.split(r'[,;\s]+', request.form.get('report_recipients', '')) if p.strip()]
+            recipients = list(dict.fromkeys(parts))
+            _persist_config({'REPORT_SCHEDULE': schedule,
+                             'REPORT_RECIPIENTS': ','.join(recipients)})
+            current_app.config['REPORT_SCHEDULE'] = schedule
+            current_app.config['REPORT_RECIPIENTS'] = recipients
+            audit_record('planification bilan PDF', detail=schedule, category='preferences')
+            flash('Planification du bilan PDF enregistrée', 'success')
+
+        elif action == 'send_report_now':
+            from app.pdf_report import send_report
+            try:
+                sent_to = send_report()
+                audit_record('envoi bilan PDF', detail=f'{len(sent_to)} destinataire(s)', category='preferences')
+                flash(f'Bilan PDF envoyé à {", ".join(sent_to)}', 'success')
+            except Exception as e:
+                flash(f'Erreur envoi bilan : {e}', 'danger')
 
         elif action == 'test_email':
             test_email_addr = request.form.get('test_email', '').strip()
@@ -349,7 +375,7 @@ def preferences():
                 'SLACK_WEBHOOK_URL': request.form.get('slack_webhook', '').strip(),
                 'DISCORD_WEBHOOK_URL': request.form.get('discord_webhook', '').strip(),
             }
-            _update_env_file(mapping)
+            _persist_config(mapping)
             current_app.config.update(mapping)
             audit_record('config notifications', category='preferences')
             flash('Notifications enregistrees', 'success')
@@ -369,27 +395,40 @@ def preferences():
             use_ssl = request.form.get('ldap_ssl') == 'on'
             validate_cert = request.form.get('ldap_validate_cert') == 'on'
             port = request.form.get('ldap_port', '389').strip() or '389'
+            # Certificat CA : chemin saisi, ou fichier importe (prioritaire).
+            ca_path = request.form.get('ldap_ca_cert', '').strip()
+            ca_file = request.files.get('ldap_ca_cert_file')
+            if ca_file and ca_file.filename:
+                # NB : pas de `import os` local ici — il rendrait `os` locale a
+                # toute la fonction et casserait les actions plus haut (UnboundLocalError).
+                os.makedirs(current_app.instance_path, exist_ok=True)
+                dest = os.path.join(current_app.instance_path, 'ldap_ca.pem')
+                ca_file.save(dest)
+                ca_path = dest
+                flash(f'Certificat CA importé ({ca_file.filename}).', 'info')
             updates = {
                 'LDAP_ENABLED': 'true' if enabled else 'false',
                 'LDAP_SERVER': request.form.get('ldap_server', '').strip(),
                 'LDAP_PORT': port,
                 'LDAP_USE_SSL': 'true' if use_ssl else 'false',
                 'LDAP_VALIDATE_CERT': 'true' if validate_cert else 'false',
-                'LDAP_CA_CERT': request.form.get('ldap_ca_cert', '').strip(),
+                'LDAP_CA_CERT': ca_path,
                 'LDAP_DOMAIN': request.form.get('ldap_domain', '').strip(),
                 'LDAP_BASE_DN': request.form.get('ldap_base_dn', '').strip(),
+                'LDAP_REQUIRED_GROUP': request.form.get('ldap_required_group', '').strip(),
                 'LDAP_DEFAULT_ROLE': request.form.get('ldap_default_role', 'viewer'),
                 'LDAP_BIND_USER': request.form.get('ldap_bind_user', '').strip(),
             }
             bind_pw = request.form.get('ldap_bind_password', '')
             if bind_pw:
                 updates['LDAP_BIND_PASSWORD'] = bind_pw
-            _update_env_file(updates)
+            _persist_config(updates)
             current_app.config.update(
                 LDAP_ENABLED=enabled, LDAP_SERVER=updates['LDAP_SERVER'],
                 LDAP_PORT=int(port), LDAP_USE_SSL=use_ssl,
                 LDAP_VALIDATE_CERT=validate_cert, LDAP_CA_CERT=updates['LDAP_CA_CERT'],
                 LDAP_DOMAIN=updates['LDAP_DOMAIN'], LDAP_BASE_DN=updates['LDAP_BASE_DN'],
+                LDAP_REQUIRED_GROUP=updates['LDAP_REQUIRED_GROUP'],
                 LDAP_DEFAULT_ROLE=updates['LDAP_DEFAULT_ROLE'],
                 LDAP_BIND_USER=updates['LDAP_BIND_USER'])
             if bind_pw:
@@ -410,8 +449,9 @@ def preferences():
                 'THRESHOLD_EXPIRY': _parse3('expiry', (7, 15, 30)),
                 'THRESHOLD_DOMAIN': _parse3('domain', (30, 60, 90)),
                 'THRESHOLD_TASK': _parse3('task', (7, 15, 30)),
+                'THRESHOLD_CONTRACT': _parse3('contract', (60, 90, 180)),
             }
-            _update_env_file({k: ','.join(str(x) for x in v) for k, v in groups.items()})
+            _persist_config({k: ','.join(str(x) for x in v) for k, v in groups.items()})
             for k, v in groups.items():
                 current_app.config[k] = tuple(v)
             audit_record('config seuils alertes', category='preferences')
@@ -430,9 +470,10 @@ def preferences():
 
         elif action == 'add_asset':
             from app.models import Asset
+            from app.app_settings import get_asset_type_values
             name = request.form.get('asset_name', '').strip()
             atype = request.form.get('asset_type', 'application')
-            if atype not in ('application', 'server'):
+            if atype not in get_asset_type_values():
                 atype = 'application'
             if not name:
                 flash('Le nom est obligatoire.', 'danger')
@@ -443,6 +484,25 @@ def preferences():
                 audit_record('ajout catalogue', detail=f'{name} ({atype})', category='preferences')
                 flash('Élément ajouté au catalogue', 'success')
 
+        elif action == 'edit_asset':
+            from app.models import Asset
+            a = Asset.query.get(request.form.get('asset_id', type=int))
+            if a:
+                name = request.form.get('asset_name', '').strip()
+                atype = request.form.get('asset_type', a.asset_type)
+                from app.app_settings import get_asset_type_values
+                if atype not in get_asset_type_values():
+                    atype = a.asset_type
+                if not name:
+                    flash('Le nom est obligatoire.', 'danger')
+                else:
+                    a.name = name
+                    a.asset_type = atype
+                    a.description = request.form.get('asset_description', '').strip() or None
+                    db.session.commit()
+                    audit_record('modification catalogue', detail=f'{name} ({atype})', category='preferences')
+                    flash('Élément du catalogue modifié', 'success')
+
         elif action == 'delete_asset':
             from app.models import Asset
             a = Asset.query.get(request.form.get('asset_id', type=int))
@@ -452,6 +512,71 @@ def preferences():
                 db.session.commit()
                 audit_record('suppression catalogue', detail=name, category='preferences')
                 flash('Élément retiré du catalogue', 'success')
+
+        elif action == 'save_conformity':
+            from app.app_settings import set_conformity_categories
+            set_conformity_categories(request.form.getlist('conformity'))
+            audit_record('config conformite', detail='Conformite globale', category='preferences')
+            flash('Catégories de la conformité globale enregistrées', 'success')
+
+        elif action == 'add_asset_type':
+            from app.app_settings import add_asset_type
+            label = request.form.get('type_label', '').strip()
+            if add_asset_type(label):
+                audit_record('ajout type catalogue', detail=label, category='preferences')
+                flash(f'Type « {label} » ajouté', 'success')
+            else:
+                flash('Type vide ou déjà existant.', 'warning')
+
+        elif action == 'delete_asset_type':
+            from app.app_settings import remove_asset_type
+            label = request.form.get('type_label', '').strip()
+            if remove_asset_type(label):
+                audit_record('suppression type catalogue', detail=label, category='preferences')
+                flash(f'Type « {label} » retiré', 'success')
+
+        elif action == 'test_ldap':
+            from app.ldap_auth import test_ldap_connection
+            ok, msg = test_ldap_connection(current_app)
+            flash(msg, 'success' if ok else 'danger')
+
+        elif action == 'add_webhook':
+            from app.models import Webhook, WEBHOOK_CHANNELS, CATEGORY_LABELS
+            channel = request.form.get('wh_channel', '')
+            url = request.form.get('wh_url', '').strip()
+            category = request.form.get('wh_category', 'all')
+            if channel not in WEBHOOK_CHANNELS:
+                flash('Canal invalide.', 'danger')
+            elif not url:
+                flash("L'URL du webhook est obligatoire.", 'danger')
+            else:
+                if category != 'all' and category not in CATEGORY_LABELS:
+                    category = 'all'
+                db.session.add(Webhook(category=category, channel=channel, url=url,
+                                       label=request.form.get('wh_label', '').strip() or None))
+                db.session.commit()
+                audit_record('ajout webhook', detail=f'{channel} / {category}', category='preferences')
+                flash('Webhook ajouté', 'success')
+
+        elif action == 'delete_webhook':
+            from app.models import Webhook
+            w = Webhook.query.get(request.form.get('wh_id', type=int))
+            if w:
+                db.session.delete(w)
+                db.session.commit()
+                audit_record('suppression webhook', detail=f'{w.channel} / {w.category}', category='preferences')
+                flash('Webhook supprimé', 'success')
+
+        elif action == 'test_webhook':
+            from app.models import Webhook
+            from app.notify import send_to
+            w = Webhook.query.get(request.form.get('wh_id', type=int))
+            if w:
+                ok = send_to(w.channel, w.url, 'Test de notification',
+                             'Ceci est un message de test depuis Sentinelle.', status='info',
+                             url=current_app.config.get('APP_BASE_URL'))
+                flash('Test envoyé.' if ok else "Échec de l'envoi du test.",
+                      'success' if ok else 'danger')
 
         return redirect(url_for('auth.preferences'))
 
@@ -478,6 +603,10 @@ def preferences():
     }
 
     alert_recipients = ', '.join(current_app.config.get('ALERT_RECIPIENTS', []) or [])
+    from app.config_store import ALERT_CATEGORIES, ALERT_CATEGORY_LABELS
+    alert_recipients_by_cat = {
+        cat: ', '.join(current_app.config.get(f'ALERT_RECIPIENTS_{cat.upper()}') or [])
+        for cat in ALERT_CATEGORIES}
     webhooks = {
         'teams': current_app.config.get('TEAMS_WEBHOOK_URL', ''),
         'slack': current_app.config.get('SLACK_WEBHOOK_URL', ''),
@@ -487,13 +616,23 @@ def preferences():
     from app.db_backup import list_backups
     db_backups = list_backups(current_app)
 
-    from app.models import Asset, ASSET_TYPE_LABELS
+    from app.models import Asset, ASSET_TYPE_LABELS, CONFORMITY_CATEGORIES, CATEGORY_LABELS
     assets = Asset.query.order_by(Asset.asset_type, Asset.name).all()
+
+    from app.app_settings import (get_conformity_categories, get_asset_types,
+                                  _BUILTIN_ASSET_TYPES)
+    conformity_included = set(get_conformity_categories())
+    asset_types = get_asset_types()
+    builtin_type_values = {v for v, _ in _BUILTIN_ASSET_TYPES}
+
+    from app.models import Webhook, WEBHOOK_CHANNELS
+    category_webhooks = Webhook.query.order_by(Webhook.category, Webhook.channel).all()
 
     thresholds = {
         'expiry': current_app.config.get('THRESHOLD_EXPIRY', (7, 15, 30)),
         'domain': current_app.config.get('THRESHOLD_DOMAIN', (30, 60, 90)),
         'task': current_app.config.get('THRESHOLD_TASK', (7, 15, 30)),
+        'contract': current_app.config.get('THRESHOLD_CONTRACT', (60, 90, 180)),
     }
     ldap_config = {
         'enabled': current_app.config.get('LDAP_ENABLED', False),
@@ -504,6 +643,7 @@ def preferences():
         'ca_cert': current_app.config.get('LDAP_CA_CERT', ''),
         'domain': current_app.config.get('LDAP_DOMAIN', ''),
         'base_dn': current_app.config.get('LDAP_BASE_DN', ''),
+        'required_group': current_app.config.get('LDAP_REQUIRED_GROUP', ''),
         'default_role': current_app.config.get('LDAP_DEFAULT_ROLE', 'viewer'),
         'bind_user': current_app.config.get('LDAP_BIND_USER', ''),
         'bind_set': bool(current_app.config.get('LDAP_BIND_PASSWORD')),
@@ -519,15 +659,42 @@ def preferences():
         mail_configured = bool(smtp_config['server']
                                and (smtp_config['sender'] or smtp_config['username']))
 
+    # Indicateur « Configuré » par bloc : vrai si l'admin y a renseigne qqch.
+    from app.models import Setting
+    _thr_defaults = {'expiry': (7, 15, 30), 'domain': (30, 60, 90), 'task': (7, 15, 30)}
+    configured = {
+        'mail': mail_configured,
+        'recipients': bool(alert_recipients.strip()),
+        'notify': bool(webhooks['teams'] or webhooks['slack'] or webhooks['discord']
+                       or category_webhooks),
+        'assets': bool(assets),
+        'ldap': bool(ldap_config['enabled']),
+        'conformity': db.session.get(Setting, 'conformity_categories') is not None,
+        'thresholds': any(tuple(thresholds[k]) != _thr_defaults[k] for k in _thr_defaults),
+        'db': bool(db_backups),
+    }
+
     return render_template('auth/preferences.html', mail_method=mail_method,
+                           configured=configured,
                            mail_configured=mail_configured, o365_config=o365_config,
                            smtp_config=smtp_config, o365_connected=o365_connected,
                            o365_user_email=o365_user_email,
                            o365_app_configured=o365_app_configured,
                            alert_recipients=alert_recipients,
+                           alert_recipients_by_cat=alert_recipients_by_cat,
+                           alert_category_labels=ALERT_CATEGORY_LABELS,
+                           report_schedule=current_app.config.get('REPORT_SCHEDULE', 'off'),
+                           report_recipients=', '.join(current_app.config.get('REPORT_RECIPIENTS') or []),
                            db_backups=db_backups, thresholds=thresholds,
                            ldap_config=ldap_config, webhooks=webhooks,
-                           assets=assets, asset_type_labels=ASSET_TYPE_LABELS)
+                           assets=assets, asset_type_labels=ASSET_TYPE_LABELS,
+                           asset_types=asset_types, builtin_type_values=builtin_type_values,
+                           conformity_categories=CONFORMITY_CATEGORIES,
+                           conformity_labels=CATEGORY_LABELS,
+                           conformity_included=conformity_included,
+                           category_webhooks=category_webhooks,
+                           webhook_channels=WEBHOOK_CHANNELS,
+                           gestion_categories=CONFORMITY_CATEGORIES)
 
 
 @bp.route('/auth/o365/callback')

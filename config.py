@@ -2,7 +2,10 @@ import os
 from datetime import timedelta
 from dotenv import load_dotenv
 
-load_dotenv()
+# override=True : le .env fait foi, y compris apres un reload en dev (werkzeug
+# reexecute le process en heritant de l'ancien environnement). Sans cela, les
+# reglages enregistres via Preferences seraient perdus a chaque rechargement.
+load_dotenv(override=True)
 
 
 def _triplet(env, default):
@@ -26,6 +29,9 @@ class Config:
     PERMANENT_SESSION_LIFETIME = timedelta(minutes=int(os.getenv('SESSION_LIFETIME_MINUTES', 480)))
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
+    # A activer (true) des que l'app est servie en HTTPS — deploiement conseille :
+    # waitress sur 127.0.0.1 derriere un reverse proxy TLS (IIS/Caddy/nginx).
+    SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'false').lower() in ('true', '1', 'yes')
 
     # Longueur minimale des mots de passe.
     PASSWORD_MIN_LENGTH = int(os.getenv('PASSWORD_MIN_LENGTH', 8))
@@ -39,7 +45,10 @@ class Config:
     LDAP_VALIDATE_CERT = os.getenv('LDAP_VALIDATE_CERT', 'true').lower() in ('true', '1', 'yes')
     LDAP_CA_CERT = os.getenv('LDAP_CA_CERT', '')  # chemin d'un fichier CA (PEM), optionnel
     LDAP_DOMAIN = os.getenv('LDAP_DOMAIN', '')           # ex: chatillon.lan (pour le bind UPN)
-    LDAP_BASE_DN = os.getenv('LDAP_BASE_DN', '')         # ex: DC=chatillon,DC=lan (recherche email)
+    LDAP_BASE_DN = os.getenv('LDAP_BASE_DN', '')         # ex: DC=exemple,DC=lan (recherche email)
+    # Groupe AD dont l'appartenance est requise pour se connecter (fortement
+    # conseille : limite l'acces). DN complet ou nom simple (cn). Vide = tout AD.
+    LDAP_REQUIRED_GROUP = os.getenv('LDAP_REQUIRED_GROUP', '')
     LDAP_USER_DN_TEMPLATE = os.getenv('LDAP_USER_DN_TEMPLATE', '')  # alternative au bind UPN
     LDAP_DEFAULT_ROLE = os.getenv('LDAP_DEFAULT_ROLE', 'viewer')    # role des comptes AD provisionnes
     # Compte de service pour la synchro d'expiration des mots de passe AD (lecture seule).
@@ -48,8 +57,14 @@ class Config:
 
     # Seuils de statut en jours restants : (danger <=, attention <=, proche <=).
     THRESHOLD_EXPIRY = _triplet('THRESHOLD_EXPIRY', (7, 15, 30))   # comptes, certificats
+    # Domaines volontairement plus larges que les certificats : un renouvellement
+    # de domaine se prepare a l'avance (registrar, facturation) et une perte de
+    # domaine est irreversible — d'ou un passage en danger des J-30.
     THRESHOLD_DOMAIN = _triplet('THRESHOLD_DOMAIN', (30, 60, 90))  # noms de domaine
     THRESHOLD_TASK = _triplet('THRESHOLD_TASK', (7, 15, 30))       # tests, revues de droits
+    # Contrats : seuils larges (un renouvellement/marche public se prepare des mois
+    # a l'avance) ; le statut est calcule sur (echeance - preavis de resiliation).
+    THRESHOLD_CONTRACT = _triplet('THRESHOLD_CONTRACT', (60, 90, 180))
     THRESHOLD_WARRANTY = _triplet('THRESHOLD_WARRANTY', (30, 60, 90))  # fin de garantie (inventaire)
     # Au-dela de ce nombre de jours sans MAJ OS, l'equipement est signale.
     OS_STALE_DAYS = int(os.getenv('OS_STALE_DAYS', 365))
@@ -71,6 +86,11 @@ class Config:
 
     ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
     ALERT_RECIPIENTS = os.getenv('ALERT_RECIPIENTS', '').split(',')
+
+    # Envoi planifie du bilan PDF : off / weekly (lundi) / monthly (le 1er).
+    # Destinataires dedies, repli sur ALERT_RECIPIENTS si vide.
+    REPORT_SCHEDULE = os.getenv('REPORT_SCHEDULE', 'off')
+    REPORT_RECIPIENTS = [r for r in os.getenv('REPORT_RECIPIENTS', '').split(',') if r.strip()]
 
     # Anti-bruteforce du login : nombre d'echecs avant blocage temporaire.
     LOGIN_MAX_ATTEMPTS = int(os.getenv('LOGIN_MAX_ATTEMPTS', 5))

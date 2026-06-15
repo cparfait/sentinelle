@@ -96,6 +96,9 @@
     {% if current_user.can_view('inventory') %}
     {{ stat_card(url_for('inventory.list'), 'Inventaire', 'bi-hdd-stack', '#0ea5e9', stats.inventory) }}
     {% endif %}
+    {% if current_user.can_view('contracts') %}
+    {{ stat_card(url_for('contracts.list'), 'Contrats', 'bi-file-earmark-text', '#14b8a6', stats.contracts, danger_label='à traiter') }}
+    {% endif %}
 </div>
 
 {% if backups %}
@@ -141,26 +144,27 @@
                         {% endif %}
                     </td>
                     {% if current_user.can_edit() %}
-                    <form method="POST" action="{{ url_for('dashboard.quick_check') }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="hidden" name="backup_id" value="{{ backup.id }}">
                         <td>
-                            <input type="text" name="comment" class="form-control form-control-sm" placeholder="Commentaire..." style="min-width: 150px;">
+                            {# Form sorti du <tr> (HTML invalide sinon) ; champs lies via l'attribut form=. #}
+                            <form id="qc-{{ backup.id }}" method="POST" action="{{ url_for('dashboard.quick_check') }}" class="d-none">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="backup_id" value="{{ backup.id }}">
+                            </form>
+                            <input type="text" name="comment" form="qc-{{ backup.id }}" class="form-control form-control-sm" placeholder="Commentaire..." style="min-width: 150px;">
                         </td>
                         <td>
                             <div class="d-flex gap-1">
-                                <button type="submit" name="status" value="ok" class="btn btn-sm btn-success" title="OK">
+                                <button type="submit" form="qc-{{ backup.id }}" name="status" value="ok" class="btn btn-sm btn-success" title="OK" aria-label="OK">
                                     <i class="bi bi-check-lg"></i>
                                 </button>
-                                <button type="submit" name="status" value="warning" class="btn btn-sm btn-warning" title="Warning">
+                                <button type="submit" form="qc-{{ backup.id }}" name="status" value="warning" class="btn btn-sm btn-warning" title="Warning" aria-label="Warning">
                                     <i class="bi bi-exclamation-triangle"></i>
                                 </button>
-                                <button type="submit" name="status" value="failed" class="btn btn-sm btn-danger" title="Echoue">
+                                <button type="submit" form="qc-{{ backup.id }}" name="status" value="failed" class="btn btn-sm btn-danger" title="Echoue" aria-label="Echoue">
                                     <i class="bi bi-x-lg"></i>
                                 </button>
                             </div>
                         </td>
-                    </form>
                     {% else %}
                         <td></td><td></td>
                     {% endif %}

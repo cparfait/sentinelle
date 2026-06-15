@@ -26,7 +26,7 @@
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Type de backup</label>
                         <select name="backup_type" class="form-select">
-                            <option value="">-- Selectionner --</option>
+                            <option value="">— Sélectionner —</option>
                             <option value="full" {{ 'selected' if backup and backup.backup_type == 'full' }}>Complet</option>
                             <option value="incremental" {{ 'selected' if backup and backup.backup_type == 'incremental' }}>Incremental</option>
                             <option value="differential" {{ 'selected' if backup and backup.backup_type == 'differential' }}>Differentiel</option>
@@ -45,7 +45,7 @@
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Frequence</label>
                         <select name="frequency" class="form-select">
-                            <option value="">-- Selectionner --</option>
+                            <option value="">— Sélectionner —</option>
                             <option value="daily" {{ 'selected' if backup and backup.frequency == 'daily' }}>Quotidien</option>
                             <option value="weekly" {{ 'selected' if backup and backup.frequency == 'weekly' }}>Hebdomadaire</option>
                             <option value="monthly" {{ 'selected' if backup and backup.frequency == 'monthly' }}>Mensuel</option>
@@ -67,6 +67,11 @@
                             <option value="high" {{ 'selected' if backup and backup.priority == 'high' }}>Haute</option>
                         </select>
                     </div>
+                </div>
+                <div class="mb-3">
+                    {% with selected_id = backup.equipment_id if backup else none %}
+                    {% include '_equipment_select.html' %}
+                    {% endwith %}
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-medium">Description / Notes</label>

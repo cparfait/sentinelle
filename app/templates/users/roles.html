@@ -54,7 +54,7 @@
                 <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i> Enregistrer</button>
                 {% if role.name not in ['admin', 'editor', 'viewer'] %}
                 <button type="submit" form="del-{{ role.id }}" class="btn btn-sm btn-outline-danger"
-                        onclick="return confirm('Supprimer ce rôle ?')" title="Supprimer le rôle"><i class="bi bi-trash"></i></button>
+                        onclick="return confirm('Supprimer ce rôle ?')" title="Supprimer le rôle" aria-label="Supprimer le rôle"><i class="bi bi-trash"></i></button>
                 {% endif %}
             </div>
         </div>

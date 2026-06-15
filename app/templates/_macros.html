@@ -1,0 +1,20 @@
+{# Macros partagées.
+
+   status_badge(status, kind='date', fallback=None)
+   Affiche le badge de statut coloré avec son libellé français.
+   - kind='date'      : comptes, certificats, domaines, revues
+   - kind='backup'    : backups (computed_status)
+   - kind='test'      : tests récurrents (inclut le statut 'pending')
+   - kind='inventory' : équipements
+   `fallback` : libellé affiché si le statut n'est pas dans le dictionnaire
+   (par défaut, le statut brut est affiché).
+#}
+{% macro status_badge(status, kind='date', fallback=None) -%}
+{%- set labels = {
+    'date': {'danger': 'Critique', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK'},
+    'backup': {'danger': 'Non verifie', 'warning': 'Attention', 'info': 'Nouveau', 'success': 'OK'},
+    'test': {'danger': 'En retard', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK', 'pending': 'A faire'},
+    'inventory': {'danger': 'Critique', 'warning': 'À surveiller', 'info': 'Proche', 'success': 'OK'},
+} -%}
+<span class="badge-status badge-{{ status }}">{{ labels[kind].get(status, fallback if fallback is not none else status) }}</span>
+{%- endmacro %}

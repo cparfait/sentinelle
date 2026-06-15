@@ -5,6 +5,6 @@
         <input type="text" name="q" value="{{ q or '' }}" class="form-control"
                placeholder="Rechercher dans la liste...">
         <button class="btn btn-primary" type="submit">Rechercher</button>
-        {% if q %}<a href="{{ url_for(request.endpoint) }}" class="btn btn-outline-secondary" title="Effacer"><i class="bi bi-x-lg"></i></a>{% endif %}
+        {% if q %}<a href="{{ url_for(request.endpoint) }}" class="btn btn-outline-secondary" title="Effacer" aria-label="Effacer"><i class="bi bi-x-lg"></i></a>{% endif %}
     </div>
 </form>

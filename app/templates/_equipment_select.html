@@ -1,0 +1,11 @@
+{# Select « Équipement lié » (vue 360°). Attend dans le contexte :
+   - equipments : liste des équipements actifs
+   - selected_id : id de l'équipement actuellement lié (ou none) #}
+<label class="form-label fw-medium">Équipement lié (inventaire)</label>
+<select name="equipment_id" class="form-select">
+    <option value="">— Aucun —</option>
+    {% for e in equipments %}
+    <option value="{{ e.id }}" {{ 'selected' if selected_id == e.id }}>{{ e.name }} ({{ e.kind_label() }}{% if e.environment %} · {{ e.env_label() }}{% endif %})</option>
+    {% endfor %}
+</select>
+<small class="text-muted">Relie cet élément à un serveur/NAS de l'inventaire (fiche 360°).</small>

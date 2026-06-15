@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Revue de droits - Sentinelle{% endblock %}
+{% from '_macros.html' import status_badge %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -47,9 +48,7 @@
                         {% else %}<span class="text-muted">-</span>{% endif %}
                     </td>
                     <td><span class="badge bg-light text-dark border">{{ r.priority }}</span></td>
-                    <td><span class="badge-status badge-{{ r.computed_status() }}">
-                        {{ {'danger': 'Critique', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK'}.get(r.computed_status(), r.computed_status()) }}
-                    </span></td>
+                    <td>{{ status_badge(r.computed_status()) }}</td>
                     <td>
                         <div class="d-flex gap-1">
                             <a href="{{ url_for('reviews.detail', id=r.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>

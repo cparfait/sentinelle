@@ -20,7 +20,7 @@
                         <div class="input-group">
                             <input type="text" name="name" id="domainInput" class="form-control"
                                    value="{{ domain.name if domain else '' }}" required
-                                   placeholder="chatillon92.fr">
+                                   placeholder="votredomaine.fr">
                             <button type="button" class="btn btn-outline-primary" id="checkRdapBtn"
                                     title="Lire l'expiration via RDAP">
                                 <i class="bi bi-globe"></i> Vérifier
@@ -51,7 +51,7 @@
                     </div>
                 </div>
                 <div class="mb-3">
-                    <div class="form-check">
+                    <div class="form-check form-switch">
                         <input type="checkbox" name="auto_renew" class="form-check-input" id="autoRenew"
                                {{ 'checked' if domain and domain.auto_renew }}>
                         <label class="form-check-label" for="autoRenew">Renouvellement automatique chez le registrar</label>

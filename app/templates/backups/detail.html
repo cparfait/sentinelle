@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ backup.service_name }} - Sentinelle{% endblock %}
+{% from '_macros.html' import status_badge %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -17,26 +18,31 @@
     </div>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-8">
-        <div class="data-card p-4">
+<div class="row g-3">
+    <!-- Colonne principale : configuration + historique -->
+    <div class="col-lg-8">
+        <div class="data-card p-4 mb-3">
             <div class="d-flex justify-content-between align-items-start mb-3">
                 <h6 class="fw-bold mb-0">Configuration</h6>
-                <span class="badge-status badge-{{ backup.computed_status() }}">
-                    {{ {'danger': 'Non verifie', 'warning': 'Attention', 'info': 'Nouveau', 'success': 'OK'}.get(backup.computed_status(), '-') }}
-                </span>
+                {{ status_badge(backup.computed_status(), kind='backup', fallback='-') }}
             </div>
             <div class="row">
                 <div class="col-md-6">
-                    <table class="table table-borderless table-sm">
+                    <table class="table table-borderless table-sm mb-0">
                         <tr><td class="text-muted">Service</td><td class="fw-medium">{{ backup.service_name }}</td></tr>
                         <tr><td class="text-muted">Type</td><td class="fw-medium">{{ {'full': 'Complet', 'incremental': 'Incremental', 'differential': 'Differentiel', 'snapshot': 'Snapshot'}.get(backup.backup_type, backup.backup_type or '-') }}</td></tr>
                         <tr><td class="text-muted">Emplacement</td><td class="fw-medium">{{ backup.location or '-' }}</td></tr>
                         <tr><td class="text-muted">Frequence</td><td class="fw-medium">{{ {'daily': 'Quotidien', 'weekly': 'Hebdomadaire', 'monthly': 'Mensuel'}.get(backup.frequency, backup.frequency or '-') }}</td></tr>
+                        {% if backup.equipment %}
+                        <tr><td class="text-muted">Équipement</td>
+                            <td><a href="{{ url_for('inventory.detail', id=backup.equipment.id) }}" class="fw-medium">
+                                <i class="bi bi-hdd-stack me-1"></i>{{ backup.equipment.name }}</a></td>
+                        </tr>
+                        {% endif %}
                     </table>
                 </div>
                 <div class="col-md-6">
-                    <table class="table table-borderless table-sm">
+                    <table class="table table-borderless table-sm mb-0">
                         <tr><td class="text-muted">Heure prevue</td><td class="fw-medium">{{ backup.expected_time or '-' }}</td></tr>
                         <tr><td class="text-muted">Priorite</td>
                             <td><span class="badge bg-{% if backup.priority == 'high' %}danger{% elif backup.priority == 'medium' %}warning{% else %}secondary{% endif %}">
@@ -58,20 +64,61 @@
                 </div>
             </div>
             {% if backup.description %}
-            <div class="mt-2">
-                <small class="text-muted">Description:</small>
+            <div class="mt-2 pt-2 border-top">
+                <small class="text-muted">Description :</small>
                 <p class="mb-0">{{ backup.description }}</p>
             </div>
             {% endif %}
         </div>
+
+        <div class="data-card">
+            <div class="card-header-custom">
+                <div>
+                    <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique des statuts</h6>
+                    <small class="text-muted">Toutes les saisies, y compris plusieurs le meme jour. Les statistiques retiennent le premier statut du jour ; l'etat actuel reflete le dernier.</small>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Date et heure</th>
+                            <th>Statut</th>
+                            <th>Detail</th>
+                            <th>Verifie par</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in check_events %}
+                        <tr>
+                            <td class="text-nowrap">{{ e.performed_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>
+                                {% if e.status == 'ok' %}<span class="badge-status badge-success">OK</span>
+                                {% elif e.status == 'failed' %}<span class="badge-status badge-danger">Echoue</span>
+                                {% elif e.status == 'warning' %}<span class="badge-status badge-warning">Warning</span>
+                                {% else %}<span class="badge-status badge-info">-</span>{% endif %}
+                            </td>
+                            <td>{{ e.comment or '-' }}</td>
+                            <td class="text-nowrap">{{ e.performed_by or '-' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-3 text-muted">Aucun check enregistre</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <div class="col-md-4">
+    <!-- Colonne laterale : actions -->
+    <div class="col-lg-4">
         {% if current_user.can_edit('backups') %}
         <div class="data-card p-4 mb-3">
             <h6 class="fw-bold mb-3"><i class="bi bi-check-circle me-2 text-success"></i>Enregistrer un check</h6>
             <form method="POST" action="{{ url_for('backups.check', id=backup.id) }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-2">
                     <label class="form-label small">Date</label>
                     <input type="date" name="check_date" class="form-control form-control-sm"
@@ -99,49 +146,13 @@
         <div class="data-card p-4">
             <form method="POST" action="{{ url_for('backups.delete', id=backup.id) }}"
                   onsubmit="return confirm('Supprimer ce backup ?')">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-outline-danger btn-sm w-100">
                     <i class="bi bi-trash me-1"></i> Supprimer
                 </button>
             </form>
         </div>
         {% endif %}
-    </div>
-</div>
-
-<div class="data-card">
-    <div class="card-header-custom">
-        <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique des checks (60 derniers jours)</h6>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-hover mb-0">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Statut</th>
-                    <th>Commentaire</th>
-                    <th>Verifie par</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for c in checks %}
-                <tr>
-                    <td>{{ c.check_date.strftime('%d/%m/%Y') }}</td>
-                    <td>
-                        {% if c.status == 'ok' %}<span class="badge-status badge-success">OK</span>
-                        {% elif c.status == 'failed' %}<span class="badge-status badge-danger">Echoue</span>
-                        {% else %}<span class="badge-status badge-warning">Warning</span>{% endif %}
-                    </td>
-                    <td>{{ c.comment or '-' }}</td>
-                    <td>{{ c.checked_by or '-' }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="4" class="text-center py-3 text-muted">Aucun check enregistre</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
     </div>
 </div>
 {% endblock %}

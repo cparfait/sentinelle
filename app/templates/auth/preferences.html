@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Preferences - Sentinelle{% endblock %}
+{% block title %}Préférences - Sentinelle{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0">Preferences</h4>
+    <h4 class="fw-bold mb-0">Préférences</h4>
 </div>
 
 {% set webhook_count = [webhooks.teams, webhooks.slack, webhooks.discord]|select|list|length %}
@@ -13,9 +13,9 @@
         <div class="accordion" id="prefsAccordion">
 
             {# ============================ MESSAGERIE ============================ #}
-            <div class="accordion-item">
+            <div class="accordion-item" style="order:6;">
                 <h2 class="accordion-header">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#secMail" aria-expanded="true" aria-controls="secMail">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secMail" aria-expanded="false" aria-controls="secMail">
                         <i class="bi bi-envelope me-2"></i>Messagerie
                         {% if mail_configured %}
                         <span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Configuré</span>
@@ -24,7 +24,7 @@
                         {% endif %}
                     </button>
                 </h2>
-                <div id="secMail" class="accordion-collapse collapse show" data-bs-parent="#prefsAccordion">
+                <div id="secMail" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
                     <div class="accordion-body">
                         <form method="POST" action="{{ url_for('auth.preferences') }}" class="d-flex align-items-center gap-2 mb-3">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -145,7 +145,7 @@
                                     <div class="col-md-12">
                                         <label class="form-label small">Adresse expeditrice (From)</label>
                                         <input type="email" name="smtp_sender" class="form-control form-control-sm"
-                                               value="{{ smtp_config.sender }}" placeholder="sentinelle@chatillon92.fr">
+                                               value="{{ smtp_config.sender }}" placeholder="sentinelle@votredomaine.fr">
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small">Utilisateur <span class="text-muted">(optionnel)</span></label>
@@ -161,7 +161,7 @@
                                 <div class="alert alert-info py-2 small mt-2 mb-0">
                                     <i class="bi bi-info-circle me-1"></i>
                                     <strong>Direct Send (recommande, sans mot de passe) :</strong>
-                                    Serveur = <code>chatillon92-fr.mail.protection.outlook.com</code>, Port = <code>25</code>,
+                                    Serveur = <code>votredomaine-fr.mail.protection.outlook.com</code>, Port = <code>25</code>,
                                     Utilisateur et Mot de passe <strong>vides</strong>. L'adresse expeditrice doit etre
                                     de votre domaine et les destinataires internes.
                                 </div>
@@ -176,10 +176,11 @@
             </div>
 
             {# ===================== DESTINATAIRES & TEST D'ENVOI ===================== #}
-            <div class="accordion-item">
+            <div class="accordion-item" style="order:5;">
                 <h2 class="accordion-header">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secRecipients" aria-expanded="false" aria-controls="secRecipients">
                         <i class="bi bi-people me-2"></i>Destinataires &amp; test d'envoi
+                        {% if configured.recipients %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Configuré</span>{% endif %}
                     </button>
                 </h2>
                 <div id="secRecipients" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
@@ -190,9 +191,64 @@
                             <label class="form-label small">Adresses qui recevront les alertes automatiques
                                 <span class="text-muted">(separees par des virgules ou des retours a la ligne)</span></label>
                             <textarea name="alert_recipients" rows="2" class="form-control form-control-sm"
-                                      placeholder="dsi@chatillon92.fr, sauvegarde@chatillon92.fr">{{ alert_recipients }}</textarea>
-                            <button type="submit" class="btn btn-sm btn-primary mt-2">
+                                      placeholder="dsi@votredomaine.fr, sauvegarde@votredomaine.fr">{{ alert_recipients }}</textarea>
+
+                            <details class="mt-3" {{ 'open' if alert_recipients_by_cat.values()|select|list }}>
+                                <summary class="small fw-bold" style="cursor:pointer;">
+                                    <i class="bi bi-diagram-3 me-1"></i>Destinataires par catégorie
+                                    <span class="text-muted fw-normal">— optionnel : une catégorie sans adresse utilise la liste globale ci-dessus</span>
+                                </summary>
+                                <div class="row g-2 mt-1">
+                                    {% for cat, label in alert_category_labels.items() %}
+                                    <div class="col-md-6">
+                                        <label class="form-label small mb-1" for="rcpt_{{ cat }}">{{ label }}</label>
+                                        <input type="text" id="rcpt_{{ cat }}" name="alert_recipients_{{ cat }}"
+                                               class="form-control form-control-sm"
+                                               value="{{ alert_recipients_by_cat[cat] }}"
+                                               placeholder="— liste globale —">
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </details>
+
+                            <button type="submit" class="btn btn-sm btn-primary mt-3">
                                 <i class="bi bi-check-lg me-1"></i> Enregistrer les destinataires
+                            </button>
+                        </form>
+
+                        <hr>
+                        <h6 class="fw-bold mb-2"><i class="bi bi-file-earmark-pdf me-2"></i>Bilan PDF planifié</h6>
+                        <form method="POST" action="{{ url_for('auth.preferences') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="save_report">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-3">
+                                    <label class="form-label small" for="reportSchedule">Fréquence d'envoi</label>
+                                    <select name="report_schedule" id="reportSchedule" class="form-select form-select-sm">
+                                        <option value="off" {{ 'selected' if report_schedule == 'off' }}>Désactivé</option>
+                                        <option value="weekly" {{ 'selected' if report_schedule == 'weekly' }}>Hebdomadaire (lundi)</option>
+                                        <option value="monthly" {{ 'selected' if report_schedule == 'monthly' }}>Mensuel (le 1er)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small" for="reportRecipients">Destinataires
+                                        <span class="text-muted">(vide = destinataires des alertes)</span></label>
+                                    <input type="text" name="report_recipients" id="reportRecipients"
+                                           class="form-control form-control-sm" value="{{ report_recipients }}"
+                                           placeholder="direction@votredomaine.fr">
+                                </div>
+                                <div class="col-md-3 d-flex gap-2">
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-check-lg me-1"></i> Enregistrer
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                        <form method="POST" action="{{ url_for('auth.preferences') }}" class="mt-2">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="send_report_now">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-send me-1"></i> Envoyer le bilan maintenant
                             </button>
                         </form>
 
@@ -223,11 +279,12 @@
             </div>
 
             {# ===================== NOTIFICATIONS (WEBHOOKS) ===================== #}
-            <div class="accordion-item">
+            <div class="accordion-item" style="order:7;">
                 <h2 class="accordion-header">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secNotify" aria-expanded="false" aria-controls="secNotify">
                         <i class="bi bi-bell me-2"></i>Notifications (webhooks)
-                        {% if webhook_count %}<span class="badge bg-success ms-2">{{ webhook_count }} actif(s)</span>{% endif %}
+                        {% if configured.notify %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Configuré</span>{% endif %}
+                        {% if webhook_count %}<span class="badge bg-secondary ms-2">{{ webhook_count }} global(aux)</span>{% endif %}
                     </button>
                 </h2>
                 <div id="secNotify" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
@@ -268,23 +325,89 @@
                             </button>
                             <small class="text-muted d-block mt-1">Les alertes sont postées dans tous les canaux renseignés, en plus du mail.</small>
                         </form>
+
+                        <hr class="my-3">
+                        <h6 class="fw-bold mb-1"><i class="bi bi-diagram-2 me-2 text-primary"></i>Webhooks par catégorie</h6>
+                        <p class="text-muted small mb-2">Ajoutez autant de webhooks que nécessaire, ciblés sur une catégorie de gestion (ou « Toutes »). Une alerte d'une catégorie est postée sur ses webhooks (plus ceux « Toutes » et les webhooks globaux ci-dessus).</p>
+
+                        <form method="POST" action="{{ url_for('auth.preferences') }}" class="row g-2 align-items-end mb-2">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="add_webhook">
+                            <div class="col-md-3">
+                                <label class="form-label small">Catégorie</label>
+                                <select name="wh_category" class="form-select form-select-sm">
+                                    <option value="all">Toutes</option>
+                                    {% for cat in gestion_categories %}<option value="{{ cat }}">{{ conformity_labels.get(cat, cat) }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Canal</label>
+                                <select name="wh_channel" class="form-select form-select-sm">
+                                    {% for val, lbl in webhook_channels.items() %}<option value="{{ val }}">{{ lbl }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label small">URL du webhook</label>
+                                <input type="url" name="wh_url" class="form-control form-control-sm" required placeholder="https://...">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-plus-lg me-1"></i> Ajouter</button>
+                            </div>
+                            <div class="col-md-5">
+                                <input type="text" name="wh_label" class="form-control form-control-sm" placeholder="Libellé (optionnel)">
+                            </div>
+                        </form>
+
+                        {% if category_webhooks %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead><tr><th>Catégorie</th><th>Canal</th><th>URL</th><th></th></tr></thead>
+                                <tbody>
+                                    {% for w in category_webhooks %}
+                                    <tr>
+                                        <td><span class="badge bg-{{ 'secondary' if w.category == 'all' else 'info' }}">{{ 'Toutes' if w.category == 'all' else conformity_labels.get(w.category, w.category) }}</span></td>
+                                        <td>{{ webhook_channels.get(w.channel, w.channel) }}</td>
+                                        <td class="text-muted small text-truncate" style="max-width:280px;">{{ w.label or w.url }}</td>
+                                        <td class="text-end text-nowrap">
+                                            <form method="POST" action="{{ url_for('auth.preferences') }}" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="action" value="test_webhook">
+                                                <input type="hidden" name="wh_id" value="{{ w.id }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-primary py-0 px-1" title="Tester" aria-label="Tester"><i class="bi bi-send"></i></button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('auth.preferences') }}" class="d-inline" onsubmit="return confirm('Supprimer ce webhook ?')">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="action" value="delete_webhook">
+                                                <input type="hidden" name="wh_id" value="{{ w.id }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Supprimer" aria-label="Supprimer"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted small mb-0">Aucun webhook par catégorie pour le moment.</p>
+                        {% endif %}
                     </div>
                 </div>
             </div>
 
             {# ===================== CATALOGUE APPLICATIONS & SYSTÈMES ===================== #}
-            <div class="accordion-item">
+            <div class="accordion-item" style="order:1;">
                 <h2 class="accordion-header">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secAssets" aria-expanded="false" aria-controls="secAssets">
                         <i class="bi bi-hdd-stack me-2"></i>Applications &amp; systèmes
+                        {% if configured.assets %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Configuré</span>{% endif %}
                         <span class="badge bg-secondary ms-2">{{ assets|length }}</span>
                     </button>
                 </h2>
                 <div id="secAssets" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
                     <div class="accordion-body">
-                        <p class="text-muted small">Ce catalogue alimente les listes déroulantes des <strong>mises à jour</strong> et des <strong>revues de droits</strong> (selon le type choisi : application ou serveur).</p>
+                        <p class="text-muted small">Ce catalogue alimente les listes déroulantes des <strong>mises à jour</strong> et des <strong>revues de droits</strong>. Les serveurs sont gérés dans l'<strong>Inventaire</strong>.</p>
 
-                        <form method="POST" action="{{ url_for('auth.preferences') }}" class="row g-2 align-items-end mb-3">
+                        <form method="POST" action="{{ url_for('auth.preferences') }}" class="row g-2 align-items-end mb-2">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="action" value="add_asset">
                             <div class="col-md-4">
@@ -294,8 +417,7 @@
                             <div class="col-md-3">
                                 <label class="form-label small">Type</label>
                                 <select name="asset_type" class="form-select form-select-sm">
-                                    <option value="application">Application</option>
-                                    <option value="server">Serveur</option>
+                                    {% for val, lbl in asset_types %}<option value="{{ val }}">{{ lbl }}</option>{% endfor %}
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -307,22 +429,61 @@
                             </div>
                         </form>
 
+                        {# Gestion des types personnalises #}
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                            <span class="text-muted small">Types :</span>
+                            {% for val, lbl in asset_types %}
+                            <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-1">{{ lbl }}
+                                {% if val not in builtin_type_values %}
+                                <form method="POST" action="{{ url_for('auth.preferences') }}" class="d-inline" title="Retirer ce type">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="action" value="delete_asset_type">
+                                    <input type="hidden" name="type_label" value="{{ val }}">
+                                    <button type="submit" class="btn-close" style="font-size:.5rem;"></button>
+                                </form>
+                                {% endif %}
+                            </span>
+                            {% endfor %}
+                            <form method="POST" action="{{ url_for('auth.preferences') }}" class="d-inline-flex gap-1">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="action" value="add_asset_type">
+                                <input type="text" name="type_label" class="form-control form-control-sm" style="width:150px;" placeholder="Nouveau type" maxlength="20">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Ajouter un type" aria-label="Ajouter un type"><i class="bi bi-plus-lg"></i></button>
+                            </form>
+                        </div>
+
                         {% if assets %}
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0">
+                            <table class="table table-hover align-middle mb-0">
                                 <thead><tr><th>Nom</th><th>Type</th><th>Description</th><th></th></tr></thead>
                                 <tbody>
+                                    {% set type_vals = asset_types | map(attribute=0) | list %}
                                     {% for a in assets %}
                                     <tr>
-                                        <td class="fw-medium">{{ a.name }}</td>
-                                        <td><span class="badge bg-{{ 'info' if a.asset_type == 'application' else 'secondary' }}">{{ asset_type_labels.get(a.asset_type, a.asset_type) }}</span></td>
-                                        <td class="text-muted">{{ a.description or '-' }}</td>
-                                        <td class="text-end">
-                                            <form method="POST" action="{{ url_for('auth.preferences') }}" onsubmit="return confirm('Retirer « {{ a.name }} » du catalogue ?')">
+                                        <td>
+                                            <form id="asset-{{ a.id }}" method="POST" action="{{ url_for('auth.preferences') }}" class="d-none">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="action" value="edit_asset">
+                                                <input type="hidden" name="asset_id" value="{{ a.id }}">
+                                            </form>
+                                            <input type="text" name="asset_name" form="asset-{{ a.id }}" value="{{ a.name }}" class="form-control form-control-sm">
+                                        </td>
+                                        <td style="max-width:170px;">
+                                            <select name="asset_type" form="asset-{{ a.id }}" class="form-select form-select-sm">
+                                                {% for val, lbl in asset_types %}<option value="{{ val }}" {{ 'selected' if a.asset_type == val }}>{{ lbl }}</option>{% endfor %}
+                                                {% if a.asset_type not in type_vals %}<option value="{{ a.asset_type }}" selected>{{ asset_type_labels.get(a.asset_type, a.asset_type) }}</option>{% endif %}
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="text" name="asset_description" form="asset-{{ a.id }}" value="{{ a.description or '' }}" class="form-control form-control-sm" placeholder="optionnel">
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            <button type="submit" form="asset-{{ a.id }}" class="btn btn-sm btn-outline-primary py-0 px-1" title="Enregistrer les modifications" aria-label="Enregistrer les modifications"><i class="bi bi-check-lg"></i></button>
+                                            <form method="POST" action="{{ url_for('auth.preferences') }}" class="d-inline" onsubmit="return confirm('Retirer « {{ a.name }} » du catalogue ?')">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <input type="hidden" name="action" value="delete_asset">
                                                 <input type="hidden" name="asset_id" value="{{ a.id }}">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Retirer"><i class="bi bi-trash"></i></button>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Retirer" aria-label="Retirer"><i class="bi bi-trash"></i></button>
                                             </form>
                                         </td>
                                     </tr>
@@ -338,7 +499,7 @@
             </div>
 
             {# ===================== LDAP / ACTIVE DIRECTORY ===================== #}
-            <div class="accordion-item">
+            <div class="accordion-item" style="order:2;">
                 <h2 class="accordion-header">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secLdap" aria-expanded="false" aria-controls="secLdap">
                         <i class="bi bi-diagram-3 me-2"></i>Authentification LDAP / Active Directory
@@ -347,7 +508,7 @@
                 </h2>
                 <div id="secLdap" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
                     <div class="accordion-body">
-                        <form method="POST" action="{{ url_for('auth.preferences') }}">
+                        <form method="POST" action="{{ url_for('auth.preferences') }}" enctype="multipart/form-data">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="action" value="save_ldap">
                             <div class="form-check form-switch mb-2">
@@ -358,9 +519,9 @@
                             </div>
                             <div class="row g-2">
                                 <div class="col-md-6">
-                                    <label class="form-label small">Serveur</label>
+                                    <label class="form-label small">Serveur <span class="text-muted">(FQDN ou IP, sans ldap://)</span></label>
                                     <input type="text" name="ldap_server" class="form-control form-control-sm"
-                                           value="{{ ldap_config.server }}" placeholder="ldap://dc.chatillon.lan">
+                                           value="{{ ldap_config.server }}" placeholder="dc.votredomaine.lan ou IP de votre DC">
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label small">Port</label>
@@ -368,46 +529,50 @@
                                 </div>
                                 <div class="col-md-4 d-flex align-items-end">
                                     <div>
-                                        <div class="form-check">
+                                        <div class="form-check form-switch">
                                             <input type="checkbox" class="form-check-input" name="ldap_ssl" id="ldapSsl" {{ 'checked' if ldap_config.ssl }}>
                                             <label class="form-check-label small" for="ldapSsl">SSL / LDAPS (port 636)</label>
                                         </div>
-                                        <div class="form-check">
+                                        <div class="form-check form-switch">
                                             <input type="checkbox" class="form-check-input" name="ldap_validate_cert" id="ldapValidate" {{ 'checked' if ldap_config.validate_cert }}>
                                             <label class="form-check-label small" for="ldapValidate">Valider le certificat</label>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-12">
+                                <div class="col-md-7">
                                     <label class="form-label small">Certificat CA (PEM) <span class="text-muted">— optionnel, si CA interne</span></label>
                                     <input type="text" name="ldap_ca_cert" class="form-control form-control-sm"
-                                           value="{{ ldap_config.ca_cert }}" placeholder="C:\chemin\vers\ca.pem">
+                                           value="{{ ldap_config.ca_cert }}" placeholder="C:\chemin\vers\ca.pem ou importez ci-contre">
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label small">Importer le certificat <span class="text-muted">(.pem / .crt / .cer)</span></label>
+                                    <input type="file" name="ldap_ca_cert_file" accept=".pem,.crt,.cer,.cert" class="form-control form-control-sm">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label small">Domaine (UPN)</label>
                                     <input type="text" name="ldap_domain" class="form-control form-control-sm"
-                                           value="{{ ldap_config.domain }}" placeholder="chatillon.lan">
+                                           value="{{ ldap_config.domain }}" placeholder="votredomaine.lan">
                                 </div>
-                                <div class="col-md-5">
+                                <div class="col-md-8">
                                     <label class="form-label small">Base DN (recherche)</label>
                                     <input type="text" name="ldap_base_dn" class="form-control form-control-sm"
-                                           value="{{ ldap_config.base_dn }}" placeholder="DC=chatillon,DC=lan">
+                                           value="{{ ldap_config.base_dn }}" placeholder="DC=votredomaine,DC=lan">
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small">Rôle par défaut</label>
-                                    <select name="ldap_default_role" class="form-select form-select-sm">
-                                        {% for r in all_roles %}
-                                        <option value="{{ r.name }}" {{ 'selected' if ldap_config.default_role == r.name }}>{{ role_label(r.name) }}</option>
-                                        {% endfor %}
-                                    </select>
+                                <div class="col-md-12">
+                                    <label class="form-label small">Groupe AD autorisé
+                                        <span class="badge bg-warning text-dark ms-1">fortement conseillé</span></label>
+                                    <input type="text" name="ldap_required_group" class="form-control form-control-sm"
+                                           value="{{ ldap_config.required_group }}"
+                                           placeholder="ex : Sentinelle-Users  ou  CN=Sentinelle,OU=Groupes,DC=votredomaine,DC=lan">
+                                    <small class="text-muted">Restreint la connexion aux <strong>membres de ce groupe</strong> (groupes imbriqués inclus), au lieu d'ouvrir l'accès à tout l'annuaire. Laisser vide = tout utilisateur AD peut se connecter. Nécessite le Base DN.</small>
                                 </div>
                             </div>
                             <div class="row g-2 mt-1">
-                                <div class="col-12"><small class="text-muted">Compte de service (lecture seule) — pour la synchro d'expiration des mots de passe AD :</small></div>
+                                <div class="col-12"><small class="text-muted">Compte de service (lecture seule) — sert uniquement à <strong>lire l'annuaire AD</strong> (recherche d'utilisateurs, synchro des expirations de mots de passe). Ce n'est <strong>pas</strong> un compte utilisateur Sentinelle : il n'a ni rôle ni accès à l'application.</small></div>
                                 <div class="col-md-6">
                                     <label class="form-label small">Identifiant du compte de service</label>
                                     <input type="text" name="ldap_bind_user" class="form-control form-control-sm"
-                                           value="{{ ldap_config.bind_user }}" placeholder="svc-sentinelle@chatillon.lan">
+                                           value="{{ ldap_config.bind_user }}" placeholder="svc-sentinelle@votredomaine.lan">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small">Mot de passe {% if ldap_config.bind_set %}<span class="text-success">(défini)</span>{% endif %}</label>
@@ -415,18 +580,27 @@
                                            placeholder="{{ 'laisser vide pour ne pas changer' if ldap_config.bind_set else 'mot de passe du compte de service' }}">
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-sm btn-primary mt-2"><i class="bi bi-check-lg me-1"></i> Enregistrer LDAP</button>
-                            <small class="text-muted d-block mt-1">Les utilisateurs AD validés sont créés automatiquement avec le rôle par défaut. La synchro des expirations utilise le compte de service + le Base DN.</small>
+                            <div class="d-flex align-items-center gap-2 mt-2">
+                                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i> Enregistrer LDAP</button>
+                            </div>
+                            <small class="text-muted d-block mt-1">Les utilisateurs AD validés sont créés automatiquement en lecture seule ; ajustez leur rôle ensuite dans Utilisateurs. La synchro des expirations utilise le compte de service + le Base DN.</small>
+                        </form>
+                        <form method="POST" action="{{ url_for('auth.preferences') }}" class="mt-2">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="test_ldap">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plug me-1"></i> Tester la connexion</button>
+                            <small class="text-muted ms-1">Teste la configuration <strong>enregistrée</strong> (compte de service).</small>
                         </form>
                     </div>
                 </div>
             </div>
 
             {# ===================== SEUILS D'ALERTE ===================== #}
-            <div class="accordion-item">
+            <div class="accordion-item" style="order:8;">
                 <h2 class="accordion-header">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secThresholds" aria-expanded="false" aria-controls="secThresholds">
                         <i class="bi bi-sliders me-2"></i>Seuils d'alerte (jours restants)
+                        {% if configured.thresholds %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Personnalisé</span>{% endif %}
                     </button>
                 </h2>
                 <div id="secThresholds" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
@@ -437,7 +611,7 @@
                             <table class="table table-sm align-middle mb-2">
                                 <thead><tr><th></th><th class="text-danger">Critique ≤</th><th class="text-warning">Attention ≤</th><th class="text-info">Proche ≤</th></tr></thead>
                                 <tbody>
-                                    {% set rows = [('expiry', 'Comptes & certificats'), ('domain', 'Noms de domaine'), ('task', 'Tests & revues de droits')] %}
+                                    {% set rows = [('expiry', 'Comptes & certificats'), ('domain', 'Noms de domaine'), ('task', 'Tests & revues de droits'), ('contract', 'Contrats & licences (échéance - préavis)')] %}
                                     {% for key, label in rows %}
                                     <tr>
                                         <td class="fw-medium">{{ label }}</td>
@@ -456,8 +630,40 @@
                 </div>
             </div>
 
+            {# ===================== CONFORMITÉ GLOBALE ===================== #}
+            <div class="accordion-item" style="order:4;">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secConformity" aria-expanded="false" aria-controls="secConformity">
+                        <i class="bi bi-speedometer2 me-2"></i>Conformité globale
+                        {% if configured.conformity %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Personnalisé</span>{% endif %}
+                        <span class="badge bg-secondary ms-2">{{ conformity_included|length }}/{{ conformity_categories|length }}</span>
+                    </button>
+                </h2>
+                <div id="secConformity" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
+                    <div class="accordion-body">
+                        <p class="text-muted small">Catégories prises en compte dans l'indicateur de <strong>Conformité globale</strong> du tableau de bord. Les cartes de chaque catégorie restent visibles ; seul le pourcentage global est affecté.</p>
+                        <form method="POST" action="{{ url_for('auth.preferences') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="save_conformity">
+                            <div class="row g-2">
+                                {% for cat in conformity_categories %}
+                                <div class="col-md-6 col-lg-4">
+                                    <label class="d-flex align-items-center gap-2 p-2 rounded border mb-0" style="cursor: pointer;">
+                                        <input type="checkbox" class="form-check-input mt-0" name="conformity"
+                                               value="{{ cat }}" {{ 'checked' if cat in conformity_included }}>
+                                        <span class="fw-medium small">{{ conformity_labels.get(cat, cat) }}</span>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary mt-2"><i class="bi bi-check-lg me-1"></i> Enregistrer la conformité</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
             {# ===================== BASE DE DONNÉES ===================== #}
-            <div class="accordion-item">
+            <div class="accordion-item" style="order:3;">
                 <h2 class="accordion-header">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secDb" aria-expanded="false" aria-controls="secDb">
                         <i class="bi bi-database me-2"></i>Base de données
@@ -496,7 +702,7 @@
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="action" value="delete_db_backup">
                                         <input type="hidden" name="name" value="{{ b.name }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Supprimer">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Supprimer" aria-label="Supprimer">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
@@ -513,4 +719,40 @@
         </div>
     </div>
 </div>
+
+<script>
+// Conserve le bloc ouvert apres un enregistrement (la page se recharge en POST).
+(function () {
+    var acc = document.getElementById('prefsAccordion');
+    if (!acc) return;
+    var KEY = 'prefsOpenSection';
+
+    function openSection(id) {
+        var target = document.getElementById(id);
+        if (!target) return;
+        acc.querySelectorAll('.accordion-collapse.show').forEach(function (el) {
+            if (el.id === id) return;
+            el.classList.remove('show');
+            var b = acc.querySelector('[data-bs-target="#' + el.id + '"]');
+            if (b) { b.classList.add('collapsed'); b.setAttribute('aria-expanded', 'false'); }
+        });
+        target.classList.add('show');
+        var btn = acc.querySelector('[data-bs-target="#' + id + '"]');
+        if (btn) { btn.classList.remove('collapsed'); btn.setAttribute('aria-expanded', 'true'); }
+    }
+
+    // Rouvre le dernier bloc actif (apres reload), puis oublie pour ne pas
+    // figer la navigation suivante.
+    var saved = sessionStorage.getItem(KEY);
+    if (saved) { openSection(saved); sessionStorage.removeItem(KEY); }
+
+    // Memorise le bloc dont un formulaire vient d'etre soumis.
+    acc.querySelectorAll('form').forEach(function (form) {
+        form.addEventListener('submit', function () {
+            var col = form.closest('.accordion-collapse');
+            if (col) sessionStorage.setItem(KEY, col.id);
+        });
+    });
+})();
+</script>
 {% endblock %}

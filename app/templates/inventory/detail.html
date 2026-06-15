@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ item.name }} - Inventaire{% endblock %}
-{% set status_labels = {'danger': 'Critique', 'warning': 'À surveiller', 'info': 'Proche', 'success': 'OK'} %}
+{% from '_macros.html' import status_badge %}
 {% set crit_colors = {1: 'secondary', 2: 'info', 3: 'warning', 4: 'danger'} %}
 
 {% macro row(label, value) %}
@@ -28,7 +28,7 @@
                 <h6 class="fw-bold mb-0">Fiche équipement</h6>
                 <div class="d-flex gap-2 align-items-center">
                     {% if item.criticality %}<span class="badge bg-{{ crit_colors.get(item.criticality, 'secondary') }}">Criticité {{ item.criticality }}</span>{% endif %}
-                    <span class="badge-status badge-{{ item.computed_status() }}">{{ status_labels.get(item.computed_status(), item.computed_status()) }}</span>
+                    {{ status_badge(item.computed_status(), kind='inventory') }}
                 </div>
             </div>
 
@@ -104,6 +104,71 @@
             <small class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Aucune sauvegarde renseignée.</small>
             {% endif %}
         </div>
+
+        {% if item.supplier %}
+        <div class="data-card p-4 mb-3">
+            <h6 class="fw-bold mb-3"><i class="bi bi-building me-2 text-info"></i>Support / fournisseur</h6>
+            <div class="fw-medium mb-1">{{ item.supplier.name }}
+                <span class="badge bg-light text-dark border ms-1">{{ item.supplier.kind_label() }}</span></div>
+            <table class="table table-borderless table-sm mb-0">
+                {{ row('Hotline', item.supplier.support_phone or item.supplier.phone) }}
+                {{ row('Horaires', item.supplier.hours) }}
+                {{ row('N° client', item.supplier.customer_ref) }}
+                {{ row('Email', item.supplier.email) }}
+            </table>
+            {% if item.supplier.support_url %}
+            <a href="{{ item.supplier.support_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary mt-2">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Portail support
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% set linked = item.linked_items() %}
+        {% set show_certs = current_user.can_view('certificates') and linked['certificates'] %}
+        {% set show_bkps = current_user.can_view('backups') and linked['backups'] %}
+        {% set show_upds = current_user.can_view('updates') and linked['updates'] %}
+        {% if show_certs or show_bkps or show_upds %}
+        <div class="data-card p-4 mb-3">
+            <h6 class="fw-bold mb-3"><i class="bi bi-diagram-3 me-2 text-primary"></i>Éléments liés</h6>
+            {% if show_certs %}
+            <small class="text-muted d-block mb-1">Certificats</small>
+            <ul class="list-unstyled mb-2">
+                {% for c in linked['certificates'] %}
+                <li class="mb-1">
+                    <span class="badge-status badge-{{ c.status() }} me-1"></span>
+                    <a href="{{ url_for('certificates.detail', id=c.id) }}">{{ c.service_name }} — {{ c.domain }}</a>
+                    <small class="text-muted">exp. {{ c.expiry_date.strftime('%d/%m/%Y') }}</small>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% if show_bkps %}
+            <small class="text-muted d-block mb-1">Sauvegardes</small>
+            <ul class="list-unstyled mb-2">
+                {% for b in linked['backups'] %}
+                <li class="mb-1">
+                    <span class="badge-status badge-{{ b.computed_status() }} me-1"></span>
+                    <a href="{{ url_for('backups.detail', id=b.id) }}">{{ b.service_name }}</a>
+                    <small class="text-muted">{{ b.frequency_label().lower() }}</small>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% if show_upds %}
+            <small class="text-muted d-block mb-1">Mises à jour</small>
+            <ul class="list-unstyled mb-0">
+                {% for u in linked['updates'] %}
+                <li class="mb-1">
+                    <span class="badge-status badge-{{ u.status_color() }} me-1"></span>
+                    <a href="{{ url_for('updates.detail', id=u.id) }}">{{ u.name }}</a>
+                    {% if u.current_version %}<small class="text-muted">v{{ u.current_version }}</small>{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endif %}
 
         {% if current_user.can_delete('inventory') %}
         <div class="data-card p-4">

@@ -7,9 +7,79 @@
         <h4 class="fw-bold mb-0"><i class="bi bi-calendar-event me-2"></i>À venir</h4>
         <small class="text-muted">Échéances des prochaines semaines</small>
     </div>
-    <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-grid-1x2 me-1"></i> Tableau de bord
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('dashboard.agenda_ics') }}" class="btn btn-outline-primary"
+           title="Télécharger un instantané des échéances au format iCalendar">
+            <i class="bi bi-download me-1"></i> Télécharger (.ics)
+        </a>
+        <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-grid-1x2 me-1"></i> Tableau de bord
+        </a>
+    </div>
+</div>
+
+<div class="data-card p-3 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-2">
+        <i class="bi bi-calendar-plus text-primary"></i>
+        <h6 class="fw-bold mb-0">Abonnement calendrier</h6>
+    </div>
+    {% if ics_url %}
+    <p class="small text-muted mb-2">
+        Collez ce lien dans Outlook (<em>Ajouter un calendrier → S'abonner à partir du web</em>)
+        ou Thunderbird (<em>Nouveau calendrier → Sur le réseau</em>) : votre calendrier se mettra
+        à jour automatiquement, sans réexporter. Ce lien est personnel — il donne accès à vos
+        échéances sans mot de passe, ne le partagez pas.
+    </p>
+    <div class="input-group input-group-sm mb-2">
+        <input type="text" class="form-control" id="icsUrl" readonly value="{{ ics_url }}">
+        <button type="button" class="btn btn-outline-primary" id="icsCopyBtn">
+            <i class="bi bi-clipboard me-1"></i> Copier
+        </button>
+    </div>
+    <div class="d-flex gap-2">
+        <form method="POST" action="{{ url_for('dashboard.agenda_ics_token') }}"
+              onsubmit="return confirm('Régénérer le lien ? Les calendriers abonnés avec l\'ancien lien cesseront de se mettre à jour.')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-repeat me-1"></i> Régénérer
+            </button>
+        </form>
+        <form method="POST" action="{{ url_for('dashboard.agenda_ics_token') }}"
+              onsubmit="return confirm('Désactiver le lien ? Les calendriers abonnés ne seront plus alimentés.')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="disable">
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-x-circle me-1"></i> Désactiver
+            </button>
+        </form>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var btn = document.getElementById('icsCopyBtn');
+        btn.addEventListener('click', function () {
+            var input = document.getElementById('icsUrl');
+            input.select();
+            navigator.clipboard.writeText(input.value).then(function () {
+                btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Copié';
+                setTimeout(function () {
+                    btn.innerHTML = '<i class="bi bi-clipboard me-1"></i> Copier';
+                }, 2000);
+            });
+        });
+    });
+    </script>
+    {% else %}
+    <p class="small text-muted mb-2">
+        Créez un lien personnel à coller dans Outlook ou Thunderbird : votre calendrier
+        récupérera les échéances automatiquement, sans avoir à réexporter de fichier.
+    </p>
+    <form method="POST" action="{{ url_for('dashboard.agenda_ics_token') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-link-45deg me-1"></i> Créer le lien d'abonnement
+        </button>
+    </form>
+    {% endif %}
 </div>
 
 {% if not buckets %}

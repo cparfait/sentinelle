@@ -80,14 +80,17 @@ function initStatusFilters() {
             if (m) counts[m[1]]++;
         });
         const bar = document.createElement('div');
-        bar.className = 'd-flex gap-2 mb-3 flex-wrap';
+        bar.className = 'status-filter-bar d-flex gap-2 mb-3 flex-wrap';
+        let allBtn = null;
         FILTERS.forEach(function(f) {
             if (f.key !== 'all' && !counts[f.key]) return;
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'btn btn-sm btn-outline-' + f.cls;
-            btn.textContent = f.label + (f.key === 'all' ? '' : ' (' + counts[f.key] + ')');
+            btn.className = 'status-filter status-filter-' + f.cls;
+            btn.innerHTML = '<span class="status-filter-label">' + f.label + '</span>' +
+                (f.key === 'all' ? '' : '<span class="status-filter-count">' + counts[f.key] + '</span>');
             btn.dataset.filter = f.key;
+            if (f.key === 'all') allBtn = btn;
             btn.addEventListener('click', function() {
                 bar.querySelectorAll('button').forEach(function(b) { b.classList.remove('active'); });
                 btn.classList.add('active');
@@ -97,6 +100,8 @@ function initStatusFilters() {
             });
             bar.appendChild(btn);
         });
+        // « Tous » actif par defaut (toutes les lignes visibles).
+        if (allBtn) allBtn.classList.add('active');
         // insere la barre juste avant la carte contenant le tableau
         const card = table.closest('.data-card') || table;
         card.parentNode.insertBefore(bar, card);

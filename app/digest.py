@@ -3,13 +3,19 @@ from datetime import datetime, timezone
 from html import escape
 
 from app.models import (Account, Certificate, Backup, TestTask, Domain,
-                        AccessReview, SystemUpdate)
+                        AccessReview, SystemUpdate, Contract)
 from app.snooze import is_snoozed
 
 _COLORS = {'danger': '#ef4444', 'warning': '#f59e0b', 'info': '#3b82f6',
            'success': '#10b981'}
 _LABELS = {'danger': 'Critique', 'warning': 'Attention', 'info': 'A surveiller',
            'success': 'OK'}
+# Page de liste de chaque domaine, pour rendre les pastilles « a traiter »
+# cliquables dans le mail de recap.
+_LIST_PATHS = {'Comptes': '/accounts/', 'Certificats': '/certificates/',
+               'Domaines': '/domains/', 'Backups': '/backups/', 'Tests': '/tests/',
+               'Revue de droits': '/reviews/', 'Mises a jour': '/updates/',
+               'Contrats': '/contracts/'}
 
 
 def _collect():
@@ -120,6 +126,23 @@ def _collect():
                           'status': s, 'path': f'/updates/{u.id}'})
     domains.append({'key': 'Mises a jour', 'total': len(updates), 'items': items})
 
+    # Contrats & licences
+    contracts = Contract.query.filter_by(is_active=True).all()
+    items = []
+    for c in contracts:
+        if is_snoozed('contract', c.id):
+            continue
+        s = c.status()
+        if s in ('danger', 'warning'):
+            items.append({'name': c.name,
+                          'detail': 'Agir avant le ' + (
+                              c.action_deadline().strftime('%d/%m/%Y')
+                              if c.action_deadline() else '?'),
+                          'status': s, 'path': f'/contracts/{c.id}'})
+    domains.append({'key': 'Contrats', 'total': len(contracts), 'items': items})
+
+    for d in domains:
+        d['path'] = _LIST_PATHS.get(d['key'], '')
     return domains
 
 
@@ -162,12 +185,18 @@ def build_daily_digest(base_url=''):
         nw = sum(1 for it in d['items'] if it['status'] == 'warning')
         color = _COLORS['danger'] if nd else (_COLORS['warning'] if nw else _COLORS['success'])
         badge = f'{nd + nw} a traiter' if (nd or nw) else 'OK'
-        pills += (
-            f'<td style="padding:6px;"><div style="border:1px solid #e2e8f0;border-radius:8px;'
-            f'padding:10px;text-align:center;"><div style="font-size:12px;color:#64748b;">{escape(d["key"])}</div>'
+        card = (
+            f'<div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px;text-align:center;">'
+            f'<div style="font-size:12px;color:#64748b;">{escape(d["key"])}</div>'
             f'<div style="font-size:13px;font-weight:700;color:{color};margin-top:4px;">{badge}</div>'
-            f'<div style="font-size:11px;color:#94a3b8;">{d["total"]} suivis</div></div></td>'
+            f'<div style="font-size:11px;color:#94a3b8;">{d["total"]} suivis</div></div>'
         )
+        # Pastille cliquable vers la liste de la categorie (si l'URL est connue).
+        link = f'{base}{d["path"]}' if (base and d.get('path')) else None
+        if link:
+            card = (f'<a href="{escape(link)}" style="text-decoration:none;color:inherit;'
+                    f'display:block;">{card}</a>')
+        pills += f'<td style="padding:6px;">{card}</td>'
 
     blocks = ''
     if not has_urgent:
@@ -195,6 +224,16 @@ def build_daily_digest(base_url=''):
                 f'<table style="width:100%;border-collapse:collapse;font-size:14px;">{rows}</table>'
             )
 
+    # Bouton d'acces direct a l'application (si l'URL de base est connue).
+    cta = ''
+    if base:
+        cta = (
+            f'<div style="text-align:center;margin-top:18px;">'
+            f'<a href="{escape(base + "/")}" style="display:inline-block;background:#4f46e5;'
+            f'color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 22px;'
+            f'border-radius:8px;">Ouvrir Sentinelle</a></div>'
+        )
+
     html_body = (
         '<!DOCTYPE html><html lang="fr"><body style="margin:0;background:#f1f5f9;'
         'font-family:Segoe UI,Arial,sans-serif;color:#334155;">'
@@ -206,6 +245,7 @@ def build_daily_digest(base_url=''):
         '<div style="padding:20px 24px;">'
         f'<table style="width:100%;border-collapse:collapse;table-layout:fixed;"><tr>{pills}</tr></table>'
         f'<div style="margin-top:8px;">{blocks}</div>'
+        f'{cta}'
         '</div>'
         '<div style="padding:14px 24px;background:#f8fafc;color:#94a3b8;font-size:12px;'
         'border-top:1px solid #e2e8f0;">Recapitulatif automatique — Sentinelle, supervision DSI.</div>'

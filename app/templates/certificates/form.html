@@ -28,7 +28,7 @@
                         <div class="input-group">
                             <input type="text" name="domain" id="domainInput" class="form-control"
                                    value="{{ certificate.domain if certificate else '' }}" required
-                                   placeholder="exemple.chatillon92.fr">
+                                   placeholder="exemple.votredomaine.fr">
                             <button type="button" class="btn btn-outline-primary" id="checkTlsBtn"
                                     title="Lire le certificat du domaine">
                                 <i class="bi bi-shield-check"></i> Vérifier
@@ -66,11 +66,16 @@
                     </div>
                 </div>
                 <div class="mb-3">
-                    <div class="form-check">
+                    <div class="form-check form-switch">
                         <input type="checkbox" name="auto_renew" class="form-check-input" id="autoRenew"
                                {{ 'checked' if certificate and certificate.auto_renew }}>
                         <label class="form-check-label" for="autoRenew">Auto-renouvellement active</label>
                     </div>
+                </div>
+                <div class="mb-3">
+                    {% with selected_id = certificate.equipment_id if certificate else none %}
+                    {% include '_equipment_select.html' %}
+                    {% endwith %}
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-medium">Description / Notes</label>

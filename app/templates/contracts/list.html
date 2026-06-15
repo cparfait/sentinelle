@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Contrats - Sentinelle{% endblock %}
+{% from '_macros.html' import status_badge %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-file-earmark-text me-2"></i>Contrats &amp; licences</h4>
+        <small class="text-muted">Échéances, préavis de résiliation et coûts
+            {% if total_cost %}— {{ '%.0f' | format(total_cost) }} € / an au total{% endif %}</small>
+    </div>
+    <div class="d-flex gap-2">
+        {% with csv_key='contracts' %}{% include '_csv_toolbar.html' %}{% endwith %}
+        {% if current_user.can_edit('contracts') %}
+        <a href="{{ url_for('contracts.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Ajouter un contrat
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{% include '_list_search.html' %}
+
+<div class="data-card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 js-filterable">
+            <thead>
+                <tr>
+                    <th>Contrat</th>
+                    <th>Type</th>
+                    <th>Fournisseur</th>
+                    <th>Échéance</th>
+                    <th>Agir avant</th>
+                    <th>Coût / an</th>
+                    <th>Tacite</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in contracts %}
+                <tr class="row-{{ c.status() }}">
+                    <td>
+                        <a href="{{ url_for('contracts.detail', id=c.id) }}" class="fw-medium text-decoration-none">{{ c.name }}</a>
+                        {% if c.reference %}<br><small class="text-muted"><code>{{ c.reference }}</code></small>{% endif %}
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ c.kind_label() }}</span></td>
+                    <td>{{ c.supplier.name if c.supplier else '-' }}</td>
+                    <td>{{ c.end_date.strftime('%d/%m/%Y') if c.end_date else '-' }}</td>
+                    <td>
+                        {% set days = c.days_left() %}
+                        {% if days is not none %}
+                        <span class="fw-bold text-{{ {'danger': 'danger', 'warning': 'warning', 'info': 'info', 'success': 'success'}[c.status()] }}">
+                            {{ c.action_deadline().strftime('%d/%m/%Y') }} ({{ days }}j)
+                        </span>
+                        {% else %}<span class="text-muted">-</span>{% endif %}
+                    </td>
+                    <td>{{ ('%.0f' | format(c.cost_yearly)) ~ ' €' if c.cost_yearly else '-' }}</td>
+                    <td>
+                        {% if c.auto_renew %}<span class="badge bg-warning text-dark"><i class="bi bi-arrow-repeat me-1"></i>Oui</span>
+                        {% else %}<span class="badge bg-secondary">Non</span>{% endif %}
+                    </td>
+                    <td>{{ status_badge(c.status()) }}</td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{{ url_for('contracts.detail', id=c.id) }}" class="btn btn-sm btn-outline-primary" title="Voir" aria-label="Voir"><i class="bi bi-eye"></i></a>
+                            {% if current_user.can_edit('contracts') %}
+                            <a href="{{ url_for('contracts.edit', id=c.id) }}" class="btn btn-sm btn-outline-secondary" title="Modifier" aria-label="Modifier"><i class="bi bi-pencil"></i></a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center py-4 text-muted">
+                        <i class="bi bi-file-earmark-text" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">Aucun contrat.
+                            {% if current_user.can_edit('contracts') %}
+                            <a href="{{ url_for('contracts.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a>
+                            {% endif %}
+                        </p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% include '_pagination.html' %}
+{% endblock %}

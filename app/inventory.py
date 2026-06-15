@@ -1,16 +1,16 @@
 from datetime import datetime
 from flask import (Blueprint, render_template, redirect, url_for, request, flash)
-from flask_login import login_required, current_user
+from flask_login import login_required
 from app import db
-from app.models import (Equipment, EQUIPMENT_KIND_LABELS, ENVIRONMENT_LABELS,
-                        CRITICALITY_LABELS)
+from app.models import (Equipment, EQUIPMENT_KIND_LABELS, CRITICALITY_LABELS)
 from app.decorators import require_edit, require_delete, view_guard
 from app.audit import record as audit_record
 
 bp = Blueprint('inventory', __name__)
 
 KIND_CHOICES = [('vm', 'VM'), ('physical', 'Serveur physique'), ('nas', 'NAS')]
-ENV_CHOICES = [('', '—'), ('prod', 'Production'), ('preprod', 'Préproduction'), ('dev', 'Développement')]
+ENV_CHOICES = [('', '—'), ('prod', 'Production'), ('preprod', 'Préproduction'),
+               ('dev', 'Développement'), ('decommissioned', 'Décommissionné')]
 SEARCH_FIELDS = ['name', 'os', 'os_version', 'ip_address', 'host_server', 'hypervisor',
                  'role_principal', 'business_software', 'serial_number',
                  'manufacturer_model', 'usage', 'observations']
@@ -19,6 +19,21 @@ SEARCH_FIELDS = ['name', 'os', 'os_version', 'ip_address', 'host_server', 'hyper
 @bp.before_request
 def _guard_view():
     return view_guard('inventory')
+
+
+def active_equipments():
+    """Equipements actifs, pour les selects « équipement lié » des autres
+    modules (certificats, backups, mises à jour)."""
+    return Equipment.query.filter_by(is_active=True).order_by(Equipment.name).all()
+
+
+def parse_equipment_id(value):
+    """Id d'equipement valide (existant) ou None (champ vide / valeur invalide)."""
+    try:
+        eid = int(value)
+    except (TypeError, ValueError):
+        return None
+    return eid if db.session.get(Equipment, eid) else None
 
 
 def _pd(v):
@@ -73,6 +88,7 @@ def _apply_form(eq, f):
     eq.purchase_date = _pd(f.get('purchase_date'))
     eq.warranty_end = _pd(f.get('warranty_end'))
     eq.maintenance_contract = _txt(f, 'maintenance_contract')
+    eq.supplier_id = int(f['supplier_id']) if (f.get('supplier_id') or '').isdigit() else None
     eq.protocols = _txt(f, 'protocols')
     eq.access = _txt(f, 'access')
     eq.capacity_to = _pf(f.get('capacity_to'))
@@ -91,8 +107,11 @@ def _apply_form(eq, f):
 
 
 def _render_form(item):
+    from app.models import Supplier
+    suppliers = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
     return render_template('inventory/form.html', item=item, kind_choices=KIND_CHOICES,
-                           env_choices=ENV_CHOICES, crit_labels=CRITICALITY_LABELS)
+                           env_choices=ENV_CHOICES, crit_labels=CRITICALITY_LABELS,
+                           suppliers=suppliers)
 
 
 @bp.route('/')
@@ -107,14 +126,15 @@ def list():
         'criticality': request.args.get('criticality', '').strip(),
         'status': request.args.get('status', '').strip(),
         'os': request.args.get('os', '').strip(),
-        'hypervisor': request.args.get('hypervisor', '').strip(),
+        'vlan': request.args.get('vlan', '').strip(),
         'supervision': request.args.get('supervision', '').strip(),   # yes / no
         'warranty': request.args.get('warranty', '').strip(),         # expiring / expired
         'no_backup': request.args.get('no_backup', '').strip(),       # 1
     }
     if kind in ('vm', 'physical', 'nas'):
         items = [e for e in items if e.kind == kind]
-    from app.paging import paginate, text_search
+    from app.paging import paginate, text_search, resolve_per_page
+
     items = text_search(items, q, SEARCH_FIELDS)
 
     def keep(e):
@@ -126,7 +146,7 @@ def list():
             return False
         if f['os'] and f['os'].lower() not in (e.os or '').lower():
             return False
-        if f['hypervisor'] and f['hypervisor'].lower() not in (e.hypervisor or '').lower():
+        if f['vlan'] and f['vlan'].lower() not in (e.vlan or '').lower():
             return False
         if f['supervision'] == 'yes' and not (e.supervised or e.supervision):
             return False
@@ -146,16 +166,48 @@ def list():
 
     items = [e for e in items if keep(e)]
     active_filters = sum(1 for v in f.values() if v)
+
+    # Tri : par colonne (clic sur l'entete) sinon par criticite decroissante.
     rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
-    items.sort(key=lambda e: rank.get(e.computed_status(), 4))
-    items, page, pages, total = paginate(items)
+    sort = request.args.get('sort', '').strip()
+    direction = request.args.get('dir', 'asc').strip()
+    _NUMERIC = {'criticality', 'vcpu', 'ram_go', 'capacity_to', 'used_to', 'storage'}
+    _DATES = {'os_last_update', 'purchase_date', 'warranty_end'}
+    sortable = sort == 'name' or sort == 'status' or sort == 'storage' or hasattr(Equipment, sort)
+
+    if sort and sortable:
+        from datetime import date
+
+        def skey(e):
+            if sort == 'name':
+                return (e.name or '').lower()
+            if sort == 'status':
+                return rank.get(e.computed_status(), 4)
+            if sort == 'storage':
+                return sum(x for x in (e.hdd1_go, e.hdd2_go, e.hdd3_go) if x) or 0
+            v = getattr(e, sort, None)
+            if sort in _NUMERIC:
+                return v if v is not None else -1
+            if sort in _DATES:
+                return v or date.min
+            return str(v or '').lower()
+        items.sort(key=skey, reverse=(direction == 'desc'))
+    else:
+        sort = ''
+        items.sort(key=lambda e: rank.get(e.computed_status(), 4))
+
+    per_page = resolve_per_page()
+    items, page, pages, total = paginate(items, per_page)
     counts = {k: Equipment.query.filter_by(is_active=True, kind=k).count()
               for k in ('vm', 'physical', 'nas')}
+    from app.paging import PER_PAGE_CHOICES
     return render_template('inventory/list.html', items=items, q=q, kind=kind, counts=counts,
                            kind_labels=EQUIPMENT_KIND_LABELS, crit_labels=CRITICALITY_LABELS,
                            filters=f, active_filters=active_filters,
                            env_choices=ENV_CHOICES, crit_labels_dict=CRITICALITY_LABELS,
-                           page=page, pages=pages, total=total)
+                           page=page, pages=pages, total=total,
+                           sort=sort, dir=direction, per_page=per_page,
+                           per_page_choices=PER_PAGE_CHOICES)
 
 
 @bp.route('/create', methods=['GET', 'POST'])

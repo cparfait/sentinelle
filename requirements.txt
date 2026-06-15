@@ -15,4 +15,5 @@ ldap3==2.9.1
 pyotp==2.9.0
 qrcode==8.2
 openpyxl==3.1.5
+cryptography==46.0.7
 waitress==3.0.2

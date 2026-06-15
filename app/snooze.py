@@ -4,7 +4,8 @@ from datetime import datetime, timezone, timedelta
 from app import db
 from app.models import AlertSnooze
 
-VALID_TYPES = ('account', 'certificate', 'backup', 'test', 'domain', 'review', 'update', 'equipment')
+VALID_TYPES = ('account', 'certificate', 'backup', 'test', 'domain', 'review',
+               'update', 'equipment', 'contract')
 
 
 def get_active_snooze(entity_type, entity_id):

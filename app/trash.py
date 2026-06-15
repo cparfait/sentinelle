@@ -3,7 +3,7 @@ from app import db
 from app.models import (Account, AccountHistory, Certificate, CertificateHistory,
                         Domain, DomainHistory, Backup, BackupHistory, TestTask,
                         TestHistory, AccessReview, ReviewHistory, SystemUpdate,
-                        UpdateHistory)
+                        UpdateHistory, Equipment, Supplier, Contract, ContractHistory)
 
 SPECS = {
     'account': {'model': Account, 'cat': 'accounts', 'hist': AccountHistory,
@@ -22,6 +22,14 @@ SPECS = {
                'fk': 'review_id', 'label': 'Revue de droits', 'name': lambda o: o.application},
     'update': {'model': SystemUpdate, 'cat': 'updates', 'hist': UpdateHistory,
                'fk': 'update_id', 'label': 'Mises à jour', 'name': lambda o: o.name},
+    # Pas de modèle d'historique dédié pour l'inventaire : la restauration est
+    # tracée via le journal d'audit (ActionLog) par la route appelante.
+    'equipment': {'model': Equipment, 'cat': 'inventory', 'hist': None,
+                  'fk': None, 'label': 'Inventaire', 'name': lambda o: o.name},
+    'contract': {'model': Contract, 'cat': 'contracts', 'hist': ContractHistory,
+                 'fk': 'contract_id', 'label': 'Contrats', 'name': lambda o: o.name},
+    'supplier': {'model': Supplier, 'cat': 'contracts', 'hist': None,
+                 'fk': None, 'label': 'Fournisseurs', 'name': lambda o: o.name},
 }
 
 
@@ -47,6 +55,15 @@ def _purge_obj(etype, obj):
     """Suppression definitive d'un objet + nettoyage du snooze associe."""
     from app.snooze import clear_snooze
     clear_snooze(etype, obj.id)
+    if etype == 'equipment':
+        # SQLite n'applique pas les FK : on detache explicitement les elements
+        # lies (vue 360°) pour ne pas laisser d'equipment_id orphelin.
+        for model in (Certificate, Backup, SystemUpdate, Contract):
+            model.query.filter_by(equipment_id=obj.id).update({'equipment_id': None})
+    if etype == 'supplier':
+        # Meme principe : detacher les references avant suppression definitive.
+        Equipment.query.filter_by(supplier_id=obj.id).update({'supplier_id': None})
+        Contract.query.filter_by(supplier_id=obj.id).update({'supplier_id': None})
     db.session.delete(obj)
 
 
@@ -84,13 +101,14 @@ def restore(user, etype, entity_id, performed_by):
     s = SPECS.get(etype)
     if not s or not str(entity_id).isdigit() or not user.can_edit(s['cat']):
         return None
-    obj = s['model'].query.get(int(entity_id))
+    obj = db.session.get(s['model'], int(entity_id))
     if not obj:
         return None
     obj.is_active = True
     name = s['name'](obj)
-    db.session.add(s['hist'](**{s['fk']: obj.id, 'action': 'restored',
-                                'comment': 'Restaure depuis la corbeille',
-                                'performed_by': performed_by}))
+    if s['hist'] is not None:
+        db.session.add(s['hist'](**{s['fk']: obj.id, 'action': 'restored',
+                                    'comment': 'Restaure depuis la corbeille',
+                                    'performed_by': performed_by}))
     db.session.commit()
     return (s['label'], name)

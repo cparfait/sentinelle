@@ -4,6 +4,8 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import SystemUpdate, UpdateHistory, Asset
 from app.decorators import require_edit, require_delete, view_guard
+from app.inventory import active_equipments as _active_equipments
+from app.inventory import parse_equipment_id as _parse_equipment_id
 
 bp = Blueprint('updates', __name__)
 
@@ -52,6 +54,7 @@ def create():
             updated_by=request.form.get('updated_by', '').strip() or None,
             description=request.form.get('description'),
             priority=request.form.get('priority', 'medium'),
+            equipment_id=_parse_equipment_id(request.form.get('equipment_id')),
         )
         db.session.add(u)
         db.session.commit()
@@ -61,6 +64,7 @@ def create():
         flash('Mise a jour ajoutee', 'success')
         return redirect(url_for('updates.list'))
     return render_template('updates/form.html', update=None, assets=_active_assets(),
+                           equipments=_active_equipments(),
                            status_choices=STATUS_CHOICES, type_choices=TYPE_CHOICES)
 
 
@@ -89,10 +93,12 @@ def edit(id):
         update.updated_by = request.form.get('updated_by', '').strip() or None
         update.description = request.form.get('description')
         update.priority = request.form.get('priority', 'medium')
+        update.equipment_id = _parse_equipment_id(request.form.get('equipment_id'))
         db.session.commit()
         flash('Mise a jour modifiee', 'success')
         return redirect(url_for('updates.detail', id=id))
     return render_template('updates/form.html', update=update, assets=_active_assets(),
+                           equipments=_active_equipments(),
                            status_choices=STATUS_CHOICES, type_choices=TYPE_CHOICES)
 
 

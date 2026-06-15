@@ -10,7 +10,7 @@
     <div class="d-flex gap-2">
         {% if groups | selectattr('can_purge') | list %}
         <form method="POST" action="{{ url_for('dashboard.trash_purge') }}"
-              onsubmit="return confirm('Vider la corbeille ? Cette suppression est definitive.')">
+              onsubmit="return confirm('Vider la corbeille ? Cette suppression est définitive.')">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-outline-danger">
                 <i class="bi bi-trash3 me-1"></i> Vider la corbeille
@@ -56,7 +56,7 @@
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="entity_type" value="{{ g.etype }}">
                                 <input type="hidden" name="entity_id" value="{{ it.id }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer définitivement">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer définitivement" aria-label="Supprimer définitivement">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>

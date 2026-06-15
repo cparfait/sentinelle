@@ -20,6 +20,7 @@ _DETAIL_ENDPOINT = {
     'review': 'reviews.detail',
     'update': 'updates.detail',
     'equipment': 'inventory.detail',
+    'contract': 'contracts.detail',
 }
 
 # Prefixe d'URL quand il differe de entity_type + 's' (pour les liens des emails)
@@ -80,10 +81,54 @@ def unsnooze():
     return redirect(url_for(_DETAIL_ENDPOINT[entity_type], id=int(entity_id)))
 
 
+def should_send_reminder(entity_type, entity_id, days_left, thresholds):
+    """Politique de rappel avec rattrapage, basee sur l'echeance et la date de
+    la derniere alerte reellement envoyee (AlertLog). Remplace les anciens
+    declenchements a jours exacts (30, 15, 7...) ou une alerte ratee — job en
+    erreur, serveur eteint — n'etait jamais rattrapee.
+
+    `thresholds` est le triplet (danger, warning, info) en jours restants :
+      - au-dela du seuil info : pas d'alerte ;
+      - zone info/warning : rappel tous les 7 jours ;
+      - zone danger : rappel tous les 2 jours ;
+      - echeance depassee : rappel quotidien.
+    """
+    if not thresholds or len(thresholds) != 3:
+        return False  # config corrompue : on n'alerte pas plutot que planter le job
+    danger, _warning, info = thresholds
+    if days_left > info:
+        return False
+    if days_left < 0:
+        cadence = 1
+    elif days_left <= danger:
+        cadence = 2
+    else:
+        cadence = 7
+    last = AlertLog.query.filter(
+        AlertLog.entity_type == entity_type,
+        AlertLog.entity_id == entity_id,
+        AlertLog.status == 'sent',
+    ).order_by(AlertLog.sent_at.desc()).first()
+    if last is None:
+        return True
+    return (datetime.now(timezone.utc).date() - last.sent_at.date()).days >= cadence
+
+
+def alert_recipients_for(entity_type=None):
+    """Destinataires d'une alerte : liste propre a la categorie si definie,
+    sinon repli sur la liste globale ALERT_RECIPIENTS."""
+    cfg = current_app.config
+    if entity_type:
+        specific = cfg.get(f'ALERT_RECIPIENTS_{entity_type.upper()}') or []
+        specific = [r.strip() for r in specific if r and r.strip()]
+        if specific:
+            return specific
+    return [r.strip() for r in (cfg.get('ALERT_RECIPIENTS') or []) if r and r.strip()]
+
+
 def send_alert(subject, body, entity_type=None, entity_id=None, entity_name=None,
                status='danger'):
-    recipients = current_app.config.get('ALERT_RECIPIENTS', [])
-    recipients = [r.strip() for r in recipients if r.strip()]
+    recipients = alert_recipients_for(entity_type)
     if not recipients:
         return
 
@@ -111,10 +156,12 @@ def send_alert(subject, body, entity_type=None, entity_id=None, entity_name=None
         html_body = render_alert_email(subject, body, status=status, url=url)
         send_email(subject, recipients, body, html_body=html_body)
 
-        # Canaux additionnels (best-effort) : Teams / Slack / Discord
+        # Canaux additionnels (best-effort) : Teams / Slack / Discord.
+        # entity_type (singulier) -> categorie (pluriel) pour router les webhooks.
         try:
             from app.notify import notify_all
-            notify_all(subject, body, status=status, url=url)
+            category = (entity_type + 's') if entity_type else None
+            notify_all(subject, body, status=status, url=url, category=category)
         except Exception:
             pass
 

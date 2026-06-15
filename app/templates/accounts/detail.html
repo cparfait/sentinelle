@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ account.service_name }} - Sentinelle{% endblock %}
+{% from '_macros.html' import status_badge %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -17,18 +18,16 @@
     </div>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-8">
-        <div class="data-card p-4">
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="data-card p-4 mb-3">
             <div class="d-flex justify-content-between align-items-start mb-3">
                 <h6 class="fw-bold mb-0">Informations du compte</h6>
-                <span class="badge-status badge-{{ account.status() }}">
-                    {{ {'danger': 'Critique', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK'}.get(account.status(), account.status()) }}
-                </span>
+                {{ status_badge(account.status()) }}
             </div>
             <div class="row">
                 <div class="col-md-6">
-                    <table class="table table-borderless table-sm">
+                    <table class="table table-borderless table-sm mb-0">
                         <tr><td class="text-muted">Service</td><td class="fw-medium">{{ account.service_name }}</td></tr>
                         <tr><td class="text-muted">Utilisateur</td><td class="fw-medium">{{ account.username }}</td></tr>
                         <tr><td class="text-muted">URL</td><td class="fw-medium">{{ account.url or '-' }}</td></tr>
@@ -40,7 +39,7 @@
                     </table>
                 </div>
                 <div class="col-md-6">
-                    <table class="table table-borderless table-sm">
+                    <table class="table table-borderless table-sm mb-0">
                         <tr><td class="text-muted">Dernier changement</td><td class="fw-medium">{{ account.last_password_change.strftime('%d/%m/%Y') if account.last_password_change else '-' }}</td></tr>
                         <tr><td class="text-muted">Prochain changement</td><td class="fw-medium {% if account.status() == 'danger' %}text-danger{% endif %}">{{ account.next_password_change.strftime('%d/%m/%Y') if account.next_password_change else '-' }}</td></tr>
                         <tr><td class="text-muted">Rotation</td><td class="fw-medium">Tous les {{ account.rotation_days }} jours</td></tr>
@@ -56,20 +55,48 @@
                 </div>
             </div>
             {% if account.description %}
-            <div class="mt-2">
-                <small class="text-muted">Description:</small>
+            <div class="mt-2 pt-2 border-top">
+                <small class="text-muted">Description :</small>
                 <p class="mb-0">{{ account.description }}</p>
             </div>
             {% endif %}
         </div>
+
+        <div class="data-card">
+            <div class="card-header-custom">
+                <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique</h6>
+            </div>
+            <div class="p-4">
+                {% if histories %}
+                <div class="timeline">
+                    {% for h in histories %}
+                    <div class="timeline-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <span class="fw-medium">{{ h.action }}</span>
+                                {% if h.comment %}<br><small class="text-muted">{{ h.comment }}</small>{% endif %}
+                            </div>
+                            <div class="text-end">
+                                <small class="timeline-date">{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                                <br><small class="text-muted">{{ h.performed_by }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center mb-0">Aucun historique</p>
+                {% endif %}
+            </div>
+        </div>
     </div>
 
-    <div class="col-md-4">
+    <div class="col-lg-4">
         {% if current_user.can_edit('accounts') %}
         <div class="data-card p-4 mb-3">
             <h6 class="fw-bold mb-3"><i class="bi bi-check-circle me-2 text-success"></i>Actions rapides</h6>
             <form method="POST" action="{{ url_for('accounts.password_changed', id=account.id) }}" class="mb-3">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-2">
                     <label class="form-label small">Mot de passe changé le</label>
                     <input type="date" name="changed_on" class="form-control form-control-sm"
@@ -86,41 +113,13 @@
             </form>
             <form method="POST" action="{{ url_for('accounts.delete', id=account.id) }}"
                   onsubmit="return confirm('Supprimer ce compte ?')">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-outline-danger btn-sm w-100">
                     <i class="bi bi-trash me-1"></i> Supprimer
                 </button>
             </form>
         </div>
         {% with entity_type='account', entity_id=account.id %}{% include '_snooze_card.html' %}{% endwith %}
-        {% endif %}
-    </div>
-</div>
-
-<div class="data-card">
-    <div class="card-header-custom">
-        <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique</h6>
-    </div>
-    <div class="p-4">
-        {% if histories %}
-        <div class="timeline">
-            {% for h in histories %}
-            <div class="timeline-item">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <span class="fw-medium">{{ h.action }}</span>
-                        {% if h.comment %}<br><small class="text-muted">{{ h.comment }}</small>{% endif %}
-                    </div>
-                    <div class="text-end">
-                        <small class="timeline-date">{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</small>
-                        <br><small class="text-muted">{{ h.performed_by }}</small>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <p class="text-muted text-center mb-0">Aucun historique</p>
         {% endif %}
     </div>
 </div>

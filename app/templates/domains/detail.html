@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ domain.name }} - Sentinelle{% endblock %}
+{% from '_macros.html' import status_badge %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -19,15 +20,13 @@
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-8">
+<div class="row g-3">
+    <div class="col-lg-8">
         <div class="data-card p-4 mb-3">
             <div class="row">
                 <div class="col-sm-6 mb-3">
                     <small class="text-muted d-block">Statut</small>
-                    <span class="badge-status badge-{{ domain.status() }}">
-                        {{ {'danger': 'Critique', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK'}.get(domain.status(), domain.status()) }}
-                    </span>
+                    {{ status_badge(domain.status()) }}
                 </div>
                 <div class="col-sm-6 mb-3">
                     <small class="text-muted d-block">Expiration</small>
@@ -48,15 +47,38 @@
                 </div>
             </div>
             {% if domain.description %}
-            <div class="mt-2">
+            <div class="mt-2 pt-2 border-top">
                 <small class="text-muted d-block">Description</small>
                 <p class="mb-0">{{ domain.description }}</p>
             </div>
             {% endif %}
         </div>
+
+        <div class="data-card">
+            <div class="card-header-custom">
+                <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Date</th><th>Action</th><th>Commentaire</th><th>Par</th></tr></thead>
+                    <tbody>
+                        {% for h in histories %}
+                        <tr>
+                            <td class="text-nowrap">{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>{{ h.action }}</td>
+                            <td>{{ h.comment or '-' }}</td>
+                            <td class="text-nowrap">{{ h.performed_by or '-' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center py-3 text-muted">Aucun historique</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <div class="col-md-4">
+    <div class="col-lg-4">
         {% if current_user.can_edit('domains') %}
         <div class="data-card p-4 mb-3">
             <h6 class="fw-bold mb-2"><i class="bi bi-globe me-2 text-primary"></i>Vérification RDAP</h6>
@@ -79,29 +101,6 @@
             </form>
         </div>
         {% endif %}
-    </div>
-</div>
-
-<div class="data-card">
-    <div class="card-header-custom">
-        <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique</h6>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-hover mb-0">
-            <thead><tr><th>Date</th><th>Action</th><th>Commentaire</th><th>Par</th></tr></thead>
-            <tbody>
-                {% for h in histories %}
-                <tr>
-                    <td>{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</td>
-                    <td>{{ h.action }}</td>
-                    <td>{{ h.comment or '-' }}</td>
-                    <td>{{ h.performed_by or '-' }}</td>
-                </tr>
-                {% else %}
-                <tr><td colspan="4" class="text-center py-3 text-muted">Aucun historique</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
     </div>
 </div>
 {% endblock %}

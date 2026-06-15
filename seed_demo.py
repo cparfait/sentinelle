@@ -46,11 +46,11 @@ def seed():
         ('GED Maarch', 'application', f'Gestion electronique de documents {TAG}'),
         ('Finances Berger-Levrault', 'application', f'Comptabilite publique {TAG}'),
         ('Portail famille', 'application', f'Inscriptions periscolaires {TAG}'),
-        ('SRV-AD01', 'server', f'Contrôleur de domaine principal {TAG}'),
-        ('SRV-FILE01', 'server', f'Serveur de fichiers {TAG}'),
-        ('SRV-WEB01', 'server', f'Reverse proxy / web {TAG}'),
-        ('SRV-HYPERV01', 'server', f'Hôte de virtualisation {TAG}'),
-        ('SRV-SQL01', 'server', f'Base de donnees SQL {TAG}'),
+        ('SRV-AD01', 'divers', f'Contrôleur de domaine principal {TAG}'),
+        ('SRV-FILE01', 'divers', f'Serveur de fichiers {TAG}'),
+        ('SRV-WEB01', 'divers', f'Reverse proxy / web {TAG}'),
+        ('SRV-HYPERV01', 'divers', f'Hôte de virtualisation {TAG}'),
+        ('SRV-SQL01', 'divers', f'Base de donnees SQL {TAG}'),
     ]
     for name, atype, desc in assets:
         db.session.add(Asset(name=name, asset_type=atype, description=desc))

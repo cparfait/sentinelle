@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Tests - Sentinelle{% endblock %}
+{% from '_macros.html' import status_badge %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -62,9 +63,7 @@
                             {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(test.priority, test.priority) }}
                         </span>
                     </td>
-                    <td><span class="badge-status badge-{{ test.computed_status() }}">
-                        {{ {'danger': 'En retard', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK', 'pending': 'A faire'}.get(test.computed_status(), test.status) }}
-                    </span></td>
+                    <td>{{ status_badge(test.computed_status(), kind='test', fallback=test.status) }}</td>
                     <td>
                         <div class="d-flex gap-1">
                             <a href="{{ url_for('tests.detail', id=test.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
