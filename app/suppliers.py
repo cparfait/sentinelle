@@ -3,7 +3,7 @@
 Rattache a la categorie de permission « contracts » (Contrats & fournisseurs).
 """
 from flask import Blueprint, render_template, redirect, url_for, request, flash
-from flask_login import login_required, current_user
+from flask_login import login_required
 from app import db
 from app.models import Supplier, SUPPLIER_KIND_LABELS
 from app.decorators import require_edit, require_delete, view_guard
