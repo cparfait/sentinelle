@@ -32,6 +32,12 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ✅ **Sonde `/healthz`** — endpoint non authentifié pour la supervision (Zabbix/Centreon/NinjaOne) : app + base + scheduler (dernier job < 26 h). 200 = OK, 503 = problème.
 - ✅ **Calendrier ICS : téléchargement + abonnement** — bouton « Télécharger (.ics) » sur la page À venir, et **lien d'abonnement personnel** (jeton `User.ics_token`, génération/régénération/désactivation depuis la page) : Outlook/Thunderbird récupèrent le flux `/agenda.ics?token=…` automatiquement, filtré selon les droits du propriétaire du jeton. Plus besoin de réexporter.
 - ✅ **Corbeille : équipements restaurables** — l'inventaire est désormais géré par la page corbeille (restauration tracée dans le journal d'audit, purge avec détachement des certificats/backups/MàJ liés). Corrige l'incohérence badge sidebar vs page.
+- ✅ **Vue 360° : champ équipement au CSV** — colonne `equipment` (par nom) à l'import/export CSV des certificats, sauvegardes et mises à jour.
+- ✅ **Vue 360° : contrats** — contrats rattachés à un équipement intégrés à la section « Éléments liés » de la fiche et aux échéances de l'agenda.
+- ✅ **Agenda enrichi** — fins de garantie matérielle et fins de support OS (EOL) ajoutées aux échéances de la page À venir et au flux ICS.
+- ✅ **2FA obligatoire pour les admins** — option `REQUIRE_2FA_ADMIN` : un administrateur sans TOTP est contraint de l'activer avant tout accès.
+- ✅ **Anti-bruteforce par IP** — le blocage du login est désormais indexé sur le couple (identifiant, IP source) : un tiers ne peut plus verrouiller le compte d'un collègue à distance (déni de service ciblé).
+- ✅ **Bilan PDF planifié** — envoi automatique du bilan de supervision (hebdomadaire/mensuel) aux destinataires configurés.
 - ✅ **Suite pytest** — `tests/` : paliers de statuts (comptes, certificats, domaines, tests, revues, garanties), fréquences de backup + tolérance, politique de rappel d'alertes, snooze, healthz, ICS, vue 360° (29 tests). Intégrée à la CI.
 - ✅ **Rattrapage d'alertes** — fin des déclenchements à jours exacts (30, 15, 7…) : une alerte ratée (job en erreur, serveur éteint) est désormais rattrapée. Rappel tous les 7 j en zone attention, 2 j en zone critique, quotidien une fois l'échéance dépassée (`should_send_reminder`, basé sur `AlertLog`). Fenêtres alignées sur les seuils configurés (`THRESHOLD_*`).
 - ✅ **Tolérance de retard des jobs** — `misfire_grace_time=1h` + `coalesce` sur tous les jobs APScheduler : un job en retard s'exécute quand même au lieu d'être perdu pour la journée.

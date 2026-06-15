@@ -116,6 +116,24 @@ def create_app(config_class=Config):
                      "base-uri 'self'; form-action 'self'")
         return resp
 
+    @app.before_request
+    def _enforce_admin_2fa():
+        # 2FA obligatoire pour les admins (si active) : tant qu'un admin n'a pas
+        # de TOTP, on ne l'autorise que sur son profil (pour l'activer), la
+        # deconnexion, la verif 2FA et les assets.
+        if not app.config.get('REQUIRE_2FA_ADMIN'):
+            return
+        from flask import request, redirect, url_for, flash
+        from flask_login import current_user
+        if not current_user.is_authenticated or current_user.has_2fa or not current_user.is_admin:
+            return
+        allowed = {'auth.profile', 'auth.logout', 'auth.two_factor', 'auth.login', 'static'}
+        if request.endpoint in allowed:
+            return
+        flash("Sécurité : activez la double authentification pour continuer "
+              "(obligatoire pour les comptes administrateur).", 'warning')
+        return redirect(url_for('auth.profile'))
+
     from app.models import User
 
     @login_manager.user_loader
@@ -172,6 +190,7 @@ def create_app(config_class=Config):
 
     with app.app_context():
         _setup_sqlite()
+        _drop_legacy_login_throttle()
         db.create_all()
         _auto_migrate_sqlite()
         _migrate_data()
@@ -236,6 +255,24 @@ def _setup_sqlite():
         cur.execute('PRAGMA busy_timeout=5000')
         cur.execute('PRAGMA synchronous=NORMAL')
         cur.close()
+
+
+def _drop_legacy_login_throttle():
+    """L'anti-bruteforce passe d'une cle 'username' (unique) a un couple
+    (username, ip). L'ancienne table porte un index unique sur username
+    qu'on ne peut pas retirer proprement en SQLite : on la supprime pour la
+    laisser recreer au bon schema. Les compteurs d'echec sont ephemeres, leur
+    remise a zero est sans consequence."""
+    from sqlalchemy import inspect, text
+    if not db.engine.url.get_backend_name().startswith('sqlite'):
+        return
+    insp = inspect(db.engine)
+    if 'login_throttle' not in insp.get_table_names():
+        return
+    cols = {c['name'] for c in insp.get_columns('login_throttle')}
+    if 'ip' not in cols:  # schema legacy
+        db.session.execute(text('DROP TABLE login_throttle'))
+        db.session.commit()
 
 
 def _auto_migrate_sqlite():

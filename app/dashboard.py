@@ -2,7 +2,8 @@ from datetime import datetime, timezone, timedelta
 from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
 from flask_login import login_required, current_user
 from app.models import (Account, Certificate, Backup, BackupCheck, TestTask,
-                        AlertLog, Domain, AccessReview, SystemUpdate, Equipment)
+                        AlertLog, Domain, AccessReview, SystemUpdate, Equipment,
+                        Contract)
 from app import db
 
 bp = Blueprint('dashboard', __name__)
@@ -222,6 +223,20 @@ def _agenda_items(user):
         for r in AccessReview.query.filter_by(is_active=True).all():
             add('Revue de droits', 'person-check', r.application, r.next_review,
                 'Revue des acces', f'/reviews/{r.id}')
+    if user.can_view('contracts'):
+        for c in Contract.query.filter_by(is_active=True).all():
+            add('Contrats', 'file-earmark-text', c.name, c.action_deadline(),
+                'Échéance / préavis du contrat', f'/contracts/{c.id}')
+    # Inventaire : echeances budgetaires anticipees (garantie materielle, fin de
+    # support de l'OS), utiles a un DSI bien avant l'echeance.
+    if user.can_view('inventory'):
+        for e in Equipment.query.filter_by(is_active=True).all():
+            add('Inventaire', 'hdd-stack', f'{e.name} (garantie)', e.warranty_end,
+                'Fin de garantie matérielle', f'/inventory/{e.id}')
+            ei = e.eol_info()
+            if ei and ei.get('eol_date'):
+                add('Inventaire', 'hdd-stack', f'{e.name} (fin de support OS)',
+                    ei['eol_date'], 'Fin de support de l\'OS', f'/inventory/{e.id}')
 
     items.sort(key=lambda x: x['date'])
     return today, items

@@ -9,7 +9,13 @@ from datetime import datetime, timedelta
 
 from app import db
 from app.models import (Account, Certificate, Domain, Backup, TestTask,
-                        AccessReview, SystemUpdate)
+                        AccessReview, SystemUpdate, Equipment)
+
+
+def _lookup_equipment(name):
+    """Equipement actif portant ce nom (vue 360°), ou None si introuvable.
+    Permet de relier en CSV par le nom plutot que par un id numerique."""
+    return Equipment.query.filter_by(name=name, is_active=True).first()
 
 
 def _parse_date(value):
@@ -48,6 +54,9 @@ def _parse(value, kind):
         return _parse_bool(value)
     if kind == 'int':
         return _parse_int(value)
+    if kind == 'equipment_ref':
+        # Renvoie l'objet Equipment : affecte a la relation, il fixe equipment_id.
+        return _lookup_equipment(value)
     return value
 
 
@@ -58,6 +67,8 @@ def _fmt(value, kind):
         return value.strftime('%Y-%m-%d')
     if kind == 'bool':
         return 'oui' if value else 'non'
+    if kind == 'equipment_ref':
+        return value.name  # value est l'objet Equipment lie
     return str(value)
 
 
@@ -92,11 +103,12 @@ SPECS = {
         'model': Certificate, 'label': 'certificats', 'list_endpoint': 'certificates.list',
         'columns': [('service_name', 'str'), ('domain', 'str'), ('issuer', 'str'),
                     ('issued_at', 'date'), ('expiry_date', 'date'),
-                    ('auto_renew', 'bool'), ('priority', 'str'), ('description', 'str')],
+                    ('auto_renew', 'bool'), ('priority', 'str'), ('description', 'str'),
+                    ('equipment', 'equipment_ref')],
         'example': {'service_name': 'Site web', 'domain': 'www.chatillon92.fr',
                     'issuer': "Let's Encrypt", 'issued_at': '2026-03-01',
                     'expiry_date': '2026-06-01', 'auto_renew': 'oui',
-                    'priority': 'high', 'description': ''},
+                    'priority': 'high', 'description': '', 'equipment': 'SRV-WEB-01'},
         'post': None,
     },
     'domains': {
@@ -112,10 +124,12 @@ SPECS = {
         'model': Backup, 'label': 'backups', 'list_endpoint': 'backups.list',
         'columns': [('service_name', 'str'), ('backup_type', 'str'), ('location', 'str'),
                     ('frequency', 'str'), ('expected_time', 'str'),
-                    ('priority', 'str'), ('description', 'str')],
+                    ('priority', 'str'), ('description', 'str'),
+                    ('equipment', 'equipment_ref')],
         'example': {'service_name': 'SQL Server Prod', 'backup_type': 'full',
                     'location': '\\\\nas\\backups\\sql', 'frequency': 'daily',
-                    'expected_time': '02:00', 'priority': 'high', 'description': ''},
+                    'expected_time': '02:00', 'priority': 'high', 'description': '',
+                    'equipment': 'SRV-SQL-01'},
         'post': None,
     },
     'tests': {
@@ -143,12 +157,13 @@ SPECS = {
         'columns': [('name', 'str'), ('system_type', 'str'), ('current_version', 'str'),
                     ('latest_version', 'str'), ('status', 'str'), ('last_update', 'date'),
                     ('updater_type', 'str'), ('updated_by', 'str'),
-                    ('priority', 'str'), ('description', 'str')],
+                    ('priority', 'str'), ('description', 'str'),
+                    ('equipment', 'equipment_ref')],
         'example': {'name': 'Windows Server 2022', 'system_type': 'system',
                     'current_version': '21H2', 'latest_version': '21H2',
                     'status': 'up_to_date', 'last_update': '2026-05-01',
                     'updater_type': 'interne', 'updated_by': 'Jean Dupont',
-                    'priority': 'high', 'description': ''},
+                    'priority': 'high', 'description': '', 'equipment': 'SRV-AD-01'},
         'post': None,
     },
 }

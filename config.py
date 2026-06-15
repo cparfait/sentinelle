@@ -96,6 +96,11 @@ class Config:
     LOGIN_MAX_ATTEMPTS = int(os.getenv('LOGIN_MAX_ATTEMPTS', 5))
     LOGIN_LOCKOUT_MINUTES = int(os.getenv('LOGIN_LOCKOUT_MINUTES', 15))
 
+    # Si actif, un administrateur sans 2FA est contraint d'en activer une avant
+    # d'acceder au reste de l'application (la section qui centralise l'etat du SI
+    # justifie une authentification forte des comptes a privileges).
+    REQUIRE_2FA_ADMIN = os.getenv('REQUIRE_2FA_ADMIN', 'false').lower() in ('true', '1', 'yes')
+
     APP_HOST = os.getenv('APP_HOST', '127.0.0.1')
     APP_PORT = int(os.getenv('APP_PORT', 5000))
     APP_DEBUG = os.getenv('APP_DEBUG', 'false').lower() in ('true', '1', 'yes')

@@ -2,7 +2,29 @@
 from datetime import datetime, timezone, timedelta
 
 from app import db
-from app.models import Certificate, SchedulerRun
+from app.models import Certificate, SchedulerRun, Equipment, Contract
+
+
+def test_dashboard_se_charge_pour_un_admin(app, client):
+    """Charge la page d'accueil connecté : garde-fou contre une régression
+    d'import (ex. Contract utilisé mais non importé -> NameError silencieux)."""
+    r = client.get('/')
+    assert r.status_code == 200
+
+
+def test_agenda_inclut_garanties_et_contrats(app, client):
+    e = Equipment(name='SRV-GARANTIE',
+                  warranty_end=datetime.now(timezone.utc).date() + timedelta(days=20))
+    db.session.add(e)
+    db.session.add(Contract(name='Maintenance baie', kind='maintenance',
+                            end_date=datetime.now(timezone.utc).date() + timedelta(days=30)))
+    db.session.commit()
+    body = client.get('/agenda').data.decode('utf-8')
+    assert 'SRV-GARANTIE' in body and 'garantie' in body.lower()
+    assert 'Maintenance baie' in body
+    # et dans le flux ICS
+    ics = client.get('/agenda.ics').data.decode('utf-8')
+    assert 'SRV-GARANTIE' in ics and 'Maintenance baie' in ics
 
 
 def test_healthz_sans_authentification(app):

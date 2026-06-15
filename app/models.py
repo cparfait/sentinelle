@@ -631,6 +631,8 @@ class Equipment(db.Model):
                 .order_by(Backup.service_name).all(),
             'updates': self.system_updates.filter_by(is_active=True)
                 .order_by(SystemUpdate.name).all(),
+            'contracts': self.contracts.filter_by(is_active=True)
+                .order_by(Contract.end_date.asc()).all(),
         }
 
     def eol_info(self):
@@ -791,13 +793,17 @@ class ActionLog(db.Model):
 
 
 class LoginThrottle(db.Model):
-    """Suivi des echecs de connexion par identifiant (anti-bruteforce)."""
+    """Suivi des echecs de connexion par couple (identifiant, IP source) :
+    anti-bruteforce sans permettre a un tiers de verrouiller le compte d'un
+    collegue depuis une autre adresse (deni de service cible)."""
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), unique=True, nullable=False)
+    username = db.Column(db.String(64), nullable=False, index=True)
+    ip = db.Column(db.String(64), nullable=False, default='', index=True)
     failed_count = db.Column(db.Integer, default=0)
     locked_until = db.Column(db.DateTime)
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
                            onupdate=lambda: datetime.now(timezone.utc))
+    __table_args__ = (db.UniqueConstraint('username', 'ip', name='uq_throttle_user_ip'),)
 
 
 class AlertLog(db.Model):

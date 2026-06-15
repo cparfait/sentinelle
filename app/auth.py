@@ -29,11 +29,15 @@ def login():
         from app.models import LoginThrottle
         username = request.form.get('username', '')
         password = request.form.get('password')
+        # Adresse source : le blocage est par (identifiant, IP) afin qu'un tiers
+        # ne puisse pas verrouiller le compte d'un collegue depuis ailleurs.
+        ip = (request.headers.get('X-Forwarded-For', '').split(',')[0].strip()
+              or request.remote_addr or '')
         now = datetime.now(timezone.utc)
         max_attempts = current_app.config.get('LOGIN_MAX_ATTEMPTS', 5)
         lockout_min = current_app.config.get('LOGIN_LOCKOUT_MINUTES', 15)
 
-        throttle = LoginThrottle.query.filter_by(username=username).first()
+        throttle = LoginThrottle.query.filter_by(username=username, ip=ip).first()
         if throttle and throttle.locked_until and throttle.locked_until.replace(tzinfo=timezone.utc) > now:
             mins = int((throttle.locked_until.replace(tzinfo=timezone.utc) - now).total_seconds() // 60) + 1
             flash(f'Trop de tentatives. Reessayez dans {mins} minute(s).', 'danger')
@@ -70,7 +74,7 @@ def login():
 
         # echec : incremente le compteur
         if not throttle:
-            throttle = LoginThrottle(username=username, failed_count=0)
+            throttle = LoginThrottle(username=username, ip=ip, failed_count=0)
             db.session.add(throttle)
         throttle.failed_count = (throttle.failed_count or 0) + 1
         if throttle.failed_count >= max_attempts:

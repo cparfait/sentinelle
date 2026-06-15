@@ -128,7 +128,8 @@
         {% set show_certs = current_user.can_view('certificates') and linked['certificates'] %}
         {% set show_bkps = current_user.can_view('backups') and linked['backups'] %}
         {% set show_upds = current_user.can_view('updates') and linked['updates'] %}
-        {% if show_certs or show_bkps or show_upds %}
+        {% set show_ctrs = current_user.can_view('contracts') and linked['contracts'] %}
+        {% if show_certs or show_bkps or show_upds or show_ctrs %}
         <div class="data-card p-4 mb-3">
             <h6 class="fw-bold mb-3"><i class="bi bi-diagram-3 me-2 text-primary"></i>Éléments liés</h6>
             {% if show_certs %}
@@ -157,12 +158,24 @@
             {% endif %}
             {% if show_upds %}
             <small class="text-muted d-block mb-1">Mises à jour</small>
-            <ul class="list-unstyled mb-0">
+            <ul class="list-unstyled {{ 'mb-2' if show_ctrs else 'mb-0' }}">
                 {% for u in linked['updates'] %}
                 <li class="mb-1">
                     <span class="badge-status badge-{{ u.status_color() }} me-1"></span>
                     <a href="{{ url_for('updates.detail', id=u.id) }}">{{ u.name }}</a>
                     {% if u.current_version %}<small class="text-muted">v{{ u.current_version }}</small>{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% if show_ctrs %}
+            <small class="text-muted d-block mb-1">Contrats</small>
+            <ul class="list-unstyled mb-0">
+                {% for c in linked['contracts'] %}
+                <li class="mb-1">
+                    <span class="badge-status badge-{{ c.status() }} me-1"></span>
+                    <a href="{{ url_for('contracts.detail', id=c.id) }}">{{ c.name }}</a>
+                    {% if c.end_date %}<small class="text-muted">éch. {{ c.end_date.strftime('%d/%m/%Y') }}</small>{% endif %}
                 </li>
                 {% endfor %}
             </ul>
