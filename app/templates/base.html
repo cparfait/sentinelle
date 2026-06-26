@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light dark">
     <title>{% block title %}Admin Dashboard{% endblock %}</title>
-    {# Anti-FOUC : applique le thème enregistré avant le premier rendu #}
-    <script>(function(){try{var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+    {# Anti-FOUC : applique le thème et la couleur de fond avant le premier rendu,
+       pour éviter le flash noir sur OS dark-mode quand le CSS n'est pas encore chargé. #}
+    <script>(function(){try{var t=localStorage.getItem('theme')||'light';var h=document.documentElement;h.setAttribute('data-theme',t);h.style.backgroundColor=t==='dark'?'#0b1120':'#f1f5f9';}catch(e){}})();</script>
     <link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='vendor/bootstrap-icons.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">

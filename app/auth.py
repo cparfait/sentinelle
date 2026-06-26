@@ -23,7 +23,9 @@ def _safe_next(value):
 def login():
     # Deja connecte : la page de login n'a pas de sens (et rendait une page vide)
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard.index'))
+        resp = redirect(url_for('dashboard.index'))
+        resp.headers['Cache-Control'] = 'no-store'
+        return resp
     if request.method == 'POST':
         from datetime import datetime, timezone, timedelta
         from app.models import LoginThrottle
