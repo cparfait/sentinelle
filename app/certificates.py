@@ -6,6 +6,7 @@ from app.models import Certificate, CertificateHistory
 from app.cert_checker import fetch_cert_info
 from app.inventory import active_equipments as _active_equipments
 from app.inventory import parse_equipment_id as _parse_equipment_id
+from app.forms_util import parse_date, status_rank
 
 from app.decorators import require_edit, require_delete, view_guard
 bp = Blueprint('certificates', __name__)
@@ -48,8 +49,7 @@ def list():
     q = request.args.get('q', '').strip()
     from app.paging import paginate, text_search
     certificates = text_search(certificates, q, ['service_name', 'domain', 'issuer', 'description'])
-    rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
-    certificates.sort(key=lambda c: rank.get(c.status(), 4))
+    certificates.sort(key=lambda c: status_rank(c.status()))
     certificates, page, pages, total = paginate(certificates)
     return render_template('certificates/list.html', certificates=certificates, q=q, page=page, pages=pages, total=total)
 
@@ -76,12 +76,19 @@ def check_domain():
 @require_edit
 def create():
     if request.method == 'POST':
+        service_name = (request.form.get('service_name') or '').strip()
+        domain = (request.form.get('domain') or '').strip()
+        expiry_date = parse_date(request.form.get('expiry_date'))
+        if not service_name or not domain or not expiry_date:
+            flash('Service, domaine et date d\'expiration sont obligatoires.', 'danger')
+            return render_template('certificates/form.html', certificate=None,
+                                   equipments=_active_equipments())
         c = Certificate(
-            service_name=request.form.get('service_name'),
-            domain=request.form.get('domain'),
+            service_name=service_name,
+            domain=domain,
             issuer=request.form.get('issuer'),
-            issued_at=_parse_date(request.form.get('issued_at')),
-            expiry_date=_parse_date(request.form.get('expiry_date')),
+            issued_at=parse_date(request.form.get('issued_at')),
+            expiry_date=expiry_date,
             auto_renew=request.form.get('auto_renew') == 'on',
             description=request.form.get('description'),
             priority=request.form.get('priority', 'medium'),
@@ -116,11 +123,18 @@ def detail(id):
 def edit(id):
     cert = Certificate.query.get_or_404(id)
     if request.method == 'POST':
-        cert.service_name = request.form.get('service_name')
-        cert.domain = request.form.get('domain')
+        service_name = (request.form.get('service_name') or '').strip()
+        domain = (request.form.get('domain') or '').strip()
+        expiry_date = parse_date(request.form.get('expiry_date'))
+        if not service_name or not domain or not expiry_date:
+            flash('Service, domaine et date d\'expiration sont obligatoires.', 'danger')
+            return render_template('certificates/form.html', certificate=cert,
+                                   equipments=_active_equipments())
+        cert.service_name = service_name
+        cert.domain = domain
         cert.issuer = request.form.get('issuer')
-        cert.issued_at = _parse_date(request.form.get('issued_at'))
-        cert.expiry_date = _parse_date(request.form.get('expiry_date'))
+        cert.issued_at = parse_date(request.form.get('issued_at'))
+        cert.expiry_date = expiry_date
         cert.auto_renew = request.form.get('auto_renew') == 'on'
         cert.description = request.form.get('description')
         cert.priority = request.form.get('priority', 'medium')
@@ -137,7 +151,7 @@ def edit(id):
 @require_edit
 def renew(id):
     cert = Certificate.query.get_or_404(id)
-    new_expiry = _parse_date(request.form.get('new_expiry_date'))
+    new_expiry = parse_date(request.form.get('new_expiry_date'))
     comment = request.form.get('comment', 'Certificat renouvelé')
     if new_expiry:
         cert.expiry_date = new_expiry
@@ -177,12 +191,3 @@ def delete(id):
     db.session.commit()
     flash('Certificat supprimé', 'success')
     return redirect(url_for('certificates.list'))
-
-
-def _parse_date(value):
-    if value:
-        try:
-            return datetime.strptime(value, '%Y-%m-%d').date()
-        except ValueError:
-            pass
-    return None

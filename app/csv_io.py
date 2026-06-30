@@ -60,6 +60,16 @@ def _parse(value, kind):
     return value
 
 
+def _csv_safe(text):
+    """Neutralise l'injection de formules CSV (Excel/LibreOffice) : une cellule
+    texte commencant par = + - @ (ou tabulation / retour chariot) est prefixee
+    d'une apostrophe afin de ne pas etre interpretee comme une formule a
+    l'ouverture du fichier exporte."""
+    if text and text[0] in ('=', '+', '-', '@', '\t', '\r'):
+        return "'" + text
+    return text
+
+
 def _fmt(value, kind):
     if value is None:
         return ''
@@ -68,8 +78,8 @@ def _fmt(value, kind):
     if kind == 'bool':
         return 'oui' if value else 'non'
     if kind == 'equipment_ref':
-        return value.name  # value est l'objet Equipment lie
-    return str(value)
+        return _csv_safe(value.name)  # value est l'objet Equipment lie
+    return _csv_safe(str(value))
 
 
 def _account_post(obj):

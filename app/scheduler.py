@@ -3,7 +3,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from app import db
 from app.models import (Account, Certificate, Backup, TestTask, Domain,
-                        AccessReview, SystemUpdate)
+                        AccessReview, SystemUpdate, threshold_for)
 from app.alerts import send_alert, should_send_reminder
 from app.snooze import is_snoozed
 
@@ -22,7 +22,7 @@ _app = None
 def check_passwords():
     with _app.app_context():
         today = datetime.now(timezone.utc).date()
-        thresholds = _app.config.get('THRESHOLD_EXPIRY', (7, 15, 30))
+        thresholds = threshold_for('THRESHOLD_EXPIRY')
         accounts = Account.query.filter_by(is_active=True).all()
         for account in accounts:
             if not account.next_password_change:
@@ -31,7 +31,7 @@ def check_passwords():
                 continue
             days_left = (account.next_password_change - today).days
             if should_send_reminder('account', account.id, days_left, thresholds):
-                urgency = 'EXPIRÉ' if days_left <= 0 else f'expire dans {days_left} jour(s)'
+                urgency = 'EXPIRÉ' if days_left < 0 else f'expire dans {days_left} jour(s)'
                 subject = f"Alerte mot de passe - {account.service_name}"
                 body = (
                     f"Le mot de passe du compte suivant {urgency}:\n\n"
@@ -47,7 +47,7 @@ def check_passwords():
 def check_certificates():
     with _app.app_context():
         today = datetime.now(timezone.utc).date()
-        thresholds = _app.config.get('THRESHOLD_EXPIRY', (7, 15, 30))
+        thresholds = threshold_for('THRESHOLD_EXPIRY')
         certs = Certificate.query.filter_by(is_active=True).all()
         for cert in certs:
             if is_snoozed('certificate', cert.id):
@@ -108,31 +108,47 @@ def check_backups():
 def check_tests():
     with _app.app_context():
         today = datetime.now(timezone.utc).date()
-        thresholds = _app.config.get('THRESHOLD_TASK', (7, 15, 30))
+        thresholds = threshold_for('THRESHOLD_TASK')
         tests = TestTask.query.filter_by(is_active=True).all()
         for test in tests:
             if is_snoozed('test', test.id):
                 continue
-            if not test.next_due:
+            days_left = (test.next_due - today).days if test.next_due else None
+            # On alerte si l'echeance approche/est depassee, OU si le dernier
+            # resultat est un echec (rouge au tableau de bord) : sinon un test en
+            # echec n'etait jamais signale par mail. Un echec est traite comme
+            # une echeance depassee (cadence quotidienne) ; send_alert dedoublonne
+            # de toute facon a une alerte par jour.
+            due = (days_left is not None
+                   and should_send_reminder('test', test.id, days_left, thresholds))
+            ko = (test.status == 'failed'
+                  and should_send_reminder('test', test.id, -1, thresholds))
+            if not (due or ko):
                 continue
-            days_left = (test.next_due - today).days
-            if should_send_reminder('test', test.id, days_left, thresholds):
-                urgency = 'EN RETARD' if days_left < 0 else f'prévu dans {days_left} jour(s)'
-                subject = f"Alerte test - {test.name}"
-                body = (
-                    f"Le test suivant est {urgency}:\n\n"
-                    f"Nom: {test.name}\n"
-                    f"Type: {test.test_type}\n"
-                    f"Date prévue: {test.next_due.strftime('%d/%m/%Y')}\n"
-                    f"Jours restants: {days_left}\n"
-                )
-                send_alert(subject, body, 'test', test.id, test.name)
+            if test.status == 'failed':
+                urgency = 'EN ECHEC'
+            elif days_left is None:
+                urgency = 'a planifier'
+            elif days_left < 0:
+                urgency = 'EN RETARD'
+            else:
+                urgency = f'prévu dans {days_left} jour(s)'
+            prevue = test.next_due.strftime('%d/%m/%Y') if test.next_due else 'non planifiée'
+            subject = f"Alerte test - {test.name}"
+            body = (
+                f"Le test suivant est {urgency}:\n\n"
+                f"Nom: {test.name}\n"
+                f"Type: {test.test_type}\n"
+                f"Date prévue: {prevue}\n"
+                f"Jours restants: {days_left if days_left is not None else 'N/A'}\n"
+            )
+            send_alert(subject, body, 'test', test.id, test.name)
 
 
 def check_domains():
     with _app.app_context():
         today = datetime.now(timezone.utc).date()
-        thresholds = _app.config.get('THRESHOLD_DOMAIN', (30, 60, 90))
+        thresholds = threshold_for('THRESHOLD_DOMAIN')
         for domain in Domain.query.filter_by(is_active=True).all():
             if not domain.expiry_date or is_snoozed('domain', domain.id):
                 continue
@@ -156,7 +172,7 @@ def check_contracts():
     (echeance - preavis de resiliation)."""
     with _app.app_context():
         from app.models import Contract
-        thresholds = _app.config.get('THRESHOLD_CONTRACT', (60, 90, 180))
+        thresholds = threshold_for('THRESHOLD_CONTRACT')
         for contract in Contract.query.filter_by(is_active=True).all():
             days_left = contract.days_left()
             if days_left is None or is_snoozed('contract', contract.id):
@@ -208,22 +224,38 @@ def sync_ad_passwords():
 def check_reviews():
     with _app.app_context():
         today = datetime.now(timezone.utc).date()
-        thresholds = _app.config.get('THRESHOLD_TASK', (7, 15, 30))
+        thresholds = threshold_for('THRESHOLD_TASK')
         for review in AccessReview.query.filter_by(is_active=True).all():
-            if not review.next_review or is_snoozed('review', review.id):
+            if is_snoozed('review', review.id):
                 continue
-            days_left = (review.next_review - today).days
-            if should_send_reminder('review', review.id, days_left, thresholds):
-                urgency = 'EN RETARD' if days_left < 0 else f'prevue dans {days_left} jour(s)'
-                subject = f"Alerte revue de droits - {review.application}"
-                body = (
-                    f"La revue de droits suivante est {urgency}:\n\n"
-                    f"Application: {review.application}\n"
-                    f"Responsable: {review.responsible or 'N/A'}\n"
-                    f"Prochaine revue: {review.next_review.strftime('%d/%m/%Y')}\n"
-                    f"Jours restants: {days_left}\n"
-                )
-                send_alert(subject, body, 'review', review.id, review.application)
+            days_left = (review.next_review - today).days if review.next_review else None
+            # Comme pour les tests : on alerte aussi une revue dont le dernier
+            # resultat est un echec (rouge au tableau de bord), pas seulement sur
+            # l'echeance.
+            due = (days_left is not None
+                   and should_send_reminder('review', review.id, days_left, thresholds))
+            ko = (review.status == 'failed'
+                  and should_send_reminder('review', review.id, -1, thresholds))
+            if not (due or ko):
+                continue
+            if review.status == 'failed':
+                urgency = 'EN ECHEC'
+            elif days_left is None:
+                urgency = 'a planifier'
+            elif days_left < 0:
+                urgency = 'EN RETARD'
+            else:
+                urgency = f'prevue dans {days_left} jour(s)'
+            prochaine = review.next_review.strftime('%d/%m/%Y') if review.next_review else 'non planifiée'
+            subject = f"Alerte revue de droits - {review.application}"
+            body = (
+                f"La revue de droits suivante est {urgency}:\n\n"
+                f"Application: {review.application}\n"
+                f"Responsable: {review.responsible or 'N/A'}\n"
+                f"Prochaine revue: {prochaine}\n"
+                f"Jours restants: {days_left if days_left is not None else 'N/A'}\n"
+            )
+            send_alert(subject, body, 'review', review.id, review.application)
 
 
 def check_updates():
@@ -245,7 +277,7 @@ def check_inventory():
     with _app.app_context():
         from app.models import Equipment
         today = datetime.now(timezone.utc).date()
-        thresholds = _app.config.get('THRESHOLD_WARRANTY', (30, 60, 90))
+        thresholds = threshold_for('THRESHOLD_WARRANTY')
         is_monday = today.weekday() == 0
         for e in Equipment.query.filter_by(is_active=True).all():
             if is_snoozed('equipment', e.id):
@@ -261,6 +293,12 @@ def check_inventory():
                 reasons.append('Criticité élevée sans sauvegarde renseignée')
             if is_monday and e.os_update_stale():
                 reasons.append('Mise à jour OS absente ou trop ancienne')
+            # Fin de support de l'OS (EOL) : un equipement rouge pour cette raison
+            # n'avait jusqu'ici aucun motif et n'alertait donc jamais.
+            if is_monday:
+                ei = e.eol_info()
+                if ei and ei.get('status') == 'danger' and ei.get('eol_date'):
+                    reasons.append(f"OS en fin de support depuis le {ei['eol_date'].strftime('%d/%m/%Y')}")
             if not reasons:
                 continue
             subject = f"Alerte inventaire - {e.name}"

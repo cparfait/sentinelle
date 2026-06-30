@@ -3,12 +3,12 @@
 La date qui declenche le statut/les alertes est `action_deadline()` =
 echeance - preavis de resiliation (au-dela, tacite reconduction ou coupure).
 """
-from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
 from app.models import (Contract, ContractHistory, Supplier, Equipment,
                         CONTRACT_KIND_LABELS)
+from app.forms_util import parse_date, parse_int, parse_float, status_rank
 from app.decorators import require_edit, require_delete, view_guard
 
 bp = Blueprint('contracts', __name__)
@@ -19,32 +19,17 @@ def _guard_view():
     return view_guard('contracts')
 
 
-def _parse_date(value):
-    if value:
-        try:
-            return datetime.strptime(value, '%Y-%m-%d').date()
-        except ValueError:
-            pass
-    return None
-
-
 def _fill(c, f):
     c.name = (f.get('name', '') or '').strip()
     c.kind = f.get('kind') if f.get('kind') in CONTRACT_KIND_LABELS else 'maintenance'
-    c.supplier_id = int(f['supplier_id']) if (f.get('supplier_id') or '').isdigit() else None
+    c.supplier_id = parse_int(f.get('supplier_id'))
     c.reference = (f.get('reference', '') or '').strip() or None
-    try:
-        c.cost_yearly = float(f.get('cost_yearly').replace(',', '.')) if f.get('cost_yearly') else None
-    except ValueError:
-        c.cost_yearly = None
-    c.start_date = _parse_date(f.get('start_date'))
-    c.end_date = _parse_date(f.get('end_date'))
-    try:
-        c.notice_days = max(0, int(f.get('notice_days') or 0))
-    except ValueError:
-        c.notice_days = 0
+    c.cost_yearly = parse_float(f.get('cost_yearly'))
+    c.start_date = parse_date(f.get('start_date'))
+    c.end_date = parse_date(f.get('end_date'))
+    c.notice_days = parse_int(f.get('notice_days'), 0, minimum=0)
     c.auto_renew = f.get('auto_renew') == 'on'
-    c.equipment_id = int(f['equipment_id']) if (f.get('equipment_id') or '').isdigit() else None
+    c.equipment_id = parse_int(f.get('equipment_id'))
     c.responsible = (f.get('responsible', '') or '').strip() or None
     c.description = f.get('description') or None
     c.priority = f.get('priority', 'medium')
@@ -66,10 +51,13 @@ def list():
     q = request.args.get('q', '').strip()
     from app.paging import paginate, text_search
     contracts = text_search(contracts, q, ['name', 'reference', 'description', 'responsible'])
-    rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
-    contracts.sort(key=lambda c: rank.get(c.status(), 4))
+    contracts.sort(key=lambda c: status_rank(c.status()))
+    # Cout annuel total : agrege en SQL (evite de recharger toute la table).
+    from sqlalchemy import func
+    total_cost = db.session.query(
+        func.coalesce(func.sum(Contract.cost_yearly), 0)
+    ).filter_by(is_active=True).scalar()
     contracts, page, pages, total = paginate(contracts)
-    total_cost = sum(c.cost_yearly or 0 for c in Contract.query.filter_by(is_active=True).all())
     return render_template('contracts/list.html', contracts=contracts, q=q,
                            page=page, pages=pages, total=total, total_cost=total_cost,
                            kind_labels=CONTRACT_KIND_LABELS)
@@ -131,7 +119,7 @@ def edit(id):
 def renew(id):
     """Marque le contrat comme renouvele : nouvelle echeance + trace."""
     contract = Contract.query.get_or_404(id)
-    new_end = _parse_date(request.form.get('new_end_date'))
+    new_end = parse_date(request.form.get('new_end_date'))
     if not new_end:
         flash('Indiquez la nouvelle date d\'échéance.', 'danger')
         return redirect(url_for('contracts.detail', id=id))

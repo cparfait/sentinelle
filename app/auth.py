@@ -19,6 +19,17 @@ def _safe_next(value):
     return None
 
 
+def _client_ip():
+    """IP source pour l'anti-bruteforce. On ne fait confiance a l'en-tete
+    X-Forwarded-For (forgeable par le client) que si TRUST_PROXY est actif
+    (app derriere un reverse proxy de confiance). Par defaut : remote_addr."""
+    if current_app.config.get('TRUST_PROXY'):
+        xff = request.headers.get('X-Forwarded-For', '')
+        if xff:
+            return xff.split(',')[0].strip()
+    return request.remote_addr or ''
+
+
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     # Deja connecte : la page de login n'a pas de sens (et rendait une page vide)
@@ -33,8 +44,7 @@ def login():
         password = request.form.get('password')
         # Adresse source : le blocage est par (identifiant, IP) afin qu'un tiers
         # ne puisse pas verrouiller le compte d'un collegue depuis ailleurs.
-        ip = (request.headers.get('X-Forwarded-For', '').split(',')[0].strip()
-              or request.remote_addr or '')
+        ip = _client_ip()
         now = datetime.now(timezone.utc)
         max_attempts = current_app.config.get('LOGIN_MAX_ATTEMPTS', 5)
         lockout_min = current_app.config.get('LOGIN_LOCKOUT_MINUTES', 15)
@@ -63,11 +73,17 @@ def login():
                 db.session.delete(throttle)
                 db.session.commit()
             if user.totp_secret:
-                # 2FA active : on differe la connexion jusqu'a verification du code
+                # 2FA active : on differe la connexion jusqu'a verification du code.
+                # On regenere la session (anti-fixation) en ne gardant que l'etat
+                # 2FA en attente.
+                next_2fa = _safe_next(request.args.get('next'))
+                session.clear()
                 session['pending_2fa_uid'] = user.id
                 session['pending_2fa_ldap'] = ldap_used
-                session['pending_2fa_next'] = _safe_next(request.args.get('next'))
+                session['pending_2fa_next'] = next_2fa
                 return redirect(url_for('auth.two_factor'))
+            # Regeneration de session a l'authentification (anti-fixation).
+            session.clear()
             login_user(user)
             session.permanent = True  # applique PERMANENT_SESSION_LIFETIME (inactivite)
             audit_record('connexion' + (' (LDAP)' if ldap_used else ''), category='securite')
@@ -104,15 +120,28 @@ def two_factor():
         return redirect(url_for('auth.login'))
     if request.method == 'POST':
         import pyotp
+        # Anti-bruteforce du code 2FA : plafonne le nombre d'essais avant de
+        # forcer une reconnexion (le code TOTP ne fait que 6 chiffres).
+        max_attempts = current_app.config.get('LOGIN_MAX_ATTEMPTS', 5)
+        tries = session.get('pending_2fa_tries', 0)
+        if tries >= max_attempts:
+            for k in ('pending_2fa_uid', 'pending_2fa_ldap', 'pending_2fa_next',
+                      'pending_2fa_tries'):
+                session.pop(k, None)
+            audit_record('blocage 2FA', detail=user.username, category='securite')
+            flash('Trop de tentatives. Reconnectez-vous.', 'danger')
+            return redirect(url_for('auth.login'))
         code = (request.form.get('code') or '').strip().replace(' ', '')
         if pyotp.TOTP(user.totp_secret).verify(code, valid_window=1):
             ldap_used = session.pop('pending_2fa_ldap', False)
             nxt = _safe_next(session.pop('pending_2fa_next', None))
-            session.pop('pending_2fa_uid', None)
+            # Regeneration de session a l'authentification (anti-fixation).
+            session.clear()
             login_user(user)
             session.permanent = True
             audit_record('connexion (2FA)' + (' LDAP' if ldap_used else ''), category='securite')
             return redirect(nxt or url_for('dashboard.index'))
+        session['pending_2fa_tries'] = tries + 1
         audit_record('echec 2FA', detail=user.username, category='securite')
         flash('Code de vérification invalide.', 'danger')
     return render_template('auth/two_factor.html')
@@ -139,7 +168,13 @@ def _provision_ldap_user(username, info):
     """Cree un compte local pour un utilisateur AD valide (mot de passe local
     inutilisable ; il s'authentifiera toujours via LDAP)."""
     import secrets
+    from app.models import Role
+    # Le role par defaut LDAP est saisi librement en Preferences : on le valide
+    # (doit exister) et on refuse tout role admin pour un provisionnement auto.
     role = current_app.config.get('LDAP_DEFAULT_ROLE', 'viewer')
+    role_obj = Role.query.filter_by(name=role).first()
+    if role_obj is None or role_obj.is_admin:
+        role = 'viewer'
     domain = current_app.config.get('LDAP_DOMAIN') or 'ldap.local'
     email = (info or {}).get('email') or f'{username}@{domain}'
     if User.query.filter_by(email=email).first():
@@ -492,7 +527,7 @@ def preferences():
 
         elif action == 'edit_asset':
             from app.models import Asset
-            a = Asset.query.get(request.form.get('asset_id', type=int))
+            a = db.session.get(Asset, request.form.get('asset_id', type=int))
             if a:
                 name = request.form.get('asset_name', '').strip()
                 atype = request.form.get('asset_type', a.asset_type)
@@ -511,7 +546,7 @@ def preferences():
 
         elif action == 'delete_asset':
             from app.models import Asset
-            a = Asset.query.get(request.form.get('asset_id', type=int))
+            a = db.session.get(Asset, request.form.get('asset_id', type=int))
             if a:
                 name = a.name
                 db.session.delete(a)
@@ -555,6 +590,10 @@ def preferences():
                 flash('Canal invalide.', 'danger')
             elif not url:
                 flash("L'URL du webhook est obligatoire.", 'danger')
+            elif not url.lower().startswith('https://'):
+                # Limite le risque de SSRF / d'exfiltration vers un hote interne :
+                # les webhooks Teams/Slack/Discord sont tous en HTTPS.
+                flash('L\'URL du webhook doit commencer par https://', 'danger')
             else:
                 if category != 'all' and category not in CATEGORY_LABELS:
                     category = 'all'
@@ -566,7 +605,7 @@ def preferences():
 
         elif action == 'delete_webhook':
             from app.models import Webhook
-            w = Webhook.query.get(request.form.get('wh_id', type=int))
+            w = db.session.get(Webhook, request.form.get('wh_id', type=int))
             if w:
                 db.session.delete(w)
                 db.session.commit()
@@ -576,7 +615,7 @@ def preferences():
         elif action == 'test_webhook':
             from app.models import Webhook
             from app.notify import send_to
-            w = Webhook.query.get(request.form.get('wh_id', type=int))
+            w = db.session.get(Webhook, request.form.get('wh_id', type=int))
             if w:
                 ok = send_to(w.channel, w.url, 'Test de notification',
                              'Ceci est un message de test depuis Sentinelle.', status='info',
@@ -714,7 +753,9 @@ def o365_callback():
         user_email = complete_o365_auth(dict(request.args))
         flash(f'Compte Office 365 connecte avec succes ({user_email})', 'success')
     except Exception as e:
-        flash(f'Erreur connexion Office 365: {str(e)}', 'danger')
+        # Detail (URL tenant, message OAuth...) en log serveur, pas a l'ecran.
+        current_app.logger.warning('Echec connexion O365 (callback) : %s', e)
+        flash('Echec de la connexion Office 365. Consultez les journaux serveur.', 'danger')
 
     return redirect(url_for('auth.preferences'))
 
@@ -732,5 +773,6 @@ def o365_connect():
             return redirect(auth_url)
         flash('Configuration O365 incomplete. Renseignez Client ID, Tenant ID et Client Secret.', 'danger')
     except Exception as e:
-        flash(f'Erreur OAuth2: {str(e)}', 'danger')
+        current_app.logger.warning('Echec initialisation OAuth2 O365 : %s', e)
+        flash('Erreur lors de l\'initialisation de la connexion Office 365.', 'danger')
     return redirect(url_for('auth.preferences'))

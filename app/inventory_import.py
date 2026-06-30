@@ -161,7 +161,7 @@ def _to_env(v):
     return None
 
 
-def _build_colmap(headers, kind):
+def _build_colmap(headers):
     colmap = {}
     for idx, h in enumerate(headers):
         m = _match_field(_norm(h))
@@ -222,7 +222,7 @@ def import_workbook(fileobj):
         if hidx is None:
             notes.append(f'« {ws.title} » : en-tête introuvable')
             continue
-        colmap = _build_colmap(rows[hidx], kind)
+        colmap = _build_colmap(rows[hidx])
         n = 0
         for r in rows[hidx + 1:]:
             if not any(c not in (None, '') for c in r):

@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
 from app.models import AccessReview, ReviewHistory, Asset
+from app.forms_util import parse_date, parse_int, status_rank
 from app.decorators import require_edit, require_delete, view_guard
 
 bp = Blueprint('reviews', __name__)
@@ -21,8 +22,7 @@ def list():
     q = request.args.get('q', '').strip()
     from app.paging import paginate, text_search
     reviews = text_search(reviews, q, ['application', 'responsible', 'scope'])
-    rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
-    reviews.sort(key=lambda r: rank.get(r.computed_status(), 4))
+    reviews.sort(key=lambda r: status_rank(r.computed_status()))
     reviews, page, pages, total = paginate(reviews)
     return render_template('reviews/list.html', reviews=reviews, q=q, page=page, pages=pages, total=total)
 
@@ -32,13 +32,17 @@ def list():
 @require_edit
 def create():
     if request.method == 'POST':
-        last_review = _parse_date(request.form.get('last_review'))
-        freq = int(request.form.get('frequency_days', 365) or 365)
-        next_review = _parse_date(request.form.get('next_review'))
+        application = request.form.get('application', '').strip()
+        if not application:
+            flash('L\'application est obligatoire.', 'danger')
+            return render_template('reviews/form.html', review=None, assets=_app_assets())
+        last_review = parse_date(request.form.get('last_review'))
+        freq = parse_int(request.form.get('frequency_days'), 365, minimum=1)
+        next_review = parse_date(request.form.get('next_review'))
         if not next_review and last_review:
             next_review = last_review + timedelta(days=freq)
         r = AccessReview(
-            application=request.form.get('application', '').strip(),
+            application=application,
             responsible=request.form.get('responsible', '').strip() or None,
             scope=request.form.get('scope'),
             frequency_days=freq,
@@ -71,12 +75,16 @@ def detail(id):
 def edit(id):
     review = AccessReview.query.get_or_404(id)
     if request.method == 'POST':
-        review.application = request.form.get('application', '').strip()
+        application = request.form.get('application', '').strip()
+        if not application:
+            flash('L\'application est obligatoire.', 'danger')
+            return render_template('reviews/form.html', review=review, assets=_app_assets())
+        review.application = application
         review.responsible = request.form.get('responsible', '').strip() or None
         review.scope = request.form.get('scope')
-        review.frequency_days = int(request.form.get('frequency_days', 365) or 365)
-        review.last_review = _parse_date(request.form.get('last_review'))
-        review.next_review = _parse_date(request.form.get('next_review'))
+        review.frequency_days = parse_int(request.form.get('frequency_days'), 365, minimum=1)
+        review.last_review = parse_date(request.form.get('last_review'))
+        review.next_review = parse_date(request.form.get('next_review'))
         review.priority = request.form.get('priority', 'medium')
         db.session.commit()
         flash('Revue modifiee', 'success')
@@ -119,12 +127,3 @@ def delete(id):
 def _app_assets():
     """Revues de droits : seulement les actifs de type application."""
     return Asset.query.filter_by(is_active=True, asset_type='application').order_by(Asset.name).all()
-
-
-def _parse_date(value):
-    if value:
-        try:
-            return datetime.strptime(value, '%Y-%m-%d').date()
-        except ValueError:
-            pass
-    return None

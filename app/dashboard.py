@@ -336,9 +336,11 @@ def agenda():
     base = current_app.config.get('APP_BASE_URL', '').rstrip('/')
     ics_url = (f"{base}{url_for('dashboard.agenda_ics')}?token={current_user.ics_token}"
                if current_user.ics_token else None)
+    # Couleur par horizon : seul le retard est « danger » ; l'echeance proche
+    # est « warning » (eviter deux paliers rouges consecutifs / la sur-alerte).
     buckets = [
         ('En retard', [i for i in items if i['days'] < 0], 'danger'),
-        ('Cette semaine', [i for i in items if 0 <= i['days'] <= 7], 'danger'),
+        ('Cette semaine', [i for i in items if 0 <= i['days'] <= 7], 'warning'),
         ('Ce mois-ci', [i for i in items if 7 < i['days'] <= 31], 'warning'),
         ('Dans les 90 jours', [i for i in items if 31 < i['days'] <= 90], 'info'),
     ]
@@ -385,10 +387,15 @@ def index():
     urgent_items = []
     for a, st in acc_st:
         if st == 'danger':
-            days = (a.next_password_change - today).days if a.next_password_change else 'N/A'
+            if a.next_password_change:
+                days = (a.next_password_change - today).days
+                detail = (f'MDP a changer depuis {abs(days)} jour(s)' if days < 0
+                          else f'MDP a changer dans {days} jour(s)')
+            else:
+                detail = 'Date de rotation non definie'
             urgent_items.append({
                 'type': 'account', 'name': f'{a.service_name} ({a.username})',
-                'detail': f'MDP a changer depuis {abs(days)} jour(s)' if isinstance(days, int) and days < 0 else f'MDP a changer dans {days} jour(s)',
+                'detail': detail,
                 'status': 'danger', 'url': f'/accounts/{a.id}'
             })
     for c, st in cert_st:
@@ -418,10 +425,15 @@ def index():
             })
     for t, st in tst_st:
         if st == 'danger':
-            days = (t.next_due - today).days if t.next_due else 'N/A'
+            if t.next_due:
+                days = (t.next_due - today).days
+                detail = (f'Test en retard de {abs(days)} jour(s)' if days < 0
+                          else f'Test a faire dans {days} jour(s)')
+            else:
+                detail = 'Echeance non planifiee'
             urgent_items.append({
                 'type': 'test', 'name': t.name,
-                'detail': f'Test en retard de {abs(days)} jour(s)' if isinstance(days, int) and days < 0 else f'Test a faire dans {days} jour(s)',
+                'detail': detail,
                 'status': 'danger', 'url': f'/tests/{t.id}'
             })
     for r, st in rev_st:
@@ -483,11 +495,10 @@ def index():
     upcoming.sort(key=lambda x: x['days'])
     upcoming = upcoming[:7]
 
-    backup_checks = {}
-    for b in backups:
-        backup_checks[b.id] = BackupCheck.query.filter_by(
-            backup_id=b.id, check_date=today
-        ).first()
+    # Check du jour reutilise depuis computed_status() (memoise sur l'instance) :
+    # evite une requete redondante par backup, et garde un seul critere de date
+    # faisant foi (today_check()).
+    backup_checks = {b.id: b.today_check() for b in backups}
 
     stats = {
         'accounts': _counts(acc_st),

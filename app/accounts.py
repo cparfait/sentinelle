@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
 from app.models import Account, AccountHistory
+from app.forms_util import parse_date, parse_int, status_rank
 
 from app.decorators import require_edit, require_delete, view_guard
 bp = Blueprint('accounts', __name__)
@@ -20,8 +21,7 @@ def list():
     q = request.args.get('q', '').strip()
     from app.paging import paginate, text_search
     accounts = text_search(accounts, q, ['service_name', 'username', 'url', 'description'])
-    rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
-    accounts.sort(key=lambda a: rank.get(a.status(), 4))
+    accounts.sort(key=lambda a: status_rank(a.status()))
     accounts, page, pages, total = paginate(accounts)
     return render_template('accounts/list.html', accounts=accounts, q=q, page=page, pages=pages, total=total)
 
@@ -44,13 +44,18 @@ def sync_ad():
 @require_edit
 def create():
     if request.method == 'POST':
+        service_name = (request.form.get('service_name') or '').strip()
+        username = (request.form.get('username') or '').strip()
+        if not service_name or not username:
+            flash('Le service et l\'identifiant sont obligatoires.', 'danger')
+            return render_template('accounts/form.html', account=None)
         a = Account(
-            service_name=request.form.get('service_name'),
-            username=request.form.get('username'),
+            service_name=service_name,
+            username=username,
             url=request.form.get('url'),
             description=request.form.get('description'),
-            last_password_change=_parse_date(request.form.get('last_password_change')),
-            rotation_days=int(request.form.get('rotation_days', 90)),
+            last_password_change=parse_date(request.form.get('last_password_change')),
+            rotation_days=parse_int(request.form.get('rotation_days'), 90, minimum=1),
             priority=request.form.get('priority', 'medium'),
         )
         if a.last_password_change:
@@ -83,12 +88,17 @@ def detail(id):
 def edit(id):
     account = Account.query.get_or_404(id)
     if request.method == 'POST':
-        account.service_name = request.form.get('service_name')
-        account.username = request.form.get('username')
+        service_name = (request.form.get('service_name') or '').strip()
+        username = (request.form.get('username') or '').strip()
+        if not service_name or not username:
+            flash('Le service et l\'identifiant sont obligatoires.', 'danger')
+            return render_template('accounts/form.html', account=account)
+        account.service_name = service_name
+        account.username = username
         account.url = request.form.get('url')
         account.description = request.form.get('description')
-        account.last_password_change = _parse_date(request.form.get('last_password_change'))
-        account.rotation_days = int(request.form.get('rotation_days', 90))
+        account.last_password_change = parse_date(request.form.get('last_password_change'))
+        account.rotation_days = parse_int(request.form.get('rotation_days'), 90, minimum=1)
         account.priority = request.form.get('priority', 'medium')
         if account.last_password_change:
             account.next_password_change = account.last_password_change + timedelta(days=account.rotation_days)
@@ -135,12 +145,3 @@ def delete(id):
     db.session.commit()
     flash('Compte supprimé', 'success')
     return redirect(url_for('accounts.list'))
-
-
-def _parse_date(value):
-    if value:
-        try:
-            return datetime.strptime(value, '%Y-%m-%d').date()
-        except ValueError:
-            pass
-    return None

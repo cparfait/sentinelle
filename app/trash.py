@@ -102,7 +102,10 @@ def restore(user, etype, entity_id, performed_by):
     if not s or not str(entity_id).isdigit() or not user.can_edit(s['cat']):
         return None
     obj = db.session.get(s['model'], int(entity_id))
-    if not obj:
+    # On ne restaure que ce qui est reellement en corbeille : sinon on
+    # reactiverait inutilement un element actif et on tracerait un faux
+    # « restaure » dans l'historique.
+    if not obj or obj.is_active:
         return None
     obj.is_active = True
     name = s['name'](obj)

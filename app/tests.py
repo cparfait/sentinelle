@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
 from app.models import TestTask, TestHistory
+from app.forms_util import parse_date, parse_int, status_rank
 
 from app.decorators import require_edit, require_delete, view_guard
 bp = Blueprint('tests', __name__)
@@ -28,8 +29,7 @@ def list():
     q = request.args.get('q', '').strip()
     from app.paging import paginate, text_search
     tests = text_search(tests, q, ['name', 'test_type', 'description'])
-    rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
-    tests.sort(key=lambda t: rank.get(t.computed_status(), 4))
+    tests.sort(key=lambda t: status_rank(t.computed_status()))
     tests, page, pages, total = paginate(tests)
     return render_template('tests/list.html', tests=tests, test_types=TEST_TYPES, q=q, page=page, pages=pages, total=total)
 
@@ -39,13 +39,17 @@ def list():
 @require_edit
 def create():
     if request.method == 'POST':
-        last_performed = _parse_date(request.form.get('last_performed'))
-        freq = int(request.form.get('frequency_days', 90))
-        next_due = _parse_date(request.form.get('next_due'))
+        name = (request.form.get('name') or '').strip()
+        if not name:
+            flash('Le nom du test est obligatoire.', 'danger')
+            return render_template('tests/form.html', test=None, test_types=TEST_TYPES)
+        last_performed = parse_date(request.form.get('last_performed'))
+        freq = parse_int(request.form.get('frequency_days'), 90, minimum=1)
+        next_due = parse_date(request.form.get('next_due'))
         if not next_due and last_performed:
             next_due = last_performed + timedelta(days=freq)
         t = TestTask(
-            name=request.form.get('name'),
+            name=name,
             test_type=request.form.get('test_type'),
             description=request.form.get('description'),
             last_performed=last_performed,
@@ -82,12 +86,16 @@ def detail(id):
 def edit(id):
     test = TestTask.query.get_or_404(id)
     if request.method == 'POST':
-        test.name = request.form.get('name')
+        name = (request.form.get('name') or '').strip()
+        if not name:
+            flash('Le nom du test est obligatoire.', 'danger')
+            return render_template('tests/form.html', test=test, test_types=TEST_TYPES)
+        test.name = name
         test.test_type = request.form.get('test_type')
         test.description = request.form.get('description')
-        test.last_performed = _parse_date(request.form.get('last_performed'))
-        test.frequency_days = int(request.form.get('frequency_days', 90))
-        test.next_due = _parse_date(request.form.get('next_due'))
+        test.last_performed = parse_date(request.form.get('last_performed'))
+        test.frequency_days = parse_int(request.form.get('frequency_days'), 90, minimum=1)
+        test.next_due = parse_date(request.form.get('next_due'))
         test.priority = request.form.get('priority', 'medium')
         db.session.commit()
         flash('Test modifié avec succès', 'success')
@@ -132,12 +140,3 @@ def delete(id):
     db.session.commit()
     flash('Test supprimé', 'success')
     return redirect(url_for('tests.list'))
-
-
-def _parse_date(value):
-    if value:
-        try:
-            return datetime.strptime(value, '%Y-%m-%d').date()
-        except ValueError:
-            pass
-    return None

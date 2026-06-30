@@ -8,7 +8,7 @@
 """
 import json
 import re
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone
 
 import requests as http_requests
 from flask import current_app
@@ -77,13 +77,6 @@ def refresh_all():
     return ok, len(PRODUCTS)
 
 
-def last_refresh():
-    from app.models import EolCache
-    rows = EolCache.query.all()
-    dates = [r.fetched_at for r in rows if r.fetched_at]
-    return max(dates) if dates else None
-
-
 def _cycles(product):
     """Cycles (liste de dicts) en cache pour un produit, ou None si absent."""
     if product in _memo:
@@ -132,7 +125,7 @@ def _status(eol):
         d = datetime.strptime(str(eol), '%Y-%m-%d').date()
     except (ValueError, TypeError):
         return None, None, None
-    days = (d - date.today()).days
+    days = (d - datetime.now(timezone.utc).date()).days
     if days < 0:
         return d, 'danger', days
     if days <= 180:

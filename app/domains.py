@@ -1,10 +1,10 @@
-from datetime import datetime
 from flask import (Blueprint, render_template, redirect, url_for, request, flash,
                    jsonify)
 from flask_login import login_required, current_user
 from app import db
 from app.models import Domain, DomainHistory
 from app.domain_checker import fetch_domain_info
+from app.forms_util import parse_date, status_rank
 from app.decorators import require_edit, require_delete, view_guard
 
 bp = Blueprint('domains', __name__)
@@ -52,8 +52,7 @@ def list():
     q = request.args.get('q', '').strip()
     from app.paging import paginate, text_search
     domains = text_search(domains, q, ['name', 'registrar', 'description'])
-    rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
-    domains.sort(key=lambda d: rank.get(d.status(), 4))
+    domains.sort(key=lambda d: status_rank(d.status()))
     domains, page, pages, total = paginate(domains)
     return render_template('domains/list.html', domains=domains, q=q, page=page, pages=pages, total=total)
 
@@ -80,10 +79,14 @@ def check_rdap_domain():
 @require_edit
 def create():
     if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        if not name:
+            flash('Le nom de domaine est obligatoire.', 'danger')
+            return render_template('domains/form.html', domain=None)
         d = Domain(
-            name=request.form.get('name', '').strip(),
+            name=name,
             registrar=request.form.get('registrar', '').strip() or None,
-            expiry_date=_parse_date(request.form.get('expiry_date')),
+            expiry_date=parse_date(request.form.get('expiry_date')),
             auto_renew=request.form.get('auto_renew') == 'on',
             description=request.form.get('description'),
             priority=request.form.get('priority', 'medium'),
@@ -112,9 +115,13 @@ def detail(id):
 def edit(id):
     domain = Domain.query.get_or_404(id)
     if request.method == 'POST':
-        domain.name = request.form.get('name', '').strip()
+        name = request.form.get('name', '').strip()
+        if not name:
+            flash('Le nom de domaine est obligatoire.', 'danger')
+            return render_template('domains/form.html', domain=domain)
+        domain.name = name
         domain.registrar = request.form.get('registrar', '').strip() or None
-        domain.expiry_date = _parse_date(request.form.get('expiry_date'))
+        domain.expiry_date = parse_date(request.form.get('expiry_date'))
         domain.auto_renew = request.form.get('auto_renew') == 'on'
         domain.description = request.form.get('description')
         domain.priority = request.form.get('priority', 'medium')
@@ -146,12 +153,3 @@ def delete(id):
     db.session.commit()
     flash('Domaine supprime', 'success')
     return redirect(url_for('domains.list'))
-
-
-def _parse_date(value):
-    if value:
-        try:
-            return datetime.strptime(value, '%Y-%m-%d').date()
-        except ValueError:
-            pass
-    return None
