@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
 from app.models import SystemUpdate, UpdateHistory, Asset
+from app.forms_util import parse_date, status_rank
 from app.decorators import require_edit, require_delete, view_guard
 from app.inventory import active_equipments as _active_equipments
 from app.inventory import parse_equipment_id as _parse_equipment_id
@@ -15,6 +16,16 @@ STATUS_CHOICES = [
     ('critical', 'Critique / sécurité'),
 ]
 TYPE_CHOICES = [('application', 'Application'), ('system', 'Système')]
+_VALID_STATUS = {v for v, _ in STATUS_CHOICES}
+_VALID_TYPE = {v for v, _ in TYPE_CHOICES}
+
+
+def _clean_status(value):
+    return value if value in _VALID_STATUS else 'up_to_date'
+
+
+def _clean_type(value):
+    return value if value in _VALID_TYPE else 'application'
 
 
 @bp.before_request
@@ -30,8 +41,7 @@ def list():
     from app.paging import paginate, text_search
     updates = text_search(updates, q, ['name', 'current_version', 'latest_version',
                                        'updated_by', 'description'])
-    rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
-    updates.sort(key=lambda u: rank.get(u.status_color(), 4))
+    updates.sort(key=lambda u: status_rank(u.status_color()))
     updates, page, pages, total = paginate(updates)
     return render_template('updates/list.html', updates=updates,
                            status_choices=STATUS_CHOICES, type_choices=TYPE_CHOICES,
@@ -43,13 +53,19 @@ def list():
 @require_edit
 def create():
     if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        if not name:
+            flash('Le nom est obligatoire.', 'danger')
+            return render_template('updates/form.html', update=None, assets=_active_assets(),
+                                   equipments=_active_equipments(),
+                                   status_choices=STATUS_CHOICES, type_choices=TYPE_CHOICES)
         u = SystemUpdate(
-            name=request.form.get('name', '').strip(),
-            system_type=request.form.get('system_type', 'application'),
+            name=name,
+            system_type=_clean_type(request.form.get('system_type')),
             current_version=request.form.get('current_version', '').strip() or None,
             latest_version=request.form.get('latest_version', '').strip() or None,
-            status=request.form.get('status', 'up_to_date'),
-            last_update=_parse_date(request.form.get('last_update')),
+            status=_clean_status(request.form.get('status')),
+            last_update=parse_date(request.form.get('last_update')),
             updater_type=request.form.get('updater_type', 'interne'),
             updated_by=request.form.get('updated_by', '').strip() or None,
             description=request.form.get('description'),
@@ -83,12 +99,18 @@ def detail(id):
 def edit(id):
     update = SystemUpdate.query.get_or_404(id)
     if request.method == 'POST':
-        update.name = request.form.get('name', '').strip()
-        update.system_type = request.form.get('system_type', 'application')
+        name = request.form.get('name', '').strip()
+        if not name:
+            flash('Le nom est obligatoire.', 'danger')
+            return render_template('updates/form.html', update=update, assets=_active_assets(),
+                                   equipments=_active_equipments(),
+                                   status_choices=STATUS_CHOICES, type_choices=TYPE_CHOICES)
+        update.name = name
+        update.system_type = _clean_type(request.form.get('system_type'))
         update.current_version = request.form.get('current_version', '').strip() or None
         update.latest_version = request.form.get('latest_version', '').strip() or None
-        update.status = request.form.get('status', 'up_to_date')
-        update.last_update = _parse_date(request.form.get('last_update'))
+        update.status = _clean_status(request.form.get('status'))
+        update.last_update = parse_date(request.form.get('last_update'))
         update.updater_type = request.form.get('updater_type', 'interne')
         update.updated_by = request.form.get('updated_by', '').strip() or None
         update.description = request.form.get('description')
@@ -138,12 +160,3 @@ def delete(id):
 
 def _active_assets():
     return Asset.query.filter_by(is_active=True).order_by(Asset.name).all()
-
-
-def _parse_date(value):
-    if value:
-        try:
-            return datetime.strptime(value, '%Y-%m-%d').date()
-        except ValueError:
-            pass
-    return None

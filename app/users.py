@@ -9,6 +9,18 @@ from app.audit import record as audit_record
 bp = Blueprint('users', __name__)
 
 
+def _valid_role_names():
+    return {r.name for r in Role.query.all()}
+
+
+def _admin_role_names():
+    return {r.name for r in Role.query.filter_by(is_admin=True).all()} or {'admin'}
+
+
+def _admin_user_count():
+    return User.query.filter(User.role.in_(_admin_role_names())).count()
+
+
 @bp.route('/audit')
 @login_required
 @require_admin
@@ -152,26 +164,25 @@ def roles_delete(id):
 
 @bp.route('/')
 @login_required
+@require_admin
 def list():
-    if not current_user.is_admin:
-        flash('Acces refuse', 'danger')
-        return redirect(url_for('dashboard.index'))
     users = User.query.order_by(User.created_at.desc()).all()
     return render_template('users/list.html', users=users)
 
 
 @bp.route('/create', methods=['GET', 'POST'])
 @login_required
+@require_admin
 def create():
-    if not current_user.is_admin:
-        flash('Acces refuse', 'danger')
-        return redirect(url_for('dashboard.index'))
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
         password_confirm = request.form.get('password_confirm')
         role = request.form.get('role', 'viewer')
+        if role not in _valid_role_names():
+            flash('Role invalide.', 'danger')
+            return render_template('users/form.html', user=None)
         if User.query.filter_by(username=username).first():
             flash('Ce nom d\'utilisateur existe deja', 'danger')
             return render_template('users/form.html', user=None)
@@ -197,14 +208,25 @@ def create():
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
+@require_admin
 def edit(id):
-    if not current_user.is_admin:
-        flash('Acces refuse', 'danger')
-        return redirect(url_for('dashboard.index'))
     user = User.query.get_or_404(id)
     if request.method == 'POST':
         user.email = request.form.get('email')
-        user.role = request.form.get('role', 'viewer')
+        new_role = request.form.get('role', 'viewer')
+        if new_role not in _valid_role_names():
+            flash('Role invalide.', 'danger')
+            return render_template('users/form.html', user=user)
+        # Garde-fous : ne pas modifier son propre role, ni retirer le dernier admin.
+        if new_role != user.role:
+            if user.id == current_user.id:
+                flash('Vous ne pouvez pas modifier votre propre role.', 'danger')
+                return render_template('users/form.html', user=user)
+            if (user.role in _admin_role_names() and new_role not in _admin_role_names()
+                    and _admin_user_count() <= 1):
+                flash('Impossible de retirer le dernier administrateur.', 'danger')
+                return render_template('users/form.html', user=user)
+        user.role = new_role
         new_password = request.form.get('password')
         new_password_confirm = request.form.get('password_confirm')
         minlen = current_app.config.get('PASSWORD_MIN_LENGTH', 8)
@@ -240,16 +262,17 @@ def reset_2fa(id):
 
 @bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
+@require_admin
 def delete(id):
-    if not current_user.is_admin:
-        flash('Acces refuse', 'danger')
-        return redirect(url_for('dashboard.index'))
     user = User.query.get_or_404(id)
     if user.username == 'admin':
         flash('Impossible de supprimer l\'administrateur principal', 'danger')
         return redirect(url_for('users.list'))
     if user.id == current_user.id:
         flash('Vous ne pouvez pas supprimer votre propre compte', 'danger')
+        return redirect(url_for('users.list'))
+    if user.role in _admin_role_names() and _admin_user_count() <= 1:
+        flash('Impossible de supprimer le dernier administrateur.', 'danger')
         return redirect(url_for('users.list'))
     _uname = user.username
     db.session.delete(user)

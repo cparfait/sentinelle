@@ -4,8 +4,24 @@ from flask_login import UserMixin
 from app import db
 
 
-def _thresholds(key, default):
-    """Seuils (danger, warning, info) en jours, depuis la config si disponible."""
+# Seuils par defaut (danger, warning, info) en jours restants. SOURCE UNIQUE
+# referencee a la fois par les modeles et par le scheduler : evite des valeurs
+# par defaut divergentes entre la couleur du tableau de bord et le declenchement
+# des alertes. La config (.env / Preferences) reste prioritaire si definie.
+DEFAULT_THRESHOLDS = {
+    'THRESHOLD_EXPIRY': (7, 15, 30),     # comptes, certificats
+    'THRESHOLD_DOMAIN': (30, 60, 90),    # noms de domaine
+    'THRESHOLD_TASK': (7, 15, 30),       # tests, revues de droits
+    'THRESHOLD_CONTRACT': (60, 90, 180),  # contrats / licences
+    'THRESHOLD_WARRANTY': (30, 60, 90),  # fin de garantie (inventaire)
+}
+
+
+def _thresholds(key, default=None):
+    """Seuils (danger, warning, info) en jours, depuis la config si disponible,
+    sinon depuis DEFAULT_THRESHOLDS."""
+    if default is None:
+        default = DEFAULT_THRESHOLDS.get(key)
     try:
         from flask import current_app
         return current_app.config.get(key, default)
@@ -13,7 +29,13 @@ def _thresholds(key, default):
         return default
 
 
-def _status_from_days(days_left, key, default):
+def threshold_for(key):
+    """Seuils effectifs d'une categorie (config sinon defaut). Utilise par le
+    scheduler pour partager exactement la meme politique que les modeles."""
+    return _thresholds(key)
+
+
+def _status_from_days(days_left, key, default=None):
     d, w, i = _thresholds(key, default)
     if days_left <= d:
         return 'danger'
@@ -185,7 +207,7 @@ class Account(db.Model):
         if not self.next_password_change:
             return 'warning'
         days_left = (self.next_password_change - datetime.now(timezone.utc).date()).days
-        return _status_from_days(days_left, 'THRESHOLD_EXPIRY', (7, 15, 30))
+        return _status_from_days(days_left, 'THRESHOLD_EXPIRY')
 
 
 class AccountHistory(db.Model):
@@ -217,7 +239,7 @@ class Certificate(db.Model):
 
     def status(self):
         days_left = (self.expiry_date - datetime.now(timezone.utc).date()).days
-        return _status_from_days(days_left, 'THRESHOLD_EXPIRY', (7, 15, 30))
+        return _status_from_days(days_left, 'THRESHOLD_EXPIRY')
 
 
 class CertificateHistory(db.Model):
@@ -381,7 +403,7 @@ class TestTask(db.Model):
         if not self.next_due:
             return 'warning'
         days_left = (self.next_due - datetime.now(timezone.utc).date()).days
-        return _status_from_days(days_left, 'THRESHOLD_TASK', (7, 15, 30))
+        return _status_from_days(days_left, 'THRESHOLD_TASK')
 
 
 class TestHistory(db.Model):
@@ -411,7 +433,7 @@ class Domain(db.Model):
         if not self.expiry_date:
             return 'warning'
         days_left = (self.expiry_date - datetime.now(timezone.utc).date()).days
-        return _status_from_days(days_left, 'THRESHOLD_DOMAIN', (30, 60, 90))
+        return _status_from_days(days_left, 'THRESHOLD_DOMAIN')
 
 
 class DomainHistory(db.Model):
@@ -445,7 +467,7 @@ class AccessReview(db.Model):
         if not self.next_review:
             return 'warning'
         days_left = (self.next_review - datetime.now(timezone.utc).date()).days
-        return _status_from_days(days_left, 'THRESHOLD_TASK', (7, 15, 30))
+        return _status_from_days(days_left, 'THRESHOLD_TASK')
 
 
 class ReviewHistory(db.Model):
@@ -598,7 +620,7 @@ class Equipment(db.Model):
     def warranty_status(self):
         if not self.warranty_end:
             return None
-        return _status_from_days(self.warranty_days_left(), 'THRESHOLD_WARRANTY', (30, 60, 90))
+        return _status_from_days(self.warranty_days_left(), 'THRESHOLD_WARRANTY')
 
     def os_update_stale(self):
         """MAJ OS jamais renseignee ou trop ancienne (seuil configurable)."""
@@ -760,7 +782,7 @@ class Contract(db.Model):
         days = self.days_left()
         if days is None:
             return 'warning'  # echeance non renseignee : a completer
-        return _status_from_days(days, 'THRESHOLD_CONTRACT', (60, 90, 180))
+        return _status_from_days(days, 'THRESHOLD_CONTRACT')
 
 
 class ContractHistory(db.Model):

@@ -93,42 +93,13 @@
     </div>
 </div>
 
+<script src="{{ url_for('static', filename='js/lookup_fill.js') }}"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    var btn = document.getElementById('checkTlsBtn');
-    if (!btn) return;
-    btn.addEventListener('click', function () {
-        var domain = document.getElementById('domainInput').value.trim();
-        var msg = document.getElementById('checkTlsMsg');
-        if (!domain) {
-            msg.className = 'd-block mt-1 text-danger';
-            msg.textContent = "Renseignez d'abord le domaine.";
-            return;
-        }
-        msg.className = 'd-block mt-1 text-muted';
-        msg.textContent = 'Lecture du certificat en cours…';
-        btn.disabled = true;
-        fetch("{{ url_for('certificates.check_domain') }}?domain=" + encodeURIComponent(domain))
-            .then(function (r) { return r.json(); })
-            .then(function (d) {
-                if (d.ok) {
-                    document.querySelector('input[name=expiry_date]').value = d.expiry_date;
-                    var iss = document.querySelector('input[name=issuer]');
-                    if (d.issuer && !iss.value) iss.value = d.issuer;
-                    msg.className = 'd-block mt-1 text-success';
-                    msg.textContent = 'Certificat lu : expire le ' + d.expiry_date
-                        + (d.issuer ? ' (' + d.issuer + ')' : '');
-                } else {
-                    msg.className = 'd-block mt-1 text-danger';
-                    msg.textContent = 'Échec : ' + d.error;
-                }
-            })
-            .catch(function (e) {
-                msg.className = 'd-block mt-1 text-danger';
-                msg.textContent = 'Erreur : ' + e;
-            })
-            .finally(function () { btn.disabled = false; });
-    });
+initLookupFill({
+    btnId: 'checkTlsBtn', msgId: 'checkTlsMsg', inputId: 'domainInput',
+    url: "{{ url_for('certificates.check_domain') }}", secondField: 'issuer',
+    loadingText: 'Lecture du certificat en cours…',
+    successPrefix: 'Certificat lu : expire le'
 });
 </script>
 {% endblock %}

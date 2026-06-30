@@ -35,10 +35,12 @@ def _fill(supplier, form):
 def list():
     suppliers = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
     q = request.args.get('q', '').strip()
-    from app.paging import text_search
+    from app.paging import paginate, text_search
     suppliers = text_search(suppliers, q, ['name', 'contact_name', 'email',
                                            'customer_ref', 'notes'])
+    suppliers, page, pages, total = paginate(suppliers)
     return render_template('suppliers/list.html', suppliers=suppliers, q=q,
+                           page=page, pages=pages, total=total,
                            kind_labels=SUPPLIER_KIND_LABELS)
 
 

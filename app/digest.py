@@ -4,7 +4,7 @@ from html import escape
 
 from app.models import (Account, Certificate, Backup, TestTask, Domain,
                         AccessReview, SystemUpdate, Contract)
-from app.snooze import is_snoozed
+from app.snooze import active_snooze_keys
 
 _COLORS = {'danger': '#ef4444', 'warning': '#f59e0b', 'info': '#3b82f6',
            'success': '#10b981'}
@@ -22,6 +22,9 @@ def _collect():
     """Retourne la liste des domaines avec compteurs et elements non-verts."""
     today = datetime.now(timezone.utc).date()
     domains = []
+    # Snoozes charges une seule fois (au lieu d'une requete is_snoozed par
+    # element, sur 8 categories).
+    snoozed = active_snooze_keys()
 
     def days_txt(d, kind):
         if d is None:
@@ -35,7 +38,7 @@ def _collect():
     accounts = Account.query.filter_by(is_active=True).all()
     items = []
     for a in accounts:
-        if is_snoozed('account', a.id):
+        if ('account', a.id) in snoozed:
             continue
         s = a.status()
         if s in ('danger', 'warning'):
@@ -48,7 +51,7 @@ def _collect():
     certs = Certificate.query.filter_by(is_active=True).all()
     items = []
     for c in certs:
-        if is_snoozed('certificate', c.id):
+        if ('certificate', c.id) in snoozed:
             continue
         s = c.status()
         if s in ('danger', 'warning'):
@@ -61,7 +64,7 @@ def _collect():
     doms = Domain.query.filter_by(is_active=True).all()
     items = []
     for dm in doms:
-        if is_snoozed('domain', dm.id):
+        if ('domain', dm.id) in snoozed:
             continue
         s = dm.status()
         if s in ('danger', 'warning'):
@@ -74,7 +77,7 @@ def _collect():
     backups = Backup.query.filter_by(is_active=True).all()
     items = []
     for b in backups:
-        if is_snoozed('backup', b.id):
+        if ('backup', b.id) in snoozed:
             continue
         s = b.computed_status()
         if s in ('danger', 'warning'):
@@ -91,7 +94,7 @@ def _collect():
     tests = TestTask.query.filter_by(is_active=True).all()
     items = []
     for t in tests:
-        if is_snoozed('test', t.id):
+        if ('test', t.id) in snoozed:
             continue
         s = t.computed_status()
         if s in ('danger', 'warning'):
@@ -104,7 +107,7 @@ def _collect():
     reviews = AccessReview.query.filter_by(is_active=True).all()
     items = []
     for r in reviews:
-        if is_snoozed('review', r.id):
+        if ('review', r.id) in snoozed:
             continue
         s = r.computed_status()
         if s in ('danger', 'warning'):
@@ -117,7 +120,7 @@ def _collect():
     updates = SystemUpdate.query.filter_by(is_active=True).all()
     items = []
     for u in updates:
-        if is_snoozed('update', u.id):
+        if ('update', u.id) in snoozed:
             continue
         s = u.status_color()
         if s in ('danger', 'warning'):
@@ -130,7 +133,7 @@ def _collect():
     contracts = Contract.query.filter_by(is_active=True).all()
     items = []
     for c in contracts:
-        if is_snoozed('contract', c.id):
+        if ('contract', c.id) in snoozed:
             continue
         s = c.status()
         if s in ('danger', 'warning'):

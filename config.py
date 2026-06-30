@@ -33,6 +33,11 @@ class Config:
     # waitress sur 127.0.0.1 derriere un reverse proxy TLS (IIS/Caddy/nginx).
     SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'false').lower() in ('true', '1', 'yes')
 
+    # Faire confiance a l'en-tete X-Forwarded-For pour l'IP source (anti-bruteforce).
+    # A n'activer que si l'app est servie derriere un reverse proxy de confiance qui
+    # positionne cet en-tete ; sinon un client peut forger son IP.
+    TRUST_PROXY = os.getenv('TRUST_PROXY', 'false').lower() in ('true', '1', 'yes')
+
     # Longueur minimale des mots de passe.
     PASSWORD_MIN_LENGTH = int(os.getenv('PASSWORD_MIN_LENGTH', 8))
 

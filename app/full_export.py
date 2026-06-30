@@ -15,7 +15,8 @@ from app import csv_io
 from app.db_backup import _db_path
 
 _LABELS = {'accounts': 'Comptes', 'certificates': 'Certificats',
-           'domains': 'Domaines', 'backups': 'Backups', 'tests': 'Tests'}
+           'domains': 'Domaines', 'backups': 'Backups', 'tests': 'Tests',
+           'reviews': 'Revue de droits', 'updates': 'Mises à jour'}
 
 
 def _html_snapshot(app):

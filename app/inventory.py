@@ -1,8 +1,9 @@
-from datetime import datetime
 from flask import (Blueprint, render_template, redirect, url_for, request, flash)
 from flask_login import login_required
 from app import db
 from app.models import (Equipment, EQUIPMENT_KIND_LABELS, CRITICALITY_LABELS)
+from app.forms_util import (parse_date as _pd, parse_int as _pi,
+                            parse_float as _pf, status_rank)
 from app.decorators import require_edit, require_delete, view_guard
 from app.audit import record as audit_record
 
@@ -36,27 +37,6 @@ def parse_equipment_id(value):
     return eid if db.session.get(Equipment, eid) else None
 
 
-def _pd(v):
-    try:
-        return datetime.strptime(v, '%Y-%m-%d').date() if v else None
-    except (ValueError, TypeError):
-        return None
-
-
-def _pf(v):
-    try:
-        return float(str(v).replace(',', '.')) if v not in (None, '') else None
-    except ValueError:
-        return None
-
-
-def _pi(v):
-    try:
-        return int(v) if v not in (None, '') else None
-    except (ValueError, TypeError):
-        return None
-
-
 def _txt(f, key):
     return (f.get(key, '') or '').strip() or None
 
@@ -88,7 +68,7 @@ def _apply_form(eq, f):
     eq.purchase_date = _pd(f.get('purchase_date'))
     eq.warranty_end = _pd(f.get('warranty_end'))
     eq.maintenance_contract = _txt(f, 'maintenance_contract')
-    eq.supplier_id = int(f['supplier_id']) if (f.get('supplier_id') or '').isdigit() else None
+    eq.supplier_id = _pi(f.get('supplier_id'))
     eq.protocols = _txt(f, 'protocols')
     eq.access = _txt(f, 'access')
     eq.capacity_to = _pf(f.get('capacity_to'))
@@ -168,7 +148,6 @@ def list():
     active_filters = sum(1 for v in f.values() if v)
 
     # Tri : par colonne (clic sur l'entete) sinon par criticite decroissante.
-    rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
     sort = request.args.get('sort', '').strip()
     direction = request.args.get('dir', 'asc').strip()
     _NUMERIC = {'criticality', 'vcpu', 'ram_go', 'capacity_to', 'used_to', 'storage'}
@@ -182,7 +161,7 @@ def list():
             if sort == 'name':
                 return (e.name or '').lower()
             if sort == 'status':
-                return rank.get(e.computed_status(), 4)
+                return status_rank(e.computed_status())
             if sort == 'storage':
                 return sum(x for x in (e.hdd1_go, e.hdd2_go, e.hdd3_go) if x) or 0
             v = getattr(e, sort, None)
@@ -194,7 +173,7 @@ def list():
         items.sort(key=skey, reverse=(direction == 'desc'))
     else:
         sort = ''
-        items.sort(key=lambda e: rank.get(e.computed_status(), 4))
+        items.sort(key=lambda e: status_rank(e.computed_status()))
 
     per_page = resolve_per_page()
     items, page, pages, total = paginate(items, per_page)

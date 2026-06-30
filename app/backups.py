@@ -1,3 +1,4 @@
+import hmac
 from datetime import datetime, timedelta, timezone
 from flask import (Blueprint, render_template, redirect, url_for, request, flash,
                    jsonify, current_app)
@@ -6,6 +7,7 @@ from app import db, csrf
 from app.models import Backup, BackupCheck, BackupHistory
 from app.inventory import active_equipments as _active_equipments
 from app.inventory import parse_equipment_id as _parse_equipment_id
+from app.forms_util import status_rank
 
 from app.decorators import require_edit, require_delete, view_guard
 bp = Blueprint('backups', __name__)
@@ -30,7 +32,8 @@ def ingest():
     if not token:
         return jsonify(ok=False, error="Ingestion desactivee (BACKUP_INGEST_TOKEN non defini)."), 503
     provided = request.headers.get('X-Sentinelle-Token') or request.args.get('token', '')
-    if provided != token:
+    # Comparaison a temps constant : ne fuit pas la longueur/le prefixe du jeton.
+    if not hmac.compare_digest(provided, token):
         return jsonify(ok=False, error="Jeton invalide."), 403
 
     if request.is_json:
@@ -73,8 +76,7 @@ def list():
     q = request.args.get('q', '').strip()
     from app.paging import paginate, text_search
     backups = text_search(backups, q, ['service_name', 'location', 'backup_type', 'description'])
-    rank = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
-    backups.sort(key=lambda b: rank.get(b.computed_status(), 4))
+    backups.sort(key=lambda b: status_rank(b.computed_status()))
     backups, page, pages, total = paginate(backups)
     today = datetime.now(timezone.utc).date()
     today_checks = {}
@@ -90,6 +92,9 @@ _STATUS_LABELS = {'ok': 'OK', 'warning': 'Warning', 'failed': 'Échec'}
 def record_backup_check(backup_id, check_date, status, comment, user):
     """Cree ou met a jour le check d'un jour et trace l'action dans l'historique.
     Le premier etat du jour (first_status) est fige a la creation."""
+    # Garde-fou : un statut hors liste blanche fausserait les stats -> repli 'ok'.
+    if status not in _STATUS_LABELS:
+        status = 'ok'
     label = _STATUS_LABELS.get(status, status)
     existing = BackupCheck.query.filter_by(backup_id=backup_id, check_date=check_date).first()
     if existing:
@@ -134,11 +139,9 @@ def daily():
         flash('Checks quotidiens enregistres', 'success')
         return redirect(url_for('backups.daily'))
 
-    checks = {}
-    for b in backups:
-        checks[b.id] = BackupCheck.query.filter_by(
-            backup_id=b.id, check_date=today
-        ).first()
+    # Checks du jour charges en une seule requete (evite un N+1 par backup).
+    rows = {c.backup_id: c for c in BackupCheck.query.filter_by(check_date=today).all()}
+    checks = {b.id: rows.get(b.id) for b in backups}
 
     return render_template('backups/daily.html', backups=backups, checks=checks, today=today)
 
@@ -146,9 +149,24 @@ def daily():
 @bp.route('/stats')
 @login_required
 def stats():
+    from collections import defaultdict
     backups = Backup.query.filter_by(is_active=True).all()
     today = datetime.now(timezone.utc).date()
+    window_start = today - timedelta(days=29)
     stats_data = []
+
+    # Pre-chargement groupe (evite un N+1 : 30 requetes/jour + 1 par backup).
+    # - calendrier 30 jours : checks de la fenetre, indexes par (backup, jour) ;
+    # - totaux : tous les checks, regroupes par backup.
+    recent = defaultdict(dict)
+    for c in BackupCheck.query.filter(BackupCheck.check_date >= window_start).all():
+        recent[c.backup_id][c.check_date] = c
+    all_by_backup = defaultdict(list)
+    for c in BackupCheck.query.all():
+        all_by_backup[c.backup_id].append(c)
+
+    def _fs(c):
+        return c.first_status or c.status
 
     for b in backups:
         rate_30 = b.success_rate(30)
@@ -158,7 +176,7 @@ def stats():
         last_30 = []
         for i in range(29, -1, -1):
             d = today - timedelta(days=i)
-            c = BackupCheck.query.filter_by(backup_id=b.id, check_date=d).first()
+            c = recent[b.id].get(d)
             day_status = (c.first_status or c.status) if c else None
             recovered = bool(c and c.first_status and c.first_status != c.status and c.status == 'ok')
             last_30.append({
@@ -170,10 +188,7 @@ def stats():
             })
 
         # Totaux bases sur le premier etat de chaque jour
-        all_checks = b.checks.all()
-
-        def _fs(c):
-            return c.first_status or c.status
+        all_checks = all_by_backup[b.id]
         total_ok = sum(1 for c in all_checks if _fs(c) == 'ok')
         total_failed = sum(1 for c in all_checks if _fs(c) == 'failed')
         total_warning = sum(1 for c in all_checks if _fs(c) == 'warning')
@@ -221,8 +236,13 @@ def detail(id):
 @require_edit
 def create():
     if request.method == 'POST':
+        service_name = (request.form.get('service_name') or '').strip()
+        if not service_name:
+            flash('Le nom du service est obligatoire.', 'danger')
+            return render_template('backups/form.html', backup=None,
+                                   equipments=_active_equipments())
         b = Backup(
-            service_name=request.form.get('service_name'),
+            service_name=service_name,
             backup_type=request.form.get('backup_type'),
             location=request.form.get('location'),
             frequency=request.form.get('frequency'),
@@ -252,7 +272,12 @@ def create():
 def edit(id):
     backup = Backup.query.get_or_404(id)
     if request.method == 'POST':
-        backup.service_name = request.form.get('service_name')
+        service_name = (request.form.get('service_name') or '').strip()
+        if not service_name:
+            flash('Le nom du service est obligatoire.', 'danger')
+            return render_template('backups/form.html', backup=backup,
+                                   equipments=_active_equipments())
+        backup.service_name = service_name
         backup.backup_type = request.form.get('backup_type')
         backup.location = request.form.get('location')
         backup.frequency = request.form.get('frequency')

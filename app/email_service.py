@@ -13,20 +13,41 @@ def _token_path():
 
 def _load_token():
     path = _token_path()
-    if os.path.exists(path):
-        with open(path, 'r') as f:
-            return json.load(f)
-    return None
+    if not os.path.exists(path):
+        return None
+    with open(path, 'rb') as f:
+        raw = f.read()
+    if not raw:
+        return None
+    # Nouveau format : chiffre (Fernet). Repli sur l'ancien format JSON en clair
+    # pour migrer sans intervention (le prochain _save_token reecrira chiffre).
+    try:
+        from app.config_store import _fernet
+        raw = _fernet().decrypt(raw)
+    except Exception:
+        pass
+    try:
+        return json.loads(raw)
+    except Exception:
+        return None
 
 
 def _save_token(access_token, refresh_token, user_email=''):
-    path = _token_path()
-    with open(path, 'w') as f:
-        json.dump({
-            'access_token': access_token,
-            'refresh_token': refresh_token,
-            'user_email': user_email,
-        }, f)
+    """Stocke le token O365 chiffre (refresh_token = donnee sensible). La cle
+    derive de SECRET_KEY (meme mecanisme que les secrets de config)."""
+    payload = json.dumps({
+        'access_token': access_token,
+        'refresh_token': refresh_token,
+        'user_email': user_email,
+    }).encode('utf-8')
+    try:
+        from app.config_store import _fernet
+        data = _fernet().encrypt(payload)
+    except Exception:
+        current_app.logger.warning('Chiffrement du token O365 indisponible : stockage en clair.')
+        data = payload
+    with open(_token_path(), 'wb') as f:
+        f.write(data)
 
 
 def clear_o365_token():
@@ -103,6 +124,10 @@ def complete_o365_auth(query_params):
     if user_resp.status_code == 200:
         user_data = user_resp.json()
         user_email = user_data.get('mail') or user_data.get('userPrincipalName', '')
+    else:
+        current_app.logger.warning(
+            'O365 : recuperation de l\'email emetteur echouee (HTTP %s).',
+            user_resp.status_code)
 
     _save_token(access_token, refresh_token, user_email)
 

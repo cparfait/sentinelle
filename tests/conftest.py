@@ -9,6 +9,9 @@ class _TestConfig(Config):
     TESTING = True
     WTF_CSRF_ENABLED = False
     SQLALCHEMY_DATABASE_URI = 'sqlite://'   # base memoire, jetee apres chaque test
+    # Les tests d'anti-bruteforce par IP simulent un deploiement derriere reverse
+    # proxy (IP source via X-Forwarded-For) : on fait donc confiance au proxy ici.
+    TRUST_PROXY = True
 
 
 @pytest.fixture()
