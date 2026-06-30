@@ -7,9 +7,13 @@
     <title>{% block title %}Admin Dashboard{% endblock %}</title>
     {# Anti-FOUC : applique le thème et la couleur de fond avant le premier rendu,
        pour éviter le flash noir sur OS dark-mode quand le CSS n'est pas encore chargé. #}
-    <script>(function(){try{var t=localStorage.getItem('theme')||'light';var h=document.documentElement;h.setAttribute('data-theme',t);h.style.backgroundColor=t==='dark'?'#0b1120':'#f1f5f9';}catch(e){}})();</script>
+    <script>(function(){try{var t=localStorage.getItem('theme')||'light';var h=document.documentElement;h.setAttribute('data-theme',t);h.style.backgroundColor=t==='dark'?'#0b1120':'#f5f6f8';}catch(e){}})();</script>
     <link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='vendor/bootstrap-icons.css') }}" rel="stylesheet">
+    {# Polices de la refonte — 100% hors-ligne. Les .woff2 sont servis localement
+       depuis static/vendor/fonts/ (lancer DOWNLOAD-FONTS.ps1 une fois pour les
+       telecharger). Aucune requete Internet a l'execution. #}
+    <link href="{{ url_for('static', filename='vendor/fonts/ibm-plex.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>

@@ -1,39 +1,40 @@
 /* ============================================================================
-   Sentinelle — Design system
-   Tokens (couleurs, espacements, rayons, élévations) puis composants.
-   100% hors-ligne : aucune dépendance externe (polices système).
+   Sentinelle — Design system (refonte « pro » — juin 2026)
+   Theme retravaille : IBM Plex Sans/Mono, accent bleu corporate, en-tetes de
+   tableau clairs, surfaces assagies. Memes classes que l'origine -> drop-in.
+   100% hors-ligne : voir base.html pour le chargement des polices.
    ========================================================================== */
 
 :root {
     /* Marque */
-    --primary: #4f46e5;
-    --primary-dark: #4338ca;
-    --primary-rgb: 79, 70, 229;
-    --success: #10b981;
-    --success-rgb: 16, 185, 129;
-    --warning: #f59e0b;
-    --warning-rgb: 245, 158, 11;
-    --danger: #ef4444;
-    --danger-rgb: 239, 68, 68;
-    --info: #3b82f6;
-    --info-rgb: 59, 130, 246;
+    --primary: #3056a0;
+    --primary-dark: #21509f;
+    --primary-rgb: 48, 96, 160;
+    --success: #2f8a5b;
+    --success-rgb: 47, 138, 91;
+    --warning: #c0832a;
+    --warning-rgb: 192, 131, 42;
+    --danger: #d23f3a;
+    --danger-rgb: 210, 63, 58;
+    --info: #2f6fc4;
+    --info-rgb: 47, 111, 196;
 
     /* Surfaces & texte (thème clair) */
     --dark: #1e293b;
     --darker: #0f172a;
-    --sidebar: #1b2030;
-    --sidebar-hover: #282e3f;
-    --sidebar-active: #6366f1;
+    --sidebar: #161a22;
+    --sidebar-hover: #20242e;
+    --sidebar-active: #5b8def;
     --sidebar-section: #5b6478;
     --card-bg: #ffffff;
-    --body-bg: #f1f5f9;
-    --text: #334155;
-    --text-strong: #0f172a;
+    --body-bg: #f5f6f8;
+    --text: #49515f;
+    --text-strong: #191e27;
     --text-light: #94a3b8;
-    --border: #e7ebf0;
-    --border-strong: #d8dee6;
+    --border: #e9ebef;
+    --border-strong: #dde0e6;
     --input-bg: #ffffff;
-    --table-hover: #f7f9fc;
+    --table-hover: #f6f7f9;
 
     /* Échelle d'espacement (grille 8pt + demi-pas) */
     --space-1: 4px;
@@ -58,19 +59,20 @@
     /* Anneau de focus accessible */
     --ring: 0 0 0 3px rgba(var(--primary-rgb), 0.35);
 
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
                  Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+    --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', 'Consolas', monospace;
 }
 
 [data-theme="dark"] {
-    --primary: #818cf8;
-    --primary-dark: #6366f1;
-    --primary-rgb: 129, 140, 248;
+    --primary: #6f9ce8;
+    --primary-dark: #4f7fd0;
+    --primary-rgb: 111, 156, 232;
     --dark: #0f172a;
     --darker: #020617;
     --sidebar: #111827;
     --sidebar-hover: #1e293b;
-    --sidebar-active: #818cf8;
+    --sidebar-active: #6f9ce8;
     --sidebar-section: #4b5566;
     --card-bg: #1e293b;
     --body-bg: #0b1120;
@@ -296,7 +298,7 @@ tr.row-warning > td { background: rgba(var(--warning-rgb), 0.05); }
 }
 
 .sidebar-link.active {
-    background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.22), rgba(var(--primary-rgb), 0.04));
+    background: rgba(255, 255, 255, 0.07);
     color: #ffffff;
     border-left-color: var(--sidebar-active);
     font-weight: 600;
@@ -442,7 +444,7 @@ a:hover .stat-card,
     color: #fff;
 }
 
-.stat-card .stat-number { font-size: 27px; font-weight: 700; line-height: 1.05; color: var(--text-strong); }
+.stat-card .stat-number { font-family: var(--font-mono); font-size: 26px; font-weight: 600; line-height: 1.05; color: var(--text-strong); letter-spacing: -0.01em; }
 
 /* Mini-barre de santé (proportion critique / alerte / OK) */
 .mini-bar {
@@ -527,24 +529,24 @@ a:hover .stat-card,
     border-top: none;
     font-weight: 700;
     text-transform: uppercase;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     letter-spacing: 0.06em;
-    color: #fff;
+    color: var(--text-light);
     padding: 12px 18px;
-    border-bottom: none;
+    border-bottom: 1px solid var(--border);
     white-space: nowrap;
-    background: var(--primary);
+    background: var(--table-hover);
 }
 
 [data-theme="dark"] .table thead th {
-    background: #3730a3;
-    color: #fff;
-    border-bottom: none;
+    background: #1a2230;
+    color: var(--text-light);
+    border-bottom: 1px solid var(--border);
 }
 /* En-tetes a code couleur (ex. seuils Critique/Attention/Proche) : teintes
    claires lisibles sur le fond indigo plein, tout en gardant la semantique. */
 /* En-tetes triables : lien blanc, fleche d'inactivite estompee. */
-.table thead th a.th-sort { color: #fff; text-decoration: none; white-space: nowrap; }
+.table thead th a.th-sort { color: var(--text-light); text-decoration: none; white-space: nowrap; }
 .table thead th a.th-sort:hover { text-decoration: underline; }
 .table thead th a.th-sort .th-sort-idle { opacity: 0.35; font-size: 0.85em; }
 
@@ -572,7 +574,7 @@ a:hover .stat-card,
 .inv-colfilter-btn {
     background: transparent;
     border: 0;
-    color: #fff;
+    color: var(--text-light);
     opacity: 0.55;
     padding: 0 2px;
     margin-left: 4px;
@@ -581,7 +583,7 @@ a:hover .stat-card,
     line-height: 1;
 }
 .inv-colfilter-btn:hover { opacity: 1; }
-.inv-colfilter-btn.active { opacity: 1; color: #fde68a; }
+.inv-colfilter-btn.active { opacity: 1; color: var(--warning); }
 .inv-colfilter-panel {
     position: absolute;
     z-index: 1080;
@@ -608,10 +610,10 @@ a:hover .stat-card,
     text-overflow: ellipsis;
 }
 
-.table thead th.text-danger  { color: #fecaca !important; }
-.table thead th.text-warning { color: #fde68a !important; }
-.table thead th.text-info    { color: #bfdbfe !important; }
-.table thead th.text-success { color: #bbf7d0 !important; }
+.table thead th.text-danger  { color: var(--danger) !important; }
+.table thead th.text-warning { color: var(--warning) !important; }
+.table thead th.text-info    { color: var(--info) !important; }
+.table thead th.text-success { color: var(--success) !important; }
 
 .table td {
     padding: 12px 18px;
@@ -1068,7 +1070,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     align-items: center;
     justify-content: center;
     padding: 24px;
-    background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 55%, #312e81 100%);
+    background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 55%, #1e3a6b 100%);
 }
 
 .login-card {
