@@ -34,6 +34,47 @@ def list():
     return render_template('tests/list.html', tests=tests, test_types=TEST_TYPES, q=q, page=page, pages=pages, total=total)
 
 
+@bp.route('/kanban')
+@login_required
+def kanban():
+    tests = TestTask.query.filter_by(is_active=True).all()
+    cols = {
+        'pending': {'label': 'À faire', 'icon': 'bi-clock', 'color': 'secondary', 'items': []},
+        'success': {'label': 'Réussi', 'icon': 'bi-check-circle', 'color': 'success', 'items': []},
+        'failed': {'label': 'En échec', 'icon': 'bi-x-circle', 'color': 'danger', 'items': []},
+    }
+    for t in tests:
+        status = t.status or 'pending'
+        key = status if status in cols else 'pending'
+        cols[key]['items'].append(t)
+    # Trier chaque colonne : plus urgent en premier
+    for col in cols.values():
+        col['items'].sort(key=lambda t: (
+            (t.next_due - datetime.now(timezone.utc).date()).days
+            if t.next_due else 9999
+        ))
+    return render_template('tests/kanban.html', cols=cols)
+
+
+_VALID_STATUS = {'pending', 'success', 'failed'}
+
+@bp.route('/<int:id>/set-status', methods=['POST'])
+@login_required
+@require_edit
+def set_status(id):
+    test = TestTask.query.get_or_404(id)
+    status = request.form.get('status', 'pending')
+    if status not in _VALID_STATUS:
+        status = 'pending'
+    test.status = status
+    db.session.add(TestHistory(test_id=test.id, action='status_change',
+                               comment=f'Statut changé en {status} (Kanban)',
+                               performed_by=current_user.username))
+    db.session.commit()
+    flash(f'Statut mis à jour : {status}', 'success')
+    return redirect(request.referrer or url_for('tests.kanban'))
+
+
 @bp.route('/create', methods=['GET', 'POST'])
 @login_required
 @require_edit

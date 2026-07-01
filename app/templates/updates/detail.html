@@ -89,9 +89,9 @@
         {% with entity_type='update', entity_id=update.id %}{% include '_snooze_card.html' %}{% endwith %}
         {% if current_user.can_delete('updates') %}
         <div class="data-card p-4">
-            <form method="POST" action="{{ url_for('updates.delete', id=update.id) }}" onsubmit="return confirm('Supprimer cette entrée ?')">
+            <form method="POST" action="{{ url_for('updates.delete', id=update.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-danger btn-sm w-100"><i class="bi bi-trash me-1"></i> Supprimer</button>
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100" data-confirm="Supprimer cette entrée ?"><i class="bi bi-trash me-1"></i> Supprimer</button>
             </form>
         </div>
         {% endif %}

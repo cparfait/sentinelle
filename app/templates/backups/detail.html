@@ -144,10 +144,10 @@
         </div>
         {% with entity_type='backup', entity_id=backup.id %}{% include '_snooze_card.html' %}{% endwith %}
         <div class="data-card p-4">
-            <form method="POST" action="{{ url_for('backups.delete', id=backup.id) }}"
-                  onsubmit="return confirm('Supprimer ce backup ?')">
+            <form method="POST" action="{{ url_for('backups.delete', id=backup.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100"
+                        data-confirm="Supprimer ce backup ?">
                     <i class="bi bi-trash me-1"></i> Supprimer
                 </button>
             </form>

@@ -70,15 +70,15 @@
             {% elif current_user.has_2fa %}
             <p class="mb-2"><span class="badge bg-success"><i class="bi bi-shield-check me-1"></i>Activée</span>
                 Une vérification par code est demandée à chaque connexion.</p>
-            <form method="POST" class="d-flex gap-2 align-items-end" style="max-width:360px;"
-                  onsubmit="return confirm('Désactiver la double authentification ?')">
+            <form method="POST" class="d-flex gap-2 align-items-end" style="max-width:360px;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="disable_2fa">
                 <div class="flex-grow-1">
                     <label class="form-label small">Mot de passe pour confirmer</label>
                     <input type="password" name="password" class="form-control" required>
                 </div>
-                <button type="submit" class="btn btn-outline-danger">Désactiver</button>
+                <button type="submit" class="btn btn-outline-danger"
+                        data-confirm="Désactiver la double authentification ?">Désactiver</button>
             </form>
             {% else %}
             <p class="small text-muted mb-2">Renforcez la sécurité de votre compte avec un code à usage unique (TOTP).</p>

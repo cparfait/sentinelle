@@ -208,9 +208,9 @@
                             <a href="{{ url_for('inventory.edit', id=e.id) }}" class="btn btn-sm btn-outline-secondary" title="Modifier" aria-label="Modifier"><i class="bi bi-pencil"></i></a>
                             {% endif %}
                             {% if current_user.can_delete('inventory') %}
-                            <form method="POST" action="{{ url_for('inventory.delete', id=e.id) }}" onsubmit="return confirm('Supprimer « {{ e.name }} » ?')">
+                            <form method="POST" action="{{ url_for('inventory.delete', id=e.id) }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer" aria-label="Supprimer"><i class="bi bi-trash"></i></button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer" aria-label="Supprimer" data-confirm="Supprimer « {{ e.name }} » ?"><i class="bi bi-trash"></i></button>
                             </form>
                             {% endif %}
                         </div>

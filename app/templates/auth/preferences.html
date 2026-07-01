@@ -375,11 +375,11 @@
                                                 <input type="hidden" name="wh_id" value="{{ w.id }}">
                                                 <button type="submit" class="btn btn-sm btn-outline-primary py-0 px-1" title="Tester" aria-label="Tester"><i class="bi bi-send"></i></button>
                                             </form>
-                                            <form method="POST" action="{{ url_for('auth.preferences') }}" class="d-inline" onsubmit="return confirm('Supprimer ce webhook ?')">
+                                            <form method="POST" action="{{ url_for('auth.preferences') }}" class="d-inline">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <input type="hidden" name="action" value="delete_webhook">
                                                 <input type="hidden" name="wh_id" value="{{ w.id }}">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Supprimer" aria-label="Supprimer"><i class="bi bi-trash"></i></button>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Supprimer" aria-label="Supprimer" data-confirm="Supprimer ce webhook ?"><i class="bi bi-trash"></i></button>
                                             </form>
                                         </td>
                                     </tr>
@@ -479,11 +479,11 @@
                                         </td>
                                         <td class="text-end text-nowrap">
                                             <button type="submit" form="asset-{{ a.id }}" class="btn btn-sm btn-outline-primary py-0 px-1" title="Enregistrer les modifications" aria-label="Enregistrer les modifications"><i class="bi bi-check-lg"></i></button>
-                                            <form method="POST" action="{{ url_for('auth.preferences') }}" class="d-inline" onsubmit="return confirm('Retirer « {{ a.name }} » du catalogue ?')">
+                                            <form method="POST" action="{{ url_for('auth.preferences') }}" class="d-inline">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <input type="hidden" name="action" value="delete_asset">
                                                 <input type="hidden" name="asset_id" value="{{ a.id }}">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Retirer" aria-label="Retirer"><i class="bi bi-trash"></i></button>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Retirer" aria-label="Retirer" data-confirm="Retirer « {{ a.name }} » du catalogue ?"><i class="bi bi-trash"></i></button>
                                             </form>
                                         </td>
                                     </tr>
@@ -697,12 +697,12 @@
                                 <span><i class="bi bi-file-earmark-zip me-1"></i>{{ b.name }}</span>
                                 <span class="d-flex align-items-center gap-2">
                                     <span class="text-muted">{{ b.date.strftime('%d/%m/%Y %H:%M') }} · {{ b.size_kb }} Ko</span>
-                                    <form method="POST" action="{{ url_for('auth.preferences') }}"
-                                          onsubmit="return confirm('Supprimer cette sauvegarde ?')">
+                                    <form method="POST" action="{{ url_for('auth.preferences') }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="action" value="delete_db_backup">
                                         <input type="hidden" name="name" value="{{ b.name }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Supprimer" aria-label="Supprimer">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Supprimer" aria-label="Supprimer"
+                                                data-confirm="Supprimer cette sauvegarde ?">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>

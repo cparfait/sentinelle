@@ -3,11 +3,14 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_wtf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from config import Config
 
 db = SQLAlchemy()
 login_manager = LoginManager()
 csrf = CSRFProtect()
+limiter = Limiter(key_func=get_remote_address, default_limits=['200 per minute', '2000 per hour'])
 
 
 def create_app(config_class=Config):
@@ -25,6 +28,7 @@ def create_app(config_class=Config):
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
+    limiter.init_app(app)
     _setup_logging(app)
 
     login_manager.login_view = 'auth.login'
@@ -187,6 +191,14 @@ def create_app(config_class=Config):
 
     from app.data_io import bp as data_io_bp
     app.register_blueprint(data_io_bp, url_prefix='/data')
+    from app.health import bp as health_bp
+    app.register_blueprint(health_bp)
+
+    from app.api import bp as api_bp
+    app.register_blueprint(api_bp)
+
+    from app.pdf_export import bp as pdf_export_bp
+    app.register_blueprint(pdf_export_bp)
 
     with app.app_context():
         _setup_sqlite()
@@ -211,20 +223,33 @@ def create_app(config_class=Config):
 
 
 def _setup_logging(app):
-    """Journalisation applicative dans un fichier avec rotation."""
+    """Journalisation applicative JSON dans un fichier avec rotation.
+    Format JSON pour faciliter l'ingestion par des agrégateurs de logs."""
     if app.config.get('TESTING'):
         return
     import os
     import logging
+    import json as _json
     from logging.handlers import RotatingFileHandler
+
+    class _JsonFormatter(logging.Formatter):
+        def format(self, record):
+            doc = {
+                'ts': self.formatTime(record, '%Y-%m-%dT%H:%M:%S'),
+                'level': record.levelname,
+                'logger': record.name,
+                'msg': record.getMessage(),
+            }
+            if record.exc_info:
+                doc['exc'] = self.formatException(record.exc_info)
+            return _json.dumps(doc, ensure_ascii=False)
+
     log_dir = os.path.join(app.instance_path, 'logs')
     os.makedirs(log_dir, exist_ok=True)
     handler = RotatingFileHandler(os.path.join(log_dir, 'sentinelle.log'),
                                   maxBytes=1_000_000, backupCount=5, encoding='utf-8')
-    handler.setFormatter(logging.Formatter(
-        '%(asctime)s %(levelname)s %(name)s: %(message)s'))
+    handler.setFormatter(_JsonFormatter())
     handler.setLevel(logging.INFO)
-    # evite les handlers en double lors du reload en mode debug
     if not any(isinstance(h, RotatingFileHandler) for h in app.logger.handlers):
         app.logger.addHandler(handler)
     app.logger.setLevel(logging.INFO)

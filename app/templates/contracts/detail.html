@@ -137,10 +137,10 @@
         </div>
         {% with entity_type='contract', entity_id=contract.id %}{% include '_snooze_card.html' %}{% endwith %}
         <div class="data-card p-4">
-            <form method="POST" action="{{ url_for('contracts.delete', id=contract.id) }}"
-                  onsubmit="return confirm('Supprimer ce contrat ?')">
+            <form method="POST" action="{{ url_for('contracts.delete', id=contract.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100"
+                        data-confirm="Supprimer ce contrat ?">
                     <i class="bi bi-trash me-1"></i> Supprimer
                 </button>
             </form>

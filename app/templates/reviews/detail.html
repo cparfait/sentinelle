@@ -78,9 +78,9 @@
         {% with entity_type='review', entity_id=review.id %}{% include '_snooze_card.html' %}{% endwith %}
         {% if current_user.can_delete('reviews') %}
         <div class="data-card p-4">
-            <form method="POST" action="{{ url_for('reviews.delete', id=review.id) }}" onsubmit="return confirm('Supprimer cette revue ?')">
+            <form method="POST" action="{{ url_for('reviews.delete', id=review.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-danger btn-sm w-100"><i class="bi bi-trash me-1"></i> Supprimer</button>
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100" data-confirm="Supprimer cette revue ?"><i class="bi bi-trash me-1"></i> Supprimer</button>
             </form>
         </div>
         {% endif %}

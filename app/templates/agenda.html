@@ -37,18 +37,18 @@
         </button>
     </div>
     <div class="d-flex gap-2">
-        <form method="POST" action="{{ url_for('dashboard.agenda_ics_token') }}"
-              onsubmit="return confirm('Régénérer le lien ? Les calendriers abonnés avec l\'ancien lien cesseront de se mettre à jour.')">
+        <form method="POST" action="{{ url_for('dashboard.agenda_ics_token') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-outline-secondary btn-sm">
+            <button type="submit" class="btn btn-outline-secondary btn-sm"
+                    data-confirm="Régénérer le lien ? Les calendriers abonnés avec l'ancien lien cesseront de se mettre à jour.">
                 <i class="bi bi-arrow-repeat me-1"></i> Régénérer
             </button>
         </form>
-        <form method="POST" action="{{ url_for('dashboard.agenda_ics_token') }}"
-              onsubmit="return confirm('Désactiver le lien ? Les calendriers abonnés ne seront plus alimentés.')">
+        <form method="POST" action="{{ url_for('dashboard.agenda_ics_token') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="action" value="disable">
-            <button type="submit" class="btn btn-outline-danger btn-sm">
+            <button type="submit" class="btn btn-outline-danger btn-sm"
+                    data-confirm="Désactiver le lien ? Les calendriers abonnés ne seront plus alimentés.">
                 <i class="bi bi-x-circle me-1"></i> Désactiver
             </button>
         </form>

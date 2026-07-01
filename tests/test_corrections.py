@@ -122,3 +122,114 @@ def test_restore_refuse_un_element_actif(app):
     a.is_active = False
     db.session.commit()
     assert trash.restore(admin, 'account', a.id, 'admin') is not None  # en corbeille -> ok
+
+
+# ── Tests d'intégration alertes mail ──────────────────────────────────────
+from unittest.mock import patch
+
+
+def test_certificat_expire_envoie_alerte(app):
+    """Un certificat expiré dans 5 jours doit déclencher send_alert."""
+    from datetime import date, timedelta
+    from app.models import Certificate
+    import app.scheduler as sched
+    with app.app_context():
+        cert = Certificate(
+            service_name='TestCert', domain='test.example.com',
+            expiry_date=date.today() + timedelta(days=5),
+            is_active=True,
+        )
+        db.session.add(cert)
+        db.session.commit()
+
+        sched._app = app
+        try:
+            with patch('app.scheduler.send_alert') as mock_send:
+                from app.scheduler import check_certificates
+                check_certificates()
+                assert mock_send.called, "send_alert doit être appelé pour un cert expirant dans 5 jours"
+                args = mock_send.call_args[0]
+                assert 'TestCert' in args[0] or 'TestCert' in args[1]
+        finally:
+            sched._app = None
+
+
+def test_certificat_ok_n_envoie_pas_alerte(app):
+    """Un certificat valide 200 jours ne doit pas déclencher d'alerte."""
+    from datetime import date, timedelta
+    from app.models import Certificate
+    import app.scheduler as sched
+    with app.app_context():
+        cert = Certificate(
+            service_name='CertOK', domain='ok.example.com',
+            expiry_date=date.today() + timedelta(days=200),
+            is_active=True,
+        )
+        db.session.add(cert)
+        db.session.commit()
+
+        sched._app = app
+        try:
+            with patch('app.scheduler.send_alert') as mock_send:
+                from app.scheduler import check_certificates
+                check_certificates()
+                assert not mock_send.called, "Pas d'alerte pour un certificat OK"
+        finally:
+            sched._app = None
+
+
+def test_compte_expire_envoie_alerte(app):
+    """Un compte dont le mot de passe a expiré hier doit déclencher une alerte."""
+    from datetime import date, timedelta
+    from app.models import Account
+    import app.scheduler as sched
+    with app.app_context():
+        acc = Account(
+            service_name='ServiceExpire', username='user@test',
+            next_password_change=date.today() - timedelta(days=1),
+            is_active=True,
+        )
+        db.session.add(acc)
+        db.session.commit()
+
+        sched._app = app
+        try:
+            with patch('app.scheduler.send_alert') as mock_send:
+                from app.scheduler import check_passwords
+                check_passwords()
+                assert mock_send.called, "send_alert doit être appelé pour un MDP expiré"
+        finally:
+            sched._app = None
+
+
+def test_domaine_expire_envoie_alerte(app):
+    """Un domaine expirant dans 15 jours doit déclencher une alerte."""
+    from datetime import date, timedelta
+    from app.models import Domain
+    import app.scheduler as sched
+    with app.app_context():
+        domain = Domain(
+            name='expire-bientot.fr',
+            expiry_date=date.today() + timedelta(days=15),
+            is_active=True,
+        )
+        db.session.add(domain)
+        db.session.commit()
+
+        sched._app = app
+        try:
+            with patch('app.scheduler.send_alert') as mock_send:
+                from app.scheduler import check_domains
+                check_domains()
+                assert mock_send.called, "send_alert doit être appelé pour un domaine expirant dans 15j"
+        finally:
+            sched._app = None
+
+
+def test_health_endpoint_repond_200(client):
+    """L'endpoint /health doit retourner 200 et un JSON avec status=ok."""
+    r = client.get('/health')
+    assert r.status_code == 200
+    data = r.get_json()
+    assert data['status'] == 'ok'
+    assert 'counts' in data

@@ -2,7 +2,7 @@ import os
 import re
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, session
 from flask_login import login_user, logout_user, login_required, current_user
-from app import db
+from app import db, limiter
 from app.models import User
 from app.email_service import send_email, get_o365_auth_url, complete_o365_auth, is_o365_connected, get_o365_user_email, clear_o365_token
 from app.audit import record as audit_record
@@ -30,6 +30,7 @@ def _client_ip():
     return request.remote_addr or ''
 
 
+@limiter.limit('20 per minute')
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     # Deja connecte : la page de login n'a pas de sens (et rendait une page vide)

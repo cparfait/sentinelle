@@ -185,9 +185,9 @@
 
         {% if current_user.can_delete('inventory') %}
         <div class="data-card p-4">
-            <form method="POST" action="{{ url_for('inventory.delete', id=item.id) }}" onsubmit="return confirm('Supprimer cet équipement ?')">
+            <form method="POST" action="{{ url_for('inventory.delete', id=item.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-danger btn-sm w-100"><i class="bi bi-trash me-1"></i> Supprimer</button>
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100" data-confirm="Supprimer cet équipement ?"><i class="bi bi-trash me-1"></i> Supprimer</button>
             </form>
         </div>
         {% endif %}

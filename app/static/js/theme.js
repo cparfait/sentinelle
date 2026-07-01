@@ -58,6 +58,29 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     initStatusFilters();
+
+    // Filtres persistants
+    (function () {
+        var STORE_KEY = 'sentinelle_search_' + location.pathname;
+        var input = document.querySelector('input[name="q"]');
+        if (!input) return;
+        var params = new URLSearchParams(location.search);
+        if (params.has('q')) {
+            try { localStorage.setItem(STORE_KEY, params.get('q')); } catch (e) {}
+        } else {
+            var saved;
+            try { saved = localStorage.getItem(STORE_KEY); } catch (e) {}
+            if (saved) { input.value = saved; }
+        }
+        var form = input.closest('form');
+        if (form) {
+            form.addEventListener('submit', function () {
+                if (!input.value.trim()) {
+                    try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+                }
+            });
+        }
+    })();
 });
 
 // Filtres interactifs par statut sur les tableaux marques .js-filterable

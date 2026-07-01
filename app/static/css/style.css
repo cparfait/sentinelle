@@ -1231,3 +1231,10 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     .main-content { padding: var(--space-3); }
     .stat-card .stat-number { font-size: 21px; }
 }
+
+/* ── Kanban ────────────────────────────────────────────── */
+.kanban-column { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 1rem; }
+.kanban-col-header { font-size: .85rem; letter-spacing: .04em; text-transform: uppercase; }
+.kanban-card { cursor: default; transition: box-shadow .15s; }
+.kanban-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+.btn-xs { padding: .15rem .45rem; font-size: .7rem; line-height: 1.4; border-radius: .25rem; }

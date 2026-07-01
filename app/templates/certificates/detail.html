@@ -12,6 +12,9 @@
         <a href="{{ url_for('certificates.edit', id=certificate.id) }}" class="btn btn-outline-primary">
             <i class="bi bi-pencil me-1"></i> Modifier
         </a>
+        <a href="{{ url_for('pdf_export.certificate_pdf', id=certificate.id) }}" class="btn btn-outline-secondary" title="Exporter en PDF">
+            <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+        </a>
         <a href="{{ url_for('certificates.list') }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i> Retour
         </a>
@@ -129,10 +132,10 @@
         </div>
         {% with entity_type='certificate', entity_id=certificate.id %}{% include '_snooze_card.html' %}{% endwith %}
         <div class="data-card p-4">
-            <form method="POST" action="{{ url_for('certificates.delete', id=certificate.id) }}"
-                  onsubmit="return confirm('Supprimer ce certificat ?')">
+            <form method="POST" action="{{ url_for('certificates.delete', id=certificate.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100"
+                        data-confirm="Supprimer ce certificat ?">
                     <i class="bi bi-trash me-1"></i> Supprimer
                 </button>
             </form>

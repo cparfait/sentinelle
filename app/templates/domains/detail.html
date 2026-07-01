@@ -14,6 +14,9 @@
             <i class="bi bi-pencil me-1"></i> Modifier
         </a>
         {% endif %}
+        <a href="{{ url_for('pdf_export.domain_pdf', id=domain.id) }}" class="btn btn-outline-secondary" title="Exporter en PDF">
+            <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+        </a>
         <a href="{{ url_for('domains.list') }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i> Retour
         </a>
@@ -92,10 +95,10 @@
         </div>
         {% with entity_type='domain', entity_id=domain.id %}{% include '_snooze_card.html' %}{% endwith %}
         <div class="data-card p-4">
-            <form method="POST" action="{{ url_for('domains.delete', id=domain.id) }}"
-                  onsubmit="return confirm('Supprimer ce domaine ?')">
+            <form method="POST" action="{{ url_for('domains.delete', id=domain.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100"
+                        data-confirm="Supprimer ce domaine ?">
                     <i class="bi bi-trash me-1"></i> Supprimer
                 </button>
             </form>

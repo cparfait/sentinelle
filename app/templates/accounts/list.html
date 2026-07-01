@@ -10,10 +10,10 @@
     </div>
     <div class="d-flex gap-2">
         {% if config.LDAP_ENABLED and config.LDAP_BIND_USER and current_user.can_edit('accounts') %}
-        <form method="POST" action="{{ url_for('accounts.sync_ad') }}" class="d-inline"
-              onsubmit="return confirm('Synchroniser les expirations de mots de passe depuis l\'AD ?')">
+        <form method="POST" action="{{ url_for('accounts.sync_ad') }}" class="d-inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-outline-secondary" title="Synchroniser depuis Active Directory">
+            <button type="submit" class="btn btn-outline-secondary" title="Synchroniser depuis Active Directory"
+                    data-confirm="Synchroniser les expirations de mots de passe depuis l'AD ?">
                 <i class="bi bi-arrow-repeat me-1"></i> Synchroniser AD
             </button>
         </form>

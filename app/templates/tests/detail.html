@@ -16,6 +16,9 @@
         <a href="{{ url_for('tests.edit', id=test.id) }}" class="btn btn-outline-primary">
             <i class="bi bi-pencil me-1"></i> Modifier
         </a>
+        <a href="{{ url_for('pdf_export.test_pdf', id=test.id) }}" class="btn btn-outline-secondary" title="Exporter en PDF">
+            <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+        </a>
         <a href="{{ url_for('tests.list') }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i> Retour
         </a>
@@ -131,10 +134,10 @@
         </div>
         {% with entity_type='test', entity_id=test.id %}{% include '_snooze_card.html' %}{% endwith %}
         <div class="data-card p-4">
-            <form method="POST" action="{{ url_for('tests.delete', id=test.id) }}"
-                  onsubmit="return confirm('Supprimer ce test ?')">
+            <form method="POST" action="{{ url_for('tests.delete', id=test.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100"
+                        data-confirm="Supprimer ce test ?">
                     <i class="bi bi-trash me-1"></i> Supprimer
                 </button>
             </form>

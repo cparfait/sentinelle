@@ -9,10 +9,10 @@
     </div>
     <div class="d-flex gap-2">
         {% if groups | selectattr('can_purge') | list %}
-        <form method="POST" action="{{ url_for('dashboard.trash_purge') }}"
-              onsubmit="return confirm('Vider la corbeille ? Cette suppression est définitive.')">
+        <form method="POST" action="{{ url_for('dashboard.trash_purge') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-outline-danger">
+            <button type="submit" class="btn btn-outline-danger"
+                    data-confirm="Vider la corbeille ? Cette suppression est définitive.">
                 <i class="bi bi-trash3 me-1"></i> Vider la corbeille
             </button>
         </form>
@@ -51,12 +51,12 @@
                                 </button>
                             </form>
                             {% if g.can_purge %}
-                            <form method="POST" action="{{ url_for('dashboard.trash_purge_one') }}"
-                                  onsubmit="return confirm('Supprimer définitivement cet élément ?')">
+                            <form method="POST" action="{{ url_for('dashboard.trash_purge_one') }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="entity_type" value="{{ g.etype }}">
                                 <input type="hidden" name="entity_id" value="{{ it.id }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer définitivement" aria-label="Supprimer définitivement">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer définitivement" aria-label="Supprimer définitivement"
+                                        data-confirm="Supprimer définitivement cet élément ?">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>

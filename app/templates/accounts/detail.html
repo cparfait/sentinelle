@@ -12,6 +12,9 @@
         <a href="{{ url_for('accounts.edit', id=account.id) }}" class="btn btn-outline-primary">
             <i class="bi bi-pencil me-1"></i> Modifier
         </a>
+        <a href="{{ url_for('pdf_export.account_pdf', id=account.id) }}" class="btn btn-outline-secondary" title="Exporter en PDF">
+            <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+        </a>
         <a href="{{ url_for('accounts.list') }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i> Retour
         </a>
@@ -111,10 +114,10 @@
                     <i class="bi bi-check-lg me-1"></i> Marquer MDP changé
                 </button>
             </form>
-            <form method="POST" action="{{ url_for('accounts.delete', id=account.id) }}"
-                  onsubmit="return confirm('Supprimer ce compte ?')">
+            <form method="POST" action="{{ url_for('accounts.delete', id=account.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100"
+                        data-confirm="Supprimer ce compte ?">
                     <i class="bi bi-trash me-1"></i> Supprimer
                 </button>
             </form>
