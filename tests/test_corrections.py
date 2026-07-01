@@ -2,6 +2,7 @@
 CSV, garde-fous d'autorisation, alignement des alertes sur le statut, et garde
 de restauration de corbeille."""
 from datetime import date
+from unittest.mock import patch
 
 from app import db
 from app.forms_util import parse_date, parse_int, parse_float
@@ -125,9 +126,6 @@ def test_restore_refuse_un_element_actif(app):
 
 
 # ── Tests d'intégration alertes mail ──────────────────────────────────────
-from unittest.mock import patch
-
-
 def test_certificat_expire_envoie_alerte(app):
     """Un certificat expiré dans 5 jours doit déclencher send_alert."""
     from datetime import date, timedelta
