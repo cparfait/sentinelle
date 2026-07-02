@@ -6,35 +6,35 @@
    ========================================================================== */
 
 :root {
-    /* Marque */
-    --primary: #3056a0;
-    --primary-dark: #21509f;
-    --primary-rgb: 48, 96, 160;
-    --success: #2f8a5b;
-    --success-rgb: 47, 138, 91;
-    --warning: #c0832a;
-    --warning-rgb: 192, 131, 42;
-    --danger: #d23f3a;
-    --danger-rgb: 210, 63, 58;
-    --info: #2f6fc4;
-    --info-rgb: 47, 111, 196;
+    /* Marque — palette alignee sur Sesame (indigo + slate/emerald/amber/red) */
+    --primary: #4f46e5;        /* indigo-600 */
+    --primary-dark: #4338ca;   /* indigo-700 */
+    --primary-rgb: 79, 70, 229;
+    --success: #059669;        /* emerald-600 */
+    --success-rgb: 5, 150, 105;
+    --warning: #d97706;        /* amber-600 */
+    --warning-rgb: 217, 119, 6;
+    --danger: #dc2626;         /* red-600 */
+    --danger-rgb: 220, 38, 38;
+    --info: #2563eb;           /* blue-600 (distinct de l'indigo primaire) */
+    --info-rgb: 37, 99, 235;
 
     /* Surfaces & texte (thème clair) */
     --dark: #1e293b;
     --darker: #0f172a;
     --sidebar: #161a22;
     --sidebar-hover: #20242e;
-    --sidebar-active: #5b8def;
+    --sidebar-active: #818cf8;   /* indigo-400 */
     --sidebar-section: #5b6478;
     --card-bg: #ffffff;
-    --body-bg: #f5f6f8;
-    --text: #49515f;
-    --text-strong: #191e27;
-    --text-light: #94a3b8;
-    --border: #e9ebef;
-    --border-strong: #dde0e6;
+    --body-bg: #f8fafc;          /* slate-50 (fond Sesame) */
+    --text: #334155;             /* slate-700 */
+    --text-strong: #0f172a;      /* slate-900 */
+    --text-light: #94a3b8;       /* slate-400 */
+    --border: #e2e8f0;           /* slate-200 */
+    --border-strong: #cbd5e1;    /* slate-300 */
     --input-bg: #ffffff;
-    --table-hover: #f6f7f9;
+    --table-hover: #f1f5f9;      /* slate-100 */
 
     /* Échelle d'espacement (grille 8pt + demi-pas) */
     --space-1: 4px;
@@ -65,14 +65,14 @@
 }
 
 [data-theme="dark"] {
-    --primary: #6f9ce8;
-    --primary-dark: #4f7fd0;
-    --primary-rgb: 111, 156, 232;
+    --primary: #818cf8;        /* indigo-400 */
+    --primary-dark: #6366f1;   /* indigo-500 */
+    --primary-rgb: 129, 140, 248;
     --dark: #0f172a;
     --darker: #020617;
     --sidebar: #111827;
     --sidebar-hover: #1e293b;
-    --sidebar-active: #6f9ce8;
+    --sidebar-active: #818cf8;
     --sidebar-section: #4b5566;
     --card-bg: #1e293b;
     --body-bg: #0b1120;
