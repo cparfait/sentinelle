@@ -78,6 +78,10 @@ class Config:
     # emis pour les domaines suivis a l'insu de la DSI. Desactivable globalement.
     CT_MONITORING = os.getenv('CT_MONITORING', 'true').lower() in ('true', '1', 'yes')
 
+    # Tableau de bord personnalisable (chaque utilisateur choisit et ordonne ses
+    # blocs). Desactivable globalement -> disposition par defaut pour tous.
+    DASHBOARD_CUSTOM = os.getenv('DASHBOARD_CUSTOM', 'true').lower() in ('true', '1', 'yes')
+
     MAIL_METHOD = os.getenv('MAIL_METHOD', 'smtp')
 
     MAIL_SERVER = os.getenv('MAIL_SERVER', 'localhost')

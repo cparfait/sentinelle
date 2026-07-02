@@ -23,7 +23,7 @@ SECRET_KEYS = {'MAIL_PASSWORD', 'O365_CLIENT_SECRET', 'LDAP_BIND_PASSWORD',
 
 # Typage applique au chargement (le reste = chaine).
 _BOOL = {'LDAP_ENABLED', 'LDAP_USE_SSL', 'LDAP_VALIDATE_CERT', 'CT_MONITORING',
-         'SESAME_API_ENABLED'}
+         'SESAME_API_ENABLED', 'DASHBOARD_CUSTOM'}
 _INT = {'LDAP_PORT', 'MAIL_PORT'}
 _TRIPLET = {'THRESHOLD_EXPIRY', 'THRESHOLD_DOMAIN', 'THRESHOLD_TASK', 'THRESHOLD_CONTRACT'}
 
@@ -49,6 +49,7 @@ MANAGED = _BOOL | _INT | _TRIPLET | _CSV | {
     'TEAMS_WEBHOOK_URL', 'SLACK_WEBHOOK_URL', 'DISCORD_WEBHOOK_URL',
     'REPORT_SCHEDULE',  # envoi planifie du bilan PDF : off / monthly / weekly
     'CT_MONITORING',    # surveillance Certificate Transparency (crt.sh) : on/off
+    'DASHBOARD_CUSTOM', # tableau de bord personnalisable par utilisateur : on/off
     'SESAME_API_ENABLED', 'SESAME_API_TOKEN',  # integration Sesame (API + cle)
 }
 

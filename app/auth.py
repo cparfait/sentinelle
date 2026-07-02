@@ -391,6 +391,13 @@ def preferences():
             audit_record('config surveillance CT', detail=f'actif={enabled}', category='preferences')
             flash('Surveillance Certificate Transparency ' + ('activée' if enabled else 'désactivée') + '.', 'success')
 
+        elif action == 'save_dashboard_custom':
+            enabled = request.form.get('dashboard_custom') == 'on'
+            _persist_config({'DASHBOARD_CUSTOM': 'true' if enabled else 'false'})
+            current_app.config['DASHBOARD_CUSTOM'] = enabled
+            audit_record('config tableau de bord personnalisable', detail=f'actif={enabled}', category='preferences')
+            flash('Tableau de bord personnalisable ' + ('activé' if enabled else 'désactivé') + '.', 'success')
+
         elif action == 'save_sesame':
             enabled = request.form.get('sesame_enabled') == 'on'
             _persist_config({'SESAME_API_ENABLED': 'true' if enabled else 'false'})
@@ -712,6 +719,7 @@ def preferences():
                            report_schedule=current_app.config.get('REPORT_SCHEDULE', 'off'),
                            report_recipients=', '.join(current_app.config.get('REPORT_RECIPIENTS') or []),
                            ct_monitoring=current_app.config.get('CT_MONITORING', True),
+                           dashboard_custom=current_app.config.get('DASHBOARD_CUSTOM', True),
                            sesame_enabled=current_app.config.get('SESAME_API_ENABLED', False),
                            sesame_key_set=bool(current_app.config.get('SESAME_API_TOKEN')),
                            sesame_key_masked=sesame_key_masked,

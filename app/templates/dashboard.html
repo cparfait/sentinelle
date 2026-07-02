@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_dashboard_widgets.html" as w with context %}
 {% block title %}Tableau de bord - Sentinelle{% endblock %}
 
 {% block content %}
@@ -8,6 +9,19 @@
         <small class="text-muted">Vue d'ensemble de votre infrastructure</small>
     </div>
     <div class="d-flex gap-2 align-items-center">
+        {% if dashboard_custom %}
+        <div id="dashEditControls" class="d-flex gap-2 align-items-center d-none">
+            <button type="button" id="dashResetBtn" class="btn btn-sm btn-outline-secondary" title="Rétablir la disposition par défaut">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Réinitialiser
+            </button>
+            <button type="button" id="dashDoneBtn" class="btn btn-sm btn-success">
+                <i class="bi bi-check-lg me-1"></i> Terminer
+            </button>
+        </div>
+        <button type="button" id="dashCustomizeBtn" class="btn btn-sm btn-outline-primary" title="Choisir et réorganiser les blocs">
+            <i class="bi bi-sliders me-1"></i> Personnaliser
+        </button>
+        {% endif %}
         <a href="{{ url_for('dashboard.report_pdf') }}" class="btn btn-sm btn-outline-danger" title="Bilan PDF (COPIL)">
             <i class="bi bi-file-earmark-pdf me-1"></i> Bilan PDF
         </a>
@@ -18,322 +32,40 @@
     </div>
 </div>
 
-{% if totals.total %}
-{% set conf_color = 'success' if conformity >= 90 else ('warning' if conformity >= 70 else 'danger') %}
-<div class="data-card p-3 mb-4">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-        <div class="d-flex align-items-center gap-3">
-            <div class="text-{{ conf_color }}" style="font-size: 2rem; font-weight: 700; line-height: 1;">{{ conformity }}%</div>
-            <div>
-                <div class="fw-bold">Conformité globale</div>
-                <small class="text-muted">{{ totals.ok }} OK sur {{ totals.total }} éléments suivis</small>
-            </div>
-        </div>
-        <div class="d-flex gap-2">
-            {% if totals.danger %}<a href="{{ url_for('dashboard.by_status', status='danger') }}" class="badge-status badge-danger text-decoration-none">{{ totals.danger }} critique(s)</a>{% endif %}
-            {% if totals.warning %}<a href="{{ url_for('dashboard.by_status', status='warning') }}" class="badge-status badge-warning text-decoration-none">{{ totals.warning }} à surveiller</a>{% endif %}
-            <a href="{{ url_for('dashboard.by_status', status='success') }}" class="badge-status badge-success text-decoration-none">{{ totals.ok }} OK</a>
-        </div>
+{% macro widget_wrapper(key) %}
+{% set meta = widget_meta[key] %}
+<section class="dash-widget" data-widget="{{ key }}" style="--w-span: {{ dash_spans[key] }};">
+    <div class="dash-widget-bar">
+        <span class="dash-drag" title="Glisser pour déplacer" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>
+        <span class="dash-widget-name"><i class="bi {{ meta.icon }} me-1"></i>{{ meta.label }}</span>
+        <button type="button" class="dash-toggle" data-widget="{{ key }}" title="Masquer / afficher ce bloc">
+            <i class="bi"></i>
+        </button>
     </div>
-    <div class="progress mt-3" style="height: 8px;">
-        <div class="progress-bar bg-{{ conf_color }}" role="progressbar" style="width: {{ conformity }}%;"></div>
-    </div>
-</div>
-{% endif %}
-
-{% macro stat_card(url, label, icon, color, s, ok_label='OK', danger_label='crit.', warning_label='alerte') %}
-{% set total = s.total or 0 %}
-<div class="col-6 col-lg-4 col-xxl-3">
-    <a href="{{ url }}" class="text-decoration-none">
-        <div class="stat-card h-100" style="--cat-color: {{ color }};">
-            <div class="d-flex align-items-center gap-3">
-                <div class="stat-icon"><i class="bi {{ icon }}"></i></div>
-                <div class="flex-grow-1 min-w-0">
-                    <div class="stat-number">{{ total }}</div>
-                    <small class="text-muted d-block text-truncate">{{ label }}</small>
-                </div>
-            </div>
-            <div class="mini-bar mt-3">
-                {% if total %}
-                {% if s.danger %}<span class="seg" style="width: {{ (s.danger / total * 100)|round(1) }}%; background: var(--danger);"></span>{% endif %}
-                {% if s.warning %}<span class="seg" style="width: {{ (s.warning / total * 100)|round(1) }}%; background: var(--warning);"></span>{% endif %}
-                {% if s.ok %}<span class="seg" style="width: {{ (s.ok / total * 100)|round(1) }}%; background: var(--success);"></span>{% endif %}
-                {% endif %}
-            </div>
-            <div class="stat-legend mt-2">
-                {% if s.danger %}<span class="text-danger">● {{ s.danger }} {{ danger_label }}</span>{% endif %}
-                {% if s.warning %}<span class="text-warning">● {{ s.warning }} {{ warning_label }}</span>{% endif %}
-                {% if s.ok %}<span class="text-success">● {{ s.ok }} {{ ok_label }}</span>{% endif %}
-                {% if not total %}<span class="text-muted">Aucun élément</span>{% endif %}
-            </div>
-        </div>
-    </a>
-</div>
+    <div class="dash-widget-body">{{ w.widget_body(key) }}</div>
+    <span class="dash-resize" title="Redimensionner (largeur)" aria-hidden="true"></span>
+</section>
 {% endmacro %}
 
-<div class="row g-3 mb-4">
-    {% if current_user.can_view('accounts') %}
-    {{ stat_card(url_for('accounts.list'), 'Comptes', 'bi-key', '#6366f1', stats.accounts) }}
-    {% endif %}
-    {% if current_user.can_view('certificates') %}
-    {{ stat_card(url_for('certificates.list'), 'Certificats', 'bi-award', '#10b981', stats.certificates) }}
-    {% endif %}
-    {% if current_user.can_view('domains') %}
-    {{ stat_card(url_for('domains.list'), 'Domaines', 'bi-globe', '#3b82f6', stats.domains) }}
-    {% endif %}
-    {% if current_user.can_view('backups') %}
-    {{ stat_card(url_for('backups.list'), 'Backups', 'bi-cloud-arrow-up', '#06b6d4', stats.backups, danger_label='échoué(s)') }}
-    {% endif %}
-    {% if current_user.can_view('tests') %}
-    {{ stat_card(url_for('tests.list'), 'Tests', 'bi-clipboard-check', '#f59e0b', stats.tests, danger_label='en retard') }}
-    {% endif %}
-    {% if current_user.can_view('reviews') %}
-    {{ stat_card(url_for('reviews.list'), 'Revue de droits', 'bi-person-check', '#8b5cf6', stats.reviews) }}
-    {% endif %}
-    {% if current_user.can_view('updates') %}
-    {{ stat_card(url_for('updates.list'), 'Mises à jour', 'bi-arrow-up-circle', '#ec4899', stats.updates, ok_label='à jour', warning_label='dispo') }}
-    {% endif %}
-    {% if current_user.can_view('inventory') %}
-    {{ stat_card(url_for('inventory.list'), 'Inventaire', 'bi-hdd-stack', '#0ea5e9', stats.inventory) }}
-    {% endif %}
-    {% if current_user.can_view('contracts') %}
-    {{ stat_card(url_for('contracts.list'), 'Contrats', 'bi-file-earmark-text', '#14b8a6', stats.contracts, danger_label='à traiter') }}
-    {% endif %}
-</div>
-
-{% if backups %}
-<div class="data-card mb-4">
-    <div class="card-header-custom d-flex justify-content-between align-items-center">
-        <h6 class="fw-bold mb-0"><i class="bi bi-cloud-arrow-up me-2 text-info"></i>Validation backups du {{ today.strftime('%d/%m/%Y') }}</h6>
-        <a href="{{ url_for('backups.daily') }}" class="btn btn-sm btn-outline-success">
-            <i class="bi bi-check2-square me-1"></i> Check complet
-        </a>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-hover mb-0">
-            <thead>
-                <tr>
-                    <th>Service</th>
-                    <th>Type</th>
-                    <th>Heure</th>
-                    <th>Statut du jour</th>
-                    <th>Commentaire</th>
-                    <th>Valider</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% set ns = namespace(shown=0) %}
-                {% for backup in backups %}
-                {% set tc = backup_checks.get(backup.id) %}
-                {% if not (tc and tc.status == 'ok') %}
-                {% set ns.shown = ns.shown + 1 %}
-                <tr>
-                    <td><a href="{{ url_for('backups.detail', id=backup.id) }}" class="fw-medium text-decoration-none">{{ backup.service_name }}</a></td>
-                    <td><small>{{ {'full': 'Complet', 'incremental': 'Incremental', 'differential': 'Differentiel', 'snapshot': 'Snapshot'}.get(backup.backup_type, backup.backup_type or '-') }}</small></td>
-                    <td>{{ backup.expected_time or '-' }}</td>
-                    <td>
-                        {% set tc = backup_checks.get(backup.id) %}
-                        {% if tc and tc.status == 'ok' %}
-                            <span class="badge-status badge-success"><i class="bi bi-check-circle me-1"></i>OK</span>
-                        {% elif tc and tc.status == 'failed' %}
-                            <span class="badge-status badge-danger"><i class="bi bi-x-circle me-1"></i>Echoue</span>
-                        {% elif tc and tc.status == 'warning' %}
-                            <span class="badge-status badge-warning"><i class="bi bi-exclamation-triangle me-1"></i>Warning</span>
-                        {% else %}
-                            <span class="text-muted"><i class="bi bi-dash-circle me-1"></i>Pas encore verifie</span>
-                        {% endif %}
-                    </td>
-                    {% if current_user.can_edit() %}
-                        <td>
-                            {# Form sorti du <tr> (HTML invalide sinon) ; champs lies via l'attribut form=. #}
-                            <form id="qc-{{ backup.id }}" method="POST" action="{{ url_for('dashboard.quick_check') }}" class="d-none">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="backup_id" value="{{ backup.id }}">
-                            </form>
-                            <input type="text" name="comment" form="qc-{{ backup.id }}" class="form-control form-control-sm" placeholder="Commentaire..." style="min-width: 150px;">
-                        </td>
-                        <td>
-                            <div class="d-flex gap-2">
-                                <button type="submit" form="qc-{{ backup.id }}" name="status" value="ok" class="btn btn-success fw-medium" title="Valider OK">
-                                    <i class="bi bi-check-lg me-1"></i>OK
-                                </button>
-                                <button type="submit" form="qc-{{ backup.id }}" name="status" value="warning" class="btn btn-warning fw-medium" title="Marquer en avertissement">
-                                    <i class="bi bi-exclamation-triangle me-1"></i>Attention
-                                </button>
-                                <button type="submit" form="qc-{{ backup.id }}" name="status" value="failed" class="btn btn-danger fw-medium" title="Marquer en échec">
-                                    <i class="bi bi-x-lg me-1"></i>Échec
-                                </button>
-                            </div>
-                        </td>
-                    {% else %}
-                        <td></td><td></td>
-                    {% endif %}
-                </tr>
-                {% endif %}
-                {% endfor %}
-                {% if ns.shown == 0 %}
-                <tr><td colspan="6" class="text-center py-3 text-success"><i class="bi bi-check-circle me-1"></i>Tous les backups du jour sont validés.</td></tr>
-                {% endif %}
-            </tbody>
-        </table>
+{% if dashboard_custom %}
+<div id="dashTray" class="dash-tray d-none">
+    <div class="dash-tray-title"><i class="bi bi-eye-slash me-1"></i>Blocs masqués <small class="text-muted">— cliquez sur l'œil pour réafficher</small></div>
+    <div id="dashTrayItems" class="dash-tray-items">
+        {% for key in dash_hidden %}{{ widget_wrapper(key) }}{% endfor %}
+        <div id="dashTrayEmpty" class="text-muted small {% if dash_hidden %}d-none{% endif %}">Aucun bloc masqué.</div>
     </div>
 </div>
 {% endif %}
 
-<div class="row g-3">
-    <div class="col-lg-8">
-        <div class="data-card">
-            <div class="card-header-custom d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold mb-0"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Elements requirent votre attention</h6>
-            </div>
-            <div class="p-3">
-                {% if urgent_items %}
-                    {% set cat_labels = {'account': 'Comptes', 'certificate': 'Certificats', 'domain': 'Domaines', 'backup': 'Backups', 'test': 'Tests', 'review': 'Revues', 'update': 'MàJ', 'contract': 'Contrats', 'equipment': 'Inventaire'} %}
-                    <div id="urgentFilters" class="d-flex flex-wrap gap-1 mb-2">
-                        <button type="button" class="btn btn-sm btn-primary urgent-filter active" data-cat="">Tous <span class="badge bg-light text-dark ms-1">{{ urgent_items|length }}</span></button>
-                        {% for cat in urgent_items | map(attribute='type') | unique %}
-                        <button type="button" class="btn btn-sm btn-outline-secondary urgent-filter" data-cat="{{ cat }}">{{ cat_labels.get(cat, cat) }}</button>
-                        {% endfor %}
-                    </div>
-                    <div id="urgentList">
-                    {% for item in urgent_items %}
-                    <a href="{{ item.url }}" class="text-decoration-none urgent-row" data-cat="{{ item.type }}">
-                        <div class="urgent-item urgent-{{ item.status }}">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge-status badge-{% if item.type == 'account' %}info{% elif item.type == 'certificate' %}success{% elif item.type == 'backup' %}warning{% else %}info{% endif %}">
-                                        {% if item.type == 'account' %}<i class="bi bi-key me-1"></i>Compte
-                                        {% elif item.type == 'certificate' %}<i class="bi bi-award me-1"></i>Certificat
-                                        {% elif item.type == 'domain' %}<i class="bi bi-globe me-1"></i>Domaine
-                                        {% elif item.type == 'backup' %}<i class="bi bi-cloud-arrow-up me-1"></i>Backup
-                                        {% elif item.type == 'review' %}<i class="bi bi-person-check me-1"></i>Revue
-                                        {% elif item.type == 'update' %}<i class="bi bi-arrow-up-circle me-1"></i>MàJ
-                                        {% elif item.type == 'contract' %}<i class="bi bi-file-earmark-text me-1"></i>Contrat
-                                        {% else %}<i class="bi bi-clipboard-check me-1"></i>Test{% endif %}
-                                    </span>
-                                    <strong class="ms-2">{{ item.name }}</strong>
-                                </div>
-                                <small class="text-muted">{{ item.detail }}</small>
-                            </div>
-                        </div>
-                    </a>
-                    {% endfor %}
-                    </div>
-                    <div id="urgentEmpty" class="text-center py-3 text-muted d-none">Aucun élément dans cette catégorie.</div>
-                    <div id="urgentPager" class="d-flex justify-content-between align-items-center mt-2 d-none">
-                        <small class="text-muted" id="urgentInfo"></small>
-                        <div class="btn-group btn-group-sm" role="group" aria-label="Pagination des éléments">
-                            <button type="button" class="btn btn-outline-secondary" id="urgentPrev"><i class="bi bi-chevron-left me-1"></i>Précédent</button>
-                            <button type="button" class="btn btn-outline-secondary" id="urgentNext">Suivant<i class="bi bi-chevron-right ms-1"></i></button>
-                        </div>
-                    </div>
-                    <script>
-                    (function () {
-                        var rows = Array.prototype.slice.call(document.querySelectorAll('#urgentList .urgent-row'));
-                        var pager = document.getElementById('urgentPager');
-                        if (!rows.length || !pager) return;
-                        var pageSize = 8, page = 0, cat = '';
-                        var info = document.getElementById('urgentInfo');
-                        var prev = document.getElementById('urgentPrev');
-                        var next = document.getElementById('urgentNext');
-                        var empty = document.getElementById('urgentEmpty');
-                        var filters = document.querySelectorAll('.urgent-filter');
-                        function match(el) { return !cat || el.getAttribute('data-cat') === cat; }
-                        function render() {
-                            var fs = rows.filter(match);
-                            var pages = Math.max(1, Math.ceil(fs.length / pageSize));
-                            if (page >= pages) page = pages - 1;
-                            rows.forEach(function (el) { el.style.display = 'none'; });
-                            fs.slice(page * pageSize, (page + 1) * pageSize).forEach(function (el) { el.style.display = ''; });
-                            empty.classList.toggle('d-none', fs.length > 0);
-                            if (fs.length > pageSize) {
-                                pager.classList.remove('d-none');
-                                info.textContent = 'Page ' + (page + 1) + ' / ' + pages + ' — ' + fs.length + ' élément(s)';
-                                prev.disabled = (page === 0);
-                                next.disabled = (page >= pages - 1);
-                            } else {
-                                pager.classList.add('d-none');
-                            }
-                        }
-                        prev.addEventListener('click', function () { if (page > 0) { page--; render(); } });
-                        next.addEventListener('click', function () { page++; render(); });
-                        filters.forEach(function (b) {
-                            b.addEventListener('click', function () {
-                                cat = b.getAttribute('data-cat'); page = 0;
-                                filters.forEach(function (x) {
-                                    x.classList.remove('btn-primary', 'active');
-                                    x.classList.add('btn-outline-secondary');
-                                });
-                                b.classList.add('btn-primary', 'active');
-                                b.classList.remove('btn-outline-secondary');
-                                render();
-                            });
-                        });
-                        render();
-                    })();
-                    </script>
-                {% else %}
-                    <div class="text-center py-4 text-muted">
-                        <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
-                        <p class="mt-2 mb-0">Tout est en ordre !</p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-4">
-        <div class="data-card mb-3">
-            <div class="card-header-custom d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold mb-0"><i class="bi bi-calendar-event me-2 text-primary"></i>À venir</h6>
-                <a href="{{ url_for('dashboard.agenda') }}" class="btn btn-sm btn-outline-primary">
-                    Voir tout <i class="bi bi-arrow-right ms-1"></i>
-                </a>
-            </div>
-            <div class="p-3">
-                {% if upcoming %}
-                    {% for u in upcoming %}
-                    <a href="{{ u.url }}" class="text-decoration-none">
-                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-                            <span class="text-truncate me-2"><i class="bi {{ u.icon }} me-2 text-muted"></i>{{ u.label }}</span>
-                            <span class="badge-status badge-{{ 'danger' if u.days <= 7 else ('warning' if u.days <= 30 else 'info') }} flex-shrink-0">{{ u.days }} j</span>
-                        </div>
-                    </a>
-                    {% endfor %}
-                {% else %}
-                    <p class="text-muted text-center mb-0 py-2">Rien dans les 60 prochains jours.</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="data-card">
-            <div class="card-header-custom d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold mb-0"><i class="bi bi-bell me-2 text-primary"></i>Dernieres alertes</h6>
-                <a href="{{ url_for('alerts.list') }}" class="btn btn-sm btn-outline-primary">
-                    Voir tout <i class="bi bi-arrow-right ms-1"></i>
-                </a>
-            </div>
-            <div class="p-3">
-                {% if recent_alerts %}
-                    {% for alert in recent_alerts %}
-                    <div class="d-flex align-items-start gap-2 mb-3 pb-3 border-bottom">
-                        <i class="bi bi-envelope{% if alert.status == 'sent' %}-check text-success{% else %} text-danger{% endif %}"></i>
-                        <div>
-                            <small class="fw-medium d-block">{{ alert.entity_name or 'Systeme' }}</small>
-                            <small class="text-muted">{{ alert.sent_at.strftime('%d/%m/%Y %H:%M') }}</small>
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <p class="text-muted text-center mb-0 py-3">Aucune alerte envoyee</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
+<div id="dashGrid" class="dash-grid"
+     data-save-url="{{ url_for('dashboard.save_layout') }}"
+     data-csrf="{{ csrf_token() }}">
+    {% for key in dash_visible %}{{ widget_wrapper(key) }}{% endfor %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
+{% if dashboard_custom %}<script src="{{ static_v('js/dashboard-custom.js') }}"></script>{% endif %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));

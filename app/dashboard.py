@@ -8,6 +8,77 @@ from app import db
 
 bp = Blueprint('dashboard', __name__)
 
+# ---------------------------------------------------------------------------
+# Tableau de bord personnalisable (par utilisateur)
+# ---------------------------------------------------------------------------
+# Chaque bloc du dashboard est un « widget » identifie par une cle stable.
+# L'ordre et la visibilite sont propres a chaque utilisateur (User.dashboard_prefs,
+# JSON). La resolution ci-dessous tolere l'ajout de nouveaux blocs (visibles par
+# defaut, en fin de liste) et le retrait d'anciens (ignores). `span` = largeur en
+# colonnes sur une grille a 12 colonnes.
+DASHBOARD_WIDGETS = [
+    {'key': 'conformity',    'label': 'Conformité globale',              'icon': 'bi-speedometer2',       'span': 12},
+    {'key': 'stats',         'label': 'Vignettes de synthèse',           'icon': 'bi-grid-3x3-gap',       'span': 12},
+    {'key': 'backups_today', 'label': 'Validation des backups du jour',  'icon': 'bi-cloud-arrow-up',     'span': 12},
+    {'key': 'attention',     'label': 'Éléments requérant votre attention', 'icon': 'bi-exclamation-triangle', 'span': 12},
+    {'key': 'upcoming',      'label': 'À venir',                         'icon': 'bi-calendar-event',     'span': 6},
+    {'key': 'alerts',        'label': 'Dernières alertes',               'icon': 'bi-bell',               'span': 6},
+]
+
+
+# Largeur par defaut de chaque bloc (colonnes sur une grille a 12). Bornes de
+# redimensionnement cote client ET serveur : min 3 (un quart), max 12 (pleine).
+WIDGET_SPAN_DEFAULT = {w['key']: w['span'] for w in DASHBOARD_WIDGETS}
+WIDGET_SPAN_MIN = 3
+WIDGET_SPAN_MAX = 12
+
+
+def _load_prefs(user):
+    """Charge et decode les preferences dashboard de l'utilisateur (dict, jamais None)."""
+    import json
+    if user.dashboard_prefs:
+        try:
+            return json.loads(user.dashboard_prefs) or {}
+        except (ValueError, TypeError):
+            return {}
+    return {}
+
+
+def resolve_widget_spans(user):
+    """Largeur effective (colonnes) de chaque bloc : defaut du registre, ecrase
+    par la preference utilisateur si valide (bornee a [MIN, MAX])."""
+    spans = dict(WIDGET_SPAN_DEFAULT)
+    saved = _load_prefs(user).get('spans')
+    for key, val in (saved if isinstance(saved, dict) else {}).items():
+        if key not in spans:
+            continue
+        try:
+            n = int(val)
+        except (TypeError, ValueError):
+            continue
+        if WIDGET_SPAN_MIN <= n <= WIDGET_SPAN_MAX:
+            spans[key] = n
+    return spans
+
+
+def resolve_dashboard_layout(user, available):
+    """Calcule (visibles, masques) pour `user` a partir de ses preferences.
+
+    `available` : liste ordonnee des cles de blocs pertinents pour cet utilisateur
+    (selon droits et donnees). Les preferences enregistrees sont filtrees sur cet
+    ensemble ; tout bloc disponible non mentionne est considere visible (defaut sur)
+    et ajoute a la fin dans l'ordre de reference."""
+    prefs = _load_prefs(user)
+    avail = [k for k in available]
+    avail_set = set(avail)
+    hidden = [k for k in prefs.get('hidden', []) if k in avail_set]
+    hidden_set = set(hidden)
+    saved_visible = [k for k in prefs.get('order', []) if k in avail_set and k not in hidden_set]
+    seen = set(saved_visible) | hidden_set
+    tail = [k for k in avail if k not in seen]  # nouveaux blocs -> visibles par defaut
+    visible = saved_visible + tail
+    return visible, hidden
+
 
 @bp.route('/healthz')
 def healthz():
@@ -524,10 +595,72 @@ def index():
             totals[k] += v[k]
     conformity = round(100 * totals['ok'] / totals['total']) if totals['total'] else 100
 
+    # Disposition personnalisable : liste des blocs pertinents pour cet
+    # utilisateur (selon droits/donnees), puis resolution ordre/visibilite.
+    from flask import current_app
+    widget_meta = {w['key']: w for w in DASHBOARD_WIDGETS}
+    available = []
+    for w in DASHBOARD_WIDGETS:
+        key = w['key']
+        if key == 'conformity' and not totals['total']:
+            continue
+        if key == 'backups_today' and not (backups and current_user.can_view('backups')):
+            continue
+        if key == 'alerts' and not current_user.can_view('alerts'):
+            continue
+        available.append(key)
+
+    dashboard_custom = bool(current_app.config.get('DASHBOARD_CUSTOM', True))
+    if dashboard_custom:
+        dash_visible, dash_hidden = resolve_dashboard_layout(current_user, available)
+        dash_spans = resolve_widget_spans(current_user)
+    else:
+        dash_visible, dash_hidden = available, []
+        dash_spans = dict(WIDGET_SPAN_DEFAULT)
+
     return render_template('dashboard.html', stats=stats, urgent_items=urgent_items,
                            recent_alerts=recent_alerts, backups=backups,
                            backup_checks=backup_checks, today=today,
-                           totals=totals, conformity=conformity, upcoming=upcoming)
+                           totals=totals, conformity=conformity, upcoming=upcoming,
+                           dashboard_custom=dashboard_custom, widget_meta=widget_meta,
+                           dash_visible=dash_visible, dash_hidden=dash_hidden,
+                           dash_spans=dash_spans)
+
+
+@bp.route('/dashboard/layout', methods=['POST'])
+@login_required
+def save_layout():
+    """Enregistre la disposition personnalisee du tableau de bord de l'utilisateur
+    courant (ordre + blocs masques). AJAX : renvoie du JSON, sans rechargement.
+
+    Pas de @require_edit : n'ecrit que les preferences d'affichage de l'utilisateur
+    lui-meme (aucune donnee metier), a l'image de agenda_ics_token."""
+    import json
+    from flask import jsonify, current_app
+    if not current_app.config.get('DASHBOARD_CUSTOM', True):
+        return jsonify(ok=False, error='disabled'), 403
+    data = request.get_json(silent=True) or {}
+    if data.get('reset'):
+        current_user.dashboard_prefs = None
+        db.session.commit()
+        return jsonify(ok=True)
+    valid = {w['key'] for w in DASHBOARD_WIDGETS}
+    order = [k for k in (data.get('order') or []) if k in valid]
+    hidden = [k for k in (data.get('hidden') or []) if k in valid]
+    spans = {}
+    raw_spans = data.get('spans')
+    for key, val in (raw_spans if isinstance(raw_spans, dict) else {}).items():
+        if key not in valid:
+            continue
+        try:
+            n = int(val)
+        except (TypeError, ValueError):
+            continue
+        if WIDGET_SPAN_MIN <= n <= WIDGET_SPAN_MAX:
+            spans[key] = n
+    current_user.dashboard_prefs = json.dumps({'order': order, 'hidden': hidden, 'spans': spans})
+    db.session.commit()
+    return jsonify(ok=True)
 
 
 @bp.route('/quick-check', methods=['POST'])

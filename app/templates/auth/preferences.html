@@ -541,6 +541,33 @@
                 </div>
             </div>
 
+            {# ===================== AFFICHAGE / TABLEAU DE BORD ===================== #}
+            <div class="accordion-item" style="order:11;">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secDashboard" aria-expanded="false" aria-controls="secDashboard">
+                        <i class="bi bi-grid-1x2 me-2"></i>Tableau de bord
+                        {% if dashboard_custom %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Personnalisable</span>{% else %}<span class="badge bg-secondary ms-2">Disposition fixe</span>{% endif %}
+                    </button>
+                </h2>
+                <div id="secDashboard" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
+                    <div class="accordion-body">
+                        <form method="POST" action="{{ url_for('auth.preferences') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="save_dashboard_custom">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       id="dashboardCustom" name="dashboard_custom" {% if dashboard_custom %}checked{% endif %}>
+                                <label class="form-check-label fw-medium" for="dashboardCustom">Tableau de bord personnalisable</label>
+                            </div>
+                            <p class="text-muted small mt-1 mb-2">Chaque utilisateur peut choisir les blocs affichés sur son tableau de bord et les réordonner (bouton « Personnaliser » en haut du tableau de bord). Désactivé : tout le monde voit la disposition par défaut.</p>
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> Enregistrer
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
             {# ===================== INTÉGRATION / API SESAME ===================== #}
             <div class="accordion-item" style="order:10;">
                 <h2 class="accordion-header">

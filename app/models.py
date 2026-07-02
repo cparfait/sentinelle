@@ -121,6 +121,11 @@ class User(UserMixin, db.Model):
     ics_token = db.Column(db.String(64), unique=True, index=True)
     # Origine du compte : 'local' (gere dans l'app) ou 'ldap' (provisionne via AD).
     auth_source = db.Column(db.String(10), default='local')
+    # Personnalisation du tableau de bord (par utilisateur) : JSON
+    # {"order": [cles visibles ordonnees], "hidden": [cles masquees]}.
+    # None = disposition par defaut. Tolere l'ajout/retrait de blocs (voir
+    # app.dashboard.resolve_dashboard_layout).
+    dashboard_prefs = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     @property
