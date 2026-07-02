@@ -403,9 +403,11 @@ def preferences():
             key = secrets.token_urlsafe(32)
             _persist_config({'SESAME_API_TOKEN': key})
             current_app.config['SESAME_API_TOKEN'] = key
+            # Affichee UNE fois, dans la section (champ copiable), via la session :
+            # un flash serait rendu en toast auto-disparaissant, donc non copiable.
+            session['sesame_new_key'] = key
             audit_record('rotation clé API Sesame', category='preferences')
-            flash("Nouvelle clé API Sesame générée. Copiez-la maintenant, elle ne sera plus affichée : "
-                  + key, 'warning')
+            flash("Nouvelle clé API Sesame générée — copiez-la ci-dessous, elle ne sera plus affichée.", 'success')
 
         elif action == 'send_report_now':
             from app.pdf_report import send_report
@@ -707,6 +709,7 @@ def preferences():
                            ct_monitoring=current_app.config.get('CT_MONITORING', True),
                            sesame_enabled=current_app.config.get('SESAME_API_ENABLED', False),
                            sesame_key_set=bool(current_app.config.get('SESAME_API_TOKEN')),
+                           sesame_new_key=session.pop('sesame_new_key', None),
                            sesame_endpoint=(current_app.config.get('APP_BASE_URL', '').rstrip('/') + '/api/assets?type=application'),
                            db_backups=db_backups, thresholds=thresholds,
                            ldap_config=ldap_config, webhooks=webhooks,

@@ -578,6 +578,34 @@
                                     <i class="bi bi-arrow-repeat me-1"></i> {{ 'Régénérer la clé' if sesame_key_set else 'Générer une clé' }}
                                 </button>
                             </form>
+                            {% if sesame_new_key %}
+                            <div class="alert alert-success mt-3 mb-0" id="sesameKeyBox">
+                                <div class="small fw-medium mb-1"><i class="bi bi-clipboard-check me-1"></i>Nouvelle clé — copiez-la maintenant, elle ne sera plus affichée :</div>
+                                <div class="input-group input-group-sm">
+                                    <input type="text" id="sesameKeyValue" class="form-control font-monospace" value="{{ sesame_new_key }}" readonly onclick="this.select();">
+                                    <button type="button" class="btn btn-outline-secondary" id="sesameKeyCopy"><i class="bi bi-clipboard me-1"></i>Copier</button>
+                                </div>
+                            </div>
+                            <script>
+                            (function () {
+                                var box = document.getElementById('sesameKeyBox');
+                                if (!box) return;
+                                // Ouvre la section et amène la clé à l'écran.
+                                var sec = document.getElementById('secSesame');
+                                if (sec && window.bootstrap) { bootstrap.Collapse.getOrCreateInstance(sec, {toggle: false}).show(); }
+                                setTimeout(function () { box.scrollIntoView({behavior: 'smooth', block: 'center'}); }, 150);
+                                var btn = document.getElementById('sesameKeyCopy');
+                                var inp = document.getElementById('sesameKeyValue');
+                                btn.addEventListener('click', function () {
+                                    inp.select(); inp.setSelectionRange(0, 99999);
+                                    var ok = function () { btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Copié'; };
+                                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                                        navigator.clipboard.writeText(inp.value).then(ok, function () { try { document.execCommand('copy'); ok(); } catch (e) {} });
+                                    } else { try { document.execCommand('copy'); ok(); } catch (e) {} }
+                                });
+                            })();
+                            </script>
+                            {% endif %}
                         </div>
 
                         <div class="border-top pt-3 mt-3">
