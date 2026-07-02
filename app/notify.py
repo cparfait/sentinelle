@@ -30,8 +30,20 @@ def _post(url, payload):
         return False
 
 
+# Couleur Adaptive Card par statut (mots-cles supportes par le format)
+_AC_COLOR = {'danger': 'attention', 'warning': 'warning',
+             'info': 'accent', 'success': 'good'}
+
+
+def _is_legacy_teams(webhook_url):
+    """Vrai si l'URL est un ancien connecteur O365 (deprecie) et non un Workflow."""
+    u = webhook_url or ''
+    return 'webhook.office.com' in u or 'outlook.office.com' in u
+
+
 # ---- Constructeurs de payload par canal ----
-def _teams_payload(subject, body, status, url):
+def _teams_card_legacy(subject, body, status, url):
+    """Ancien format MessageCard (connecteurs O365, deprecies par Microsoft)."""
     card = {
         '@type': 'MessageCard', '@context': 'http://schema.org/extensions',
         'themeColor': _color(status), 'summary': subject,
@@ -41,6 +53,39 @@ def _teams_payload(subject, body, status, url):
         card['potentialAction'] = [{'@type': 'OpenUri', 'name': 'Voir la fiche',
                                      'targets': [{'os': 'default', 'uri': url}]}]
     return card
+
+
+def _teams_card_workflow(subject, body, status, url):
+    """Format Adaptive Card, attendu par les Workflows Teams (Power Automate).
+
+    Enveloppe `type: message` + `attachments` que le declencheur
+    « webhook request received » sait publier dans un canal.
+    """
+    blocks = [{
+        'type': 'TextBlock', 'text': f'[Sentinelle] {subject}',
+        'weight': 'Bolder', 'size': 'Large', 'wrap': True,
+        'color': _AC_COLOR.get(status, 'default'),
+    }]
+    if body:
+        blocks.append({'type': 'TextBlock', 'text': body, 'wrap': True})
+    card = {
+        'type': 'AdaptiveCard',
+        '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
+        'version': '1.4',
+        'body': blocks,
+    }
+    if url:
+        card['actions'] = [{'type': 'Action.OpenUrl', 'title': 'Voir la fiche', 'url': url}]
+    return {'type': 'message', 'attachments': [
+        {'contentType': 'application/vnd.microsoft.card.adaptive', 'content': card}]}
+
+
+def _teams_payload(subject, body, status, url, webhook_url=None):
+    """Choisit le format selon l'URL : Adaptive Card (Workflows) par defaut,
+    repli MessageCard pour les anciens connecteurs O365."""
+    if _is_legacy_teams(webhook_url):
+        return _teams_card_legacy(subject, body, status, url)
+    return _teams_card_workflow(subject, body, status, url)
 
 
 def _slack_payload(subject, body, status, url):
@@ -65,15 +110,22 @@ def _discord_payload(subject, body, status, url):
     return {'embeds': [embed]}
 
 
-_BUILDERS = {'teams': _teams_payload, 'slack': _slack_payload, 'discord': _discord_payload}
+# Teams est traite a part : son format depend de l'URL (Workflow vs connecteur).
+_BUILDERS = {'slack': _slack_payload, 'discord': _discord_payload}
 
 
 def send_to(channel, webhook_url, subject, body, status='danger', url=None):
     """Envoie sur un canal donne (teams/slack/discord) vers une URL precise."""
-    builder = _BUILDERS.get(channel)
-    if not builder or not webhook_url:
+    if not webhook_url:
         return False
-    return _post(webhook_url, builder(subject, body, status, url))
+    if channel == 'teams':
+        payload = _teams_payload(subject, body, status, url, webhook_url)
+    else:
+        builder = _BUILDERS.get(channel)
+        if not builder:
+            return False
+        payload = builder(subject, body, status, url)
+    return _post(webhook_url, payload)
 
 
 # ---- Webhooks globaux (config) — retro-compatibilite ----

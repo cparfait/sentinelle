@@ -262,6 +262,12 @@ def _migrate_data():
     # Le type d'asset « server » est remplace par « divers » (les serveurs sont
     # desormais geres dans l'inventaire).
     db.session.execute(text("UPDATE asset SET asset_type='divers' WHERE asset_type='server'"))
+    # Contrats : l'ancien lien unique equipment_id devient une relation N:N
+    # (table contract_equipment). On y recopie les liens existants une fois.
+    db.session.execute(text(
+        "INSERT OR IGNORE INTO contract_equipment (contract_id, equipment_id) "
+        "SELECT id, equipment_id FROM contract "
+        "WHERE equipment_id IS NOT NULL"))
     db.session.commit()
 
 
@@ -283,11 +289,17 @@ def _setup_sqlite():
 
 
 def _drop_legacy_login_throttle():
-    """L'anti-bruteforce passe d'une cle 'username' (unique) a un couple
-    (username, ip). L'ancienne table porte un index unique sur username
-    qu'on ne peut pas retirer proprement en SQLite : on la supprime pour la
-    laisser recreer au bon schema. Les compteurs d'echec sont ephemeres, leur
-    remise a zero est sans consequence."""
+    """L'anti-bruteforce est passe d'une cle 'username' (unique) a un couple
+    (username, ip). L'ancienne table porte une contrainte UNIQUE(username) qu'on
+    ne peut pas retirer proprement en SQLite : on la supprime pour la laisser
+    recreer au bon schema par create_all. Les compteurs d'echec sont ephemeres,
+    leur remise a zero est sans consequence.
+
+    On detecte le schema obsolete via la contrainte unique, PAS via la presence
+    de la colonne 'ip' : _auto_migrate_sqlite a pu ajouter 'ip' lors d'un run
+    precedent tout en laissant la contrainte UNIQUE(username) en place — ce qui
+    faisait echouer le login des qu'un identifiant etait tente depuis une
+    nouvelle IP (INSERT en doublon sur username)."""
     from sqlalchemy import inspect, text
     if not db.engine.url.get_backend_name().startswith('sqlite'):
         return
@@ -295,7 +307,14 @@ def _drop_legacy_login_throttle():
     if 'login_throttle' not in insp.get_table_names():
         return
     cols = {c['name'] for c in insp.get_columns('login_throttle')}
-    if 'ip' not in cols:  # schema legacy
+    try:
+        unique_cols = [sorted(u.get('column_names') or [])
+                       for u in insp.get_unique_constraints('login_throttle')]
+    except Exception:
+        unique_cols = []
+    has_composite = ['ip', 'username'] in unique_cols
+    stale_single = ['username'] in unique_cols
+    if 'ip' not in cols or (stale_single and not has_composite):
         db.session.execute(text('DROP TABLE login_throttle'))
         db.session.commit()
 

@@ -18,10 +18,12 @@ from app import db
 logger = logging.getLogger(__name__)
 
 # Cles dont la valeur est un secret -> chiffree en base.
-SECRET_KEYS = {'MAIL_PASSWORD', 'O365_CLIENT_SECRET', 'LDAP_BIND_PASSWORD'}
+SECRET_KEYS = {'MAIL_PASSWORD', 'O365_CLIENT_SECRET', 'LDAP_BIND_PASSWORD',
+               'SESAME_API_TOKEN'}
 
 # Typage applique au chargement (le reste = chaine).
-_BOOL = {'LDAP_ENABLED', 'LDAP_USE_SSL', 'LDAP_VALIDATE_CERT'}
+_BOOL = {'LDAP_ENABLED', 'LDAP_USE_SSL', 'LDAP_VALIDATE_CERT', 'CT_MONITORING',
+         'SESAME_API_ENABLED'}
 _INT = {'LDAP_PORT', 'MAIL_PORT'}
 _TRIPLET = {'THRESHOLD_EXPIRY', 'THRESHOLD_DOMAIN', 'THRESHOLD_TASK', 'THRESHOLD_CONTRACT'}
 
@@ -46,6 +48,8 @@ MANAGED = _BOOL | _INT | _TRIPLET | _CSV | {
     'LDAP_DEFAULT_ROLE', 'LDAP_BIND_USER', 'LDAP_BIND_PASSWORD',
     'TEAMS_WEBHOOK_URL', 'SLACK_WEBHOOK_URL', 'DISCORD_WEBHOOK_URL',
     'REPORT_SCHEDULE',  # envoi planifie du bilan PDF : off / monthly / weekly
+    'CT_MONITORING',    # surveillance Certificate Transparency (crt.sh) : on/off
+    'SESAME_API_ENABLED', 'SESAME_API_TOKEN',  # integration Sesame (API + cle)
 }
 
 

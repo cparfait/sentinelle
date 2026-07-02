@@ -29,7 +29,12 @@ def _fill(c, f):
     c.end_date = parse_date(f.get('end_date'))
     c.notice_days = parse_int(f.get('notice_days'), 0, minimum=0)
     c.auto_renew = f.get('auto_renew') == 'on'
-    c.equipment_id = parse_int(f.get('equipment_id'))
+    # Equipements couverts (multi-selection) : on ne garde que des equipements actifs.
+    ids = [parse_int(v) for v in f.getlist('equipment_ids')]
+    ids = [i for i in ids if i]
+    c.equipments = (Equipment.query.filter(Equipment.id.in_(ids),
+                                           Equipment.is_active.is_(True)).all()
+                    if ids else [])
     c.responsible = (f.get('responsible', '') or '').strip() or None
     c.description = f.get('description') or None
     c.priority = f.get('priority', 'medium')

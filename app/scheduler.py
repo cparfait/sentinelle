@@ -209,6 +209,14 @@ def refresh_domains_rdap():
                 db.session.rollback()
 
 
+def check_ct_logs():
+    """Surveille les journaux de Certificate Transparency (crt.sh) pour reperer
+    les certificats emis a l'insu de la DSI."""
+    with _app.app_context():
+        from app.ct_monitor import run_ct_scan
+        run_ct_scan()
+
+
 def sync_ad_passwords():
     """Synchronise l'expiration des mots de passe depuis l'AD (compte de service)."""
     with _app.app_context():
@@ -457,6 +465,8 @@ def start_scheduler(app):
                       id='refresh_certificates_tls', replace_existing=True)
     scheduler.add_job(refresh_domains_rdap, 'cron', hour=7, minute=10,
                       id='refresh_domains_rdap', replace_existing=True)
+    scheduler.add_job(check_ct_logs, 'cron', hour=6, minute=30,
+                      id='check_ct_logs', replace_existing=True)
     scheduler.add_job(send_daily_digest, 'cron', hour=7, minute=30,
                       id='send_daily_digest', replace_existing=True)
     scheduler.add_job(send_scheduled_report, 'cron', hour=7, minute=40,

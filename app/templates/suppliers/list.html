@@ -37,7 +37,7 @@
                 {% for s in suppliers %}
                 <tr>
                     <td>
-                        <span class="fw-medium">{{ s.name }}</span>
+                        <a href="{{ url_for('suppliers.detail', id=s.id) }}" class="fw-medium text-decoration-none">{{ s.name }}</a>
                         {% if s.contact_name %}<br><small class="text-muted">{{ s.contact_name }}</small>{% endif %}
                     </td>
                     <td><span class="badge bg-light text-dark border">{{ s.kind_label() }}</span></td>

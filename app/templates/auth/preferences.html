@@ -525,7 +525,7 @@
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label small">Port</label>
-                                    <input type="number" name="ldap_port" class="form-control form-control-sm" value="{{ ldap_config.port }}">
+                                    <input type="number" name="ldap_port" id="ldapPort" class="form-control form-control-sm" value="{{ ldap_config.port }}">
                                 </div>
                                 <div class="col-md-4 d-flex align-items-end">
                                     <div>
@@ -539,13 +539,16 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="col-12">
+                                    <small class="text-muted">Certificat CA — <strong>optionnel</strong> : utile uniquement si « Valider le certificat » est coché et que votre DC utilise une CA interne. Deux méthodes au choix (l'import écrase le chemin) :</small>
+                                </div>
                                 <div class="col-md-7">
-                                    <label class="form-label small">Certificat CA (PEM) <span class="text-muted">— optionnel, si CA interne</span></label>
+                                    <label class="form-label small">Chemin d'un CA (PEM) déjà sur le serveur <span class="text-muted">— optionnel</span></label>
                                     <input type="text" name="ldap_ca_cert" class="form-control form-control-sm"
-                                           value="{{ ldap_config.ca_cert }}" placeholder="C:\chemin\vers\ca.pem ou importez ci-contre">
+                                           value="{{ ldap_config.ca_cert }}" placeholder="C:\chemin\vers\ca.pem">
                                 </div>
                                 <div class="col-md-5">
-                                    <label class="form-label small">Importer le certificat <span class="text-muted">(.pem / .crt / .cer)</span></label>
+                                    <label class="form-label small">… ou importer le fichier CA <span class="text-muted">(.pem / .crt / .cer) — optionnel</span></label>
                                     <input type="file" name="ldap_ca_cert_file" accept=".pem,.crt,.cer,.cert" class="form-control form-control-sm">
                                 </div>
                                 <div class="col-md-4">
@@ -591,6 +594,101 @@
                             <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plug me-1"></i> Tester la connexion</button>
                             <small class="text-muted ms-1">Teste la configuration <strong>enregistrée</strong> (compte de service).</small>
                         </form>
+                        <script>
+                        (function () {
+                            var ssl = document.getElementById('ldapSsl');
+                            var port = document.getElementById('ldapPort');
+                            if (!ssl || !port) return;
+                            // Bascule le port par defaut (389 <-> 636) selon LDAPS,
+                            // sans ecraser un port personnalise saisi par l'admin.
+                            ssl.addEventListener('change', function () {
+                                var v = (port.value || '').trim();
+                                if (ssl.checked && (v === '' || v === '389')) {
+                                    port.value = '636';
+                                } else if (!ssl.checked && v === '636') {
+                                    port.value = '389';
+                                }
+                            });
+                        })();
+                        </script>
+                    </div>
+                </div>
+            </div>
+
+            {# ===================== SURVEILLANCE ===================== #}
+            <div class="accordion-item" style="order:9;">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secSurveillance" aria-expanded="false" aria-controls="secSurveillance">
+                        <i class="bi bi-shield-lock me-2"></i>Surveillance
+                        {% if ct_monitoring %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>CT activé</span>{% else %}<span class="badge bg-secondary ms-2">CT désactivé</span>{% endif %}
+                    </button>
+                </h2>
+                <div id="secSurveillance" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
+                    <div class="accordion-body">
+                        <form method="POST" action="{{ url_for('auth.preferences') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="save_ct">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       id="ctMonitoring" name="ct_monitoring" {% if ct_monitoring %}checked{% endif %}>
+                                <label class="form-check-label fw-medium" for="ctMonitoring">Certificate Transparency (crt.sh)</label>
+                            </div>
+                            <p class="text-muted small mt-1 mb-2">Scan quotidien des journaux CT pour détecter les certificats émis pour vos domaines à l'insu de la DSI (shadow IT, prestataire, usurpation). Les alertes suivent la catégorie « Domaines ».</p>
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> Enregistrer
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            {# ===================== INTÉGRATION / API SESAME ===================== #}
+            <div class="accordion-item" style="order:10;">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secSesame" aria-expanded="false" aria-controls="secSesame">
+                        <i class="bi bi-plug me-2"></i>Intégration / API Sesame
+                        {% if sesame_enabled %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Activée</span>{% else %}<span class="badge bg-secondary ms-2">Désactivée</span>{% endif %}
+                    </button>
+                </h2>
+                <div id="secSesame" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
+                    <div class="accordion-body">
+                        <p class="text-muted small mb-2">Expose la liste des applications à l'outil <strong>Sesame</strong> pour éviter la double saisie. Sesame l'importe via une requête authentifiée par clé.</p>
+                        <form method="POST" action="{{ url_for('auth.preferences') }}" class="mb-3">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="save_sesame">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       id="sesameEnabled" name="sesame_enabled" {% if sesame_enabled %}checked{% endif %}>
+                                <label class="form-check-label fw-medium" for="sesameEnabled">Activer l'API Sesame</label>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary mt-2">
+                                <i class="bi bi-check-lg me-1"></i> Enregistrer
+                            </button>
+                        </form>
+
+                        <div class="border-top pt-3">
+                            <h6 class="fw-bold mb-1"><i class="bi bi-key me-2 text-primary"></i>Clé API</h6>
+                            <p class="text-muted small mb-2">
+                                Statut : {% if sesame_key_set %}<span class="text-success">une clé est définie</span>{% else %}<span class="text-danger">aucune clé</span>{% endif %}.
+                                La clé n'est affichée qu'une seule fois, à sa génération. La régénérer invalide l'ancienne.
+                            </p>
+                            <form method="POST" action="{{ url_for('auth.preferences') }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" name="action" value="sesame_generate_key" class="btn btn-sm btn-outline-primary"
+                                        data-confirm="{% if sesame_key_set %}Régénérer la clé ? L'ancienne cessera de fonctionner immédiatement.{% else %}Générer une clé API pour Sesame ?{% endif %}">
+                                    <i class="bi bi-arrow-repeat me-1"></i> {{ 'Régénérer la clé' if sesame_key_set else 'Générer une clé' }}
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="border-top pt-3 mt-3">
+                            <h6 class="fw-bold mb-1"><i class="bi bi-link-45deg me-2 text-primary"></i>Configuration côté Sesame</h6>
+                            <ul class="small mb-0">
+                                <li>URL : <code>{{ sesame_endpoint }}</code></li>
+                                <li>En-tête : <code>Authorization: Bearer &lt;clé&gt;</code></li>
+                                <li>Réponse : tableau JSON <code>{ id, name, description, is_active }</code></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>

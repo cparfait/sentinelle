@@ -24,7 +24,8 @@ _DETAIL_ENDPOINT = {
 }
 
 # Prefixe d'URL quand il differe de entity_type + 's' (pour les liens des emails)
-_URL_PREFIX = {'equipment': 'inventory'}
+# 'ct' (alerte Certificate Transparency) pointe vers la fiche du domaine concerne.
+_URL_PREFIX = {'equipment': 'inventory', 'ct': 'domains'}
 
 
 @bp.before_request

@@ -5,6 +5,7 @@ __pycache__/
 venv/
 .venv/
 *.egg-info/
+.coverage
 instance/
 o365_token.json
 .claude/settings.local.json

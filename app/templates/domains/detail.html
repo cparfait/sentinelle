@@ -57,6 +57,37 @@
             {% endif %}
         </div>
 
+        <div class="data-card mb-3">
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-shield-lock me-2 text-primary"></i>Certificate Transparency
+                    {% if ct_new %}<span class="badge bg-warning text-dark ms-1">{{ ct_new }} nouveau{{ 's' if ct_new > 1 }}</span>{% endif %}
+                </h6>
+                <small class="text-muted">Certificats emis pour ce domaine (crt.sh)</small>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead><tr><th>Nom(s)</th><th>Émetteur</th><th class="text-nowrap">Émis le</th><th>Statut</th></tr></thead>
+                    <tbody>
+                        {% for e in ct_entries %}
+                        <tr{% if e.status == 'new' %} class="table-warning"{% endif %}>
+                            <td class="small">{{ e.sans()[:3] | join(', ') }}{% if e.sans()|length > 3 %} <span class="text-muted">(+{{ e.sans()|length - 3 }})</span>{% endif %}</td>
+                            <td class="small">{{ e.issuer_name or '-' }}</td>
+                            <td class="text-nowrap small">{{ e.not_before.strftime('%d/%m/%Y') if e.not_before else '-' }}</td>
+                            <td>
+                                {% if e.status == 'new' %}<span class="badge bg-warning text-dark">Nouveau</span>
+                                {% elif e.status == 'acknowledged' %}<span class="badge bg-success-subtle text-success">Vérifié</span>
+                                {% elif e.status == 'baseline' %}<span class="badge bg-secondary-subtle text-secondary">Base</span>
+                                {% else %}<span class="badge bg-light text-muted">{{ e.status }}</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center py-3 text-muted">Aucun certificat observé. Lancez un scan pour établir la ligne de base.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div class="data-card">
             <div class="card-header-custom">
                 <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique</h6>
@@ -92,6 +123,24 @@
                     <i class="bi bi-arrow-repeat me-1"></i> Vérifier maintenant
                 </button>
             </form>
+        </div>
+        <div class="data-card p-4 mb-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-shield-lock me-2 text-primary"></i>Certificate Transparency</h6>
+            <p class="text-muted small mb-2">Recherche dans les journaux CT (crt.sh) les certificats émis pour ce domaine, y compris ceux inconnus de la DSI.</p>
+            <form method="POST" action="{{ url_for('domains.scan_ct', id=domain.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+                    <i class="bi bi-search me-1"></i> Scanner maintenant
+                </button>
+            </form>
+            {% if ct_new %}
+            <form method="POST" action="{{ url_for('domains.ct_ack', id=domain.id) }}" class="mt-2">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-success btn-sm w-100">
+                    <i class="bi bi-check2-all me-1"></i> Marquer les {{ ct_new }} nouveau{{ 's' if ct_new > 1 }} comme vérifié{{ 's' if ct_new > 1 }}
+                </button>
+            </form>
+            {% endif %}
         </div>
         {% with entity_type='domain', entity_id=domain.id %}{% include '_snooze_card.html' %}{% endwith %}
         <div class="data-card p-4">

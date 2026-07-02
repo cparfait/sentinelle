@@ -91,19 +91,35 @@ def login():
             next_page = _safe_next(request.args.get('next'))
             return redirect(next_page or url_for('dashboard.index'))
 
-        # echec : incremente le compteur
-        if not throttle:
-            throttle = LoginThrottle(username=username, ip=ip, failed_count=0)
-            db.session.add(throttle)
-        throttle.failed_count = (throttle.failed_count or 0) + 1
-        if throttle.failed_count >= max_attempts:
-            throttle.locked_until = now + timedelta(minutes=lockout_min)
-            throttle.failed_count = 0
+        # echec : incremente le compteur d'un cran. Robuste a une insertion
+        # concurrente sur le meme couple (identifiant, IP) — waitress est
+        # multi-thread : deux requetes peuvent ne pas trouver de ligne et tenter
+        # deux INSERT ; en cas de collision on annule et on relit la ligne posee.
+        from sqlalchemy.exc import IntegrityError
+
+        def _bump():
+            t = LoginThrottle.query.filter_by(username=username, ip=ip).first()
+            if t is None:
+                t = LoginThrottle(username=username, ip=ip, failed_count=0)
+                db.session.add(t)
+            t.failed_count = (t.failed_count or 0) + 1
+            is_locked = t.failed_count >= max_attempts
+            if is_locked:
+                t.locked_until = now + timedelta(minutes=lockout_min)
+                t.failed_count = 0
             db.session.commit()
+            return t, is_locked
+
+        try:
+            throttle, locked = _bump()
+        except IntegrityError:
+            db.session.rollback()
+            throttle, locked = _bump()
+
+        if locked:
             audit_record('compte bloque', detail=f'identifiant: {username}', category='securite')
             flash(f'Trop de tentatives. Compte bloque {lockout_min} minute(s).', 'danger')
         else:
-            db.session.commit()
             audit_record('echec connexion', detail=f'identifiant: {username}', category='securite')
             restantes = max_attempts - throttle.failed_count
             flash(f'Identifiants incorrects ({restantes} tentative(s) restante(s)).', 'danger')
@@ -367,6 +383,29 @@ def preferences():
             current_app.config['REPORT_RECIPIENTS'] = recipients
             audit_record('planification bilan PDF', detail=schedule, category='preferences')
             flash('Planification du bilan PDF enregistrée', 'success')
+
+        elif action == 'save_ct':
+            enabled = request.form.get('ct_monitoring') == 'on'
+            _persist_config({'CT_MONITORING': 'true' if enabled else 'false'})
+            current_app.config['CT_MONITORING'] = enabled
+            audit_record('config surveillance CT', detail=f'actif={enabled}', category='preferences')
+            flash('Surveillance Certificate Transparency ' + ('activée' if enabled else 'désactivée') + '.', 'success')
+
+        elif action == 'save_sesame':
+            enabled = request.form.get('sesame_enabled') == 'on'
+            _persist_config({'SESAME_API_ENABLED': 'true' if enabled else 'false'})
+            current_app.config['SESAME_API_ENABLED'] = enabled
+            audit_record('config API Sesame', detail=f'actif={enabled}', category='preferences')
+            flash('Intégration Sesame ' + ('activée' if enabled else 'désactivée') + '.', 'success')
+
+        elif action == 'sesame_generate_key':
+            import secrets
+            key = secrets.token_urlsafe(32)
+            _persist_config({'SESAME_API_TOKEN': key})
+            current_app.config['SESAME_API_TOKEN'] = key
+            audit_record('rotation clé API Sesame', category='preferences')
+            flash("Nouvelle clé API Sesame générée. Copiez-la maintenant, elle ne sera plus affichée : "
+                  + key, 'warning')
 
         elif action == 'send_report_now':
             from app.pdf_report import send_report
@@ -731,6 +770,10 @@ def preferences():
                            alert_category_labels=ALERT_CATEGORY_LABELS,
                            report_schedule=current_app.config.get('REPORT_SCHEDULE', 'off'),
                            report_recipients=', '.join(current_app.config.get('REPORT_RECIPIENTS') or []),
+                           ct_monitoring=current_app.config.get('CT_MONITORING', True),
+                           sesame_enabled=current_app.config.get('SESAME_API_ENABLED', False),
+                           sesame_key_set=bool(current_app.config.get('SESAME_API_TOKEN')),
+                           sesame_endpoint=(current_app.config.get('APP_BASE_URL', '').rstrip('/') + '/api/assets?type=application'),
                            db_backups=db_backups, thresholds=thresholds,
                            ldap_config=ldap_config, webhooks=webhooks,
                            assets=assets, asset_type_labels=ASSET_TYPE_LABELS,

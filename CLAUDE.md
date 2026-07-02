@@ -47,6 +47,11 @@ pytest dans `requirements-dev.txt`). Toute évolution de la logique de statut
   doit inclure** `<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">`.
   Toute nouvelle route qui modifie des données doit être décorée `@login_required` puis
   `@require_edit` (ou `@require_admin`).
+- **Fonctionnalités paramétrables** : **toute nouvelle fonctionnalité doit être activable
+  / désactivable depuis la page Préférences** (`auth/preferences.html` + action POST dans
+  `preferences()`), avec la clé persistée via `config_store` (l'ajouter à `MANAGED`, et à
+  `_BOOL` si c'est un interrupteur). Prévoir un défaut sûr et un repli `.env`/`config.py`.
+  Référence : `CT_MONITORING` (surveillance Certificate Transparency).
 - **Scheduler** : ne PAS appeler `create_app()` dans un job. `start_scheduler(app)` reçoit
   l'app et les jobs utilisent `with _app.app_context()`. Les jobs sont enregistrés avec
   `replace_existing=True`.

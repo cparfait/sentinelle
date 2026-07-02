@@ -57,16 +57,24 @@ def test_ldap_connection(app=None):
     bind_pw = cfg.get('LDAP_BIND_PASSWORD')
     try:
         server = build_server(cfg)
+        # Protocole reellement utilise (build_server force 636 quand SSL est actif).
+        if server.ssl:
+            validated = 'certificat validé' if cfg.get('LDAP_VALIDATE_CERT', True) \
+                else 'certificat non validé'
+            proto = f"LDAPS (TLS, port {server.port}, {validated})"
+        else:
+            proto = f"LDAP non chiffré (port {server.port})"
         if bind_user and bind_pw:
             conn = Connection(server, user=bind_user, password=bind_pw, auto_bind=True)
             base = cfg.get('LDAP_BASE_DN')
             if base:
                 conn.search(base, '(objectClass=*)', search_scope='BASE')
             conn.unbind()
-            return True, f"Connexion et authentification réussies (compte de service : {bind_user})."
+            return True, (f"Connexion et authentification réussies via {proto} "
+                          f"(compte de service : {bind_user}).")
         conn = Connection(server, auto_bind=True)
         conn.unbind()
-        return True, "Connexion au serveur LDAP réussie (aucun compte de service configuré)."
+        return True, f"Connexion au serveur LDAP réussie via {proto} (aucun compte de service configuré)."
     except Exception as e:
         return False, f"Échec de connexion LDAP : {e}"
 

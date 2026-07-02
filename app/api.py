@@ -1,9 +1,52 @@
-"""API JSON interne — endpoints légers pour le polling navigateur."""
+"""API JSON — endpoints légers pour le polling navigateur (session) et
+l'intégration machine-to-machine avec l'outil Sesame (clé API)."""
+import hmac
 from datetime import datetime, timezone
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request, current_app
 from flask_login import login_required, current_user
+from app import csrf, limiter
 
 bp = Blueprint('api', __name__, url_prefix='/api')
+
+
+def _sesame_auth_error():
+    """Vérifie l'activation + la clé Bearer de l'intégration Sesame.
+    Retourne une réponse d'erreur (tuple) si refusé, sinon None."""
+    if not current_app.config.get('SESAME_API_ENABLED'):
+        return jsonify(error='Intégration Sesame désactivée.'), 503
+    token = current_app.config.get('SESAME_API_TOKEN') or ''
+    if not token:
+        return jsonify(error='API non configurée (clé absente).'), 503
+    auth = request.headers.get('Authorization', '')
+    provided = auth[7:] if auth[:7].lower() == 'bearer ' else ''
+    # Comparaison à temps constant : ne fuit ni la longueur ni le préfixe.
+    if not provided or not hmac.compare_digest(provided, token):
+        return jsonify(error='Clé API invalide.'), 401
+    return None
+
+
+@bp.route('/assets')
+@csrf.exempt
+@limiter.limit('60 per minute')
+def assets():
+    """Liste des applications (catalogue) exposée à Sesame pour éviter la double
+    saisie. Auth : en-tête `Authorization: Bearer <clé>`. Filtre optionnel
+    `?type=application`. Réponse : tableau JSON {id, name, description, is_active}
+    trié par nom (contrat attendu par Sesame)."""
+    err = _sesame_auth_error()
+    if err is not None:
+        return err
+    from app.models import Asset
+    q = Asset.query.filter_by(is_active=True)
+    atype = request.args.get('type')
+    if atype:
+        q = q.filter_by(asset_type=atype)
+    rows = q.order_by(Asset.name.asc()).all()
+    return jsonify([
+        {'id': a.id, 'name': a.name, 'description': a.description or '',
+         'is_active': bool(a.is_active)}
+        for a in rows
+    ])
 
 
 @bp.route('/alert-count')

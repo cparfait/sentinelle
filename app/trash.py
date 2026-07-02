@@ -60,6 +60,10 @@ def _purge_obj(etype, obj):
         # lies (vue 360°) pour ne pas laisser d'equipment_id orphelin.
         for model in (Certificate, Backup, SystemUpdate, Contract):
             model.query.filter_by(equipment_id=obj.id).update({'equipment_id': None})
+        # Liens N:N contrat<->equipement : supprimer les lignes d'association.
+        from app.models import contract_equipment
+        db.session.execute(contract_equipment.delete().where(
+            contract_equipment.c.equipment_id == obj.id))
     if etype == 'supplier':
         # Meme principe : detacher les references avant suppression definitive.
         Equipment.query.filter_by(supplier_id=obj.id).update({'supplier_id': None})

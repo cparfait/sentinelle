@@ -188,8 +188,9 @@
             </div>
             <div class="p-3">
                 {% if urgent_items %}
+                    <div id="urgentList">
                     {% for item in urgent_items %}
-                    <a href="{{ item.url }}" class="text-decoration-none">
+                    <a href="{{ item.url }}" class="text-decoration-none urgent-row">
                         <div class="urgent-item urgent-{{ item.status }}">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
@@ -209,6 +210,39 @@
                         </div>
                     </a>
                     {% endfor %}
+                    </div>
+                    <div id="urgentPager" class="d-flex justify-content-between align-items-center mt-2 d-none">
+                        <small class="text-muted" id="urgentInfo"></small>
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Pagination des éléments">
+                            <button type="button" class="btn btn-outline-secondary" id="urgentPrev"><i class="bi bi-chevron-left me-1"></i>Précédent</button>
+                            <button type="button" class="btn btn-outline-secondary" id="urgentNext">Suivant<i class="bi bi-chevron-right ms-1"></i></button>
+                        </div>
+                    </div>
+                    <script>
+                    (function () {
+                        var rows = Array.prototype.slice.call(document.querySelectorAll('#urgentList .urgent-row'));
+                        var pager = document.getElementById('urgentPager');
+                        if (!rows.length || !pager) return;
+                        var pageSize = 8, page = 0;
+                        var pages = Math.ceil(rows.length / pageSize);
+                        if (pages <= 1) return;   // une seule page : pas de pagination
+                        pager.classList.remove('d-none');
+                        var info = document.getElementById('urgentInfo');
+                        var prev = document.getElementById('urgentPrev');
+                        var next = document.getElementById('urgentNext');
+                        function render() {
+                            rows.forEach(function (el, i) {
+                                el.style.display = (i >= page * pageSize && i < (page + 1) * pageSize) ? '' : 'none';
+                            });
+                            info.textContent = 'Page ' + (page + 1) + ' / ' + pages + ' — ' + rows.length + ' élément(s)';
+                            prev.disabled = (page === 0);
+                            next.disabled = (page >= pages - 1);
+                        }
+                        prev.addEventListener('click', function () { if (page > 0) { page--; render(); } });
+                        next.addEventListener('click', function () { if (page < pages - 1) { page++; render(); } });
+                        render();
+                    })();
+                    </script>
                 {% else %}
                     <div class="text-center py-4 text-muted">
                         <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>

@@ -1,9 +1,12 @@
+from datetime import datetime, timezone
+
 from flask import (Blueprint, render_template, redirect, url_for, request, flash,
                    jsonify)
 from flask_login import login_required, current_user
 from app import db
-from app.models import Domain, DomainHistory
+from app.models import Domain, DomainHistory, CtLogEntry
 from app.domain_checker import fetch_domain_info
+from app.ct_monitor import scan_domain
 from app.forms_util import parse_date, status_rank
 from app.decorators import require_edit, require_delete, view_guard
 
@@ -106,7 +109,56 @@ def create():
 def detail(id):
     domain = Domain.query.get_or_404(id)
     histories = domain.histories.order_by(DomainHistory.performed_at.desc()).all()
-    return render_template('domains/detail.html', domain=domain, histories=histories)
+    # Certificats vus dans les journaux CT : les nouveaux d'abord, puis les plus recents.
+    ct_entries = domain.ct_entries.order_by(
+        CtLogEntry.crtsh_id.desc()).limit(50).all()
+    ct_entries.sort(key=lambda e: (e.status != 'new', -(e.crtsh_id or 0)))
+    ct_new = domain.ct_new_count()
+    return render_template('domains/detail.html', domain=domain, histories=histories,
+                           ct_entries=ct_entries, ct_new=ct_new)
+
+
+@bp.route('/<int:id>/scan-ct', methods=['POST'])
+@login_required
+@require_edit
+def scan_ct(id):
+    """Scan manuel des journaux de Certificate Transparency (crt.sh)."""
+    domain = Domain.query.get_or_404(id)
+    res = scan_domain(domain, current_user.username)
+    if res['error']:
+        flash(f"Scan CT impossible : {res['error']}", 'danger')
+    elif res['baseline']:
+        flash(f"Ligne de base CT etablie : {res['baseline']} certificat(s) "
+              "enregistre(s) (pas d'alerte sur l'historique).", 'info')
+    elif res['new']:
+        flash(f"{len(res['new'])} nouveau(x) certificat(s) detecte(s) dans les "
+              "journaux CT — a verifier.", 'warning')
+    else:
+        flash("Aucun nouveau certificat dans les journaux CT.", 'success')
+    return redirect(url_for('domains.detail', id=id))
+
+
+@bp.route('/<int:id>/ct-ack', methods=['POST'])
+@login_required
+@require_edit
+def ct_ack(id):
+    """Marque tous les certificats CT 'new' comme verifies."""
+    domain = Domain.query.get_or_404(id)
+    now = datetime.now(timezone.utc)
+    n = 0
+    for e in domain.ct_entries.filter_by(status='new').all():
+        e.status = 'acknowledged'
+        e.acknowledged_by = current_user.username
+        e.acknowledged_at = now
+        n += 1
+    if n:
+        db.session.add(DomainHistory(
+            domain_id=domain.id, action='ct_acknowledged',
+            comment=f"{n} certificat(s) CT marque(s) comme verifie(s).",
+            performed_by=current_user.username))
+    db.session.commit()
+    flash(f"{n} certificat(s) marque(s) comme verifie(s).", 'success')
+    return redirect(url_for('domains.detail', id=id))
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])

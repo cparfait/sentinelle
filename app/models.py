@@ -427,13 +427,22 @@ class Domain(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    # Surveillance Certificate Transparency (crt.sh) : detecte les certificats
+    # emis pour ce domaine a l'insu de la DSI. ct_last_id = plus grand identifiant
+    # crt.sh deja vu (ligne de base au premier scan pour ne pas alerter l'historique).
+    ct_enabled = db.Column(db.Boolean, default=True)
+    ct_last_id = db.Column(db.BigInteger)
     histories = db.relationship('DomainHistory', backref='domain', lazy='dynamic', cascade='all, delete-orphan')
+    ct_entries = db.relationship('CtLogEntry', backref='domain', lazy='dynamic', cascade='all, delete-orphan')
 
     def status(self):
         if not self.expiry_date:
             return 'warning'
         days_left = (self.expiry_date - datetime.now(timezone.utc).date()).days
         return _status_from_days(days_left, 'THRESHOLD_DOMAIN')
+
+    def ct_new_count(self):
+        return self.ct_entries.filter_by(status='new').count()
 
 
 class DomainHistory(db.Model):
@@ -443,6 +452,42 @@ class DomainHistory(db.Model):
     comment = db.Column(db.Text)
     performed_by = db.Column(db.String(64))
     performed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class CtLogEntry(db.Model):
+    """Certificat observe dans les journaux de Certificate Transparency (crt.sh)
+    pour un domaine surveille. Sert a reperer les certificats emis a l'insu de la
+    DSI (shadow IT, prestataire, usurpation).
+
+    Statuts : baseline (existant au 1er scan, silencieux) / new (nouveau, alerte) /
+    acknowledged (verifie) / ignored."""
+    id = db.Column(db.Integer, primary_key=True)
+    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id'), nullable=False, index=True)
+    crtsh_id = db.Column(db.BigInteger, index=True)      # identifiant crt.sh (dedup)
+    serial_number = db.Column(db.String(128))
+    common_name = db.Column(db.String(256))
+    name_value = db.Column(db.Text)                      # SAN(s), un par ligne
+    issuer_name = db.Column(db.String(256))
+    not_before = db.Column(db.Date)
+    not_after = db.Column(db.Date)
+    entry_timestamp = db.Column(db.DateTime)             # date d'ajout au journal CT
+    first_seen = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    status = db.Column(db.String(16), default='new')
+    acknowledged_by = db.Column(db.String(64))
+    acknowledged_at = db.Column(db.DateTime)
+
+    __table_args__ = (db.UniqueConstraint('domain_id', 'crtsh_id',
+                                          name='uq_ctlog_domain_crtsh'),)
+
+    def sans(self):
+        """Liste des noms (SAN) du certificat, dedupliquee et sans les *."""
+        seen, out = set(), []
+        for s in (self.name_value or '').splitlines():
+            s = s.strip()
+            if s and s not in seen:
+                seen.add(s)
+                out.append(s)
+        return out
 
 
 class AccessReview(db.Model):
@@ -734,6 +779,15 @@ CONTRACT_KIND_LABELS = {'maintenance': 'Maintenance', 'licence': 'Licence',
                         'other': 'Autre'}
 
 
+# Equipements couverts par un contrat (relation N:N). Premiere table
+# d'association du projet ; alimentee au demarrage depuis l'ancien equipment_id.
+contract_equipment = db.Table(
+    'contract_equipment',
+    db.Column('contract_id', db.Integer, db.ForeignKey('contract.id'), primary_key=True),
+    db.Column('equipment_id', db.Integer, db.ForeignKey('equipment.id'), primary_key=True),
+)
+
+
 class Contract(db.Model):
     """Contrat, licence ou abonnement avec echeance et preavis de resiliation.
     La date qui compte pour agir est end_date - notice_days : au-dela, on subit
@@ -749,9 +803,14 @@ class Contract(db.Model):
     end_date = db.Column(db.Date)              # echeance du contrat
     notice_days = db.Column(db.Integer, default=0)   # preavis de resiliation (jours)
     auto_renew = db.Column(db.Boolean, default=False)  # tacite reconduction
-    # Equipement principal couvert (vue 360°), optionnel.
+    # Colonne historique (1 equipement) conservee pour la migration : SQLite ne
+    # permet pas de la retirer proprement. Les liens font foi via `equipments`.
     equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'), index=True)
-    equipment = db.relationship('Equipment', backref=db.backref('contracts', lazy='dynamic'))
+    # Plusieurs equipements couverts par le contrat (M:N). Cote contrat = liste
+    # simple (affectation possible sur un contrat neuf) ; le backref
+    # `Equipment.contracts` reste dynamique pour la vue 360° (filter_by).
+    equipments = db.relationship('Equipment', secondary=contract_equipment,
+                                 backref=db.backref('contracts', lazy='dynamic'))
     responsible = db.Column(db.String(128))
     description = db.Column(db.Text)
     priority = db.Column(db.String(20), default='medium')

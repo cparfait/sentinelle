@@ -34,14 +34,20 @@
                 </div>
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
-                        <label class="form-label fw-medium">Fournisseur</label>
-                        <select name="supplier_id" class="form-select">
-                            <option value="">— Sélectionner —</option>
-                            {% for s in suppliers %}
-                            <option value="{{ s.id }}" {{ 'selected' if contract and contract.supplier_id == s.id }}>{{ s.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <div class="form-text">Géré dans l'annuaire <a href="{{ url_for('suppliers.list') }}">Fournisseurs</a>.</div>
+                        <label class="form-label fw-medium">Fournisseur / contact</label>
+                        <div class="input-group">
+                            <select name="supplier_id" id="supplierSelect" class="form-select">
+                                <option value="">— Sélectionner —</option>
+                                {% for s in suppliers %}
+                                <option value="{{ s.id }}" {{ 'selected' if contract and contract.supplier_id == s.id }}>{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
+                                    data-bs-target="#supplierModal" title="Ajouter un fournisseur">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Porte le contact support (tél., e-mail). Géré dans <a href="{{ url_for('suppliers.list') }}">Fournisseurs</a>.</div>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-medium">N° de contrat / marché</label>
@@ -81,20 +87,11 @@
                 </div>
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
-                        <label class="form-label fw-medium">Équipement principal couvert</label>
-                        <select name="equipment_id" class="form-select">
-                            <option value="">— Sélectionner —</option>
-                            {% for e in equipments %}
-                            <option value="{{ e.id }}" {{ 'selected' if contract and contract.equipment_id == e.id }}>{{ e.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-3">
                         <label class="form-label fw-medium">Responsable</label>
                         <input type="text" name="responsible" class="form-control"
                                value="{{ contract.responsible or '' if contract else '' }}">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-6">
                         <label class="form-label fw-medium">Priorité</label>
                         <select name="priority" class="form-select">
                             {% for value, label in [('low', 'Basse'), ('medium', 'Moyenne'), ('high', 'Haute')] %}
@@ -102,6 +99,15 @@
                             {% endfor %}
                         </select>
                     </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Équipements couverts</label>
+                    <select name="equipment_ids" class="form-select" multiple size="6">
+                        {% for e in equipments %}
+                        <option value="{{ e.id }}" {{ 'selected' if contract and e in contract.equipments }}>{{ e.name }} ({{ e.kind_label() }}{% if e.environment %} · {{ e.env_label() }}{% endif %})</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">Ctrl/Cmd (ou Maj) pour sélectionner plusieurs serveurs/NAS de l'inventaire. Vue 360° partagée.</div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-medium">Description / Notes</label>
@@ -118,4 +124,70 @@
         </div>
     </div>
 </div>
+
+{# Ajout rapide d'un fournisseur sans quitter le formulaire de contrat #}
+<div class="modal fade" id="supplierModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-truck me-2"></i>Nouveau fournisseur</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="sup_csrf" value="{{ csrf_token() }}">
+                <div class="mb-2">
+                    <label class="form-label small">Nom *</label>
+                    <input type="text" id="sup_name" class="form-control form-control-sm">
+                </div>
+                <div class="row g-2">
+                    <div class="col-md-6"><label class="form-label small">Contact</label><input type="text" id="sup_contact" class="form-control form-control-sm"></div>
+                    <div class="col-md-6"><label class="form-label small">Téléphone</label><input type="text" id="sup_phone" class="form-control form-control-sm"></div>
+                    <div class="col-12"><label class="form-label small">E-mail</label><input type="email" id="sup_email" class="form-control form-control-sm"></div>
+                </div>
+                <div id="sup_error" class="text-danger small mt-2 d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary btn-sm" id="sup_save"><i class="bi bi-check-lg me-1"></i>Créer</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    var btn = document.getElementById('sup_save');
+    if (!btn) return;
+    var err = document.getElementById('sup_error');
+    function field(id) { return document.getElementById(id); }
+    btn.addEventListener('click', function () {
+        var name = field('sup_name').value.trim();
+        err.classList.add('d-none');
+        if (!name) { err.textContent = 'Le nom est obligatoire.'; err.classList.remove('d-none'); return; }
+        var token = field('sup_csrf').value;
+        var data = new FormData();
+        data.append('csrf_token', token);
+        data.append('name', name);
+        data.append('contact_name', field('sup_contact').value.trim());
+        data.append('phone', field('sup_phone').value.trim());
+        data.append('email', field('sup_email').value.trim());
+        btn.disabled = true;
+        fetch('{{ url_for("suppliers.quick_create") }}', {
+            method: 'POST', body: data, headers: {'X-CSRFToken': token}
+        }).then(function (r) { return r.json(); }).then(function (j) {
+            btn.disabled = false;
+            if (!j.ok) { err.textContent = j.error || 'Échec de la création.'; err.classList.remove('d-none'); return; }
+            var sel = field('supplierSelect');
+            var opt = document.createElement('option');
+            opt.value = j.id; opt.textContent = j.name; opt.selected = true;
+            sel.appendChild(opt);
+            var modalEl = document.getElementById('supplierModal');
+            var modal = window.bootstrap && bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+            ['sup_name', 'sup_contact', 'sup_phone', 'sup_email'].forEach(function (id) { field(id).value = ''; });
+        }).catch(function () {
+            btn.disabled = false; err.textContent = 'Erreur réseau.'; err.classList.remove('d-none');
+        });
+    });
+})();
+</script>
 {% endblock %}

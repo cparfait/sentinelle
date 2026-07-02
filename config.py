@@ -74,6 +74,10 @@ class Config:
     # Au-dela de ce nombre de jours sans MAJ OS, l'equipement est signale.
     OS_STALE_DAYS = int(os.getenv('OS_STALE_DAYS', 365))
 
+    # Surveillance Certificate Transparency (crt.sh) : detection des certificats
+    # emis pour les domaines suivis a l'insu de la DSI. Desactivable globalement.
+    CT_MONITORING = os.getenv('CT_MONITORING', 'true').lower() in ('true', '1', 'yes')
+
     MAIL_METHOD = os.getenv('MAIL_METHOD', 'smtp')
 
     MAIL_SERVER = os.getenv('MAIL_SERVER', 'localhost')
@@ -121,6 +125,11 @@ class Config:
     # Jeton secret pour l'ingestion des mails recap de backup (POST /backups/ingest).
     # Laisser vide pour desactiver le point d'entree.
     BACKUP_INGEST_TOKEN = os.getenv('BACKUP_INGEST_TOKEN', '')
+
+    # Integration Sesame : API GET /api/assets protegee par cle (Authorization:
+    # Bearer). Gere depuis les Preferences (cle chiffree en base). Repli .env.
+    SESAME_API_ENABLED = os.getenv('SESAME_API_ENABLED', 'false').lower() in ('true', '1', 'yes')
+    SESAME_API_TOKEN = os.getenv('SESAME_API_TOKEN', '')
 
     # Repertoire ou sont deposes les mails recap de backup (.eml/.txt/.html).
     # Sentinelle le scanne automatiquement. Laisser vide pour desactiver.
