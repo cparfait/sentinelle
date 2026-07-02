@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
-from app.models import AccessReview, ReviewHistory, Asset
+from app.models import AccessReview, ReviewHistory
 from app.forms_util import parse_date, parse_int, status_rank
 from app.decorators import require_edit, require_delete, view_guard
 
@@ -125,5 +125,6 @@ def delete(id):
 
 
 def _app_assets():
-    """Revues de droits : seulement les actifs de type application."""
-    return Asset.query.filter_by(is_active=True, asset_type='application').order_by(Asset.name).all()
+    """Revues de droits : suggestions issues de l'inventaire Logiciels métiers."""
+    from app.models import Software
+    return Software.query.filter_by(is_active=True).order_by(Software.name).all()

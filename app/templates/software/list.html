@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Logiciels métiers - Sentinelle{% endblock %}
+{% from '_macros.html' import status_badge %}
+
+{% block content %}
+{% with active='software' %}{% include '_inventory_nav.html' %}{% endwith %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-window-stack me-2"></i>Logiciels métiers</h4>
+        <small class="text-muted">Applications métiers, hébergement, éditeur et mises à jour — {{ total }} logiciel(s)</small>
+    </div>
+    {% if current_user.can_edit('inventory') %}
+    <a href="{{ url_for('software.create') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Ajouter un logiciel
+    </a>
+    {% endif %}
+</div>
+
+{% include '_list_search.html' %}
+
+<div class="data-card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Logiciel</th>
+                    <th>Éditeur</th>
+                    <th>Version</th>
+                    <th>Serveurs</th>
+                    <th>Hébergement</th>
+                    <th>MAJ</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in items %}
+                <tr>
+                    <td><a href="{{ url_for('software.detail', id=s.id) }}" class="fw-medium text-decoration-none">{{ s.name }}</a></td>
+                    <td class="small">{% if s.supplier %}<a href="{{ url_for('suppliers.detail', id=s.supplier_id) }}" class="text-decoration-none">{{ s.supplier.name }}</a>{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                    <td class="small">{{ s.version or '-' }}</td>
+                    <td class="small">
+                        {% if s.is_saas %}<span class="text-muted">—</span>
+                        {% else %}{{ s.equipments|length }}{% endif %}
+                    </td>
+                    <td>{% if s.is_saas %}<span class="badge bg-info-subtle text-info">SaaS</span>{% else %}<span class="badge bg-light text-dark border">Interne</span>{% endif %}</td>
+                    <td>{{ status_badge(s.computed_status()) }}</td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            {% if current_user.can_edit('inventory') %}
+                            <a href="{{ url_for('software.edit', id=s.id) }}" class="btn btn-sm btn-outline-secondary" title="Modifier" aria-label="Modifier"><i class="bi bi-pencil"></i></a>
+                            {% endif %}
+                            {% if current_user.can_delete('inventory') %}
+                            <form method="POST" action="{{ url_for('software.delete', id=s.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer" aria-label="Supprimer" data-confirm="Supprimer ce logiciel ?"><i class="bi bi-trash"></i></button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">
+                        <i class="bi bi-window-stack" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">Aucun logiciel.
+                            {% if current_user.can_edit('inventory') %}
+                            <a href="{{ url_for('software.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a>
+                            {% endif %}
+                        </p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include '_pagination.html' %}
+{% endblock %}

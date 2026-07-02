@@ -36,16 +36,19 @@ def assets():
     err = _sesame_auth_error()
     if err is not None:
         return err
-    from app.models import Asset
-    q = Asset.query.filter_by(is_active=True)
+    from app.models import Software
+    # L'inventaire Logiciels métiers EST le catalogue d'applications exposé à
+    # Sesame. Le filtre `type` reste accepté (compat) : seul 'application' (ou
+    # absent) renvoie des données.
     atype = request.args.get('type')
-    if atype:
-        q = q.filter_by(asset_type=atype)
-    rows = q.order_by(Asset.name.asc()).all()
+    if atype and atype != 'application':
+        rows = []
+    else:
+        rows = Software.query.filter_by(is_active=True).order_by(Software.name.asc()).all()
     return jsonify([
-        {'id': a.id, 'name': a.name, 'description': a.description or '',
-         'is_active': bool(a.is_active)}
-        for a in rows
+        {'id': s.id, 'name': s.name, 'description': s.description or '',
+         'is_active': bool(s.is_active)}
+        for s in rows
     ])
 
 

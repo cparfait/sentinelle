@@ -535,6 +535,8 @@ class SystemUpdate(db.Model):
     # Equipement de l'inventaire qui heberge cette application (vue 360°), optionnel.
     equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'), index=True)
     equipment = db.relationship('Equipment', backref=db.backref('system_updates', lazy='dynamic'))
+    # Logiciel metier concerne par cette MAJ (inventaire Logiciels), optionnel.
+    software_id = db.Column(db.Integer, db.ForeignKey('software.id'), index=True)
     last_update = db.Column(db.Date)
     updater_type = db.Column(db.String(20), default='interne')  # interne / prestataire
     updated_by = db.Column(db.String(128))  # nom de la personne ayant fait la MaJ
@@ -851,6 +853,51 @@ class ContractHistory(db.Model):
     comment = db.Column(db.Text)
     performed_by = db.Column(db.String(64))
     performed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+# Serveur(s) sur lesquels un logiciel est installe (relation N:N).
+software_equipment = db.Table(
+    'software_equipment',
+    db.Column('software_id', db.Integer, db.ForeignKey('software.id'), primary_key=True),
+    db.Column('equipment_id', db.Integer, db.ForeignKey('equipment.id'), primary_key=True),
+)
+
+
+class Software(db.Model):
+    """Logiciel metier inventorie : editeur (fournisseur), serveur(s)
+    d'installation, hebergement SaaS, contrat et suivi des mises a jour.
+    Remplace l'ancien « catalogue applications » des Preferences."""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=False)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), index=True)  # editeur/fournisseur
+    supplier = db.relationship('Supplier', backref=db.backref('software', lazy='dynamic'))
+    contract_id = db.Column(db.Integer, db.ForeignKey('contract.id'), index=True)
+    contract = db.relationship('Contract', backref=db.backref('software', lazy='dynamic'))
+    version = db.Column(db.String(64))
+    is_saas = db.Column(db.Boolean, default=False)  # heberge hors parc (Cloud)
+    url = db.Column(db.String(256))
+    criticality = db.Column(db.Integer)             # 1-4
+    responsible = db.Column(db.String(128))
+    description = db.Column(db.Text)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                           onupdate=lambda: datetime.now(timezone.utc))
+    # Serveur(s) d'installation (M:N). Backref Equipment.software_list.
+    equipments = db.relationship('Equipment', secondary=software_equipment,
+                                 backref=db.backref('software_list', lazy='dynamic'))
+    # Mises a jour rattachees (via SystemUpdate.software_id) : backref .software.
+    system_updates = db.relationship('SystemUpdate', backref='software', lazy='dynamic')
+
+    def computed_status(self):
+        """Statut agrege sur les MAJ liees : rouge si critique, orange si une
+        MAJ est disponible, vert sinon."""
+        updates = self.system_updates.filter_by(is_active=True).all()
+        if any(u.status == 'critical' for u in updates):
+            return 'danger'
+        if any(u.status == 'update_available' for u in updates):
+            return 'warning'
+        return 'success'
 
 
 class SchedulerRun(db.Model):

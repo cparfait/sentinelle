@@ -183,6 +183,23 @@
         </div>
         {% endif %}
 
+        {% set installed = item.software_list.filter_by(is_active=True).all() %}
+        {% if installed %}
+        <div class="data-card p-4 mb-3">
+            <h6 class="fw-bold mb-3"><i class="bi bi-window-stack me-2 text-primary"></i>Logiciels installés</h6>
+            <ul class="list-unstyled mb-0">
+                {% for s in installed %}
+                <li class="mb-1">
+                    <span class="badge-status badge-{{ s.computed_status() }} me-1"></span>
+                    <a href="{{ url_for('software.detail', id=s.id) }}">{{ s.name }}</a>
+                    {% if s.version %}<small class="text-muted">v{{ s.version }}</small>{% endif %}
+                    {% if s.is_saas %}<small class="text-muted">(SaaS)</small>{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
         {% if current_user.can_delete('inventory') %}
         <div class="data-card p-4">
             <form method="POST" action="{{ url_for('inventory.delete', id=item.id) }}">

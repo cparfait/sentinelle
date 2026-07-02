@@ -174,6 +174,9 @@ def create_app(config_class=Config):
     from app.inventory import bp as inventory_bp
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
 
+    from app.software import bp as software_bp
+    app.register_blueprint(software_bp, url_prefix='/inventory/logiciels')
+
     from app.contracts import bp as contracts_bp
     app.register_blueprint(contracts_bp, url_prefix='/contracts')
 
@@ -268,6 +271,14 @@ def _migrate_data():
         "INSERT OR IGNORE INTO contract_equipment (contract_id, equipment_id) "
         "SELECT id, equipment_id FROM contract "
         "WHERE equipment_id IS NOT NULL"))
+    # Catalogue « applications » des Preferences -> inventaire Logiciels.
+    # Migration unique et idempotente (par nom). Les Asset restent en base
+    # (dormants) ; c'est l'ecran Preferences qui est retire.
+    db.session.execute(text(
+        "INSERT INTO software (name, description, is_active, is_saas, created_at, updated_at) "
+        "SELECT a.name, a.description, 1, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP "
+        "FROM asset a WHERE a.asset_type='application' AND a.is_active=1 "
+        "AND NOT EXISTS (SELECT 1 FROM software s WHERE s.name = a.name)"))
     db.session.commit()
 
 

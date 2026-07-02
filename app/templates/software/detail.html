@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}{{ item.name }} - Sentinelle{% endblock %}
+{% from '_macros.html' import status_badge %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-window-stack me-2"></i>{{ item.name }}
+            {% if item.is_saas %}<span class="badge bg-info-subtle text-info ms-1">SaaS</span>{% endif %}</h4>
+        <small class="text-muted">{% if item.supplier %}{{ item.supplier.name }}{% else %}Éditeur inconnu{% endif %}{% if item.version %} — v{{ item.version }}{% endif %}</small>
+    </div>
+    <div class="d-flex gap-2">
+        {% if current_user.can_edit('inventory') %}
+        <a href="{{ url_for('software.edit', id=item.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil me-1"></i> Modifier
+        </a>
+        {% endif %}
+        <a href="{{ url_for('software.list') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+        </a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="data-card p-4 mb-3">
+            <div class="row">
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Statut MAJ</small>
+                    {{ status_badge(item.computed_status()) }}
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Hébergement</small>
+                    <span class="fw-medium">{{ 'SaaS (hors parc)' if item.is_saas else 'Interne' }}</span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Version</small>
+                    <span class="fw-medium">{{ item.version or '-' }}</span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Criticité</small>
+                    <span class="fw-medium">{{ item.criticality or '-' }}</span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Responsable</small>
+                    <span class="fw-medium">{{ item.responsible or '-' }}</span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Contrat / licence</small>
+                    {% if item.contract %}<a href="{{ url_for('contracts.detail', id=item.contract_id) }}">{{ item.contract.name }}</a>{% else %}<span class="text-muted">-</span>{% endif %}
+                </div>
+                {% if item.url %}
+                <div class="col-12 mb-3">
+                    <small class="text-muted d-block">URL / accès</small>
+                    <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.url }}</a>
+                </div>
+                {% endif %}
+                <div class="col-12">
+                    <small class="text-muted d-block mb-1">Serveur(s) d'installation</small>
+                    {% if item.is_saas %}
+                    <span class="text-muted">Hébergé hors parc (SaaS).</span>
+                    {% else %}
+                        {% for e in item.equipments %}
+                        <a href="{{ url_for('inventory.detail', id=e.id) }}" class="badge bg-light text-dark border text-decoration-none me-1 mb-1">
+                            <i class="bi bi-hdd-network me-1"></i>{{ e.name }}</a>
+                        {% else %}
+                        <span class="text-muted">Aucun serveur renseigné.</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+            {% if item.description %}
+            <div class="mt-2 pt-2 border-top">
+                <small class="text-muted d-block">Description</small>
+                <p class="mb-0">{{ item.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="data-card">
+            <div class="card-header-custom">
+                <h6 class="fw-bold mb-0"><i class="bi bi-arrow-up-circle me-2 text-primary"></i>Mises à jour liées
+                    <span class="badge bg-secondary ms-1">{{ updates|length }}</span></h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Élément</th><th>Version</th><th>Statut</th><th>Dernière MAJ</th></tr></thead>
+                    <tbody>
+                        {% for u in updates %}
+                        <tr>
+                            <td><a href="{{ url_for('updates.detail', id=u.id) }}" class="text-decoration-none">{{ u.name }}</a></td>
+                            <td class="small">{{ u.current_version or '-' }}{% if u.latest_version and u.latest_version != u.current_version %} → {{ u.latest_version }}{% endif %}</td>
+                            <td>{{ status_badge(u.status_color()) }}</td>
+                            <td class="small text-nowrap">{{ u.last_update.strftime('%d/%m/%Y') if u.last_update else '-' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center py-3 text-muted">Aucune mise à jour rattachée</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        {% if item.supplier %}
+        <div class="data-card p-4 mb-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-building me-2 text-info"></i>Éditeur</h6>
+            <div class="fw-medium mb-1"><a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}">{{ item.supplier.name }}</a></div>
+            <ul class="list-unstyled small mb-0">
+                {% if item.supplier.support_phone or item.supplier.phone %}
+                <li><i class="bi bi-telephone me-1"></i>{{ item.supplier.support_phone or item.supplier.phone }}</li>{% endif %}
+                {% if item.supplier.email %}<li><i class="bi bi-envelope me-1"></i>{{ item.supplier.email }}</li>{% endif %}
+            </ul>
+        </div>
+        {% endif %}
+        {% if current_user.can_delete('inventory') %}
+        <div class="data-card p-4">
+            <form method="POST" action="{{ url_for('software.delete', id=item.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100"
+                        data-confirm="Supprimer ce logiciel ?">
+                    <i class="bi bi-trash me-1"></i> Supprimer
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -4,13 +4,12 @@ Contrat attendu par Sesame : tableau JSON [{id, name, description, is_active}]
 trié par nom, auth `Authorization: Bearer <clé>`, filtre `?type=`.
 """
 from app import db
-from app.models import Asset
+from app.models import Software
 
 
 def _seed_assets():
-    db.session.add(Asset(name='Zabbix', asset_type='application', description='Supervision'))
-    db.session.add(Asset(name='GLPI', asset_type='application', description='Parc'))
-    db.session.add(Asset(name='Divers X', asset_type='divers', description='Autre'))
+    db.session.add(Software(name='Zabbix', description='Supervision'))
+    db.session.add(Software(name='GLPI', description='Parc'))
     db.session.commit()
 
 
@@ -44,10 +43,19 @@ def test_liste_applications_triee(app):
                               headers={'Authorization': 'Bearer bonne-cle'})
     assert r.status_code == 200
     data = r.get_json()
-    assert [a['name'] for a in data] == ['GLPI', 'Zabbix']   # trié, 'divers' exclu
+    assert [a['name'] for a in data] == ['GLPI', 'Zabbix']   # trié par nom
     a = data[0]
     assert set(a.keys()) == {'id', 'name', 'description', 'is_active'}
     assert a['is_active'] is True
+
+
+def test_type_inconnu_renvoie_vide(app):
+    _seed_assets()
+    app.config['SESAME_API_ENABLED'] = True
+    app.config['SESAME_API_TOKEN'] = 'bonne-cle'
+    r = app.test_client().get('/api/assets?type=system',
+                              headers={'Authorization': 'Bearer bonne-cle'})
+    assert r.status_code == 200 and r.get_json() == []
 
 
 def test_sans_filtre_type_renvoie_tout(app):
@@ -56,4 +64,4 @@ def test_sans_filtre_type_renvoie_tout(app):
     app.config['SESAME_API_TOKEN'] = 'bonne-cle'
     r = app.test_client().get('/api/assets', headers={'Authorization': 'Bearer bonne-cle'})
     assert r.status_code == 200
-    assert {a['name'] for a in r.get_json()} == {'GLPI', 'Zabbix', 'Divers X'}
+    assert {a['name'] for a in r.get_json()} == {'GLPI', 'Zabbix'}

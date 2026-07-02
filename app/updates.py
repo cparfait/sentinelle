@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
-from app.models import SystemUpdate, UpdateHistory, Asset
+from app.models import SystemUpdate, UpdateHistory
 from app.forms_util import parse_date, status_rank
 from app.decorators import require_edit, require_delete, view_guard
 from app.inventory import active_equipments as _active_equipments
@@ -159,4 +159,13 @@ def delete(id):
 
 
 def _active_assets():
-    return Asset.query.filter_by(is_active=True).order_by(Asset.name).all()
+    """Suggestions pour le champ « nom » : logiciels métiers (type application)
+    et équipements de l'inventaire (type système). Remplace l'ancien catalogue
+    Asset des Préférences."""
+    from types import SimpleNamespace
+    from app.models import Software, Equipment
+    apps = [SimpleNamespace(name=s.name, asset_type='application')
+            for s in Software.query.filter_by(is_active=True).order_by(Software.name).all()]
+    systems = [SimpleNamespace(name=e.name, asset_type='system')
+               for e in Equipment.query.filter_by(is_active=True).order_by(Equipment.name).all()]
+    return apps + systems

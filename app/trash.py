@@ -3,7 +3,8 @@ from app import db
 from app.models import (Account, AccountHistory, Certificate, CertificateHistory,
                         Domain, DomainHistory, Backup, BackupHistory, TestTask,
                         TestHistory, AccessReview, ReviewHistory, SystemUpdate,
-                        UpdateHistory, Equipment, Supplier, Contract, ContractHistory)
+                        UpdateHistory, Equipment, Supplier, Contract, ContractHistory,
+                        Software)
 
 SPECS = {
     'account': {'model': Account, 'cat': 'accounts', 'hist': AccountHistory,
@@ -30,6 +31,8 @@ SPECS = {
                  'fk': 'contract_id', 'label': 'Contrats', 'name': lambda o: o.name},
     'supplier': {'model': Supplier, 'cat': 'contracts', 'hist': None,
                  'fk': None, 'label': 'Fournisseurs', 'name': lambda o: o.name},
+    'software': {'model': Software, 'cat': 'inventory', 'hist': None,
+                 'fk': None, 'label': 'Logiciels', 'name': lambda o: o.name},
 }
 
 
@@ -60,10 +63,15 @@ def _purge_obj(etype, obj):
         # lies (vue 360°) pour ne pas laisser d'equipment_id orphelin.
         for model in (Certificate, Backup, SystemUpdate, Contract):
             model.query.filter_by(equipment_id=obj.id).update({'equipment_id': None})
-        # Liens N:N contrat<->equipement : supprimer les lignes d'association.
-        from app.models import contract_equipment
+        # Liens N:N (contrat/logiciel <-> equipement) : supprimer les associations.
+        from app.models import contract_equipment, software_equipment
         db.session.execute(contract_equipment.delete().where(
             contract_equipment.c.equipment_id == obj.id))
+        db.session.execute(software_equipment.delete().where(
+            software_equipment.c.equipment_id == obj.id))
+    if etype == 'software':
+        # Detacher les MAJ rattachees a ce logiciel avant suppression definitive.
+        SystemUpdate.query.filter_by(software_id=obj.id).update({'software_id': None})
     if etype == 'supplier':
         # Meme principe : detacher les references avant suppression definitive.
         Equipment.query.filter_by(supplier_id=obj.id).update({'supplier_id': None})

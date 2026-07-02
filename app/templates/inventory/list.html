@@ -22,6 +22,7 @@
 {% set default_cols = ['kind', 'environment', 'criticality', 'os', 'ip_address', 'warranty_end'] %}
 
 {% block content %}
+{% with active='material' %}{% include '_inventory_nav.html' %}{% endwith %}
 <div class="mb-3">
     <h4 class="fw-bold mb-0"><i class="bi bi-hdd-stack me-2"></i>Inventaire</h4>
     <small class="text-muted">VM, serveurs physiques et NAS — {{ total }} équipement(s)</small>

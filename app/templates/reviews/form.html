@@ -19,10 +19,10 @@
                                value="{{ review.application if review else '' }}" placeholder="ex: SIRH, Finances, GED...">
                         {% if assets %}
                         <select id="reviewPicker" class="form-select form-select-sm mt-1">
-                            <option value="">— Choisir dans le catalogue —</option>
+                            <option value="">— Choisir un logiciel —</option>
                             {% for a in assets %}<option value="{{ a.name }}">{{ a.name }}</option>{% endfor %}
                         </select>
-                        <small class="text-muted">Catalogue géré dans Préférences.</small>
+                        <small class="text-muted">Issu de l'inventaire <a href="{{ url_for('software.list') }}">Logiciels</a>.</small>
                         {% endif %}
                     </div>
                     <div class="col-md-6 mb-3">

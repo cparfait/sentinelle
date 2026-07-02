@@ -549,72 +549,11 @@ def preferences():
             except Exception as e:
                 flash(f'Erreur envoi recap: {str(e)}', 'danger')
 
-        elif action == 'add_asset':
-            from app.models import Asset
-            from app.app_settings import get_asset_type_values
-            name = request.form.get('asset_name', '').strip()
-            atype = request.form.get('asset_type', 'application')
-            if atype not in get_asset_type_values():
-                atype = 'application'
-            if not name:
-                flash('Le nom est obligatoire.', 'danger')
-            else:
-                db.session.add(Asset(name=name, asset_type=atype,
-                                     description=request.form.get('asset_description', '').strip() or None))
-                db.session.commit()
-                audit_record('ajout catalogue', detail=f'{name} ({atype})', category='preferences')
-                flash('Élément ajouté au catalogue', 'success')
-
-        elif action == 'edit_asset':
-            from app.models import Asset
-            a = db.session.get(Asset, request.form.get('asset_id', type=int))
-            if a:
-                name = request.form.get('asset_name', '').strip()
-                atype = request.form.get('asset_type', a.asset_type)
-                from app.app_settings import get_asset_type_values
-                if atype not in get_asset_type_values():
-                    atype = a.asset_type
-                if not name:
-                    flash('Le nom est obligatoire.', 'danger')
-                else:
-                    a.name = name
-                    a.asset_type = atype
-                    a.description = request.form.get('asset_description', '').strip() or None
-                    db.session.commit()
-                    audit_record('modification catalogue', detail=f'{name} ({atype})', category='preferences')
-                    flash('Élément du catalogue modifié', 'success')
-
-        elif action == 'delete_asset':
-            from app.models import Asset
-            a = db.session.get(Asset, request.form.get('asset_id', type=int))
-            if a:
-                name = a.name
-                db.session.delete(a)
-                db.session.commit()
-                audit_record('suppression catalogue', detail=name, category='preferences')
-                flash('Élément retiré du catalogue', 'success')
-
         elif action == 'save_conformity':
             from app.app_settings import set_conformity_categories
             set_conformity_categories(request.form.getlist('conformity'))
             audit_record('config conformite', detail='Conformite globale', category='preferences')
             flash('Catégories de la conformité globale enregistrées', 'success')
-
-        elif action == 'add_asset_type':
-            from app.app_settings import add_asset_type
-            label = request.form.get('type_label', '').strip()
-            if add_asset_type(label):
-                audit_record('ajout type catalogue', detail=label, category='preferences')
-                flash(f'Type « {label} » ajouté', 'success')
-            else:
-                flash('Type vide ou déjà existant.', 'warning')
-
-        elif action == 'delete_asset_type':
-            from app.app_settings import remove_asset_type
-            label = request.form.get('type_label', '').strip()
-            if remove_asset_type(label):
-                audit_record('suppression type catalogue', detail=label, category='preferences')
-                flash(f'Type « {label} » retiré', 'success')
 
         elif action == 'test_ldap':
             from app.ldap_auth import test_ldap_connection
@@ -701,14 +640,10 @@ def preferences():
     from app.db_backup import list_backups
     db_backups = list_backups(current_app)
 
-    from app.models import Asset, ASSET_TYPE_LABELS, CONFORMITY_CATEGORIES, CATEGORY_LABELS
-    assets = Asset.query.order_by(Asset.asset_type, Asset.name).all()
+    from app.models import CONFORMITY_CATEGORIES, CATEGORY_LABELS
 
-    from app.app_settings import (get_conformity_categories, get_asset_types,
-                                  _BUILTIN_ASSET_TYPES)
+    from app.app_settings import get_conformity_categories
     conformity_included = set(get_conformity_categories())
-    asset_types = get_asset_types()
-    builtin_type_values = {v for v, _ in _BUILTIN_ASSET_TYPES}
 
     from app.models import Webhook, WEBHOOK_CHANNELS
     category_webhooks = Webhook.query.order_by(Webhook.category, Webhook.channel).all()
@@ -752,7 +687,6 @@ def preferences():
         'recipients': bool(alert_recipients.strip()),
         'notify': bool(webhooks['teams'] or webhooks['slack'] or webhooks['discord']
                        or category_webhooks),
-        'assets': bool(assets),
         'ldap': bool(ldap_config['enabled']),
         'conformity': db.session.get(Setting, 'conformity_categories') is not None,
         'thresholds': any(tuple(thresholds[k]) != _thr_defaults[k] for k in _thr_defaults),
@@ -776,8 +710,6 @@ def preferences():
                            sesame_endpoint=(current_app.config.get('APP_BASE_URL', '').rstrip('/') + '/api/assets?type=application'),
                            db_backups=db_backups, thresholds=thresholds,
                            ldap_config=ldap_config, webhooks=webhooks,
-                           assets=assets, asset_type_labels=ASSET_TYPE_LABELS,
-                           asset_types=asset_types, builtin_type_values=builtin_type_values,
                            conformity_categories=CONFORMITY_CATEGORIES,
                            conformity_labels=CATEGORY_LABELS,
                            conformity_included=conformity_included,
