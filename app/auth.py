@@ -695,6 +695,11 @@ def preferences():
         'db': bool(db_backups),
     }
 
+    # Clé Sesame tronquée (jamais en clair) pour identifier la clé active.
+    _sesame_tok = current_app.config.get('SESAME_API_TOKEN') or ''
+    sesame_key_masked = (_sesame_tok[:6] + '…' + _sesame_tok[-4:]) if len(_sesame_tok) >= 12 \
+        else ('•' * len(_sesame_tok) if _sesame_tok else '')
+
     return render_template('auth/preferences.html', mail_method=mail_method,
                            configured=configured,
                            mail_configured=mail_configured, o365_config=o365_config,
@@ -709,6 +714,7 @@ def preferences():
                            ct_monitoring=current_app.config.get('CT_MONITORING', True),
                            sesame_enabled=current_app.config.get('SESAME_API_ENABLED', False),
                            sesame_key_set=bool(current_app.config.get('SESAME_API_TOKEN')),
+                           sesame_key_masked=sesame_key_masked,
                            sesame_new_key=session.pop('sesame_new_key', None),
                            sesame_endpoint=(current_app.config.get('APP_BASE_URL', '').rstrip('/') + '/api/assets?type=application'),
                            db_backups=db_backups, thresholds=thresholds,

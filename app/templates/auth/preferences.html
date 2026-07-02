@@ -568,8 +568,8 @@
                         <div class="border-top pt-3">
                             <h6 class="fw-bold mb-1"><i class="bi bi-key me-2 text-primary"></i>Clé API</h6>
                             <p class="text-muted small mb-2">
-                                Statut : {% if sesame_key_set %}<span class="text-success">une clé est définie</span>{% else %}<span class="text-danger">aucune clé</span>{% endif %}.
-                                La clé n'est affichée qu'une seule fois, à sa génération. La régénérer invalide l'ancienne.
+                                Statut : {% if sesame_key_set %}<span class="text-success">clé active</span> <code>{{ sesame_key_masked }}</code>{% else %}<span class="text-danger">aucune clé</span>{% endif %}.
+                                La clé complète n'est affichée qu'une seule fois, à sa génération (ici tronquée). La régénérer invalide l'ancienne.
                             </p>
                             <form method="POST" action="{{ url_for('auth.preferences') }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
