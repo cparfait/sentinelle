@@ -573,7 +573,10 @@
                             </p>
                             <form method="POST" action="{{ url_for('auth.preferences') }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" name="action" value="sesame_generate_key" class="btn btn-sm btn-outline-primary"
+                                {# action dans un champ cache : le modal de confirmation resoumet via
+                                   form.submit(), qui n'inclut PAS la valeur du bouton clique. #}
+                                <input type="hidden" name="action" value="sesame_generate_key">
+                                <button type="submit" class="btn btn-sm btn-outline-primary"
                                         data-confirm="{% if sesame_key_set %}Régénérer la clé ? L'ancienne cessera de fonctionner immédiatement.{% else %}Générer une clé API pour Sesame ?{% endif %}">
                                     <i class="bi bi-arrow-repeat me-1"></i> {{ 'Régénérer la clé' if sesame_key_set else 'Générer une clé' }}
                                 </button>
