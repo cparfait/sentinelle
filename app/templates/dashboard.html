@@ -153,15 +153,15 @@
                             <input type="text" name="comment" form="qc-{{ backup.id }}" class="form-control form-control-sm" placeholder="Commentaire..." style="min-width: 150px;">
                         </td>
                         <td>
-                            <div class="d-flex gap-1">
-                                <button type="submit" form="qc-{{ backup.id }}" name="status" value="ok" class="btn btn-sm btn-success" title="OK" aria-label="OK">
-                                    <i class="bi bi-check-lg"></i>
+                            <div class="d-flex gap-2">
+                                <button type="submit" form="qc-{{ backup.id }}" name="status" value="ok" class="btn btn-success fw-medium" title="Valider OK">
+                                    <i class="bi bi-check-lg me-1"></i>OK
                                 </button>
-                                <button type="submit" form="qc-{{ backup.id }}" name="status" value="warning" class="btn btn-sm btn-warning" title="Warning" aria-label="Warning">
-                                    <i class="bi bi-exclamation-triangle"></i>
+                                <button type="submit" form="qc-{{ backup.id }}" name="status" value="warning" class="btn btn-warning fw-medium" title="Marquer en avertissement">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>Attention
                                 </button>
-                                <button type="submit" form="qc-{{ backup.id }}" name="status" value="failed" class="btn btn-sm btn-danger" title="Echoue" aria-label="Echoue">
-                                    <i class="bi bi-x-lg"></i>
+                                <button type="submit" form="qc-{{ backup.id }}" name="status" value="failed" class="btn btn-danger fw-medium" title="Marquer en échec">
+                                    <i class="bi bi-x-lg me-1"></i>Échec
                                 </button>
                             </div>
                         </td>
@@ -188,9 +188,16 @@
             </div>
             <div class="p-3">
                 {% if urgent_items %}
+                    {% set cat_labels = {'account': 'Comptes', 'certificate': 'Certificats', 'domain': 'Domaines', 'backup': 'Backups', 'test': 'Tests', 'review': 'Revues', 'update': 'MàJ', 'contract': 'Contrats', 'equipment': 'Inventaire'} %}
+                    <div id="urgentFilters" class="d-flex flex-wrap gap-1 mb-2">
+                        <button type="button" class="btn btn-sm btn-primary urgent-filter active" data-cat="">Tous <span class="badge bg-light text-dark ms-1">{{ urgent_items|length }}</span></button>
+                        {% for cat in urgent_items | map(attribute='type') | unique %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary urgent-filter" data-cat="{{ cat }}">{{ cat_labels.get(cat, cat) }}</button>
+                        {% endfor %}
+                    </div>
                     <div id="urgentList">
                     {% for item in urgent_items %}
-                    <a href="{{ item.url }}" class="text-decoration-none urgent-row">
+                    <a href="{{ item.url }}" class="text-decoration-none urgent-row" data-cat="{{ item.type }}">
                         <div class="urgent-item urgent-{{ item.status }}">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
@@ -211,6 +218,7 @@
                     </a>
                     {% endfor %}
                     </div>
+                    <div id="urgentEmpty" class="text-center py-3 text-muted d-none">Aucun élément dans cette catégorie.</div>
                     <div id="urgentPager" class="d-flex justify-content-between align-items-center mt-2 d-none">
                         <small class="text-muted" id="urgentInfo"></small>
                         <div class="btn-group btn-group-sm" role="group" aria-label="Pagination des éléments">
@@ -223,23 +231,43 @@
                         var rows = Array.prototype.slice.call(document.querySelectorAll('#urgentList .urgent-row'));
                         var pager = document.getElementById('urgentPager');
                         if (!rows.length || !pager) return;
-                        var pageSize = 8, page = 0;
-                        var pages = Math.ceil(rows.length / pageSize);
-                        if (pages <= 1) return;   // une seule page : pas de pagination
-                        pager.classList.remove('d-none');
+                        var pageSize = 8, page = 0, cat = '';
                         var info = document.getElementById('urgentInfo');
                         var prev = document.getElementById('urgentPrev');
                         var next = document.getElementById('urgentNext');
+                        var empty = document.getElementById('urgentEmpty');
+                        var filters = document.querySelectorAll('.urgent-filter');
+                        function match(el) { return !cat || el.getAttribute('data-cat') === cat; }
                         function render() {
-                            rows.forEach(function (el, i) {
-                                el.style.display = (i >= page * pageSize && i < (page + 1) * pageSize) ? '' : 'none';
-                            });
-                            info.textContent = 'Page ' + (page + 1) + ' / ' + pages + ' — ' + rows.length + ' élément(s)';
-                            prev.disabled = (page === 0);
-                            next.disabled = (page >= pages - 1);
+                            var fs = rows.filter(match);
+                            var pages = Math.max(1, Math.ceil(fs.length / pageSize));
+                            if (page >= pages) page = pages - 1;
+                            rows.forEach(function (el) { el.style.display = 'none'; });
+                            fs.slice(page * pageSize, (page + 1) * pageSize).forEach(function (el) { el.style.display = ''; });
+                            empty.classList.toggle('d-none', fs.length > 0);
+                            if (fs.length > pageSize) {
+                                pager.classList.remove('d-none');
+                                info.textContent = 'Page ' + (page + 1) + ' / ' + pages + ' — ' + fs.length + ' élément(s)';
+                                prev.disabled = (page === 0);
+                                next.disabled = (page >= pages - 1);
+                            } else {
+                                pager.classList.add('d-none');
+                            }
                         }
                         prev.addEventListener('click', function () { if (page > 0) { page--; render(); } });
-                        next.addEventListener('click', function () { if (page < pages - 1) { page++; render(); } });
+                        next.addEventListener('click', function () { page++; render(); });
+                        filters.forEach(function (b) {
+                            b.addEventListener('click', function () {
+                                cat = b.getAttribute('data-cat'); page = 0;
+                                filters.forEach(function (x) {
+                                    x.classList.remove('btn-primary', 'active');
+                                    x.classList.add('btn-outline-secondary');
+                                });
+                                b.classList.add('btn-primary', 'active');
+                                b.classList.remove('btn-outline-secondary');
+                                render();
+                            });
+                        });
                         render();
                     })();
                     </script>
