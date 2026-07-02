@@ -544,12 +544,12 @@
             {# ===================== INTÉGRATION / API SESAME ===================== #}
             <div class="accordion-item" style="order:10;">
                 <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secSesame" aria-expanded="false" aria-controls="secSesame">
+                    <button class="accordion-button {% if not sesame_new_key %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#secSesame" aria-expanded="{{ 'true' if sesame_new_key else 'false' }}" aria-controls="secSesame">
                         <i class="bi bi-plug me-2"></i>Intégration / API Sesame
                         {% if sesame_enabled %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Activée</span>{% else %}<span class="badge bg-secondary ms-2">Désactivée</span>{% endif %}
                     </button>
                 </h2>
-                <div id="secSesame" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
+                <div id="secSesame" class="accordion-collapse collapse {% if sesame_new_key %}show{% endif %}" data-bs-parent="#prefsAccordion">
                     <div class="accordion-body">
                         <p class="text-muted small mb-2">Expose la liste des applications à l'outil <strong>Sesame</strong> pour éviter la double saisie. Sesame l'importe via une requête authentifiée par clé.</p>
                         <form method="POST" action="{{ url_for('auth.preferences') }}" class="mb-3">
@@ -591,21 +591,21 @@
                             </div>
                             <script>
                             (function () {
-                                var box = document.getElementById('sesameKeyBox');
-                                if (!box) return;
-                                // Ouvre la section et amène la clé à l'écran.
-                                var sec = document.getElementById('secSesame');
-                                if (sec && window.bootstrap) { bootstrap.Collapse.getOrCreateInstance(sec, {toggle: false}).show(); }
-                                setTimeout(function () { box.scrollIntoView({behavior: 'smooth', block: 'center'}); }, 150);
                                 var btn = document.getElementById('sesameKeyCopy');
                                 var inp = document.getElementById('sesameKeyValue');
-                                btn.addEventListener('click', function () {
-                                    inp.select(); inp.setSelectionRange(0, 99999);
-                                    var ok = function () { btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Copié'; };
-                                    if (navigator.clipboard && navigator.clipboard.writeText) {
-                                        navigator.clipboard.writeText(inp.value).then(ok, function () { try { document.execCommand('copy'); ok(); } catch (e) {} });
-                                    } else { try { document.execCommand('copy'); ok(); } catch (e) {} }
-                                });
+                                if (btn && inp) {
+                                    btn.addEventListener('click', function () {
+                                        inp.select(); inp.setSelectionRange(0, 99999);
+                                        var ok = function () { btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Copié'; };
+                                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                                            navigator.clipboard.writeText(inp.value).then(ok, function () { try { document.execCommand('copy'); ok(); } catch (e) {} });
+                                        } else { try { document.execCommand('copy'); ok(); } catch (e) {} }
+                                    });
+                                }
+                                // La section est déjà dépliée côté serveur : on amène juste la clé à l'écran
+                                // une fois la page prête (après le chargement de Bootstrap).
+                                function focus() { var box = document.getElementById('sesameKeyBox'); if (box) box.scrollIntoView({behavior: 'smooth', block: 'center'}); }
+                                if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', focus); } else { focus(); }
                             })();
                             </script>
                             {% endif %}
