@@ -26,6 +26,7 @@ def _fill(sw, f):
     sw.contract_id = parse_int(f.get('contract_id'))
     sw.version = (f.get('version', '') or '').strip() or None
     sw.is_saas = f.get('is_saas') == 'on'
+    sw.share_sesame = f.get('share_sesame') == 'on'
     sw.url = (f.get('url', '') or '').strip() or None
     sw.criticality = parse_int(f.get('criticality'))
     sw.responsible = (f.get('responsible', '') or '').strip() or None
@@ -111,4 +112,17 @@ def delete(id):
     db.session.commit()
     audit_record('suppression logiciel', detail=item.name, category='inventory')
     flash('Logiciel supprimé', 'success')
+    return redirect(url_for('software.list'))
+
+
+@bp.route('/<int:id>/toggle-sesame', methods=['POST'])
+@login_required
+@require_edit
+def toggle_sesame(id):
+    """Bascule le partage d'un logiciel via l'API Sesame (depuis la liste)."""
+    item = Software.query.get_or_404(id)
+    item.share_sesame = not item.share_sesame
+    db.session.commit()
+    audit_record('partage Sesame', detail=f'{item.name}={item.share_sesame}', category='inventory')
+    flash(f"« {item.name} » {'partagé avec' if item.share_sesame else 'retiré de'} Sesame.", 'success')
     return redirect(url_for('software.list'))

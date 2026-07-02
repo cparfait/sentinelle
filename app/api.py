@@ -44,7 +44,8 @@ def assets():
     if atype and atype != 'application':
         rows = []
     else:
-        rows = Software.query.filter_by(is_active=True).order_by(Software.name.asc()).all()
+        rows = Software.query.filter_by(is_active=True, share_sesame=True).order_by(
+            Software.name.asc()).all()
     return jsonify([
         {'id': s.id, 'name': s.name, 'description': s.description or '',
          'is_active': bool(s.is_active)}

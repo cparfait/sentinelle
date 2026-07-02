@@ -87,6 +87,14 @@
                     <div class="form-text">Ctrl/Cmd (ou Maj) pour sélectionner plusieurs. Laissez vide pour un logiciel SaaS (hébergé hors parc).</div>
                 </div>
                 <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input type="checkbox" name="share_sesame" class="form-check-input" id="shareSesame"
+                               {{ 'checked' if (item.share_sesame if item else True) }}>
+                        <label class="form-check-label" for="shareSesame">Partagé avec Sesame (exposé via l'API)</label>
+                    </div>
+                    <div class="form-text">Décoché : ce logiciel n'est pas envoyé à Sesame lors de la synchronisation.</div>
+                </div>
+                <div class="mb-3">
                     <label class="form-label fw-medium">Description / Notes</label>
                     <textarea name="description" class="form-control" rows="3"
                               placeholder="Périmètre fonctionnel, dépendances, particularités...">{{ item.description or '' if item else '' }}</textarea>

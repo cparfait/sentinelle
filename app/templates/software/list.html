@@ -29,6 +29,7 @@
                     <th>Serveurs</th>
                     <th>Hébergement</th>
                     <th>MAJ</th>
+                    <th class="text-center" title="Partagé avec Sesame (API)">Sesame</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -44,6 +45,17 @@
                     </td>
                     <td>{% if s.is_saas %}<span class="badge bg-info-subtle text-info">SaaS</span>{% else %}<span class="badge bg-light text-dark border">Interne</span>{% endif %}</td>
                     <td>{{ status_badge(s.computed_status()) }}</td>
+                    <td class="text-center">
+                        <form method="POST" action="{{ url_for('software.toggle_sesame', id=s.id) }}" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <div class="form-check form-switch d-inline-block m-0">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       {{ 'checked' if s.share_sesame }} onchange="this.form.submit()"
+                                       {{ 'disabled' if not current_user.can_edit('inventory') }}
+                                       title="{{ 'Partagé avec Sesame' if s.share_sesame else 'Non partagé' }}">
+                            </div>
+                        </form>
+                    </td>
                     <td>
                         <div class="d-flex gap-1">
                             {% if current_user.can_edit('inventory') %}
@@ -60,7 +72,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" class="text-center py-4 text-muted">
+                    <td colspan="8" class="text-center py-4 text-muted">
                         <i class="bi bi-window-stack" style="font-size: 2rem;"></i>
                         <p class="mt-2 mb-0">Aucun logiciel.
                             {% if current_user.can_edit('inventory') %}

@@ -65,3 +65,15 @@ def test_sans_filtre_type_renvoie_tout(app):
     r = app.test_client().get('/api/assets', headers={'Authorization': 'Bearer bonne-cle'})
     assert r.status_code == 200
     assert {a['name'] for a in r.get_json()} == {'GLPI', 'Zabbix'}
+
+
+def test_logiciel_non_partage_exclu(app):
+    _seed_assets()
+    # Zabbix retiré du partage Sesame -> ne doit plus apparaître dans l'API.
+    Software.query.filter_by(name='Zabbix').first().share_sesame = False
+    db.session.commit()
+    app.config['SESAME_API_ENABLED'] = True
+    app.config['SESAME_API_TOKEN'] = 'bonne-cle'
+    r = app.test_client().get('/api/assets?type=application',
+                              headers={'Authorization': 'Bearer bonne-cle'})
+    assert [a['name'] for a in r.get_json()] == ['GLPI']

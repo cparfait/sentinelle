@@ -279,6 +279,10 @@ def _migrate_data():
         "SELECT a.name, a.description, 1, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP "
         "FROM asset a WHERE a.asset_type='application' AND a.is_active=1 "
         "AND NOT EXISTS (SELECT 1 FROM software s WHERE s.name = a.name)"))
+    # Nouvelle colonne share_sesame : les lignes existantes (NULL apres ALTER)
+    # sont considerees partagees, pour ne pas casser une synchro Sesame en place.
+    db.session.execute(text(
+        "UPDATE software SET share_sesame=1 WHERE share_sesame IS NULL"))
     db.session.commit()
 
 

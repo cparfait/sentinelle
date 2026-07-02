@@ -875,6 +875,7 @@ class Software(db.Model):
     contract = db.relationship('Contract', backref=db.backref('software', lazy='dynamic'))
     version = db.Column(db.String(64))
     is_saas = db.Column(db.Boolean, default=False)  # heberge hors parc (Cloud)
+    share_sesame = db.Column(db.Boolean, default=True)  # expose via l'API Sesame
     url = db.Column(db.String(256))
     criticality = db.Column(db.Integer)             # 1-4
     responsible = db.Column(db.String(128))
