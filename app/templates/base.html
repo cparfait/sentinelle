@@ -14,7 +14,7 @@
        depuis static/vendor/fonts/ (lancer DOWNLOAD-FONTS.ps1 une fois pour les
        telecharger). Aucune requete Internet a l'execution. #}
     <link href="{{ url_for('static', filename='vendor/fonts/ibm-plex.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ static_v('css/style.css') }}" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -223,7 +223,7 @@
     {% if current_user.is_authenticated %}{% include '_toast_notifications.html' %}{% endif %}
     <script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
     {% include '_confirm_modal.html' %}
-    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ static_v('js/theme.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

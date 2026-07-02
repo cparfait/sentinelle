@@ -218,6 +218,19 @@ def create_app(config_class=Config):
         config_store.seed_from_env(app)
         config_store.load(app)
 
+    @app.template_global()
+    def static_v(filename):
+        """url_for('static') + version = date de modif du fichier. Force le
+        navigateur a recharger un asset des qu'il change (fini le cache CSS/JS
+        perime apres un deploiement)."""
+        import os
+        from flask import url_for
+        try:
+            v = int(os.path.getmtime(os.path.join(app.static_folder, filename)))
+        except OSError:
+            v = 0
+        return url_for('static', filename=filename, v=v)
+
     from app.scheduler import start_scheduler
     if not app.config.get('TESTING'):
         start_scheduler(app)
