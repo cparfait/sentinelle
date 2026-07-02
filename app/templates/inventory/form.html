@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from '_quick_add.html' import qa_button, qa_modal_supplier %}
 {% block title %}{{ 'Modifier' if item else 'Ajouter' }} un équipement - Sentinelle{% endblock %}
 
 {% macro val(attr) %}{{ item[attr] if item and item[attr] is not none else '' }}{% endmacro %}
@@ -94,12 +95,15 @@
                         <div class="col-md-4"><label class="form-label small">Fin de garantie</label><input type="date" name="warranty_end" class="form-control" value="{{ item.warranty_end.strftime('%Y-%m-%d') if item and item.warranty_end else '' }}"></div>
                         <div class="col-md-4"><label class="form-label small">Contrat de maintenance</label><input type="text" name="maintenance_contract" class="form-control" value="{{ val('maintenance_contract') }}"></div>
                         <div class="col-md-4"><label class="form-label small">Fournisseur / support</label>
-                            <select name="supplier_id" class="form-select">
-                                <option value="">— Sélectionner —</option>
-                                {% for s in suppliers %}
-                                <option value="{{ s.id }}" {{ 'selected' if item and item.supplier_id == s.id }}>{{ s.name }}</option>
-                                {% endfor %}
-                            </select>
+                            <div class="input-group">
+                                <select name="supplier_id" id="eqSupplier" class="form-select">
+                                    <option value="">— Sélectionner —</option>
+                                    {% for s in suppliers %}
+                                    <option value="{{ s.id }}" {{ 'selected' if item and item.supplier_id == s.id }}>{{ s.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% if current_user.can_edit('contracts') %}{{ qa_button('qaModalSupplier', 'eqSupplier', 'Ajouter un fournisseur') }}{% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -144,6 +148,8 @@
         </div>
     </div>
 </div>
+
+{% if current_user.can_edit('contracts') %}{{ qa_modal_supplier() }}{% endif %}
 
 <script>
 (function () {

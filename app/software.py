@@ -4,7 +4,8 @@ d'installation, hebergement SaaS, contrat et suivi des mises a jour.
 Onglet « Logiciels » de l'inventaire. Partage la categorie de permission
 « inventory » (cf. app/decorators.py).
 """
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import (Blueprint, render_template, redirect, url_for, request, flash,
+                   jsonify)
 from flask_login import login_required
 from app import db
 from app.models import Software, Supplier, Contract, Equipment
@@ -58,6 +59,22 @@ def list():
     items, page, pages, total = paginate(items)
     return render_template('software/list.html', items=items, q=q,
                            page=page, pages=pages, total=total)
+
+
+@bp.route('/quick-create', methods=['POST'])
+@login_required
+@require_edit
+def quick_create():
+    """Creation rapide (AJAX) d'une application/logiciel minimal depuis un autre
+    formulaire (ex. revue de droits). Renvoie l'id + le nom en JSON."""
+    name = (request.form.get('name', '') or '').strip()
+    if not name:
+        return jsonify(ok=False, error='Le nom est obligatoire.'), 400
+    sw = Software(name=name)
+    db.session.add(sw)
+    db.session.commit()
+    audit_record('creation logiciel', detail=f'{sw.name} (ajout rapide)', category='inventory')
+    return jsonify(ok=True, id=sw.id, name=sw.name)
 
 
 @bp.route('/create', methods=['GET', 'POST'])

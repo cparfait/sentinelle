@@ -3,7 +3,8 @@
 La date qui declenche le statut/les alertes est `action_deadline()` =
 echeance - preavis de resiliation (au-dela, tacite reconduction ou coupure).
 """
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import (Blueprint, render_template, redirect, url_for, request, flash,
+                   jsonify)
 from flask_login import login_required, current_user
 from app import db
 from app.models import (Contract, ContractHistory, Supplier, Equipment,
@@ -66,6 +67,26 @@ def list():
     return render_template('contracts/list.html', contracts=contracts, q=q,
                            page=page, pages=pages, total=total, total_cost=total_cost,
                            kind_labels=CONTRACT_KIND_LABELS)
+
+
+@bp.route('/quick-create', methods=['POST'])
+@login_required
+@require_edit
+def quick_create():
+    """Creation rapide (AJAX) d'un contrat minimal depuis un autre formulaire
+    (ex. formulaire logiciel). Renvoie l'id + le nom en JSON."""
+    name = (request.form.get('name', '') or '').strip()
+    if not name:
+        return jsonify(ok=False, error='Le nom est obligatoire.'), 400
+    c = Contract(name=name, kind='maintenance', priority='medium', notice_days=0,
+                 end_date=parse_date(request.form.get('end_date')))
+    db.session.add(c)
+    db.session.commit()
+    db.session.add(ContractHistory(contract_id=c.id, action='creation',
+                                   comment=f'Contrat cree : {c.name} (ajout rapide)',
+                                   performed_by=current_user.username))
+    db.session.commit()
+    return jsonify(ok=True, id=c.id, name=c.name)
 
 
 @bp.route('/create', methods=['GET', 'POST'])

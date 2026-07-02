@@ -1,4 +1,5 @@
-from flask import (Blueprint, render_template, redirect, url_for, request, flash)
+from flask import (Blueprint, render_template, redirect, url_for, request, flash,
+                   jsonify)
 from flask_login import login_required
 from app import db
 from app.models import (Equipment, EQUIPMENT_KIND_LABELS, CRITICALITY_LABELS)
@@ -187,6 +188,26 @@ def list():
                            page=page, pages=pages, total=total,
                            sort=sort, dir=direction, per_page=per_page,
                            per_page_choices=PER_PAGE_CHOICES)
+
+
+@bp.route('/quick-create', methods=['POST'])
+@login_required
+@require_edit
+def quick_create():
+    """Creation rapide (AJAX) d'un equipement minimal (nom + type) depuis un
+    autre formulaire (ex. logiciel, certificat). Renvoie id + libelle en JSON."""
+    name = (request.form.get('name', '') or '').strip()
+    if not name:
+        return jsonify(ok=False, error='Le nom est obligatoire.'), 400
+    kind = request.form.get('kind', 'vm')
+    if kind not in ('vm', 'physical', 'nas'):
+        kind = 'vm'
+    eq = Equipment(name=name, kind=kind)
+    db.session.add(eq)
+    db.session.commit()
+    audit_record('creation inventaire', detail=f'{eq.name} ({eq.kind_label()}, ajout rapide)',
+                 category='inventory')
+    return jsonify(ok=True, id=eq.id, name=eq.name, label=f'{eq.name} ({eq.kind_label()})')
 
 
 @bp.route('/create', methods=['GET', 'POST'])

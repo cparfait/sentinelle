@@ -59,6 +59,45 @@ def test_quick_create_fournisseur(client):
     assert client.post('/suppliers/quick-create', data={'name': ''}).status_code == 400
 
 
+def test_quick_create_contrat(client):
+    r = client.post('/contracts/quick-create', data={'name': 'Office 365', 'end_date': '2027-01-31'})
+    assert r.status_code == 200
+    j = r.get_json()
+    assert j['ok'] and j['name'] == 'Office 365' and isinstance(j['id'], int)
+    ct = Contract.query.filter_by(name='Office 365').first()
+    assert ct is not None and ct.end_date.isoformat() == '2027-01-31'
+    assert client.post('/contracts/quick-create', data={'name': ''}).status_code == 400
+
+
+def test_quick_create_equipement(client):
+    r = client.post('/inventory/quick-create', data={'name': 'SRV-QA', 'kind': 'physical'})
+    assert r.status_code == 200
+    j = r.get_json()
+    assert j['ok'] and j['id'] and j['label'] == 'SRV-QA (Serveur physique)'
+    eq = Equipment.query.filter_by(name='SRV-QA').first()
+    assert eq is not None and eq.kind == 'physical'
+    # type invalide -> repli sur 'vm'
+    r2 = client.post('/inventory/quick-create', data={'name': 'SRV-X', 'kind': 'bogus'})
+    assert r2.get_json()['ok'] and Equipment.query.filter_by(name='SRV-X').first().kind == 'vm'
+    assert client.post('/inventory/quick-create', data={'name': ''}).status_code == 400
+
+
+def test_formulaires_affichent_bouton_ajout_rapide(client):
+    """Le + (ajout rapide) est present sur les formulaires concernes."""
+    # Logiciel : fournisseur, contrat, serveur.
+    html = client.get('/inventory/logiciels/create').get_data(as_text=True)
+    assert 'qaModalSupplier' in html and 'qaModalContract' in html and 'qaModalEquipment' in html
+    # Contrat : fournisseur + equipement.
+    html = client.get('/contracts/create').get_data(as_text=True)
+    assert 'qaModalSupplier' in html and 'qaModalEquipment' in html
+    # Equipement : fournisseur.
+    html = client.get('/inventory/create').get_data(as_text=True)
+    assert 'qaModalSupplier' in html
+    # Certificat (partial _equipment_select) : equipement.
+    html = client.get('/certificates/create').get_data(as_text=True)
+    assert 'qaModalEquipment' in html
+
+
 def test_fiche_fournisseur_impacts(client):
     sup = Supplier(name='OVH')
     db.session.add(sup); db.session.commit()

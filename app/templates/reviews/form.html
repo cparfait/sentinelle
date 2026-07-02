@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from '_quick_add.html' import qa_button, qa_modal_software %}
 {% block title %}{{ 'Modifier' if review else 'Ajouter' }} une revue - Sentinelle{% endblock %}
 
 {% block content %}
@@ -15,15 +16,20 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Application métier *</label>
-                        <input type="text" name="application" id="reviewApp" class="form-control" required
-                               value="{{ review.application if review else '' }}" placeholder="ex: SIRH, Finances, GED...">
-                        {% if assets %}
-                        <select id="reviewPicker" class="form-select form-select-sm mt-1">
-                            <option value="">— Choisir un logiciel —</option>
-                            {% for a in assets %}<option value="{{ a.name }}">{{ a.name }}</option>{% endfor %}
-                        </select>
-                        <small class="text-muted">Issu de l'inventaire <a href="{{ url_for('software.list') }}">Logiciels</a>.</small>
-                        {% endif %}
+                        {% set asset_names = assets | map(attribute='name') | list %}
+                        <div class="input-group">
+                            <select name="application" id="reviewApp" class="form-select" required data-qa-value-field="name">
+                                <option value="">— Choisir une application —</option>
+                                {% for a in assets %}
+                                <option value="{{ a.name }}" {{ 'selected' if review and review.application == a.name }}>{{ a.name }}</option>
+                                {% endfor %}
+                                {% if review and review.application and review.application not in asset_names %}
+                                <option value="{{ review.application }}" selected>{{ review.application }} (hors inventaire)</option>
+                                {% endif %}
+                            </select>
+                            {% if current_user.can_edit('inventory') %}{{ qa_button('qaModalSoftware', 'reviewApp', 'Ajouter une application') }}{% endif %}
+                        </div>
+                        <small class="text-muted">Issu de l'inventaire <a href="{{ url_for('software.list') }}">Logiciels / Applications</a>.</small>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Responsable</label>
@@ -70,13 +76,5 @@
     </div>
 </div>
 
-<script>
-(function () {
-    var picker = document.getElementById('reviewPicker');
-    var input = document.getElementById('reviewApp');
-    if (picker && input) {
-        picker.addEventListener('change', function () { if (picker.value) input.value = picker.value; });
-    }
-})();
-</script>
+{% if current_user.can_edit('inventory') %}{{ qa_modal_software() }}{% endif %}
 {% endblock %}

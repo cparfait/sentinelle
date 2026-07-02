@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from '_quick_add.html' import qa_button, qa_add_link, qa_modal_supplier, qa_modal_contract, qa_modal_equipment %}
 {% block title %}{{ 'Modifier' if item else 'Ajouter' }} un logiciel - Sentinelle{% endblock %}
 
 {% block content %}
@@ -39,22 +40,28 @@
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label class="form-label fw-medium">Éditeur / fournisseur</label>
-                        <select name="supplier_id" class="form-select">
-                            <option value="">— Sélectionner —</option>
-                            {% for s in suppliers %}
-                            <option value="{{ s.id }}" {{ 'selected' if item and item.supplier_id == s.id }}>{{ s.name }}</option>
-                            {% endfor %}
-                        </select>
+                        <div class="input-group">
+                            <select name="supplier_id" id="swSupplier" class="form-select">
+                                <option value="">— Sélectionner —</option>
+                                {% for s in suppliers %}
+                                <option value="{{ s.id }}" {{ 'selected' if item and item.supplier_id == s.id }}>{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if current_user.can_edit('contracts') %}{{ qa_button('qaModalSupplier', 'swSupplier', 'Ajouter un fournisseur') }}{% endif %}
+                        </div>
                         <div class="form-text">Annuaire <a href="{{ url_for('suppliers.list') }}">Fournisseurs</a>.</div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-medium">Contrat / licence</label>
-                        <select name="contract_id" class="form-select">
-                            <option value="">— Aucun —</option>
-                            {% for c in contracts %}
-                            <option value="{{ c.id }}" {{ 'selected' if item and item.contract_id == c.id }}>{{ c.name }}</option>
-                            {% endfor %}
-                        </select>
+                        <div class="input-group">
+                            <select name="contract_id" id="swContract" class="form-select">
+                                <option value="">— Aucun —</option>
+                                {% for c in contracts %}
+                                <option value="{{ c.id }}" {{ 'selected' if item and item.contract_id == c.id }}>{{ c.name }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if current_user.can_edit('contracts') %}{{ qa_button('qaModalContract', 'swContract', 'Ajouter un contrat') }}{% endif %}
+                        </div>
                     </div>
                 </div>
                 <div class="row g-3 mb-3">
@@ -78,8 +85,11 @@
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-medium">Serveur(s) d'installation</label>
-                    <select name="equipment_ids" class="form-select" multiple size="6">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label fw-medium mb-0">Serveur(s) d'installation</label>
+                        {% if current_user.can_edit('inventory') %}{{ qa_add_link('qaModalEquipment', 'swEquipment', 'Nouveau serveur') }}{% endif %}
+                    </div>
+                    <select name="equipment_ids" id="swEquipment" class="form-select" multiple size="6">
                         {% for e in equipments %}
                         <option value="{{ e.id }}" {{ 'selected' if item and e in item.equipments }}>{{ e.name }} ({{ e.kind_label() }}{% if e.environment %} · {{ e.env_label() }}{% endif %})</option>
                         {% endfor %}
@@ -109,4 +119,7 @@
         </div>
     </div>
 </div>
+
+{% if current_user.can_edit('contracts') %}{{ qa_modal_supplier() }}{{ qa_modal_contract() }}{% endif %}
+{% if current_user.can_edit('inventory') %}{{ qa_modal_equipment() }}{% endif %}
 {% endblock %}
