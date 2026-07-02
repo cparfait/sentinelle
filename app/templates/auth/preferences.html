@@ -596,10 +596,18 @@
                                 if (btn && inp) {
                                     btn.addEventListener('click', function () {
                                         inp.select(); inp.setSelectionRange(0, 99999);
-                                        var ok = function () { btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Copié'; };
+                                        var full = inp.value;
+                                        var mask = full.length >= 12 ? (full.slice(0, 6) + '…' + full.slice(-4)) : full;
+                                        // Une fois copiée : on masque la clé pour ne pas la laisser en clair.
+                                        var done = function () {
+                                            inp.value = mask;
+                                            inp.removeAttribute('onclick');
+                                            btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Copié';
+                                            btn.disabled = true;
+                                        };
                                         if (navigator.clipboard && navigator.clipboard.writeText) {
-                                            navigator.clipboard.writeText(inp.value).then(ok, function () { try { document.execCommand('copy'); ok(); } catch (e) {} });
-                                        } else { try { document.execCommand('copy'); ok(); } catch (e) {} }
+                                            navigator.clipboard.writeText(full).then(done, function () { try { document.execCommand('copy'); done(); } catch (e) {} });
+                                        } else { try { document.execCommand('copy'); done(); } catch (e) {} }
                                     });
                                 }
                                 // La section est déjà dépliée côté serveur : on amène juste la clé à l'écran
