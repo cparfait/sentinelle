@@ -398,24 +398,6 @@ def preferences():
             audit_record('config tableau de bord personnalisable', detail=f'actif={enabled}', category='preferences')
             flash('Tableau de bord personnalisable ' + ('activé' if enabled else 'désactivé') + '.', 'success')
 
-        elif action == 'save_sesame':
-            enabled = request.form.get('sesame_enabled') == 'on'
-            _persist_config({'SESAME_API_ENABLED': 'true' if enabled else 'false'})
-            current_app.config['SESAME_API_ENABLED'] = enabled
-            audit_record('config API Sesame', detail=f'actif={enabled}', category='preferences')
-            flash('Intégration Sesame ' + ('activée' if enabled else 'désactivée') + '.', 'success')
-
-        elif action == 'sesame_generate_key':
-            import secrets
-            key = secrets.token_urlsafe(32)
-            _persist_config({'SESAME_API_TOKEN': key})
-            current_app.config['SESAME_API_TOKEN'] = key
-            # Affichee UNE fois, dans la section (champ copiable), via la session :
-            # un flash serait rendu en toast auto-disparaissant, donc non copiable.
-            session['sesame_new_key'] = key
-            audit_record('rotation clé API Sesame', category='preferences')
-            flash("Nouvelle clé API Sesame générée — copiez-la ci-dessous, elle ne sera plus affichée.", 'success')
-
         elif action == 'send_report_now':
             from app.pdf_report import send_report
             try:
@@ -702,11 +684,6 @@ def preferences():
         'db': bool(db_backups),
     }
 
-    # Clé Sesame tronquée (jamais en clair) pour identifier la clé active.
-    _sesame_tok = current_app.config.get('SESAME_API_TOKEN') or ''
-    sesame_key_masked = (_sesame_tok[:6] + '…' + _sesame_tok[-4:]) if len(_sesame_tok) >= 12 \
-        else ('•' * len(_sesame_tok) if _sesame_tok else '')
-
     return render_template('auth/preferences.html', mail_method=mail_method,
                            configured=configured,
                            mail_configured=mail_configured, o365_config=o365_config,
@@ -720,11 +697,6 @@ def preferences():
                            report_recipients=', '.join(current_app.config.get('REPORT_RECIPIENTS') or []),
                            ct_monitoring=current_app.config.get('CT_MONITORING', True),
                            dashboard_custom=current_app.config.get('DASHBOARD_CUSTOM', True),
-                           sesame_enabled=current_app.config.get('SESAME_API_ENABLED', False),
-                           sesame_key_set=bool(current_app.config.get('SESAME_API_TOKEN')),
-                           sesame_key_masked=sesame_key_masked,
-                           sesame_new_key=session.pop('sesame_new_key', None),
-                           sesame_endpoint=(current_app.config.get('APP_BASE_URL', '').rstrip('/') + '/api/assets?type=application'),
                            db_backups=db_backups, thresholds=thresholds,
                            ldap_config=ldap_config, webhooks=webhooks,
                            conformity_categories=CONFORMITY_CATEGORIES,

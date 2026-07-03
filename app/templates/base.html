@@ -165,6 +165,10 @@
                     <i class="bi bi-clock"></i>
                     <span>Tâches planifiées</span>
                 </a>
+                <a href="{{ url_for('connectors.index') }}" class="sidebar-link {% if request.blueprint == 'connectors' %}active{% endif %}">
+                    <i class="bi bi-plugin"></i>
+                    <span>Connecteurs</span>
+                </a>
                 <a href="{{ url_for('auth.preferences') }}" class="sidebar-link {% if request.endpoint == 'auth.preferences' %}active{% endif %}">
                     <i class="bi bi-sliders"></i>
                     <span>Préférences</span>

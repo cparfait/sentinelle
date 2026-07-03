@@ -200,6 +200,9 @@ def create_app(config_class=Config):
     from app.api import bp as api_bp
     app.register_blueprint(api_bp)
 
+    from app.connectors import bp as connectors_bp
+    app.register_blueprint(connectors_bp)
+
     from app.pdf_export import bp as pdf_export_bp
     app.register_blueprint(pdf_export_bp)
 
