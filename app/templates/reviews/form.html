@@ -31,10 +31,18 @@
                         </div>
                         <small class="text-muted">Issu de l'inventaire <a href="{{ url_for('software.list') }}">Logiciels / Applications</a>.</small>
                     </div>
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-3 mb-3">
                         <label class="form-label fw-medium">Responsable</label>
                         <input type="text" name="responsible" class="form-control"
-                               value="{{ review.responsible if review and review.responsible else '' }}" placeholder="Propriétaire / valideur">
+                               value="{{ review.responsible if review and review.responsible else '' }}"
+                               data-ad-search data-ad-email="responsible_email"
+                               placeholder="Rechercher dans l'annuaire (AD)...">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label fw-medium">Email du responsable</label>
+                        <input type="email" name="responsible_email" class="form-control"
+                               value="{{ review.responsible_email if review and review.responsible_email else '' }}" placeholder="responsable@chatillon92.fr">
+                        <small class="text-muted">Destinataire du mail de validation des tâches.</small>
                     </div>
                 </div>
                 <div class="mb-3">

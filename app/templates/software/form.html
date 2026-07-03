@@ -76,9 +76,20 @@
                     <div class="col-md-4">
                         <label class="form-label fw-medium">Responsable</label>
                         <input type="text" name="responsible" class="form-control"
-                               value="{{ item.responsible or '' if item else '' }}">
+                               value="{{ item.responsible or '' if item else '' }}"
+                               data-ad-search data-ad-email="responsible_email"
+                               placeholder="Rechercher dans l'annuaire (AD)...">
+                        <div class="form-text">Tapez un nom : recherche dans l'Active Directory (remplit l'email). Saisie libre possible.</div>
                     </div>
                     <div class="col-md-4">
+                        <label class="form-label fw-medium">Email du responsable</label>
+                        <input type="email" name="responsible_email" class="form-control"
+                               value="{{ item.responsible_email or '' if item else '' }}" placeholder="responsable@chatillon92.fr">
+                        <div class="form-text">Pour le notifier (coupure d'accès, revue de droits). Exposé à Sesame.</div>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
                         <label class="form-label fw-medium">URL / accès</label>
                         <input type="url" name="url" class="form-control"
                                value="{{ item.url or '' if item else '' }}" placeholder="https://...">

@@ -44,6 +44,9 @@
                 <div class="col-sm-6 mb-3">
                     <small class="text-muted d-block">Responsable</small>
                     <span class="fw-medium">{{ item.responsible or '-' }}</span>
+                    {% if item.responsible_email %}
+                    <a href="mailto:{{ item.responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.responsible_email }}</a>
+                    {% endif %}
                 </div>
                 <div class="col-sm-6 mb-3">
                     <small class="text-muted d-block">Contrat / licence</small>

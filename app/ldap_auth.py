@@ -188,6 +188,67 @@ def ldap_authenticate(username, password):
     return info
 
 
+def directory_search_available():
+    """Vrai si la recherche annuaire est possible (LDAP actif + compte de service
+    + Base DN). Sert a l'UI pour n'afficher l'autocompletion que si utile."""
+    cfg = current_app.config
+    return bool(ldap_enabled() and cfg.get('LDAP_BIND_USER')
+                and cfg.get('LDAP_BASE_DN'))
+
+
+def search_directory(query, limit=10):
+    """Recherche des personnes dans l'Active Directory (par nom, identifiant ou
+    email) via le compte de service. Retourne une liste de dicts
+    {display_name, email, username}. Repli sur [] si LDAP indisponible/mal
+    configure ou en cas d'erreur (la saisie manuelle reste toujours possible)."""
+    cfg = current_app.config
+    q = (query or '').strip()
+    if len(q) < 2 or not directory_search_available():
+        return []
+    try:
+        from ldap3 import Connection
+    except ImportError:
+        return []
+    try:
+        server = build_server(cfg)
+        conn = Connection(server, user=cfg['LDAP_BIND_USER'],
+                          password=cfg.get('LDAP_BIND_PASSWORD'), auto_bind=True)
+    except Exception as e:
+        current_app.logger.info('Recherche annuaire : connexion AD impossible : %s', e)
+        return []
+
+    term = _esc(q)
+    # Personnes (utilisateurs AD), hors comptes desactives, dont le nom /
+    # identifiant / email / prenom-nom contient le terme saisi.
+    filt = ('(&(objectCategory=person)(objectClass=user)'
+            '(!(userAccountControl:1.2.840.113556.1.4.803:=2))'
+            '(|(displayName=*%s*)(sAMAccountName=*%s*)(mail=*%s*)(cn=*%s*)))'
+            % (term, term, term, term))
+    out = []
+    try:
+        conn.search(cfg['LDAP_BASE_DN'], filt,
+                    attributes=['displayName', 'mail', 'sAMAccountName', 'cn'],
+                    size_limit=max(1, min(limit, 50)))
+        for entry in conn.entries:
+            email = str(entry.mail) if 'mail' in entry and entry.mail else ''
+            name = (str(entry.displayName) if 'displayName' in entry and entry.displayName
+                    else (str(entry.cn) if 'cn' in entry and entry.cn else ''))
+            uname = str(entry.sAMAccountName) if 'sAMAccountName' in entry and entry.sAMAccountName else ''
+            if not (name or email):
+                continue
+            out.append({'display_name': name, 'email': email, 'username': uname})
+    except Exception as e:
+        current_app.logger.info('Recherche annuaire echouee : %s', e)
+    finally:
+        try:
+            conn.unbind()
+        except Exception:
+            pass
+    # Ceux qui ont un email d'abord (plus utiles pour notifier), puis par nom.
+    out.sort(key=lambda p: (p['email'] == '', p['display_name'].lower()))
+    return out[:limit]
+
+
 # FILETIME Windows -> date (100-ns depuis 1601-01-01 UTC)
 _FILETIME_NEVER = (0, 9223372036854775807)
 

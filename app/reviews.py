@@ -44,6 +44,7 @@ def create():
         r = AccessReview(
             application=application,
             responsible=request.form.get('responsible', '').strip() or None,
+            responsible_email=request.form.get('responsible_email', '').strip() or None,
             scope=request.form.get('scope'),
             frequency_days=freq,
             last_review=last_review,
@@ -81,6 +82,7 @@ def edit(id):
             return render_template('reviews/form.html', review=review, assets=_app_assets())
         review.application = application
         review.responsible = request.form.get('responsible', '').strip() or None
+        review.responsible_email = request.form.get('responsible_email', '').strip() or None
         review.scope = request.form.get('scope')
         review.frequency_days = parse_int(request.form.get('frequency_days'), 365, minimum=1)
         review.last_review = parse_date(request.form.get('last_review'))

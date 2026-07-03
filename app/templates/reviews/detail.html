@@ -31,6 +31,13 @@
                     <small class="text-muted d-block">Fréquence</small>
                     <span class="fw-medium">{{ review.frequency_days }} jours</span>
                 </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Responsable</small>
+                    <span class="fw-medium">{{ review.responsible or '-' }}</span>
+                    {% if review.responsible_email %}
+                    <a href="mailto:{{ review.responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ review.responsible_email }}</a>
+                    {% endif %}
+                </div>
             </div>
             {% if review.scope %}
             <div class="mt-2 pt-2 border-top"><small class="text-muted d-block">Périmètre</small><p class="mb-0">{{ review.scope }}</p></div>

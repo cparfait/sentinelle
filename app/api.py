@@ -31,7 +31,8 @@ def _sesame_auth_error():
 def assets():
     """Liste des applications (catalogue) exposée à Sesame pour éviter la double
     saisie. Auth : en-tête `Authorization: Bearer <clé>`. Filtre optionnel
-    `?type=application`. Réponse : tableau JSON {id, name, description, is_active}
+    `?type=application`. Réponse : tableau JSON
+    {id, name, description, is_active, responsible, responsible_email}
     trié par nom (contrat attendu par Sesame)."""
     err = _sesame_auth_error()
     if err is not None:
@@ -48,9 +49,26 @@ def assets():
             Software.name.asc()).all()
     return jsonify([
         {'id': s.id, 'name': s.name, 'description': s.description or '',
-         'is_active': bool(s.is_active)}
+         'is_active': bool(s.is_active),
+         'responsible': s.responsible or '',
+         'responsible_email': s.responsible_email or ''}
         for s in rows
     ])
+
+
+@bp.route('/directory/search')
+@login_required
+@limiter.limit('30 per minute')
+def directory_search():
+    """Autocompletion des responsables depuis l'Active Directory (par nom, login
+    ou email). Reservee aux utilisateurs pouvant editer (comme la saisie d'un
+    responsable). Repli : liste vide si LDAP indisponible -> saisie manuelle."""
+    if not current_user.can_edit():
+        return jsonify(error='Droits insuffisants.'), 403
+    from app.ldap_auth import search_directory, directory_search_available
+    q = request.args.get('q', '')
+    return jsonify(available=directory_search_available(),
+                   results=search_directory(q))
 
 
 @bp.route('/alert-count')

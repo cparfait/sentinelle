@@ -31,6 +31,7 @@ def _fill(sw, f):
     sw.url = (f.get('url', '') or '').strip() or None
     sw.criticality = parse_int(f.get('criticality'))
     sw.responsible = (f.get('responsible', '') or '').strip() or None
+    sw.responsible_email = (f.get('responsible_email', '') or '').strip() or None
     sw.description = f.get('description') or None
     # Serveur(s) d'installation (multi-selection), equipements actifs uniquement.
     ids = [parse_int(v) for v in f.getlist('equipment_ids')]

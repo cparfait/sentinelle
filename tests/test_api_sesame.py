@@ -1,6 +1,7 @@
 """Tests de l'API Sesame (GET /api/assets) : activation, clé Bearer, format.
 
-Contrat attendu par Sesame : tableau JSON [{id, name, description, is_active}]
+Contrat attendu par Sesame : tableau JSON
+[{id, name, description, is_active, responsible, responsible_email}]
 trié par nom, auth `Authorization: Bearer <clé>`, filtre `?type=`.
 """
 from app import db
@@ -8,7 +9,8 @@ from app.models import Software
 
 
 def _seed_assets():
-    db.session.add(Software(name='Zabbix', description='Supervision'))
+    db.session.add(Software(name='Zabbix', description='Supervision',
+                            responsible='DSI', responsible_email='dsi@ex.fr'))
     db.session.add(Software(name='GLPI', description='Parc'))
     db.session.commit()
 
@@ -45,8 +47,14 @@ def test_liste_applications_triee(app):
     data = r.get_json()
     assert [a['name'] for a in data] == ['GLPI', 'Zabbix']   # trié par nom
     a = data[0]
-    assert set(a.keys()) == {'id', 'name', 'description', 'is_active'}
+    assert set(a.keys()) == {'id', 'name', 'description', 'is_active',
+                             'responsible', 'responsible_email'}
     assert a['is_active'] is True
+    # Le responsable et son email sont exposés (usage : notifier / couper l'accès)
+    zabbix = next(x for x in data if x['name'] == 'Zabbix')
+    assert zabbix['responsible'] == 'DSI'
+    assert zabbix['responsible_email'] == 'dsi@ex.fr'
+    assert a['responsible_email'] == ''   # GLPI : non renseigné -> chaîne vide
 
 
 def test_type_inconnu_renvoie_vide(app):
