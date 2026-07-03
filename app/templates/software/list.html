@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% block title %}Logiciels métiers - Sentinelle{% endblock %}
-{% from '_macros.html' import status_badge %}
 
 {% block content %}
 {% with active='software' %}{% include '_inventory_nav.html' %}{% endwith %}
@@ -29,7 +28,6 @@
                     <th>Version</th>
                     <th>Serveurs</th>
                     <th>Hébergement</th>
-                    <th>MAJ</th>
                     <th class="text-center" title="Partagé avec Sesame (API)">Sesame</th>
                     <th>Actions</th>
                 </tr>
@@ -50,7 +48,6 @@
                         {% else %}{{ s.equipments|length }}{% endif %}
                     </td>
                     <td>{% if s.is_saas %}<span class="badge bg-info-subtle text-info">SaaS</span>{% else %}<span class="badge bg-light text-dark border">Interne</span>{% endif %}</td>
-                    <td>{{ status_badge(s.computed_status()) }}</td>
                     <td class="text-center">
                         <form method="POST" action="{{ url_for('software.toggle_sesame', id=s.id) }}" class="d-inline">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -78,7 +75,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="9" class="text-center py-4 text-muted">
+                    <td colspan="8" class="text-center py-4 text-muted">
                         <i class="bi bi-window-stack" style="font-size: 2rem;"></i>
                         <p class="mt-2 mb-0">Aucun logiciel.
                             {% if current_user.can_edit('inventory') %}
