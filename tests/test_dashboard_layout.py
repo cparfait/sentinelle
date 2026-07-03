@@ -3,7 +3,8 @@ import json
 
 from app import db
 from app.dashboard import (resolve_dashboard_layout, resolve_widget_spans,
-                           WIDGET_SPAN_DEFAULT, DASHBOARD_WIDGETS)
+                           resolve_card_order, WIDGET_SPAN_DEFAULT,
+                           DASHBOARD_WIDGETS, STAT_CARDS)
 from app.models import User
 
 
@@ -92,6 +93,38 @@ def test_save_layout_persiste_les_largeurs(app, client):
     admin = User.query.filter_by(username='admin').first()
     saved = json.loads(admin.dashboard_prefs)
     assert saved['spans'] == {'stats': 6}  # 42 (hors borne) et inconnu filtres
+
+
+ALL_CARDS = [c['key'] for c in STAT_CARDS]
+
+
+def test_card_order_defaut_sans_preferences():
+    assert resolve_card_order(_FakeUser(None), ALL_CARDS) == ALL_CARDS
+
+
+def test_card_order_respecte_et_complete():
+    """Ordre enregistre respecte ; vignette disponible non mentionnee -> ajoutee a la fin."""
+    prefs = json.dumps({'cards': ['contracts', 'accounts']})
+    available = ['accounts', 'certificates', 'contracts']
+    order = resolve_card_order(_FakeUser(prefs), available)
+    assert order[:2] == ['contracts', 'accounts']
+    assert 'certificates' in order and order[-1] == 'certificates'
+
+
+def test_card_order_ignore_indisponibles():
+    prefs = json.dumps({'cards': ['inventory', 'accounts']})
+    available = ['accounts']  # inventory non visible (droit)
+    assert resolve_card_order(_FakeUser(prefs), available) == ['accounts']
+
+
+def test_save_layout_persiste_ordre_vignettes(app, client):
+    r = client.post('/dashboard/layout', json={
+        'order': ['stats'], 'hidden': [],
+        'cards': ['contracts', 'accounts', 'inconnu']})
+    assert r.status_code == 200
+    admin = User.query.filter_by(username='admin').first()
+    saved = json.loads(admin.dashboard_prefs)
+    assert saved['cards'] == ['contracts', 'accounts']  # 'inconnu' filtre
 
 
 def test_save_layout_reset(app, client):

@@ -50,8 +50,17 @@
         return out;
     }
 
+    // Ordre courant des vignettes de synthese (bloc « stats »).
+    var statGrid = document.querySelector('.stat-grid');
+    function cardsOrder() {
+        if (!statGrid) return undefined;
+        return Array.prototype.map.call(
+            statGrid.querySelectorAll(':scope > .stat-card'),
+            function (e) { return e.dataset.card; }).filter(Boolean);
+    }
+
     function persist() {
-        post({ order: gridKeys(), hidden: hiddenKeys(), spans: spansMap() });
+        post({ order: gridKeys(), hidden: hiddenKeys(), spans: spansMap(), cards: cardsOrder() });
     }
 
     // Icone du bouton oeil selon l'emplacement (grille = masquer, tiroir = afficher).
@@ -200,6 +209,74 @@
         window.addEventListener('pointerup', onUp);
     });
 
+    // ---- Reordonnancement des vignettes de synthese (bloc « stats ») ----
+    var draggedCard = null;
+
+    function setCardsDraggable(on) {
+        if (!statGrid) return;
+        Array.prototype.forEach.call(statGrid.querySelectorAll(':scope > .stat-card'), function (c) {
+            if (on) { c.setAttribute('draggable', 'true'); }
+            else { c.removeAttribute('draggable'); }
+        });
+    }
+
+    function cardAfter(x, y) {
+        var best = null, bestDist = Infinity;
+        Array.prototype.forEach.call(statGrid.querySelectorAll(':scope > .stat-card:not(.dragging)'), function (el) {
+            var b = el.getBoundingClientRect();
+            var cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+            var d = Math.hypot(x - cx, y - cy);
+            if (d < bestDist) { bestDist = d; best = { el: el, b: b, cx: cx, cy: cy }; }
+        });
+        if (!best) return null;
+        var sameRow = Math.abs(best.cy - y) < best.b.height / 2;
+        var before = sameRow ? (x < best.cx) : (y < best.cy);
+        return before ? best.el : best.el.nextElementSibling;
+    }
+
+    if (statGrid) {
+        statGrid.addEventListener('dragstart', function (e) {
+            if (!document.body.classList.contains('dash-editing')) return;
+            var card = e.target.closest('.stat-card');
+            if (!card) return;
+            e.stopPropagation();   // ne pas declencher le glisser-deposer du bloc parent
+            draggedCard = card;
+            card.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            try { e.dataTransfer.setData('text/plain', card.dataset.card || ''); } catch (err) { /* IE */ }
+        });
+
+        statGrid.addEventListener('dragover', function (e) {
+            if (!draggedCard) return;
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = 'move';
+            var ref = cardAfter(e.clientX, e.clientY);
+            if (ref == null) { statGrid.appendChild(draggedCard); }
+            else if (ref !== draggedCard) { statGrid.insertBefore(draggedCard, ref); }
+        });
+
+        statGrid.addEventListener('drop', function (e) {
+            if (draggedCard) { e.preventDefault(); e.stopPropagation(); }
+        });
+
+        statGrid.addEventListener('dragend', function (e) {
+            if (!draggedCard) return;
+            e.stopPropagation();
+            draggedCard.classList.remove('dragging');
+            draggedCard = null;
+            persist();
+        });
+
+        // En mode edition, le clic sur une vignette sert au deplacement (pas a la
+        // navigation) : on neutralise le lien.
+        statGrid.addEventListener('click', function (e) {
+            if (document.body.classList.contains('dash-editing') && e.target.closest('.stat-card')) {
+                e.preventDefault();
+            }
+        });
+    }
+
     // ---- Bascule du mode edition ----
     function setEditing(on) {
         document.body.classList.toggle('dash-editing', on);
@@ -207,6 +284,7 @@
         if (editControls) editControls.classList.toggle('d-none', !on);
         if (tray) tray.classList.toggle('d-none', !on);
         setDraggable(on);
+        setCardsDraggable(on);
         if (on) { refreshToggleIcons(); refreshTrayEmpty(); }
     }
 

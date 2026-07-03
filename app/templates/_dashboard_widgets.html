@@ -4,9 +4,9 @@
    widget_body(key) rend le contenu d'un bloc ; l'enveloppe (barre d'edition,
    grille) est geree dans dashboard.html. #}
 
-{% macro stat_card(url, label, icon, color, s, ok_label='OK', danger_label='crit.', warning_label='alerte') %}
+{% macro stat_card(url, label, icon, color, s, ok_label='OK', danger_label='crit.', warning_label='alerte', key='') %}
 {% set total = s.total or 0 %}
-<a href="{{ url }}" class="stat-card text-decoration-none" style="--cat-color: {{ color }};">
+<a href="{{ url }}" class="stat-card text-decoration-none" style="--cat-color: {{ color }};"{% if key %} data-card="{{ key }}"{% endif %}>
     <div class="d-flex align-items-center gap-2">
         <div class="stat-icon"><i class="bi {{ icon }}"></i></div>
         <div class="flex-grow-1 min-w-0">
@@ -58,34 +58,15 @@
     {% endif %}
 
 {% elif key == 'stats' %}
+    {# Vignettes ordonnees par l'utilisateur (dash_cards, construit dans la vue). #}
     <div class="stat-grid">
-        {% if current_user.can_view('accounts') %}
-        {{ stat_card(url_for('accounts.list'), 'Comptes', 'bi-key', '#6366f1', stats.accounts) }}
-        {% endif %}
-        {% if current_user.can_view('certificates') %}
-        {{ stat_card(url_for('certificates.list'), 'Certificats', 'bi-award', '#10b981', stats.certificates) }}
-        {% endif %}
-        {% if current_user.can_view('domains') %}
-        {{ stat_card(url_for('domains.list'), 'Domaines', 'bi-globe', '#3b82f6', stats.domains) }}
-        {% endif %}
-        {% if current_user.can_view('backups') %}
-        {{ stat_card(url_for('backups.list'), 'Backups', 'bi-cloud-arrow-up', '#06b6d4', stats.backups, danger_label='échoué(s)') }}
-        {% endif %}
-        {% if current_user.can_view('tests') %}
-        {{ stat_card(url_for('tests.list'), 'Tests', 'bi-clipboard-check', '#f59e0b', stats.tests, danger_label='en retard') }}
-        {% endif %}
-        {% if current_user.can_view('reviews') %}
-        {{ stat_card(url_for('reviews.list'), 'Revue de droits', 'bi-person-check', '#8b5cf6', stats.reviews) }}
-        {% endif %}
-        {% if current_user.can_view('updates') %}
-        {{ stat_card(url_for('updates.list'), 'Mises à jour', 'bi-arrow-up-circle', '#ec4899', stats.updates, ok_label='à jour', warning_label='dispo') }}
-        {% endif %}
-        {% if current_user.can_view('inventory') %}
-        {{ stat_card(url_for('inventory.list'), 'Inventaire', 'bi-hdd-stack', '#0ea5e9', stats.inventory) }}
-        {% endif %}
-        {% if current_user.can_view('contracts') %}
-        {{ stat_card(url_for('contracts.list'), 'Contrats', 'bi-file-earmark-text', '#14b8a6', stats.contracts, danger_label='à traiter') }}
-        {% endif %}
+        {% for c in dash_cards %}
+        {{ stat_card(c.url, c.label, c.icon, c.color, c.s,
+                     ok_label=c.get('ok_label', 'OK'),
+                     danger_label=c.get('danger_label', 'crit.'),
+                     warning_label=c.get('warning_label', 'alerte'),
+                     key=c.key) }}
+        {% endfor %}
     </div>
 
 {% elif key == 'backups_today' %}

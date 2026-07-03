@@ -32,6 +32,33 @@ WIDGET_SPAN_DEFAULT = {w['key']: w['span'] for w in DASHBOARD_WIDGETS}
 WIDGET_SPAN_MIN = 3
 WIDGET_SPAN_MAX = 12
 
+# Vignettes de synthese (bloc « stats ») : cle stable, categorie de droit (pour
+# le filtrage can_view), et rendu (endpoint/libelle/icone/couleur + libelles de
+# legende specifiques). L'ordre est personnalisable par utilisateur, comme les
+# blocs. `cat` = categorie de permission ; `key` sert d'identifiant d'ordre.
+STAT_CARDS = [
+    {'key': 'accounts',     'cat': 'accounts',     'label': 'Comptes',         'icon': 'bi-key',               'color': '#6366f1', 'endpoint': 'accounts.list'},
+    {'key': 'certificates', 'cat': 'certificates', 'label': 'Certificats',     'icon': 'bi-award',             'color': '#10b981', 'endpoint': 'certificates.list'},
+    {'key': 'domains',      'cat': 'domains',      'label': 'Domaines',        'icon': 'bi-globe',             'color': '#3b82f6', 'endpoint': 'domains.list'},
+    {'key': 'backups',      'cat': 'backups',      'label': 'Backups',         'icon': 'bi-cloud-arrow-up',    'color': '#06b6d4', 'endpoint': 'backups.list',     'danger_label': 'échoué(s)'},
+    {'key': 'tests',        'cat': 'tests',        'label': 'Tests',           'icon': 'bi-clipboard-check',   'color': '#f59e0b', 'endpoint': 'tests.list',       'danger_label': 'en retard'},
+    {'key': 'reviews',      'cat': 'reviews',      'label': 'Revue de droits', 'icon': 'bi-person-check',      'color': '#8b5cf6', 'endpoint': 'reviews.list'},
+    {'key': 'updates',      'cat': 'updates',      'label': 'Mises à jour',    'icon': 'bi-arrow-up-circle',   'color': '#ec4899', 'endpoint': 'updates.list',     'ok_label': 'à jour', 'warning_label': 'dispo'},
+    {'key': 'inventory',    'cat': 'inventory',    'label': 'Inventaire',      'icon': 'bi-hdd-stack',         'color': '#0ea5e9', 'endpoint': 'inventory.list'},
+    {'key': 'contracts',    'cat': 'contracts',    'label': 'Contrats',        'icon': 'bi-file-earmark-text', 'color': '#14b8a6', 'endpoint': 'contracts.list',   'danger_label': 'à traiter'},
+]
+
+
+def resolve_card_order(user, available):
+    """Ordre des vignettes de synthese pour `user`. Meme logique que les blocs :
+    l'ordre enregistre est filtre sur les vignettes disponibles (droits), et toute
+    vignette disponible non mentionnee est ajoutee a la fin (ordre de reference)."""
+    avail = [k for k in available]
+    avail_set = set(avail)
+    saved = [k for k in _load_prefs(user).get('cards', []) if k in avail_set]
+    seen = set(saved)
+    return saved + [k for k in avail if k not in seen]
+
 
 def _load_prefs(user):
     """Charge et decode les preferences dashboard de l'utilisateur (dict, jamais None)."""
@@ -610,13 +637,22 @@ def index():
             continue
         available.append(key)
 
+    # Vignettes de synthese : disponibles selon les droits, dans l'ordre choisi.
+    card_meta = {c['key']: c for c in STAT_CARDS}
+    available_cards = [c['key'] for c in STAT_CARDS if current_user.can_view(c['cat'])]
+
     dashboard_custom = bool(current_app.config.get('DASHBOARD_CUSTOM', True))
     if dashboard_custom:
         dash_visible, dash_hidden = resolve_dashboard_layout(current_user, available)
         dash_spans = resolve_widget_spans(current_user)
+        card_order = resolve_card_order(current_user, available_cards)
     else:
         dash_visible, dash_hidden = available, []
         dash_spans = dict(WIDGET_SPAN_DEFAULT)
+        card_order = available_cards
+
+    dash_cards = [dict(card_meta[k], url=url_for(card_meta[k]['endpoint']),
+                       s=stats[k]) for k in card_order]
 
     return render_template('dashboard.html', stats=stats, urgent_items=urgent_items,
                            recent_alerts=recent_alerts, backups=backups,
@@ -624,7 +660,7 @@ def index():
                            totals=totals, conformity=conformity, upcoming=upcoming,
                            dashboard_custom=dashboard_custom, widget_meta=widget_meta,
                            dash_visible=dash_visible, dash_hidden=dash_hidden,
-                           dash_spans=dash_spans)
+                           dash_spans=dash_spans, dash_cards=dash_cards)
 
 
 @bp.route('/dashboard/layout', methods=['POST'])
@@ -658,7 +694,15 @@ def save_layout():
             continue
         if WIDGET_SPAN_MIN <= n <= WIDGET_SPAN_MAX:
             spans[key] = n
-    current_user.dashboard_prefs = json.dumps({'order': order, 'hidden': hidden, 'spans': spans})
+    # Ordre des vignettes de synthese. Absent du payload -> on preserve l'existant.
+    valid_cards = {c['key'] for c in STAT_CARDS}
+    raw_cards = data.get('cards')
+    if isinstance(raw_cards, list):
+        cards = [k for k in raw_cards if k in valid_cards]
+    else:
+        cards = [k for k in _load_prefs(current_user).get('cards', []) if k in valid_cards]
+    current_user.dashboard_prefs = json.dumps(
+        {'order': order, 'hidden': hidden, 'spans': spans, 'cards': cards})
     db.session.commit()
     return jsonify(ok=True)
 
