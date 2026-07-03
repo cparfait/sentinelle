@@ -519,6 +519,7 @@ a:hover .stat-card,
     color: var(--text-muted);
     font-family: var(--font-mono);
 }
+.ad-suggest-note { padding: 6px 8px; font-size: 0.85rem; color: var(--text-muted); }
 
 /* ---- Tableau de bord personnalisable (grille de blocs) ---- */
 .dash-grid {

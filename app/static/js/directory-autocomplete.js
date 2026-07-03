@@ -55,6 +55,15 @@
             input.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
+        // Message informatif (non cliquable) : annuaire indisponible / aucun
+        // resultat. Evite l'impression que « rien ne se passe » quand on tape.
+        function note(msg) {
+            items = []; active = -1;
+            box.innerHTML = '<div class="ad-suggest-note">' + esc(msg) + '</div>';
+            place();
+            box.classList.remove('d-none');
+        }
+
         function render() {
             if (!items.length) { hide(); return; }
             box.innerHTML = items.map(function (it, i) {
@@ -75,11 +84,16 @@
                 headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
             }).then(function (r) { return r.ok ? r.json() : null; })
               .then(function (data) {
-                  if (!data || !data.available) { hide(); return; }
+                  if (!data) { hide(); return; }
                   // Si l'utilisateur a continue a taper, la valeur peut avoir change.
                   if (input.value.trim().length < 2) { hide(); return; }
+                  if (!data.available) {
+                      note("Recherche annuaire indisponible — saisie manuelle possible.");
+                      return;
+                  }
                   items = data.results || [];
                   active = -1;
+                  if (!items.length) { note('Aucun résultat dans l\'annuaire.'); return; }
                   render();
               }).catch(function () { hide(); });
         }, 250);
