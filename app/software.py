@@ -55,7 +55,7 @@ def list():
     items = Software.query.filter_by(is_active=True).order_by(Software.name).all()
     q = request.args.get('q', '').strip()
     from app.paging import paginate, text_search
-    items = text_search(items, q, ['name', 'version', 'responsible', 'description'])
+    items = text_search(items, q, ['name', 'version', 'responsible', 'responsible_email', 'description'])
     items.sort(key=lambda s: status_rank(s.computed_status()))
     items, page, pages, total = paginate(items)
     return render_template('software/list.html', items=items, q=q,

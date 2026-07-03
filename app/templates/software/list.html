@@ -25,6 +25,7 @@
                 <tr>
                     <th>Logiciel</th>
                     <th>Éditeur</th>
+                    <th>Responsable</th>
                     <th>Version</th>
                     <th>Serveurs</th>
                     <th>Hébergement</th>
@@ -38,6 +39,11 @@
                 <tr>
                     <td><a href="{{ url_for('software.detail', id=s.id) }}" class="fw-medium text-decoration-none">{{ s.name }}</a></td>
                     <td class="small">{% if s.supplier %}<a href="{{ url_for('suppliers.detail', id=s.supplier_id) }}" class="text-decoration-none">{{ s.supplier.name }}</a>{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                    <td class="small">
+                        {% if s.responsible %}{{ s.responsible }}{% if s.responsible_email %} <a href="mailto:{{ s.responsible_email }}" class="text-decoration-none" title="{{ s.responsible_email }}" aria-label="Envoyer un mail au responsable"><i class="bi bi-envelope"></i></a>{% endif %}
+                        {% elif s.responsible_email %}<a href="mailto:{{ s.responsible_email }}" class="text-decoration-none">{{ s.responsible_email }}</a>
+                        {% else %}<span class="text-muted">-</span>{% endif %}
+                    </td>
                     <td class="small">{{ s.version or '-' }}</td>
                     <td class="small">
                         {% if s.is_saas %}<span class="text-muted">—</span>
@@ -72,7 +78,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="8" class="text-center py-4 text-muted">
+                    <td colspan="9" class="text-center py-4 text-muted">
                         <i class="bi bi-window-stack" style="font-size: 2rem;"></i>
                         <p class="mt-2 mb-0">Aucun logiciel.
                             {% if current_user.can_edit('inventory') %}
