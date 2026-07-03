@@ -441,27 +441,6 @@ def preferences():
             except Exception as e:
                 flash(f"Suppression impossible : {e}", 'danger')
 
-        elif action == 'save_webhooks':
-            mapping = {
-                'TEAMS_WEBHOOK_URL': request.form.get('teams_webhook', '').strip(),
-                'SLACK_WEBHOOK_URL': request.form.get('slack_webhook', '').strip(),
-                'DISCORD_WEBHOOK_URL': request.form.get('discord_webhook', '').strip(),
-            }
-            _persist_config(mapping)
-            current_app.config.update(mapping)
-            audit_record('config notifications', category='preferences')
-            flash('Notifications enregistrees', 'success')
-
-        elif action in ('test_teams', 'test_slack', 'test_discord'):
-            from app import notify
-            fn = {'test_teams': notify.send_teams, 'test_slack': notify.send_slack,
-                  'test_discord': notify.send_discord}[action]
-            ok = fn('Test de notification', 'Notification de test depuis Sentinelle.',
-                    status='info', url=current_app.config.get('APP_BASE_URL'))
-            canal = action.split('_')[1].capitalize()
-            flash(f'Notification {canal} envoyee.' if ok else f"Echec {canal} (verifier l'URL du webhook).",
-                  'success' if ok else 'danger')
-
         elif action == 'save_ldap':
             enabled = request.form.get('ldap_enabled') == 'on'
             use_ssl = request.form.get('ldap_ssl') == 'on'
@@ -551,48 +530,6 @@ def preferences():
             ok, msg = test_ldap_connection(current_app)
             flash(msg, 'success' if ok else 'danger')
 
-        elif action == 'add_webhook':
-            from app.models import Webhook, WEBHOOK_CHANNELS, CATEGORY_LABELS
-            channel = request.form.get('wh_channel', '')
-            url = request.form.get('wh_url', '').strip()
-            category = request.form.get('wh_category', 'all')
-            if channel not in WEBHOOK_CHANNELS:
-                flash('Canal invalide.', 'danger')
-            elif not url:
-                flash("L'URL du webhook est obligatoire.", 'danger')
-            elif not url.lower().startswith('https://'):
-                # Limite le risque de SSRF / d'exfiltration vers un hote interne :
-                # les webhooks Teams/Slack/Discord sont tous en HTTPS.
-                flash('L\'URL du webhook doit commencer par https://', 'danger')
-            else:
-                if category != 'all' and category not in CATEGORY_LABELS:
-                    category = 'all'
-                db.session.add(Webhook(category=category, channel=channel, url=url,
-                                       label=request.form.get('wh_label', '').strip() or None))
-                db.session.commit()
-                audit_record('ajout webhook', detail=f'{channel} / {category}', category='preferences')
-                flash('Webhook ajouté', 'success')
-
-        elif action == 'delete_webhook':
-            from app.models import Webhook
-            w = db.session.get(Webhook, request.form.get('wh_id', type=int))
-            if w:
-                db.session.delete(w)
-                db.session.commit()
-                audit_record('suppression webhook', detail=f'{w.channel} / {w.category}', category='preferences')
-                flash('Webhook supprimé', 'success')
-
-        elif action == 'test_webhook':
-            from app.models import Webhook
-            from app.notify import send_to
-            w = db.session.get(Webhook, request.form.get('wh_id', type=int))
-            if w:
-                ok = send_to(w.channel, w.url, 'Test de notification',
-                             'Ceci est un message de test depuis Sentinelle.', status='info',
-                             url=current_app.config.get('APP_BASE_URL'))
-                flash('Test envoyé.' if ok else "Échec de l'envoi du test.",
-                      'success' if ok else 'danger')
-
         return redirect(url_for('auth.preferences'))
 
     mail_method = current_app.config.get('MAIL_METHOD', 'smtp')
@@ -622,11 +559,6 @@ def preferences():
     alert_recipients_by_cat = {
         cat: ', '.join(current_app.config.get(f'ALERT_RECIPIENTS_{cat.upper()}') or [])
         for cat in ALERT_CATEGORIES}
-    webhooks = {
-        'teams': current_app.config.get('TEAMS_WEBHOOK_URL', ''),
-        'slack': current_app.config.get('SLACK_WEBHOOK_URL', ''),
-        'discord': current_app.config.get('DISCORD_WEBHOOK_URL', ''),
-    }
 
     from app.db_backup import list_backups
     db_backups = list_backups(current_app)
@@ -635,9 +567,6 @@ def preferences():
 
     from app.app_settings import get_conformity_categories
     conformity_included = set(get_conformity_categories())
-
-    from app.models import Webhook, WEBHOOK_CHANNELS
-    category_webhooks = Webhook.query.order_by(Webhook.category, Webhook.channel).all()
 
     thresholds = {
         'expiry': current_app.config.get('THRESHOLD_EXPIRY', (7, 15, 30)),
@@ -676,8 +605,6 @@ def preferences():
     configured = {
         'mail': mail_configured,
         'recipients': bool(alert_recipients.strip()),
-        'notify': bool(webhooks['teams'] or webhooks['slack'] or webhooks['discord']
-                       or category_webhooks),
         'ldap': bool(ldap_config['enabled']),
         'conformity': db.session.get(Setting, 'conformity_categories') is not None,
         'thresholds': any(tuple(thresholds[k]) != _thr_defaults[k] for k in _thr_defaults),
@@ -698,13 +625,10 @@ def preferences():
                            ct_monitoring=current_app.config.get('CT_MONITORING', True),
                            dashboard_custom=current_app.config.get('DASHBOARD_CUSTOM', True),
                            db_backups=db_backups, thresholds=thresholds,
-                           ldap_config=ldap_config, webhooks=webhooks,
+                           ldap_config=ldap_config,
                            conformity_categories=CONFORMITY_CATEGORIES,
                            conformity_labels=CATEGORY_LABELS,
-                           conformity_included=conformity_included,
-                           category_webhooks=category_webhooks,
-                           webhook_channels=WEBHOOK_CHANNELS,
-                           gestion_categories=CONFORMITY_CATEGORIES)
+                           conformity_included=conformity_included)
 
 
 @bp.route('/auth/o365/callback')

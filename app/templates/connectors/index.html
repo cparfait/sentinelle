@@ -99,6 +99,122 @@
     </div>
 </div>
 
+{# ===================== CONNECTEUR NOTIFICATIONS (WEBHOOKS) ===================== #}
+<div class="data-card mb-3">
+    <div class="card-header-custom d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-bell me-2 text-primary"></i>Notifications (webhooks)</h6>
+        {% if webhooks.teams or webhooks.slack or webhooks.discord or category_webhooks %}
+        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Configuré</span>
+        {% else %}
+        <span class="badge bg-secondary">Non configuré</span>
+        {% endif %}
+    </div>
+    <div class="p-3">
+        <p class="text-muted small mb-2">Poste les alertes dans Microsoft Teams, Slack et/ou Discord, en plus du mail.</p>
+        <form method="POST" action="{{ url_for('connectors.webhooks') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row g-2">
+                <div class="col-md-9">
+                    <label class="form-label small"><i class="bi bi-microsoft-teams me-1"></i>Microsoft Teams {% if webhooks.teams %}<span class="text-success">— configuré</span>{% endif %}</label>
+                    <input type="url" name="teams_webhook" class="form-control form-control-sm"
+                           value="{{ webhooks.teams }}" placeholder="https://...webhook.office.com/...">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" name="action" value="test_teams" class="btn btn-sm btn-outline-primary w-100"
+                            {% if not webhooks.teams %}disabled{% endif %}><i class="bi bi-send me-1"></i> Tester</button>
+                </div>
+                <div class="col-md-9">
+                    <label class="form-label small"><i class="bi bi-slack me-1"></i>Slack {% if webhooks.slack %}<span class="text-success">— configuré</span>{% endif %}</label>
+                    <input type="url" name="slack_webhook" class="form-control form-control-sm"
+                           value="{{ webhooks.slack }}" placeholder="https://hooks.slack.com/services/...">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" name="action" value="test_slack" class="btn btn-sm btn-outline-primary w-100"
+                            {% if not webhooks.slack %}disabled{% endif %}><i class="bi bi-send me-1"></i> Tester</button>
+                </div>
+                <div class="col-md-9">
+                    <label class="form-label small"><i class="bi bi-discord me-1"></i>Discord {% if webhooks.discord %}<span class="text-success">— configuré</span>{% endif %}</label>
+                    <input type="url" name="discord_webhook" class="form-control form-control-sm"
+                           value="{{ webhooks.discord }}" placeholder="https://discord.com/api/webhooks/...">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" name="action" value="test_discord" class="btn btn-sm btn-outline-primary w-100"
+                            {% if not webhooks.discord %}disabled{% endif %}><i class="bi bi-send me-1"></i> Tester</button>
+                </div>
+            </div>
+            <button type="submit" name="action" value="save_webhooks" class="btn btn-sm btn-primary mt-2">
+                <i class="bi bi-check-lg me-1"></i> Enregistrer les notifications
+            </button>
+            <small class="text-muted d-block mt-1">Les alertes sont postées dans tous les canaux renseignés, en plus du mail.</small>
+        </form>
+
+        <hr class="my-3">
+        <h6 class="fw-bold mb-1"><i class="bi bi-diagram-2 me-2 text-primary"></i>Webhooks par catégorie</h6>
+        <p class="text-muted small mb-2">Ajoutez autant de webhooks que nécessaire, ciblés sur une catégorie de gestion (ou « Toutes »). Une alerte d'une catégorie est postée sur ses webhooks (plus ceux « Toutes » et les webhooks globaux ci-dessus).</p>
+
+        <form method="POST" action="{{ url_for('connectors.webhooks') }}" class="row g-2 align-items-end mb-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="add_webhook">
+            <div class="col-md-3">
+                <label class="form-label small">Catégorie</label>
+                <select name="wh_category" class="form-select form-select-sm">
+                    <option value="all">Toutes</option>
+                    {% for cat in gestion_categories %}<option value="{{ cat }}">{{ conformity_labels.get(cat, cat) }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Canal</label>
+                <select name="wh_channel" class="form-select form-select-sm">
+                    {% for val, lbl in webhook_channels.items() %}<option value="{{ val }}">{{ lbl }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label small">URL du webhook</label>
+                <input type="url" name="wh_url" class="form-control form-control-sm" required placeholder="https://...">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-plus-lg me-1"></i> Ajouter</button>
+            </div>
+            <div class="col-md-5">
+                <input type="text" name="wh_label" class="form-control form-control-sm" placeholder="Libellé (optionnel)">
+            </div>
+        </form>
+
+        {% if category_webhooks %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead><tr><th>Catégorie</th><th>Canal</th><th>URL</th><th></th></tr></thead>
+                <tbody>
+                    {% for w in category_webhooks %}
+                    <tr>
+                        <td><span class="badge bg-{{ 'secondary' if w.category == 'all' else 'info' }}">{{ 'Toutes' if w.category == 'all' else conformity_labels.get(w.category, w.category) }}</span></td>
+                        <td>{{ webhook_channels.get(w.channel, w.channel) }}</td>
+                        <td class="text-muted small text-truncate" style="max-width:280px;">{{ w.label or w.url }}</td>
+                        <td class="text-end text-nowrap">
+                            <form method="POST" action="{{ url_for('connectors.webhooks') }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="action" value="test_webhook">
+                                <input type="hidden" name="wh_id" value="{{ w.id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-primary py-0 px-1" title="Tester" aria-label="Tester"><i class="bi bi-send"></i></button>
+                            </form>
+                            <form method="POST" action="{{ url_for('connectors.webhooks') }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="action" value="delete_webhook">
+                                <input type="hidden" name="wh_id" value="{{ w.id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Supprimer" aria-label="Supprimer" data-confirm="Supprimer ce webhook ?"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted small mb-0">Aucun webhook par catégorie pour le moment.</p>
+        {% endif %}
+    </div>
+</div>
+
 {# Emplacement pour les futurs connecteurs. #}
 <div class="data-card">
     <div class="p-4 text-center text-muted">
