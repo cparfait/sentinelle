@@ -40,7 +40,7 @@
             <a class="seg-tab {% if kind == val %}active{% endif %}" href="{{ url_for('inventory.list', kind=val, q=q) }}">{{ lbl }} <span class="seg-tab-count">{{ cnt }}</span></a>
             {% endfor %}
         </div>
-        <div class="ms-auto d-flex flex-wrap align-items-center gap-2">
+        <div class="flex-grow-1 justify-content-end d-flex flex-wrap align-items-center gap-2">
             <div class="input-group input-group-sm" style="max-width: 240px;">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
                 <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Rechercher...">
