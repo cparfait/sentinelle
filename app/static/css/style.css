@@ -431,6 +431,7 @@ tr.row-warning > td { background: rgba(var(--warning-rgb), 0.05); }
 }
 
 .stat-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     background: var(--card-bg);
@@ -587,10 +588,47 @@ body.dash-editing .dash-widget-bar {
 body.dash-editing .dash-widget[draggable="true"] { cursor: default; }
 .dash-widget.dragging { opacity: 0.45; }
 
-/* Vignettes de synthese deplacables en mode edition. */
+/* Vignettes de synthese deplacables / masquables en mode edition. */
 body.dash-editing .stat-card { cursor: move; }
 body.dash-editing .stat-card[draggable="true"] { outline: 1px dashed var(--border-strong); outline-offset: 2px; }
 .stat-card.dragging { opacity: 0.45; }
+
+/* Bouton oeil (masquer/afficher une vignette), visible seulement en edition. */
+.stat-toggle {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2px 6px;
+    line-height: 1;
+    box-shadow: var(--shadow-xs);
+    z-index: 2;
+    cursor: pointer;
+}
+body.dash-editing .stat-toggle { display: inline-flex; }
+.stat-toggle:hover { color: var(--primary); border-color: var(--border-strong); }
+
+/* Tiroir des vignettes masquees (visible seulement en mode edition). */
+.stat-tray {
+    margin-top: var(--space-3);
+    background: var(--card-bg);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius);
+    padding: var(--space-3);
+}
+.stat-tray-title { font-weight: 600; color: var(--text-strong); margin-bottom: 8px; }
+.stat-tray-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-3);
+}
+.stat-tray-empty { grid-column: 1 / -1; }
 .dash-toggle {
     border: none;
     background: transparent;

@@ -3,8 +3,8 @@ import json
 
 from app import db
 from app.dashboard import (resolve_dashboard_layout, resolve_widget_spans,
-                           resolve_card_order, WIDGET_SPAN_DEFAULT,
-                           DASHBOARD_WIDGETS, STAT_CARDS)
+                           resolve_card_order, resolve_card_layout,
+                           WIDGET_SPAN_DEFAULT, DASHBOARD_WIDGETS, STAT_CARDS)
 from app.models import User
 
 
@@ -115,6 +115,39 @@ def test_card_order_ignore_indisponibles():
     prefs = json.dumps({'cards': ['inventory', 'accounts']})
     available = ['accounts']  # inventory non visible (droit)
     assert resolve_card_order(_FakeUser(prefs), available) == ['accounts']
+
+
+def test_card_layout_masque_respecte():
+    """Une vignette dans hidden_cards est masquee ; les autres restent visibles."""
+    prefs = json.dumps({'cards': ['certificates', 'accounts'],
+                        'hidden_cards': ['accounts']})
+    available = ['accounts', 'certificates', 'contracts']
+    visible, hidden = resolve_card_layout(_FakeUser(prefs), available)
+    assert hidden == ['accounts']
+    assert 'accounts' not in visible
+    assert visible[0] == 'certificates'          # ordre respecte
+    assert 'contracts' in visible and visible[-1] == 'contracts'  # nouvelle -> fin
+
+
+def test_card_layout_masque_ignore_indisponibles():
+    """Une vignette masquee mais plus disponible (droit retire) est ignoree."""
+    prefs = json.dumps({'cards': ['accounts'], 'hidden_cards': ['inventory']})
+    available = ['accounts']  # inventory non visible
+    visible, hidden = resolve_card_layout(_FakeUser(prefs), available)
+    assert visible == ['accounts'] and hidden == []
+
+
+def test_save_layout_persiste_vignettes_masquees(app, client):
+    r = client.post('/dashboard/layout', json={
+        'order': ['stats'], 'hidden': [],
+        'cards': ['accounts', 'certificates', 'inconnu'],
+        'hidden_cards': ['certificates', 'inconnu']})
+    assert r.status_code == 200
+    admin = User.query.filter_by(username='admin').first()
+    saved = json.loads(admin.dashboard_prefs)
+    assert saved['hidden_cards'] == ['certificates']  # 'inconnu' filtre
+    # 'certificates' masquee -> retiree de l'ordre visible (ensembles disjoints)
+    assert saved['cards'] == ['accounts']
 
 
 def test_save_layout_persiste_ordre_vignettes(app, client):

@@ -7,6 +7,7 @@
 {% macro stat_card(url, label, icon, color, s, ok_label='OK', danger_label='crit.', warning_label='alerte', key='') %}
 {% set total = s.total or 0 %}
 <a href="{{ url }}" class="stat-card text-decoration-none" style="--cat-color: {{ color }};"{% if key %} data-card="{{ key }}"{% endif %}>
+    <span class="stat-toggle" role="button" tabindex="-1" title="Masquer / afficher cette vignette" aria-hidden="true"><i class="bi"></i></span>
     <div class="d-flex align-items-center gap-2">
         <div class="stat-icon"><i class="bi {{ icon }}"></i></div>
         <div class="flex-grow-1 min-w-0">
@@ -58,7 +59,9 @@
     {% endif %}
 
 {% elif key == 'stats' %}
-    {# Vignettes ordonnees par l'utilisateur (dash_cards, construit dans la vue). #}
+    {# Vignettes ordonnees par l'utilisateur (dash_cards) + tiroir des masquees
+       (dash_hidden_cards), construits dans la vue. En mode edition : l'oeil
+       deplace une vignette entre la grille et le tiroir. #}
     <div class="stat-grid">
         {% for c in dash_cards %}
         {{ stat_card(c.url, c.label, c.icon, c.color, c.s,
@@ -68,6 +71,21 @@
                      key=c.key) }}
         {% endfor %}
     </div>
+    {% if dashboard_custom %}
+    <div class="stat-tray d-none">
+        <div class="stat-tray-title"><i class="bi bi-eye-slash me-1"></i>Vignettes masquées <small class="text-muted">— cliquez sur l'œil pour réafficher</small></div>
+        <div class="stat-tray-items">
+            {% for c in dash_hidden_cards %}
+            {{ stat_card(c.url, c.label, c.icon, c.color, c.s,
+                         ok_label=c.get('ok_label', 'OK'),
+                         danger_label=c.get('danger_label', 'crit.'),
+                         warning_label=c.get('warning_label', 'alerte'),
+                         key=c.key) }}
+            {% endfor %}
+            <div class="stat-tray-empty text-muted small {% if dash_hidden_cards %}d-none{% endif %}">Aucune vignette masquée.</div>
+        </div>
+    </div>
+    {% endif %}
 
 {% elif key == 'backups_today' %}
     {% if backups %}

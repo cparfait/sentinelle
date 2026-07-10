@@ -49,15 +49,25 @@ STAT_CARDS = [
 ]
 
 
-def resolve_card_order(user, available):
-    """Ordre des vignettes de synthese pour `user`. Meme logique que les blocs :
-    l'ordre enregistre est filtre sur les vignettes disponibles (droits), et toute
-    vignette disponible non mentionnee est ajoutee a la fin (ordre de reference)."""
+def resolve_card_layout(user, available):
+    """(visibles, masquees) des vignettes de synthese pour `user`. Meme logique
+    que les blocs : l'ordre et le masquage enregistres sont filtres sur les
+    vignettes disponibles (droits) ; toute vignette disponible non mentionnee est
+    visible par defaut, ajoutee a la fin dans l'ordre de reference."""
     avail = [k for k in available]
     avail_set = set(avail)
-    saved = [k for k in _load_prefs(user).get('cards', []) if k in avail_set]
-    seen = set(saved)
-    return saved + [k for k in avail if k not in seen]
+    prefs = _load_prefs(user)
+    hidden = [k for k in prefs.get('hidden_cards', []) if k in avail_set]
+    hidden_set = set(hidden)
+    saved = [k for k in prefs.get('cards', []) if k in avail_set and k not in hidden_set]
+    seen = set(saved) | hidden_set
+    visible = saved + [k for k in avail if k not in seen]
+    return visible, hidden
+
+
+def resolve_card_order(user, available):
+    """Ordre des vignettes visibles (raccourci sur resolve_card_layout)."""
+    return resolve_card_layout(user, available)[0]
 
 
 def _load_prefs(user):
@@ -645,14 +655,17 @@ def index():
     if dashboard_custom:
         dash_visible, dash_hidden = resolve_dashboard_layout(current_user, available)
         dash_spans = resolve_widget_spans(current_user)
-        card_order = resolve_card_order(current_user, available_cards)
+        card_order, card_hidden = resolve_card_layout(current_user, available_cards)
     else:
         dash_visible, dash_hidden = available, []
         dash_spans = dict(WIDGET_SPAN_DEFAULT)
-        card_order = available_cards
+        card_order, card_hidden = available_cards, []
 
-    dash_cards = [dict(card_meta[k], url=url_for(card_meta[k]['endpoint']),
-                       s=stats[k]) for k in card_order]
+    def _card_view(k):
+        return dict(card_meta[k], url=url_for(card_meta[k]['endpoint']), s=stats[k])
+
+    dash_cards = [_card_view(k) for k in card_order]
+    dash_hidden_cards = [_card_view(k) for k in card_hidden]
 
     return render_template('dashboard.html', stats=stats, urgent_items=urgent_items,
                            recent_alerts=recent_alerts, backups=backups,
@@ -660,7 +673,8 @@ def index():
                            totals=totals, conformity=conformity, upcoming=upcoming,
                            dashboard_custom=dashboard_custom, widget_meta=widget_meta,
                            dash_visible=dash_visible, dash_hidden=dash_hidden,
-                           dash_spans=dash_spans, dash_cards=dash_cards)
+                           dash_spans=dash_spans, dash_cards=dash_cards,
+                           dash_hidden_cards=dash_hidden_cards)
 
 
 @bp.route('/dashboard/layout', methods=['POST'])
@@ -694,15 +708,25 @@ def save_layout():
             continue
         if WIDGET_SPAN_MIN <= n <= WIDGET_SPAN_MAX:
             spans[key] = n
-    # Ordre des vignettes de synthese. Absent du payload -> on preserve l'existant.
+    # Ordre / masquage des vignettes de synthese. Absent du payload -> on preserve
+    # l'existant (un client ancien qui n'envoie pas ces cles ne les efface pas).
     valid_cards = {c['key'] for c in STAT_CARDS}
+    prev = _load_prefs(current_user)
     raw_cards = data.get('cards')
     if isinstance(raw_cards, list):
         cards = [k for k in raw_cards if k in valid_cards]
     else:
-        cards = [k for k in _load_prefs(current_user).get('cards', []) if k in valid_cards]
+        cards = [k for k in prev.get('cards', []) if k in valid_cards]
+    raw_hidden_cards = data.get('hidden_cards')
+    if isinstance(raw_hidden_cards, list):
+        hidden_cards = [k for k in raw_hidden_cards if k in valid_cards]
+    else:
+        hidden_cards = [k for k in prev.get('hidden_cards', []) if k in valid_cards]
+    # Une vignette masquee ne figure pas dans l'ordre visible (ensembles disjoints).
+    cards = [k for k in cards if k not in set(hidden_cards)]
     current_user.dashboard_prefs = json.dumps(
-        {'order': order, 'hidden': hidden, 'spans': spans, 'cards': cards})
+        {'order': order, 'hidden': hidden, 'spans': spans,
+         'cards': cards, 'hidden_cards': hidden_cards})
     db.session.commit()
     return jsonify(ok=True)
 

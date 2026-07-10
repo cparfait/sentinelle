@@ -50,17 +50,25 @@
         return out;
     }
 
-    // Ordre courant des vignettes de synthese (bloc « stats »).
+    // Ordre courant des vignettes de synthese (bloc « stats ») et tiroir des masquees.
     var statGrid = document.querySelector('.stat-grid');
-    function cardsOrder() {
-        if (!statGrid) return undefined;
+    var statTray = document.querySelector('.stat-tray');
+    var statTrayItems = document.querySelector('.stat-tray-items');
+    var statTrayEmpty = document.querySelector('.stat-tray-empty');
+    function cardsIn(container) {
+        if (!container) return [];
         return Array.prototype.map.call(
-            statGrid.querySelectorAll(':scope > .stat-card'),
+            container.querySelectorAll(':scope > .stat-card'),
             function (e) { return e.dataset.card; }).filter(Boolean);
     }
+    function cardsOrder() { return statGrid ? cardsIn(statGrid) : undefined; }
+    function hiddenCardsOrder() { return cardsIn(statTrayItems); }
 
     function persist() {
-        post({ order: gridKeys(), hidden: hiddenKeys(), spans: spansMap(), cards: cardsOrder() });
+        post({
+            order: gridKeys(), hidden: hiddenKeys(), spans: spansMap(),
+            cards: cardsOrder(), hidden_cards: hiddenCardsOrder()
+        });
     }
 
     // Icone du bouton oeil selon l'emplacement (grille = masquer, tiroir = afficher).
@@ -277,15 +285,63 @@
         });
     }
 
+    // ---- Masquer / afficher une vignette de synthese ----
+    // Icone de l'oeil selon l'emplacement (grille = masquer, tiroir = afficher).
+    function refreshCardToggleIcons() {
+        Array.prototype.forEach.call(document.querySelectorAll('.stat-card .stat-toggle'), function (btn) {
+            var inTray = statTrayItems && statTrayItems.contains(btn);
+            var icon = btn.querySelector('i');
+            if (icon) icon.className = 'bi ' + (inTray ? 'bi-eye' : 'bi-eye-slash');
+            btn.title = inTray ? 'Afficher cette vignette' : 'Masquer cette vignette';
+        });
+    }
+    function refreshStatTrayEmpty() {
+        if (statTrayEmpty) statTrayEmpty.classList.toggle('d-none', hiddenCardsOrder().length > 0);
+    }
+
+    function onCardToggle(e) {
+        var btn = e.target.closest('.stat-toggle');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var card = btn.closest('.stat-card');
+        if (!card || !statTrayItems) return;
+        if (statTrayItems.contains(card)) {
+            statGrid.appendChild(card);              // reafficher : en fin de grille
+            card.setAttribute('draggable', 'true');
+        } else {
+            statTrayItems.insertBefore(card, statTrayEmpty);  // masquer
+            card.removeAttribute('draggable');
+        }
+        refreshCardToggleIcons();
+        refreshStatTrayEmpty();
+        persist();
+    }
+    if (statGrid) statGrid.addEventListener('click', onCardToggle);
+    if (statTrayItems) {
+        statTrayItems.addEventListener('click', onCardToggle);
+        // En edition, le clic sur une vignette du tiroir sert a la reafficher (via
+        // l'oeil), pas a naviguer : on neutralise le lien.
+        statTrayItems.addEventListener('click', function (e) {
+            if (document.body.classList.contains('dash-editing') && e.target.closest('.stat-card')) {
+                e.preventDefault();
+            }
+        });
+    }
+
     // ---- Bascule du mode edition ----
     function setEditing(on) {
         document.body.classList.toggle('dash-editing', on);
         customizeBtn.classList.toggle('d-none', on);
         if (editControls) editControls.classList.toggle('d-none', !on);
         if (tray) tray.classList.toggle('d-none', !on);
+        if (statTray) statTray.classList.toggle('d-none', !on);
         setDraggable(on);
         setCardsDraggable(on);
-        if (on) { refreshToggleIcons(); refreshTrayEmpty(); }
+        if (on) {
+            refreshToggleIcons(); refreshTrayEmpty();
+            refreshCardToggleIcons(); refreshStatTrayEmpty();
+        }
     }
 
     customizeBtn.addEventListener('click', function () { setEditing(true); });
