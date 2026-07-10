@@ -52,6 +52,12 @@
                             {% if current_user.can_edit('updates') %}
                             <a href="{{ url_for('updates.edit', id=u.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
                             {% endif %}
+                            {% if current_user.can_delete('updates') %}
+                            <form method="POST" action="{{ url_for('updates.delete', id=u.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer" aria-label="Supprimer" data-confirm="Supprimer « {{ u.name }} » ?"><i class="bi bi-trash"></i></button>
+                            </form>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
