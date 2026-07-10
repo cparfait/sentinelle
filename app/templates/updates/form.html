@@ -29,7 +29,7 @@
                             <option value="{{ a.name }}" data-type="{{ a.asset_type }}">{{ a.name }}</option>
                             {% endfor %}
                         </select>
-                        <small class="text-muted">Catalogue géré dans Préférences.</small>
+                        <small class="text-muted">Matériel : inventaire — Application : logiciels métiers.</small>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-medium">Nom *</label>
@@ -112,9 +112,8 @@
     var picker = document.getElementById('assetPicker');
     var nameInput = document.getElementById('assetName');
     if (!typeSel || !picker || !nameInput) return;
-    var MAP = {application: 'application', system: 'divers'};
     function filterPicker() {
-        var want = MAP[typeSel.value] || typeSel.value;
+        var want = typeSel.value;
         Array.prototype.forEach.call(picker.options, function (o) {
             if (!o.value) { o.hidden = false; return; }
             o.hidden = (o.dataset.type !== want);

@@ -15,7 +15,7 @@ STATUS_CHOICES = [
     ('update_available', 'Mise à jour disponible'),
     ('critical', 'Critique / sécurité'),
 ]
-TYPE_CHOICES = [('application', 'Application'), ('system', 'Système')]
+TYPE_CHOICES = [('application', 'Application'), ('system', 'Matériel')]
 _VALID_STATUS = {v for v, _ in STATUS_CHOICES}
 _VALID_TYPE = {v for v, _ in TYPE_CHOICES}
 
