@@ -452,6 +452,37 @@
                 </div>
             </div>
 
+            {# ===================== APPARENCE ===================== #}
+            <div class="accordion-item" style="order:12;">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secAppearance" aria-expanded="false" aria-controls="secAppearance">
+                        <i class="bi bi-palette me-2"></i>Apparence
+                        {% if ui_primary_color %}<span class="badge ms-2" style="background:{{ ui_primary_color }};"><i class="bi bi-check-circle me-1"></i>Personnalisée</span>{% else %}<span class="badge bg-secondary ms-2">Palette d'origine</span>{% endif %}
+                    </button>
+                </h2>
+                <div id="secAppearance" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
+                    <div class="accordion-body">
+                        <form method="POST" action="{{ url_for('auth.preferences') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="save_ui_color">
+                            <p class="text-muted small mb-3">Couleur principale de l'interface (boutons, liens, onglets, logo, fond de la page de connexion), pour tous les utilisateurs. Elle s'applique aussi au thème sombre (déclinaison éclaircie). Décochée : palette d'origine (indigo). Choisissez une couleur foncée, le texte posé dessus est blanc.</p>
+                            <div class="d-flex align-items-center gap-3 flex-wrap mb-3">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                           id="uiColorEnabled" name="ui_color_enabled" {% if ui_primary_color %}checked{% endif %}>
+                                    <label class="form-check-label fw-medium" for="uiColorEnabled">Couleur personnalisée</label>
+                                </div>
+                                <input type="color" class="form-control form-control-color" name="ui_primary_color"
+                                       value="{{ ui_primary_color or '#4f46e5' }}" title="Choisir la couleur principale">
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> Enregistrer
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
             {# ===================== SEUILS D'ALERTE ===================== #}
             <div class="accordion-item" style="order:8;">
                 <h2 class="accordion-header">

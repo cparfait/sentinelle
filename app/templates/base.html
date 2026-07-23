@@ -15,6 +15,7 @@
        telecharger). Aucune requete Internet a l'execution. #}
     <link href="{{ url_for('static', filename='vendor/fonts/ibm-plex.css') }}" rel="stylesheet">
     <link href="{{ static_v('css/style.css') }}" rel="stylesheet">
+    {{ ui_primary_css() }}
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -34,7 +35,7 @@
 
     <div class="sidebar">
         <div class="sidebar-header">
-            <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" class="sidebar-logo-icon">
+            <img src="{{ url_for('auth.logo') }}" alt="" class="sidebar-logo-icon">
             <span class="sidebar-logo-text">Sentinelle</span>
         </div>
 

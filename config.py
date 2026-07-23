@@ -82,6 +82,10 @@ class Config:
     # blocs). Desactivable globalement -> disposition par defaut pour tous.
     DASHBOARD_CUSTOM = os.getenv('DASHBOARD_CUSTOM', 'true').lower() in ('true', '1', 'yes')
 
+    # Couleur principale de l'interface (hex #rrggbb, vide = palette indigo
+    # d'origine). Modifiable depuis Preferences -> Apparence.
+    UI_PRIMARY_COLOR = os.getenv('UI_PRIMARY_COLOR', '')
+
     MAIL_METHOD = os.getenv('MAIL_METHOD', 'smtp')
 
     MAIL_SERVER = os.getenv('MAIL_SERVER', 'localhost')

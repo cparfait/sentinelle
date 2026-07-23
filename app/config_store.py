@@ -51,6 +51,7 @@ MANAGED = _BOOL | _INT | _TRIPLET | _CSV | {
     'CT_MONITORING',    # surveillance Certificate Transparency (crt.sh) : on/off
     'DASHBOARD_CUSTOM', # tableau de bord personnalisable par utilisateur : on/off
     'SESAME_API_ENABLED', 'SESAME_API_TOKEN',  # integration Sesame (API + cle)
+    'UI_PRIMARY_COLOR',  # couleur principale de l'interface (hex, vide = defaut)
 }
 
 

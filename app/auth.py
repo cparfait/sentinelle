@@ -11,6 +11,20 @@ from app.decorators import require_admin
 bp = Blueprint('auth', __name__)
 
 
+@bp.route('/logo.svg')
+def logo():
+    """Logo teinte avec la couleur du site si definie (sinon l'original).
+    Public : affiche sur la page de connexion."""
+    from flask import Response
+    from app.theming import tinted_logo_svg
+    path = os.path.join(current_app.static_folder, 'img', 'logo.svg')
+    with open(path, encoding='utf-8') as f:
+        svg = f.read()
+    svg = tinted_logo_svg(svg, current_app.config.get('UI_PRIMARY_COLOR', ''))
+    return Response(svg, mimetype='image/svg+xml',
+                    headers={'Cache-Control': 'no-cache'})
+
+
 def _safe_next(value):
     """Ne garde le parametre `next` que s'il s'agit d'un chemin interne
     (evite la redirection ouverte vers un site externe apres connexion)."""
@@ -398,6 +412,19 @@ def preferences():
             audit_record('config tableau de bord personnalisable', detail=f'actif={enabled}', category='preferences')
             flash('Tableau de bord personnalisable ' + ('activé' if enabled else 'désactivé') + '.', 'success')
 
+        elif action == 'save_ui_color':
+            from app.theming import normalize_color
+            color = ''
+            if request.form.get('ui_color_enabled') == 'on':
+                color = normalize_color(request.form.get('ui_primary_color', ''))
+                if not color:
+                    flash('Couleur invalide (format attendu : #rrggbb)', 'danger')
+                    return redirect(url_for('auth.preferences'))
+            _persist_config({'UI_PRIMARY_COLOR': color})
+            current_app.config['UI_PRIMARY_COLOR'] = color
+            audit_record('config couleur interface', detail=color or 'defaut', category='preferences')
+            flash('Couleur de l\'interface ' + (f'personnalisée ({color})' if color else 'remise par défaut') + '.', 'success')
+
         elif action == 'send_report_now':
             from app.pdf_report import send_report
             try:
@@ -624,6 +651,7 @@ def preferences():
                            report_recipients=', '.join(current_app.config.get('REPORT_RECIPIENTS') or []),
                            ct_monitoring=current_app.config.get('CT_MONITORING', True),
                            dashboard_custom=current_app.config.get('DASHBOARD_CUSTOM', True),
+                           ui_primary_color=current_app.config.get('UI_PRIMARY_COLOR', ''),
                            db_backups=db_backups, thresholds=thresholds,
                            ldap_config=ldap_config,
                            conformity_categories=CONFORMITY_CATEGORIES,

@@ -42,9 +42,14 @@ def create_app(config_class=Config):
             labels = {'admin': 'Administrateur', 'editor': 'Éditeur', 'viewer': 'Lecteur'}
             return labels.get(name, (name or '').replace('-', ' ').replace('_', ' ').title())
 
+        from markupsafe import Markup
+        from app.theming import primary_css_override
+
         return {'now': lambda: datetime.now(timezone.utc),
                 'active_snooze': get_active_snooze,
-                'role_label': role_label}
+                'role_label': role_label,
+                'ui_primary_css': lambda: Markup(primary_css_override(
+                    app.config.get('UI_PRIMARY_COLOR', '')))}
 
     # Compteurs de la sidebar : leur calcul charge toutes les tables et evalue
     # chaque statut. On le fait au plus une fois par minute (cache process,
