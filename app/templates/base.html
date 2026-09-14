@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>{% block title %}Admin Dashboard{% endblock %}</title>
+    {# Anti-FOUC : applique le thème et la couleur de fond avant le premier rendu,
+       pour éviter le flash noir sur OS dark-mode quand le CSS n'est pas encore chargé. #}
+    <script>(function(){try{var t=localStorage.getItem('theme')||'light';var h=document.documentElement;h.setAttribute('data-theme',t);h.style.backgroundColor=t==='dark'?'#0b1120':'#f5f6f8';}catch(e){}})();</script>
+    <link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='vendor/bootstrap-icons.css') }}" rel="stylesheet">
+    {# Polices de la refonte — 100% hors-ligne. Les .woff2 sont servis localement
+       depuis static/vendor/fonts/ (lancer DOWNLOAD-FONTS.ps1 une fois pour les
+       telecharger). Aucune requete Internet a l'execution. #}
+    <link href="{{ url_for('static', filename='vendor/fonts/ibm-plex.css') }}" rel="stylesheet">
+    <link href="{{ static_v('css/style.css') }}" rel="stylesheet">
+    {{ ui_primary_css() }}
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <a href="#main-content" class="skip-link">Aller au contenu</a>
+
+    <div class="app-topbar">
+        <button class="topbar-toggle" type="button" onclick="toggleSidebar()" aria-label="Ouvrir le menu">
+            <i class="bi bi-list"></i>
+        </button>
+        <span class="topbar-title">Sentinelle</span>
+        <span class="theme-toggle" onclick="toggleTheme()" title="Changer le theme" aria-label="Changer le theme" role="button" tabindex="0">
+            <i class="bi bi-moon js-theme-icon"></i>
+        </span>
+    </div>
+    <div class="sidebar-backdrop" onclick="closeSidebar()"></div>
+
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <img src="{{ url_for('auth.logo') }}" alt="" class="sidebar-logo-icon">
+            <span class="sidebar-logo-text">Sentinelle</span>
+        </div>
+
+        <div class="sidebar-search px-3 pb-2">
+            <form method="GET" action="{{ url_for('search.search') }}" class="sidebar-search-form">
+                <i class="bi bi-search"></i>
+                <input type="text" name="q" placeholder="Rechercher..." autocomplete="off">
+            </form>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">SURVEILLANCE</div>
+                <a href="{{ url_for('dashboard.index') }}" class="sidebar-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                    <i class="bi bi-grid-1x2"></i>
+                    <span>Tableau de bord</span>
+                </a>
+                <a href="{{ url_for('dashboard.agenda') }}" class="sidebar-link {% if request.endpoint == 'dashboard.agenda' %}active{% endif %}">
+                    <i class="bi bi-calendar-event"></i>
+                    <span>À venir</span>
+                </a>
+                <a href="{{ url_for('dashboard.trends') }}" class="sidebar-link {% if request.endpoint == 'dashboard.trends' %}active{% endif %}">
+                    <i class="bi bi-graph-up"></i>
+                    <span>Tendances</span>
+                </a>
+                {% if current_user.can_edit() and nav_counts and nav_counts.trash %}
+                <a href="{{ url_for('dashboard.trash') }}" class="sidebar-link {% if 'trash' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-trash3"></i>
+                    <span>Corbeille</span>
+                    <span class="badge bg-secondary rounded-pill ms-auto">{{ nav_counts.trash }}</span>
+                </a>
+                {% endif %}
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">GESTION</div>
+                {% if current_user.can_view('accounts') %}
+                <a href="{{ url_for('accounts.list') }}" class="sidebar-link {% if 'accounts' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-key"></i>
+                    <span>Comptes</span>
+                    {% if nav_counts and nav_counts.accounts %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.accounts }}</span>{% endif %}
+                </a>
+                {% endif %}
+                {% if current_user.can_view('certificates') %}
+                <a href="{{ url_for('certificates.list') }}" class="sidebar-link {% if 'certificates' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-award"></i>
+                    <span>Certificats</span>
+                    {% if nav_counts and nav_counts.certificates %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.certificates }}</span>{% endif %}
+                </a>
+                {% endif %}
+                {% if current_user.can_view('domains') %}
+                <a href="{{ url_for('domains.list') }}" class="sidebar-link {% if 'domains' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-globe"></i>
+                    <span>Domaines</span>
+                    {% if nav_counts and nav_counts.domains %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.domains }}</span>{% endif %}
+                </a>
+                {% endif %}
+                {% if current_user.can_view('backups') %}
+                <a href="{{ url_for('backups.list') }}" class="sidebar-link {% if 'backups' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-cloud-arrow-up"></i>
+                    <span>Backups</span>
+                    {% if nav_counts and nav_counts.backups %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.backups }}</span>{% endif %}
+                </a>
+                {% endif %}
+                {% if current_user.can_view('tests') %}
+                <a href="{{ url_for('tests.list') }}" class="sidebar-link {% if 'tests' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-clipboard-check"></i>
+                    <span>Tests</span>
+                    {% if nav_counts and nav_counts.tests %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.tests }}</span>{% endif %}
+                </a>
+                {% endif %}
+                {% if current_user.can_view('reviews') %}
+                <a href="{{ url_for('reviews.list') }}" class="sidebar-link {% if 'reviews' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-person-check"></i>
+                    <span>Revue de droits</span>
+                    {% if nav_counts and nav_counts.reviews %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.reviews }}</span>{% endif %}
+                </a>
+                {% endif %}
+                {% if current_user.can_view('updates') %}
+                <a href="{{ url_for('updates.list') }}" class="sidebar-link {% if 'updates' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-arrow-up-circle"></i>
+                    <span>Mises à jour</span>
+                    {% if nav_counts and nav_counts.updates %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.updates }}</span>{% endif %}
+                </a>
+                {% endif %}
+                {% if current_user.can_view('inventory') %}
+                <a href="{{ url_for('inventory.list') }}" class="sidebar-link {% if 'inventory' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-hdd-stack"></i>
+                    <span>Inventaire</span>
+                    {% if nav_counts and nav_counts.inventory %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.inventory }}</span>{% endif %}
+                </a>
+                {% endif %}
+                {% if current_user.can_view('contracts') %}
+                <a href="{{ url_for('contracts.list') }}" class="sidebar-link {% if 'contracts' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>Contrats</span>
+                    {% if nav_counts and nav_counts.contracts %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.contracts }}</span>{% endif %}
+                </a>
+                <a href="{{ url_for('suppliers.list') }}" class="sidebar-link {% if 'suppliers' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-building"></i>
+                    <span>Fournisseurs</span>
+                </a>
+                {% endif %}
+                {% if current_user.can_view('alerts') %}
+                <a href="{{ url_for('alerts.list') }}" class="sidebar-link {% if 'alerts' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-bell"></i>
+                    <span>Alertes</span>
+                </a>
+                {% endif %}
+            </div>
+
+            {% if current_user.is_admin %}
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">ADMINISTRATION</div>
+                <a href="{{ url_for('users.list') }}" class="sidebar-link {% if request.endpoint == 'users.list' or request.endpoint == 'users.create' or request.endpoint == 'users.edit' %}active{% endif %}">
+                    <i class="bi bi-people"></i>
+                    <span>Utilisateurs</span>
+                </a>
+                <a href="{{ url_for('users.roles') }}" class="sidebar-link {% if 'roles' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-shield-lock"></i>
+                    <span>Rôles & permissions</span>
+                </a>
+                <a href="{{ url_for('users.audit') }}" class="sidebar-link {% if request.endpoint == 'users.audit' %}active{% endif %}">
+                    <i class="bi bi-journal-text"></i>
+                    <span>Journal d'audit</span>
+                </a>
+                <a href="{{ url_for('users.scheduler_status') }}" class="sidebar-link {% if request.endpoint == 'users.scheduler_status' %}active{% endif %}">
+                    <i class="bi bi-clock"></i>
+                    <span>Tâches planifiées</span>
+                </a>
+                <a href="{{ url_for('connectors.index') }}" class="sidebar-link {% if request.blueprint == 'connectors' %}active{% endif %}">
+                    <i class="bi bi-plugin"></i>
+                    <span>Connecteurs</span>
+                </a>
+                <a href="{{ url_for('auth.preferences') }}" class="sidebar-link {% if request.endpoint == 'auth.preferences' %}active{% endif %}">
+                    <i class="bi bi-sliders"></i>
+                    <span>Préférences</span>
+                </a>
+            </div>
+            {% endif %}
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-footer-user">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="sidebar-avatar">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                    <div>
+                        <div class="sidebar-username">{{ current_user.username }}</div>
+                        <div class="sidebar-role">{{ 'Administrateur' if current_user.is_admin else 'Utilisateur' }}</div>
+                    </div>
+                </div>
+                <span class="theme-toggle" onclick="toggleTheme()" title="Changer le theme" aria-label="Changer le theme" role="button" tabindex="0">
+                    <i id="theme-icon" class="bi bi-moon js-theme-icon"></i>
+                </span>
+            </div>
+            <div class="sidebar-footer-actions">
+                <a href="{{ url_for('auth.profile') }}" class="sidebar-footer-link">
+                    <i class="bi bi-gear"></i> Mon profil
+                </a>
+                <a href="{{ url_for('auth.logout') }}" class="sidebar-footer-link sidebar-footer-link-danger">
+                    <i class="bi bi-box-arrow-right"></i> Déconnexion
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <main class="main-content" id="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% set flash_icons = {'success': 'check-circle-fill', 'danger': 'exclamation-octagon-fill', 'warning': 'exclamation-triangle-fill', 'info': 'info-circle-fill'} %}
+        {% for category, message in messages %}
+        {% set cat = category if category in ['success', 'danger', 'warning', 'info'] else 'info' %}
+        <div class="alert alert-{{ cat }} alert-dismissible fade show d-flex align-items-center gap-2 js-autodismiss" role="alert">
+            <i class="bi bi-{{ flash_icons[cat] }}"></i>
+            <div class="flex-grow-1">{{ message }}</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+    {% else %}
+    {% block login_content %}{% endblock %}
+    {% endif %}
+
+    {% if current_user.is_authenticated %}{% include '_toast_notifications.html' %}{% endif %}
+    <script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+    {% include '_confirm_modal.html' %}
+    <script src="{{ static_v('js/theme.js') }}"></script>
+    <script src="{{ static_v('js/quick-add.js') }}"></script>
+    <script src="{{ static_v('js/directory-autocomplete.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

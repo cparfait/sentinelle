@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifier' if account else 'Ajouter' }} un compte - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">
+            <i class="bi bi-key me-2"></i>{{ 'Modifier' if account else 'Ajouter' }} un compte
+        </h4>
+    </div>
+    <a href="{{ url_for('accounts.list') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Retour
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="data-card p-4">
+            <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Service *</label>
+                        <input type="text" name="service_name" class="form-control"
+                               value="{{ account.service_name if account else '' }}" required
+                               placeholder="ex: Active Directory, AWS, OVH...">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Utilisateur *</label>
+                        <input type="text" name="username" class="form-control"
+                               value="{{ account.username if account else '' }}" required
+                               placeholder="Nom d'utilisateur ou compte de service">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">URL / Acces</label>
+                        <input type="text" name="url" class="form-control"
+                               value="{{ account.url if account and account.url else '' }}"
+                               placeholder="https://...">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Priorite</label>
+                        <select name="priority" class="form-select">
+                            <option value="low" {{ 'selected' if account and account.priority == 'low' }}>Basse</option>
+                            <option value="medium" {{ 'selected' if not account or account.priority == 'medium' }}>Moyenne</option>
+                            <option value="high" {{ 'selected' if account and account.priority == 'high' }}>Haute</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Dernier changement de MDP</label>
+                        <input type="date" name="last_password_change" class="form-control"
+                               value="{{ account.last_password_change.strftime('%Y-%m-%d') if account and account.last_password_change else '' }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Rotation (jours) *</label>
+                        <input type="number" name="rotation_days" class="form-control"
+                               value="{{ account.rotation_days if account else 90 }}" min="1" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Description / Notes</label>
+                    <textarea name="description" class="form-control" rows="3"
+                              placeholder="Informations complementaires...">{{ account.description if account and account.description else '' }}</textarea>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if account else 'Ajouter' }}
+                    </button>
+                    <a href="{{ url_for('accounts.list') }}" class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

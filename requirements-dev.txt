@@ -1,0 +1,4 @@
+# Dependances de developpement (tests, lint). Production : requirements.txt seul.
+pytest>=8
+pytest-cov>=5
+ruff>=0.8

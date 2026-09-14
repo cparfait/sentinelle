@@ -1,0 +1,12 @@
+{# Barre de recherche d'une liste. Variables optionnelles : q, hidden (dict de
+   paramètres GET à préserver, ex. onglet de filtre courant). Soumet en GET sur la page courante. #}
+<form method="GET" class="mb-3">
+    {% if hidden %}{% for k, v in hidden.items() %}{% if v %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}{% endif %}
+    <div class="input-group input-group-sm" style="max-width: 380px;">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="text" name="q" value="{{ q or '' }}" class="form-control"
+               placeholder="Rechercher dans la liste...">
+        <button class="btn btn-primary" type="submit">Rechercher</button>
+        {% if q %}{% set keep = {} %}{% for k, v in (hidden or {}).items() %}{% if v %}{% set _ = keep.update({k: v}) %}{% endif %}{% endfor %}<a href="{{ url_for(request.endpoint, **keep) }}" class="btn btn-outline-secondary" title="Effacer" aria-label="Effacer"><i class="bi bi-x-lg"></i></a>{% endif %}
+    </div>
+</form>

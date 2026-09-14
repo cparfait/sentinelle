@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}{{ supplier.name }} - Sentinelle{% endblock %}
+{% from '_macros.html' import status_badge %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-building me-2"></i>{{ supplier.name }}</h4>
+        <small class="text-muted">{{ supplier.kind_label() }}{% if supplier.contact_name %} — {{ supplier.contact_name }}{% endif %}</small>
+    </div>
+    <div class="d-flex gap-2">
+        {% if current_user.can_edit('contracts') %}
+        <a href="{{ url_for('suppliers.edit', id=supplier.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil me-1"></i> Modifier
+        </a>
+        {% endif %}
+        <a href="{{ url_for('suppliers.list') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+        </a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="data-card p-4 mb-3">
+            <div class="row">
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Hotline support</small>
+                    {% if supplier.support_phone or supplier.phone %}
+                    <span class="fw-medium"><i class="bi bi-telephone me-1"></i>
+                        <a href="tel:{{ (supplier.support_phone or supplier.phone) | replace(' ', '') }}">{{ supplier.support_phone or supplier.phone }}</a></span>
+                    {% if supplier.hours %}<small class="text-muted d-block">{{ supplier.hours }}</small>{% endif %}
+                    {% else %}<span class="text-muted">-</span>{% endif %}
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">E-mail</small>
+                    {% if supplier.email %}<a href="mailto:{{ supplier.email }}">{{ supplier.email }}</a>{% else %}<span class="text-muted">-</span>{% endif %}
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">N° client / support</small>
+                    {% if supplier.customer_ref %}<code>{{ supplier.customer_ref }}</code>{% else %}<span class="text-muted">-</span>{% endif %}
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Téléphone standard</small>
+                    <span class="fw-medium">{{ supplier.phone or '-' }}</span>
+                </div>
+            </div>
+            {% if supplier.support_url %}
+            <a href="{{ supplier.support_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Portail support
+            </a>
+            {% endif %}
+            {% if supplier.notes %}
+            <div class="mt-3 pt-2 border-top">
+                <small class="text-muted d-block">Notes</small>
+                <p class="mb-0">{{ supplier.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        {# ===== Impacts : matériel, logiciels et contrats couverts par ce fournisseur ===== #}
+        <div class="data-card mb-3">
+            <div class="card-header-custom">
+                <h6 class="fw-bold mb-0"><i class="bi bi-hdd-network me-2 text-primary"></i>Matériel couvert
+                    <span class="badge bg-secondary ms-1">{{ equipments|length }}</span></h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Nom</th><th>Type</th><th>Environnement</th><th>Criticité</th></tr></thead>
+                    <tbody>
+                        {% for e in equipments %}
+                        <tr>
+                            <td><a href="{{ url_for('inventory.detail', id=e.id) }}" class="fw-medium text-decoration-none">{{ e.name }}</a></td>
+                            <td class="small">{{ e.kind_label() }}</td>
+                            <td class="small">{{ e.env_label() if e.environment else '-' }}</td>
+                            <td class="small">{{ e.criticality or '-' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center py-3 text-muted">Aucun matériel rattaché</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="data-card mb-3">
+            <div class="card-header-custom">
+                <h6 class="fw-bold mb-0"><i class="bi bi-window-stack me-2 text-primary"></i>Logiciels
+                    <span class="badge bg-secondary ms-1">{{ software|length }}</span></h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Nom</th><th>Version</th><th>Hébergement</th></tr></thead>
+                    <tbody>
+                        {% for sw in software %}
+                        <tr>
+                            <td><a href="{{ url_for('software.detail', id=sw.id) }}" class="fw-medium text-decoration-none">{{ sw.name }}</a></td>
+                            <td class="small">{{ sw.version or '-' }}</td>
+                            <td class="small">{{ 'SaaS' if sw.is_saas else 'Interne' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3" class="text-center py-3 text-muted">Aucun logiciel rattaché</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="data-card">
+            <div class="card-header-custom">
+                <h6 class="fw-bold mb-0"><i class="bi bi-file-earmark-text me-2 text-primary"></i>Contrats
+                    <span class="badge bg-secondary ms-1">{{ contracts|length }}</span></h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Contrat</th><th>Type</th><th>Échéance</th><th>Statut</th></tr></thead>
+                    <tbody>
+                        {% for c in contracts %}
+                        <tr>
+                            <td><a href="{{ url_for('contracts.detail', id=c.id) }}" class="fw-medium text-decoration-none">{{ c.name }}</a></td>
+                            <td class="small">{{ c.kind_label() }}</td>
+                            <td class="small text-nowrap">{{ c.end_date.strftime('%d/%m/%Y') if c.end_date else '-' }}</td>
+                            <td>{{ status_badge(c.status()) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center py-3 text-muted">Aucun contrat rattaché</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        {% if current_user.can_edit('contracts') %}
+        <div class="data-card p-4 mb-3">
+            <a href="{{ url_for('contracts.create') }}" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                <i class="bi bi-plus-lg me-1"></i> Nouveau contrat
+            </a>
+            <a href="{{ url_for('suppliers.edit', id=supplier.id) }}" class="btn btn-outline-secondary btn-sm w-100">
+                <i class="bi bi-pencil me-1"></i> Modifier ce fournisseur
+            </a>
+        </div>
+        {% endif %}
+        {% if current_user.can_delete('contracts') %}
+        <div class="data-card p-4">
+            <form method="POST" action="{{ url_for('suppliers.delete', id=supplier.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100"
+                        data-confirm="Supprimer ce fournisseur ?">
+                    <i class="bi bi-trash me-1"></i> Supprimer
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

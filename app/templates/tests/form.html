@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifier' if test else 'Ajouter' }} un test - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-clipboard-check me-2"></i>{{ 'Modifier' if test else 'Ajouter' }} un test</h4>
+    </div>
+    <a href="{{ url_for('tests.list') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Retour
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="data-card p-4">
+            <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Nom du test *</label>
+                        <input type="text" name="name" class="form-control"
+                               value="{{ test.name if test else '' }}" required
+                               placeholder="ex: Restauration base SQL prod">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Type de test *</label>
+                        <select name="test_type" class="form-select" required>
+                            {% for value, label in test_types %}
+                            <option value="{{ value }}" {{ 'selected' if test and test.test_type == value }}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Derniere execution</label>
+                        <input type="date" name="last_performed" class="form-control"
+                               value="{{ test.last_performed.strftime('%Y-%m-%d') if test and test.last_performed else '' }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Prochaine echeance</label>
+                        <input type="date" name="next_due" class="form-control"
+                               value="{{ test.next_due.strftime('%Y-%m-%d') if test and test.next_due else '' }}">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Frequence (jours) *</label>
+                        <input type="number" name="frequency_days" class="form-control"
+                               value="{{ test.frequency_days if test else 90 }}" min="1" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Priorite</label>
+                        <select name="priority" class="form-select">
+                            <option value="low" {{ 'selected' if test and test.priority == 'low' }}>Basse</option>
+                            <option value="medium" {{ 'selected' if not test or test.priority == 'medium' }}>Moyenne</option>
+                            <option value="high" {{ 'selected' if test and test.priority == 'high' }}>Haute</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Description / Procedure</label>
+                    <textarea name="description" class="form-control" rows="4"
+                              placeholder="Decrivez la procedure de test...">{{ test.description if test and test.description else '' }}</textarea>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if test else 'Ajouter' }}
+                    </button>
+                    <a href="{{ url_for('tests.list') }}" class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

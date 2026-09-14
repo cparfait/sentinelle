@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Sentinelle">
+  <defs>
+    <linearGradient id="sentinelle-grad" x1="6" y1="5" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <path d="M32 5 L55 14 V30 C55 44 45 53 32 59 C19 53 9 44 9 30 V14 Z" fill="url(#sentinelle-grad)"/>
+  <path d="M21 31 L29 39 L44 23" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

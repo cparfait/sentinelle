@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% from '_quick_add.html' import qa_button, qa_modal_software %}
+{% block title %}{{ 'Modifier' if review else 'Ajouter' }} une revue - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0"><i class="bi bi-person-check me-2"></i>{{ 'Modifier' if review else 'Ajouter' }} une revue de droits</h4>
+    <a href="{{ url_for('reviews.list') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Retour</a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="data-card p-4">
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Application métier *</label>
+                        {% set asset_names = assets | map(attribute='name') | list %}
+                        <div class="input-group">
+                            <select name="application" id="reviewApp" class="form-select" required data-qa-value-field="name">
+                                <option value="">— Choisir une application —</option>
+                                {% for a in assets %}
+                                <option value="{{ a.name }}" {{ 'selected' if review and review.application == a.name }}>{{ a.name }}</option>
+                                {% endfor %}
+                                {% if review and review.application and review.application not in asset_names %}
+                                <option value="{{ review.application }}" selected>{{ review.application }} (hors inventaire)</option>
+                                {% endif %}
+                            </select>
+                            {% if current_user.can_edit('inventory') %}{{ qa_button('qaModalSoftware', 'reviewApp', 'Ajouter une application') }}{% endif %}
+                        </div>
+                        <small class="text-muted">Issu de l'inventaire <a href="{{ url_for('software.list') }}">Logiciels / Applications</a>.</small>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label fw-medium">Responsable</label>
+                        <input type="text" name="responsible" class="form-control"
+                               value="{{ review.responsible if review and review.responsible else '' }}"
+                               data-ad-search data-ad-email="responsible_email"
+                               placeholder="Rechercher dans l'annuaire (AD)...">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label fw-medium">Email du responsable</label>
+                        <input type="email" name="responsible_email" class="form-control"
+                               value="{{ review.responsible_email if review and review.responsible_email else '' }}" placeholder="responsable@collectivite.fr">
+                        <small class="text-muted">Destinataire du mail de validation des tâches.</small>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Périmètre / notes</label>
+                    <textarea name="scope" class="form-control" rows="3"
+                              placeholder="Comptes concernés, profils, points à vérifier...">{{ review.scope if review and review.scope else '' }}</textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label fw-medium">Fréquence (jours)</label>
+                        <input type="number" name="frequency_days" class="form-control"
+                               value="{{ review.frequency_days if review else 365 }}">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label fw-medium">Dernière revue</label>
+                        <input type="date" name="last_review" class="form-control"
+                               value="{{ review.last_review.strftime('%Y-%m-%d') if review and review.last_review else '' }}">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label fw-medium">Prochaine revue</label>
+                        <input type="date" name="next_review" class="form-control"
+                               value="{{ review.next_review.strftime('%Y-%m-%d') if review and review.next_review else '' }}">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label fw-medium">Priorité</label>
+                        <select name="priority" class="form-select">
+                            <option value="low" {{ 'selected' if review and review.priority == 'low' }}>Basse</option>
+                            <option value="medium" {{ 'selected' if not review or review.priority == 'medium' }}>Moyenne</option>
+                            <option value="high" {{ 'selected' if review and review.priority == 'high' }}>Haute</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if review else 'Ajouter' }}</button>
+                    <a href="{{ url_for('reviews.list') }}" class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if current_user.can_edit('inventory') %}{{ qa_modal_software() }}{% endif %}
+{% endblock %}

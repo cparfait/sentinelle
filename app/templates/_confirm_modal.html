@@ -1,0 +1,49 @@
+{# Modal de confirmation réutilisable.
+   Usage : <button ... data-confirm="Message ?" data-confirm-form="#form-id">
+   Ou : <form id="form-id"><button data-confirm="Message ?">
+   Le bouton doit avoir data-confirm="..." et soit être dans un <form>, soit
+   avoir data-confirm-form="#selecteur" pointant vers le formulaire à soumettre. #}
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center py-2 px-4">
+        <i class="bi bi-exclamation-triangle-fill text-warning fs-1 d-block mb-3"></i>
+        <p id="confirmModalText" class="mb-0 fs-6"></p>
+      </div>
+      <div class="modal-footer border-0 pt-0 justify-content-center gap-2">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-danger" id="confirmModalOk">Confirmer</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var modal, okBtn, textEl, pendingForm;
+  document.addEventListener('DOMContentLoaded', function () {
+    var el = document.getElementById('confirmModal');
+    if (!el || !window.bootstrap) return;
+    modal = new bootstrap.Modal(el);
+    okBtn = document.getElementById('confirmModalOk');
+    textEl = document.getElementById('confirmModalText');
+    okBtn.addEventListener('click', function () {
+      modal.hide();
+      if (pendingForm) pendingForm.submit();
+    });
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-confirm]');
+      if (!btn) return;
+      var msg = btn.dataset.confirm;
+      var formSel = btn.dataset.confirmForm;
+      pendingForm = formSel ? document.querySelector(formSel) : btn.closest('form');
+      if (!pendingForm) return;
+      e.preventDefault();
+      textEl.textContent = msg;
+      modal.show();
+    });
+  });
+})();
+</script>

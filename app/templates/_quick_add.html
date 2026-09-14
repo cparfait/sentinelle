@@ -1,0 +1,158 @@
+{# Composant « ajout rapide » (+) : cree une entite liee (fournisseur, contrat,
+   equipement) sans quitter le formulaire courant.
+   Cf. app/static/js/quick-add.js (charge globalement dans base.html).
+
+   Usage :
+     {% from '_quick_add.html' import qa_button, qa_add_link,
+        qa_modal_supplier, qa_modal_contract, qa_modal_equipment %}
+     <div class="input-group">
+       <select id="monSelect" ...>...</select>
+       {{ qa_button('qaModalSupplier', 'monSelect', 'Ajouter un fournisseur') }}
+     </div>
+     ... (une fois, hors du <form> de preference)
+     {{ qa_modal_supplier() }}
+#}
+
+{# Bouton « + » accole a un select (input-group). #}
+{% macro qa_button(modal_id, target_id, title='Ajouter') %}
+<button type="button" class="btn btn-outline-primary" title="{{ title }}"
+        data-bs-toggle="modal" data-bs-target="#{{ modal_id }}"
+        data-qa-open="{{ modal_id }}" data-qa-target="{{ target_id }}">
+    <i class="bi bi-plus-lg"></i>
+</button>
+{% endmacro %}
+
+{# Petit bouton avec libelle, pour les listes multi-selection (a cote du label). #}
+{% macro qa_add_link(modal_id, target_id, text='Ajouter') %}
+<button type="button" class="btn btn-sm btn-outline-primary" title="{{ text }}"
+        data-bs-toggle="modal" data-bs-target="#{{ modal_id }}"
+        data-qa-open="{{ modal_id }}" data-qa-target="{{ target_id }}">
+    <i class="bi bi-plus-lg me-1"></i>{{ text }}
+</button>
+{% endmacro %}
+
+{% macro qa_modal_supplier() %}
+<div class="modal fade" id="qaModalSupplier" tabindex="-1" aria-hidden="true"
+     data-qa-endpoint="{{ url_for('suppliers.quick_create') }}">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-truck me-2"></i>Nouveau fournisseur</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" data-qa-csrf value="{{ csrf_token() }}">
+                <div class="mb-2">
+                    <label class="form-label small">Nom *</label>
+                    <input type="text" data-qa-field="name" data-qa-required class="form-control form-control-sm">
+                </div>
+                <div class="row g-2">
+                    <div class="col-md-6"><label class="form-label small">Contact</label><input type="text" data-qa-field="contact_name" class="form-control form-control-sm"></div>
+                    <div class="col-md-6"><label class="form-label small">Téléphone</label><input type="text" data-qa-field="phone" class="form-control form-control-sm"></div>
+                    <div class="col-12"><label class="form-label small">E-mail</label><input type="email" data-qa-field="email" class="form-control form-control-sm"></div>
+                </div>
+                <div data-qa-error class="text-danger small mt-2 d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary btn-sm" data-qa-save><i class="bi bi-check-lg me-1"></i>Créer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro qa_modal_contract() %}
+<div class="modal fade" id="qaModalContract" tabindex="-1" aria-hidden="true"
+     data-qa-endpoint="{{ url_for('contracts.quick_create') }}">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-file-earmark-text me-2"></i>Nouveau contrat</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" data-qa-csrf value="{{ csrf_token() }}">
+                <div class="mb-2">
+                    <label class="form-label small">Nom *</label>
+                    <input type="text" data-qa-field="name" data-qa-required class="form-control form-control-sm">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Échéance</label>
+                    <input type="date" data-qa-field="end_date" class="form-control form-control-sm">
+                </div>
+                <div data-qa-error class="text-danger small mt-2 d-none"></div>
+                <div class="form-text">Détails (type, préavis, coût…) à compléter ensuite sur la fiche.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary btn-sm" data-qa-save><i class="bi bi-check-lg me-1"></i>Créer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro qa_modal_software() %}
+<div class="modal fade" id="qaModalSoftware" tabindex="-1" aria-hidden="true"
+     data-qa-endpoint="{{ url_for('software.quick_create') }}">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-window-stack me-2"></i>Nouvelle application</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" data-qa-csrf value="{{ csrf_token() }}">
+                <div class="mb-2">
+                    <label class="form-label small">Nom *</label>
+                    <input type="text" data-qa-field="name" data-qa-required class="form-control form-control-sm" placeholder="ex: SIRH, GLPI, Office 365…">
+                </div>
+                <div data-qa-error class="text-danger small mt-2 d-none"></div>
+                <div class="form-text">Détails (éditeur, serveurs, contrat…) à compléter ensuite sur la fiche du logiciel.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary btn-sm" data-qa-save><i class="bi bi-check-lg me-1"></i>Créer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro qa_modal_equipment() %}
+<div class="modal fade" id="qaModalEquipment" tabindex="-1" aria-hidden="true"
+     data-qa-endpoint="{{ url_for('inventory.quick_create') }}">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-hdd-stack me-2"></i>Nouvel équipement</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" data-qa-csrf value="{{ csrf_token() }}">
+                <div class="row g-2">
+                    <div class="col-md-7">
+                        <label class="form-label small">Nom *</label>
+                        <input type="text" data-qa-field="name" data-qa-required class="form-control form-control-sm" placeholder="ex: SRV-APP01">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label small">Type</label>
+                        <select data-qa-field="kind" class="form-select form-select-sm">
+                            <option value="vm">VM</option>
+                            <option value="physical">Serveur physique</option>
+                            <option value="nas">NAS</option>
+                        </select>
+                    </div>
+                </div>
+                <div data-qa-error class="text-danger small mt-2 d-none"></div>
+                <div class="form-text">Détails (OS, réseau, garantie…) à compléter ensuite sur la fiche.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary btn-sm" data-qa-save><i class="bi bi-check-lg me-1"></i>Créer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}

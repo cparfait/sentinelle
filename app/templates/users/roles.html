@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Rôles & permissions - Sentinelle{% endblock %}
+
+{% set cat_icons = {
+    'accounts': 'bi-key', 'certificates': 'bi-award', 'domains': 'bi-globe',
+    'backups': 'bi-cloud-arrow-up', 'tests': 'bi-clipboard-check',
+    'reviews': 'bi-person-check', 'updates': 'bi-arrow-up-circle', 'alerts': 'bi-bell'
+} %}
+{% set role_icons = {'admin': 'bi-shield-lock', 'editor': 'bi-pencil-square', 'viewer': 'bi-eye'} %}
+{% set role_fixed_colors = {'admin': '#ef4444', 'editor': '#6366f1', 'viewer': '#0ea5e9'} %}
+{% set role_palette = ['#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#14b8a6', '#3b82f6', '#f97316', '#a855f7'] %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-shield-lock me-2"></i>Rôles & permissions</h4>
+        <small class="text-muted">Définissez les droits de chaque rôle, catégorie par catégorie.</small>
+    </div>
+    <a href="{{ url_for('users.list') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-people me-1"></i> Utilisateurs
+    </a>
+</div>
+
+<div class="data-card p-3 mb-3">
+    <div class="perm-legend">
+        <strong class="small text-muted me-2">Niveaux :</strong>
+        <span><span class="dot" style="background: var(--text-light)"></span> Aucun</span>
+        <span><span class="dot" style="background: var(--info)"></span> Lecture</span>
+        <span><span class="dot" style="background: var(--warning)"></span> Écriture</span>
+        <span><span class="dot" style="background: var(--danger)"></span> Suppression</span>
+        <span class="ms-auto"><i class="bi bi-info-circle me-1"></i>Les niveaux sont cumulatifs (Suppression inclut Écriture et Lecture).</span>
+    </div>
+</div>
+
+{% for role in roles %}
+{% set role_color = role_fixed_colors.get(role.name, role_palette[loop.index0 % role_palette|length]) %}
+<div class="data-card p-4 mb-3 role-card" style="--role-color: {{ role_color }};">
+    <form method="POST" action="{{ url_for('users.roles_save', id=role.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="role-head mb-3">
+            <div class="role-avatar"><i class="bi {{ role_icons.get(role.name, 'bi-person-gear') }}"></i></div>
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                    <h5 class="fw-bold mb-0">{{ role_label(role.name) }}</h5>
+                    <span class="text-muted small">{{ role.name }}</span>
+                    {% if role.is_admin %}<span class="badge bg-danger"><i class="bi bi-stars me-1"></i>Accès total</span>{% endif %}
+                    <span class="badge-status badge-info"><i class="bi bi-people me-1"></i>{{ counts.get(role.name, 0) }} utilisateur(s)</span>
+                </div>
+                <input type="text" name="description" value="{{ role.description or '' }}"
+                       class="form-control form-control-sm" style="max-width: 480px;"
+                       placeholder="Description du rôle">
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i> Enregistrer</button>
+                {% if role.name not in ['admin', 'editor', 'viewer'] %}
+                <button type="submit" form="del-{{ role.id }}" class="btn btn-sm btn-outline-danger"
+                        data-confirm="Supprimer ce rôle ?" data-confirm-form="#del-{{ role.id }}"
+                        title="Supprimer le rôle" aria-label="Supprimer le rôle"><i class="bi bi-trash"></i></button>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if role.is_admin %}
+        <div class="alert alert-danger d-flex align-items-center gap-2 mb-0 py-2">
+            <i class="bi bi-shield-fill-check fs-5"></i>
+            <div class="small">Ce rôle dispose de <strong>tous les droits</strong> sur toutes les catégories, ainsi que de l'accès aux sections d'administration.</div>
+        </div>
+        {% else %}
+        <div class="perm-grid">
+            {% for cat in categories %}
+            {% set current = (role.permissions or {}).get(cat, 0) %}
+            <div class="perm-tile">
+                <div class="perm-tile-head"><i class="bi {{ cat_icons.get(cat, 'bi-folder') }}"></i> {{ labels[cat] }}</div>
+                <select name="perm_{{ cat }}" class="form-select form-select-sm lvl-select lvl-{{ current }}">
+                    {% for lvl, lbl in levels.items() %}
+                    <option value="{{ lvl }}" {% if current == lvl %}selected{% endif %}>{{ lbl }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </form>
+    {% if role.name not in ['admin', 'editor', 'viewer'] %}
+    <form id="del-{{ role.id }}" method="POST" action="{{ url_for('users.roles_delete', id=role.id) }}" class="d-none">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    </form>
+    {% endif %}
+</div>
+{% endfor %}
+
+<div class="data-card p-4">
+    <h6 class="fw-bold mb-3"><i class="bi bi-plus-circle me-2 text-primary"></i>Nouveau rôle</h6>
+    <form method="POST" action="{{ url_for('users.roles_create') }}" class="row g-2 align-items-end">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="col-md-4">
+            <label class="form-label small">Nom (ex. gestion-backups)</label>
+            <input type="text" name="name" class="form-control form-control-sm" required placeholder="nom-du-role">
+        </div>
+        <div class="col-md-5">
+            <label class="form-label small">Description</label>
+            <input type="text" name="description" class="form-control form-control-sm" placeholder="À quoi sert ce rôle">
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-plus-lg me-1"></i> Créer le rôle</button>
+        </div>
+    </form>
+    <small class="text-muted d-block mt-2">Le nouveau rôle démarre sans aucun droit ; ajustez ses permissions puis assignez-le à des utilisateurs.</small>
+</div>
+
+<script>
+document.querySelectorAll('.lvl-select').forEach(function (sel) {
+    sel.addEventListener('change', function () {
+        sel.className = sel.className.replace(/\blvl-\d\b/, 'lvl-' + sel.value);
+    });
+});
+</script>
+{% endblock %}

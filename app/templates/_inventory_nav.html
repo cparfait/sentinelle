@@ -1,0 +1,6 @@
+{# Onglets de l'inventaire : Matériel (équipements) vs Logiciels métiers.
+   Attend la variable `active` = 'material' ou 'software'. #}
+<div class="seg-tabs mb-3">
+    <a class="seg-tab {% if active == 'material' %}active{% endif %}" href="{{ url_for('inventory.list') }}"><i class="bi bi-hdd-stack me-1"></i>Matériel</a>
+    <a class="seg-tab {% if active == 'software' %}active{% endif %}" href="{{ url_for('software.list') }}"><i class="bi bi-window-stack me-1"></i>Logiciels métiers</a>
+</div>

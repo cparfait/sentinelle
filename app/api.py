@@ -1,0 +1,168 @@
+"""API JSON — endpoints légers pour le polling navigateur (session) et
+l'intégration machine-to-machine avec l'outil Sesame (clé API)."""
+import hmac
+from datetime import datetime, timezone
+from flask import Blueprint, jsonify, request, current_app
+from flask_login import login_required, current_user
+from app import csrf, limiter
+
+bp = Blueprint('api', __name__, url_prefix='/api')
+
+
+def _bearer_auth_error(cle_active, cle_token, quoi):
+    """Verifie l'activation + la cle Bearer d'une integration machine-a-machine.
+
+    Une cle PAR consommateur : revoquer l'acces de l'un ne coupe pas l'autre.
+    Retourne une reponse d'erreur (tuple) si refuse, sinon None.
+    """
+    if not current_app.config.get(cle_active):
+        return jsonify(error=f'Integration {quoi} desactivee.'), 503
+    token = current_app.config.get(cle_token) or ''
+    if not token:
+        return jsonify(error='API non configuree (cle absente).'), 503
+    auth = request.headers.get('Authorization', '')
+    provided = auth[7:] if auth[:7].lower() == 'bearer ' else ''
+    # Comparaison a temps constant : ne fuit ni la longueur ni le prefixe.
+    if not provided or not hmac.compare_digest(provided, token):
+        return jsonify(error='Cle API invalide.'), 401
+    return None
+
+
+def _sesame_auth_error():
+    """La garde de Sesame — un cas particulier de `_bearer_auth_error`.
+
+    Conservee sous ce nom : le message d'erreur nomme Sesame, et l'endpoint
+    /assets l'appelle depuis toujours.
+    """
+    return _bearer_auth_error('SESAME_API_ENABLED', 'SESAME_API_TOKEN', 'Sesame')
+
+
+@bp.route('/assets')
+@csrf.exempt
+@limiter.limit('60 per minute')
+def assets():
+    """Liste des applications (catalogue) exposée à Sesame pour éviter la double
+    saisie. Auth : en-tête `Authorization: Bearer <clé>`. Filtre optionnel
+    `?type=application`. Réponse : tableau JSON
+    {id, name, description, is_active, responsible, responsible_email}
+    trié par nom (contrat attendu par Sesame)."""
+    err = _sesame_auth_error()
+    if err is not None:
+        return err
+    from app.models import Software
+    # L'inventaire Logiciels métiers EST le catalogue d'applications exposé à
+    # Sesame. Le filtre `type` reste accepté (compat) : seul 'application' (ou
+    # absent) renvoie des données.
+    atype = request.args.get('type')
+    if atype and atype != 'application':
+        rows = []
+    else:
+        rows = Software.query.filter_by(is_active=True, share_sesame=True).order_by(
+            Software.name.asc()).all()
+    return jsonify([
+        {'id': s.id, 'name': s.name, 'description': s.description or '',
+         'is_active': bool(s.is_active),
+         'responsible': s.responsible or '',
+         'responsible_email': s.responsible_email or ''}
+        for s in rows
+    ])
+
+
+@bp.route('/equipment')
+@csrf.exempt
+@limiter.limit('60 per minute')
+def equipment():
+    """Le parc — VM, serveurs physiques et NAS — expose a SoftInventory, qui
+    rattache ses logiciels a des serveurs sans les ressaisir.
+
+    Sentinelle DETIENT le materiel : elle en connait l'IP, le VLAN,
+    l'hyperviseur, la garantie. SoftInventory n'en garde qu'une reference — de
+    quoi dire « ce logiciel tourne la » et pointer vers la fiche d'ici.
+
+    Auth : en-tete `Authorization: Bearer <cle>` (Connecteurs). Filtre optionnel
+    `?kind=vm|physical|nas`. Reponse : tableau JSON trie par nom.
+
+    Les equipements DECOMMISSIONNES sortent aussi : un logiciel peut encore
+    pointer vers un serveur qu'on vient d'eteindre, et le faire disparaitre du
+    flux romprait le lien sans rien dire. `environment` le signale.
+    """
+    err = _bearer_auth_error('INVENTORY_API_ENABLED', 'INVENTORY_API_TOKEN', 'SoftInventory')
+    if err is not None:
+        return err
+    from app.models import Equipment
+    kind = request.args.get('kind')
+    q = Equipment.query
+    if kind in ('vm', 'physical', 'nas'):
+        q = q.filter_by(kind=kind)
+    rows = q.order_by(Equipment.name.asc()).all()
+    return jsonify([
+        {
+            'id': e.id,
+            'name': e.name,
+            'kind': e.kind or 'vm',
+            'kind_label': e.kind_label(),
+            'environment': e.environment or '',
+            'os': e.os or '',
+            'os_version': e.os_version or '',
+            'ip_address': e.ip_address or '',
+            'hypervisor': e.hypervisor or '',
+            'host_server': e.host_server or '',
+            'criticality': e.criticality,
+        }
+        for e in rows
+    ])
+
+
+@bp.route('/directory/search')
+@login_required
+@limiter.limit('30 per minute')
+def directory_search():
+    """Autocompletion des responsables depuis l'Active Directory (par nom, login
+    ou email). Reservee aux utilisateurs pouvant editer (comme la saisie d'un
+    responsable). Repli : liste vide si LDAP indisponible -> saisie manuelle."""
+    if not current_user.can_edit():
+        return jsonify(error='Droits insuffisants.'), 403
+    from app.ldap_auth import search_directory, directory_search_available
+    q = request.args.get('q', '')
+    return jsonify(available=directory_search_available(),
+                   results=search_directory(q))
+
+
+@bp.route('/alert-count')
+@login_required
+def alert_count():
+    """Retourne le nombre d'entités en statut critique (danger) par catégorie.
+    Utilisé par le polling JS pour les toasts de notification."""
+    from app.models import (Account, Certificate, Domain, Backup, TestTask,
+                            AccessReview, SystemUpdate, Equipment, Contract,
+                            AlertSnooze)
+    today = datetime.now(timezone.utc).date()
+    snoozed = {}
+    for s in AlertSnooze.query.filter(AlertSnooze.snoozed_until >= today).all():
+        snoozed.setdefault(s.entity_type, set()).add(s.entity_id)
+
+    def _cnt(items, statusf, etype):
+        skip = snoozed.get(etype, ())
+        return sum(1 for i in items if i.id not in skip and statusf(i) == 'danger')
+
+    cats = {}
+    if current_user.can_view('accounts'):
+        cats['accounts'] = _cnt(Account.query.filter_by(is_active=True).all(), lambda o: o.status(), 'account')
+    if current_user.can_view('certificates'):
+        cats['certificates'] = _cnt(Certificate.query.filter_by(is_active=True).all(), lambda o: o.status(), 'certificate')
+    if current_user.can_view('domains'):
+        cats['domains'] = _cnt(Domain.query.filter_by(is_active=True).all(), lambda o: o.status(), 'domain')
+    if current_user.can_view('backups'):
+        cats['backups'] = _cnt(Backup.query.filter_by(is_active=True).all(), lambda o: o.computed_status(), 'backup')
+    if current_user.can_view('tests'):
+        cats['tests'] = _cnt(TestTask.query.filter_by(is_active=True).all(), lambda o: o.computed_status(), 'test')
+    if current_user.can_view('reviews'):
+        cats['reviews'] = _cnt(AccessReview.query.filter_by(is_active=True).all(), lambda o: o.computed_status(), 'review')
+    if current_user.can_view('updates'):
+        cats['updates'] = _cnt(SystemUpdate.query.filter_by(is_active=True).all(), lambda o: o.status_color(), 'update')
+    if current_user.can_view('inventory'):
+        cats['inventory'] = _cnt(Equipment.query.filter_by(is_active=True).all(), lambda o: o.computed_status(), 'equipment')
+    if current_user.can_view('contracts'):
+        cats['contracts'] = _cnt(Contract.query.filter_by(is_active=True).all(), lambda o: o.status(), 'contract')
+
+    return jsonify(danger=sum(cats.values()), by_category=cats)

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Certificats - Sentinelle{% endblock %}
+{% from '_macros.html' import status_badge %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-award me-2"></i>Certificats</h4>
+        <small class="text-muted">Suivi des expiration SSL/TLS</small>
+    </div>
+    <div class="d-flex gap-2">
+        {% with csv_key='certificates' %}{% include '_csv_toolbar.html' %}{% endwith %}
+        {% if current_user.can_edit('certificates') %}
+        <a href="{{ url_for('certificates.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Ajouter un certificat
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="alert alert-info d-flex align-items-start mb-3">
+    <i class="bi bi-tools me-2 mt-1"></i>
+    <div>
+        <strong>Renouvellement du wildcard *.collectivite.fr :</strong>
+        l'outil <strong>cert-deploy</strong> automatise toute la campagne
+        (CSR, déploiement Linux/Windows/NPM/NAS, vérification, suivi).
+        Sur le poste d'admin&nbsp;:
+        <code>C:\tmp\CERTIFICATS 2026-2027\cert-deploy\start.bat</code>
+        → <code>http://127.0.0.1:8443</code> (bouton 📖 Manuel intégré).
+        Il est volontairement séparé de Sentinelle&nbsp;: il manipule la clé
+        privée et des comptes administrateurs, et ne tourne qu'à la
+        demande, en local sur le poste.
+    </div>
+</div>
+
+{% include '_list_search.html' %}
+
+<div class="data-card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 js-filterable">
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>Domaine</th>
+                    <th>Emetteur</th>
+                    <th>Date emission</th>
+                    <th>Expiration</th>
+                    <th>Jours restants</th>
+                    <th>Auto-renouvellement</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cert in certificates %}
+                <tr class="row-{{ cert.status() }}">
+                    <td>
+                        <a href="{{ url_for('certificates.detail', id=cert.id) }}" class="fw-medium text-decoration-none">
+                            {{ cert.service_name }}
+                        </a>
+                    </td>
+                    <td><code>{{ cert.domain }}</code></td>
+                    <td>{{ cert.issuer or '-' }}</td>
+                    <td>{{ cert.issued_at.strftime('%d/%m/%Y') if cert.issued_at else '-' }}</td>
+                    <td>{{ cert.expiry_date.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        {% set days = (cert.expiry_date - now().date()).days %}
+                        <span class="fw-bold {% if days < 0 %}text-danger{% elif days <= 7 %}text-danger{% elif days <= 15 %}text-warning{% elif days <= 30 %}text-info{% else %}text-success{% endif %}">
+                            {{ days }}j
+                        </span>
+                    </td>
+                    <td>
+                        {% if cert.auto_renew %}
+                        <span class="badge bg-success"><i class="bi bi-arrow-repeat me-1"></i>Oui</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Non</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ status_badge(cert.status()) }}</td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{{ url_for('certificates.detail', id=cert.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                            <a href="{{ url_for('certificates.edit', id=cert.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">Aucun certificat. <a href="{{ url_for('certificates.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a></p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% include '_pagination.html' %}
+{% endblock %}

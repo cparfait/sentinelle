@@ -1,0 +1,184 @@
+"""Notifications multi-canaux (Microsoft Teams, Slack, Discord) via webhooks.
+
+Deux sources de webhooks :
+  - globaux, configures dans .env / config (TEAMS/SLACK/DISCORD_WEBHOOK_URL) ;
+  - par categorie de gestion, stockes en base (modele Webhook), permettant
+    plusieurs webhooks par categorie (comptes, certificats, ...).
+
+Tous best-effort : aucune exception ne remonte (ne doit pas casser le flux d'alerte).
+"""
+import requests as http_requests
+from flask import current_app
+
+# Couleur par statut (hex sans #)
+_HEX = {'danger': 'EF4444', 'warning': 'F59E0B', 'info': '3B82F6', 'success': '10B981'}
+
+
+def _color(status):
+    return _HEX.get(status, '4F46E5')
+
+
+def _post(url, payload):
+    try:
+        r = http_requests.post(url, json=payload, timeout=15)
+        if r.status_code not in (200, 202, 204):
+            current_app.logger.warning('Notification webhook HTTP %s', r.status_code)
+            return False
+        return True
+    except Exception as e:
+        current_app.logger.warning('Envoi notification echoue : %s', e)
+        return False
+
+
+# Couleur Adaptive Card par statut (mots-cles supportes par le format)
+_AC_COLOR = {'danger': 'attention', 'warning': 'warning',
+             'info': 'accent', 'success': 'good'}
+
+
+def _is_legacy_teams(webhook_url):
+    """Vrai si l'URL est un ancien connecteur O365 (deprecie) et non un Workflow."""
+    u = webhook_url or ''
+    return 'webhook.office.com' in u or 'outlook.office.com' in u
+
+
+# ---- Constructeurs de payload par canal ----
+def _teams_card_legacy(subject, body, status, url):
+    """Ancien format MessageCard (connecteurs O365, deprecies par Microsoft)."""
+    card = {
+        '@type': 'MessageCard', '@context': 'http://schema.org/extensions',
+        'themeColor': _color(status), 'summary': subject,
+        'title': f'[Sentinelle] {subject}', 'text': (body or '').replace('\n', '\n\n'),
+    }
+    if url:
+        card['potentialAction'] = [{'@type': 'OpenUri', 'name': 'Voir la fiche',
+                                     'targets': [{'os': 'default', 'uri': url}]}]
+    return card
+
+
+def _teams_card_workflow(subject, body, status, url):
+    """Format Adaptive Card, attendu par les Workflows Teams (Power Automate).
+
+    Enveloppe `type: message` + `attachments` que le declencheur
+    « webhook request received » sait publier dans un canal.
+    """
+    blocks = [{
+        'type': 'TextBlock', 'text': f'[Sentinelle] {subject}',
+        'weight': 'Bolder', 'size': 'Large', 'wrap': True,
+        'color': _AC_COLOR.get(status, 'default'),
+    }]
+    if body:
+        blocks.append({'type': 'TextBlock', 'text': body, 'wrap': True})
+    card = {
+        'type': 'AdaptiveCard',
+        '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
+        'version': '1.4',
+        'body': blocks,
+    }
+    if url:
+        card['actions'] = [{'type': 'Action.OpenUrl', 'title': 'Voir la fiche', 'url': url}]
+    return {'type': 'message', 'attachments': [
+        {'contentType': 'application/vnd.microsoft.card.adaptive', 'content': card}]}
+
+
+def _teams_payload(subject, body, status, url, webhook_url=None):
+    """Choisit le format selon l'URL : Adaptive Card (Workflows) par defaut,
+    repli MessageCard pour les anciens connecteurs O365."""
+    if _is_legacy_teams(webhook_url):
+        return _teams_card_legacy(subject, body, status, url)
+    return _teams_card_workflow(subject, body, status, url)
+
+
+def _slack_payload(subject, body, status, url):
+    text = body or ''
+    if url:
+        text += f'\n<{url}|Voir la fiche>'
+    return {'attachments': [{
+        'color': '#' + _color(status),
+        'title': f'[Sentinelle] {subject}',
+        'text': text, 'mrkdwn_in': ['text'],
+    }]}
+
+
+def _discord_payload(subject, body, status, url):
+    embed = {
+        'title': f'[Sentinelle] {subject}',
+        'description': body or '',
+        'color': int(_color(status), 16),
+    }
+    if url:
+        embed['url'] = url
+    return {'embeds': [embed]}
+
+
+# Teams est traite a part : son format depend de l'URL (Workflow vs connecteur).
+_BUILDERS = {'slack': _slack_payload, 'discord': _discord_payload}
+
+
+def send_to(channel, webhook_url, subject, body, status='danger', url=None):
+    """Envoie sur un canal donne (teams/slack/discord) vers une URL precise."""
+    if not webhook_url:
+        return False
+    if channel == 'teams':
+        payload = _teams_payload(subject, body, status, url, webhook_url)
+    else:
+        builder = _BUILDERS.get(channel)
+        if not builder:
+            return False
+        payload = builder(subject, body, status, url)
+    return _post(webhook_url, payload)
+
+
+# ---- Webhooks globaux (config) — retro-compatibilite ----
+def teams_enabled():
+    return bool(current_app.config.get('TEAMS_WEBHOOK_URL'))
+
+
+def slack_enabled():
+    return bool(current_app.config.get('SLACK_WEBHOOK_URL'))
+
+
+def discord_enabled():
+    return bool(current_app.config.get('DISCORD_WEBHOOK_URL'))
+
+
+def send_teams(subject, body, status='danger', url=None):
+    return send_to('teams', current_app.config.get('TEAMS_WEBHOOK_URL'), subject, body, status, url)
+
+
+def send_slack(subject, body, status='danger', url=None):
+    return send_to('slack', current_app.config.get('SLACK_WEBHOOK_URL'), subject, body, status, url)
+
+
+def send_discord(subject, body, status='danger', url=None):
+    return send_to('discord', current_app.config.get('DISCORD_WEBHOOK_URL'), subject, body, status, url)
+
+
+def notify_all(subject, body, status='danger', url=None, category=None):
+    """Diffuse vers les webhooks globaux (config) et, si une categorie est
+    fournie, vers les webhooks de cette categorie (et ceux marques 'all').
+    Retourne le nombre d'envois reussis."""
+    sent = 0
+    # 1) Webhooks globaux issus de la config
+    for fn in (send_teams, send_slack, send_discord):
+        try:
+            if fn(subject, body, status=status, url=url):
+                sent += 1
+        except Exception:
+            pass
+    # 2) Webhooks en base, par categorie (+ 'all')
+    try:
+        from app.models import Webhook
+        cats = ['all']
+        if category:
+            cats.append(category)
+        rows = Webhook.query.filter(Webhook.is_active.is_(True),
+                                    Webhook.category.in_(cats)).all()
+        for w in rows:
+            try:
+                if send_to(w.channel, w.url, subject, body, status=status, url=url):
+                    sent += 1
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return sent

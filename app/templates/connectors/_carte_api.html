@@ -1,0 +1,105 @@
+{#
+  Carte d'un connecteur machine-à-machine : interrupteur d'activation, clé API
+  générable, et le rappel de ce qu'il faut configurer en face.
+
+  UNE macro et non deux cartes copiées : Sesame et SoftInventory lisent
+  Sentinelle pour des raisons différentes, mais par le même mécanisme — Bearer,
+  clé affichée une seule fois, révocation indépendante. Deux copies auraient
+  divergé au premier correctif, et le second connecteur aurait gardé le défaut
+  qu'on venait de corriger sur le premier.
+
+  `prefixe` isole les identifiants HTML : le script de copie cible ses propres
+  champs, et deux cartes cohabitent sur la même page sans se voler leurs ids.
+#}
+{% macro carte_api(prefixe, titre, icone, description, url_action, champ_switch,
+                   actif, cle_set, cle_masquee, nouvelle_cle, endpoint,
+                   endpoint_note, reponse) %}
+<div class="data-card mb-3">
+    <div class="card-header-custom d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi {{ icone }} me-2 text-primary"></i>{{ titre }}</h6>
+        {% if actif %}
+        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Activé</span>
+        {% else %}
+        <span class="badge bg-secondary">Désactivé</span>
+        {% endif %}
+    </div>
+    <div class="p-3">
+        <p class="text-muted small mb-2">{{ description|safe }}</p>
+
+        <form method="POST" action="{{ url_action }}" class="mb-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="save">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch"
+                       id="{{ prefixe }}Enabled" name="{{ champ_switch }}" {% if actif %}checked{% endif %}>
+                <label class="form-check-label fw-medium" for="{{ prefixe }}Enabled">Activer le connecteur {{ titre }}</label>
+            </div>
+            <div class="form-text">Désactivé : l'API <code>{{ endpoint_note }}</code> renvoie une erreur 503.</div>
+            <button type="submit" class="btn btn-sm btn-primary mt-2">
+                <i class="bi bi-check-lg me-1"></i> Enregistrer
+            </button>
+        </form>
+
+        <div class="border-top pt-3">
+            <h6 class="fw-bold mb-1"><i class="bi bi-key me-2 text-primary"></i>Clé API</h6>
+            <p class="text-muted small mb-2">
+                Statut : {% if cle_set %}<span class="text-success">clé active</span> <code>{{ cle_masquee }}</code>{% else %}<span class="text-danger">aucune clé</span>{% endif %}.
+                La clé complète n'est affichée qu'une seule fois, à sa génération (ici tronquée). La régénérer invalide l'ancienne.
+            </p>
+            <form method="POST" action="{{ url_action }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {# action dans un champ cache : le modal de confirmation resoumet via
+                   form.submit(), qui n'inclut PAS la valeur du bouton clique. #}
+                <input type="hidden" name="action" value="generate_key">
+                <button type="submit" class="btn btn-sm btn-outline-primary"
+                        data-confirm="{% if cle_set %}Régénérer la clé ? L'ancienne cessera de fonctionner immédiatement.{% else %}Générer une clé API pour {{ titre }} ?{% endif %}">
+                    <i class="bi bi-arrow-repeat me-1"></i> {{ 'Régénérer la clé' if cle_set else 'Générer une clé' }}
+                </button>
+            </form>
+            {% if nouvelle_cle %}
+            <div class="alert alert-success mt-3 mb-0" id="{{ prefixe }}KeyBox">
+                <div class="small fw-medium mb-1"><i class="bi bi-clipboard-check me-1"></i>Nouvelle clé — copiez-la maintenant, elle ne sera plus affichée :</div>
+                <div class="input-group input-group-sm">
+                    <input type="text" id="{{ prefixe }}KeyValue" class="form-control font-monospace" value="{{ nouvelle_cle }}" readonly onclick="this.select();">
+                    <button type="button" class="btn btn-outline-secondary" id="{{ prefixe }}KeyCopy"><i class="bi bi-clipboard me-1"></i>Copier</button>
+                </div>
+            </div>
+            <script>
+            (function () {
+                var btn = document.getElementById('{{ prefixe }}KeyCopy');
+                var inp = document.getElementById('{{ prefixe }}KeyValue');
+                if (btn && inp) {
+                    btn.addEventListener('click', function () {
+                        inp.select(); inp.setSelectionRange(0, 99999);
+                        var full = inp.value;
+                        var mask = full.length >= 12 ? (full.slice(0, 6) + '…' + full.slice(-4)) : full;
+                        // Une fois copiée : on masque la clé pour ne pas la laisser en clair.
+                        var done = function () {
+                            inp.value = mask;
+                            inp.removeAttribute('onclick');
+                            btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Copié';
+                            btn.disabled = true;
+                        };
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(full).then(done, function () { try { document.execCommand('copy'); done(); } catch (e) {} });
+                        } else { try { document.execCommand('copy'); done(); } catch (e) {} }
+                    });
+                }
+                function focus() { var box = document.getElementById('{{ prefixe }}KeyBox'); if (box) box.scrollIntoView({behavior: 'smooth', block: 'center'}); }
+                if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', focus); } else { focus(); }
+            })();
+            </script>
+            {% endif %}
+        </div>
+
+        <div class="border-top pt-3 mt-3">
+            <h6 class="fw-bold mb-1"><i class="bi bi-link-45deg me-2 text-primary"></i>Configuration côté {{ titre }}</h6>
+            <ul class="small mb-0">
+                <li>URL : <code>{{ endpoint }}</code></li>
+                <li>En-tête : <code>Authorization: Bearer &lt;clé&gt;</code></li>
+                <li>Réponse : tableau JSON <code>{{ reponse }}</code></li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endmacro %}

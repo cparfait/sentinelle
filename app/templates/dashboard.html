@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% import "_dashboard_widgets.html" as w with context %}
+{% block title %}Tableau de bord - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">Tableau de bord</h4>
+        <small class="text-muted">Vue d'ensemble de votre infrastructure</small>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+        {% if dashboard_custom %}
+        <div id="dashEditControls" class="d-flex gap-2 align-items-center d-none">
+            <button type="button" id="dashResetBtn" class="btn btn-sm btn-outline-secondary" title="Rétablir la disposition par défaut">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Réinitialiser
+            </button>
+            <button type="button" id="dashDoneBtn" class="btn btn-sm btn-success">
+                <i class="bi bi-check-lg me-1"></i> Terminer
+            </button>
+        </div>
+        <button type="button" id="dashCustomizeBtn" class="btn btn-sm btn-outline-primary" title="Choisir et réorganiser les blocs">
+            <i class="bi bi-sliders me-1"></i> Personnaliser
+        </button>
+        {% endif %}
+        <a href="{{ url_for('dashboard.report_pdf') }}" class="btn btn-sm btn-outline-danger" title="Bilan PDF (COPIL)">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Bilan PDF
+        </a>
+        <form method="GET" action="{{ url_for('search.search') }}" class="d-flex gap-2" style="width: 320px;">
+            <input type="text" name="q" class="form-control form-control-sm" placeholder="Rechercher partout...">
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search"></i></button>
+        </form>
+    </div>
+</div>
+
+{% macro widget_wrapper(key) %}
+{% set meta = widget_meta[key] %}
+<section class="dash-widget" data-widget="{{ key }}" style="--w-span: {{ dash_spans[key] }};">
+    <div class="dash-widget-bar">
+        <span class="dash-drag" title="Glisser pour déplacer" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>
+        <span class="dash-widget-name"><i class="bi {{ meta.icon }} me-1"></i>{{ meta.label }}</span>
+        <button type="button" class="dash-toggle" data-widget="{{ key }}" title="Masquer / afficher ce bloc">
+            <i class="bi"></i>
+        </button>
+    </div>
+    <div class="dash-widget-body">{{ w.widget_body(key) }}</div>
+    <span class="dash-resize" title="Redimensionner (largeur)" aria-hidden="true"></span>
+</section>
+{% endmacro %}
+
+{% if dashboard_custom %}
+<div id="dashTray" class="dash-tray d-none">
+    <div class="dash-tray-title"><i class="bi bi-eye-slash me-1"></i>Blocs masqués <small class="text-muted">— cliquez sur l'œil pour réafficher</small></div>
+    <div id="dashTrayItems" class="dash-tray-items">
+        {% for key in dash_hidden %}{{ widget_wrapper(key) }}{% endfor %}
+        <div id="dashTrayEmpty" class="text-muted small {% if dash_hidden %}d-none{% endif %}">Aucun bloc masqué.</div>
+    </div>
+</div>
+{% endif %}
+
+<div id="dashGrid" class="dash-grid"
+     data-save-url="{{ url_for('dashboard.save_layout') }}"
+     data-csrf="{{ csrf_token() }}">
+    {% for key in dash_visible %}{{ widget_wrapper(key) }}{% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if dashboard_custom %}<script src="{{ static_v('js/dashboard-custom.js') }}"></script>{% endif %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+        new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

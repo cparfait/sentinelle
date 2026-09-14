@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Modifier' if user else 'Nouvel' }} utilisateur - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-people me-2"></i>{{ 'Modifier' if user else 'Nouvel' }} utilisateur</h4>
+    </div>
+    <a href="{{ url_for('users.list') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Retour
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="data-card p-4">
+            <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Nom d'utilisateur</label>
+                    {% if user %}
+                    <input type="text" class="form-control" value="{{ user.username }}" disabled>
+                    {% else %}
+                    <input type="text" name="username" class="form-control" required
+                           placeholder="Nom d'utilisateur">
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Email *</label>
+                    <input type="email" name="email" class="form-control" required
+                           value="{{ user.email if user else '' }}"
+                           placeholder="email@domaine.com">
+                </div>
+                {% if user and user.is_ldap %}
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Mot de passe</label>
+                    <p class="text-muted small mb-0"><i class="bi bi-diagram-3 me-1"></i>Compte <strong>Active Directory</strong> : l'authentification et le mot de passe sont gérés par l'annuaire, pas ici.</p>
+                </div>
+                {% else %}
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Mot de passe {{ '(laisser vide pour ne pas changer)' if user else '*' }}</label>
+                    <input type="password" name="password" id="pw1" class="form-control"
+                           {{ '' if user else 'required' }}
+                           minlength="8"
+                           placeholder="Minimum 8 caracteres">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Confirmer le mot de passe {{ '(idem)' if user else '*' }}</label>
+                    <input type="password" name="password_confirm" id="pw2" class="form-control"
+                           {{ '' if user else 'required' }}
+                           minlength="8"
+                           placeholder="Ressaisir le mot de passe">
+                    <small class="text-danger d-none" id="pwMismatch"><i class="bi bi-exclamation-triangle me-1"></i>Les deux mots de passe ne correspondent pas.</small>
+                </div>
+                {% endif %}
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Rôle *</label>
+                    <select name="role" class="form-select" required>
+                        {% for r in all_roles %}
+                        <option value="{{ r.name }}" {{ 'selected' if user and user.role == r.name }}>
+                            {{ role_label(r.name) }}{% if r.description %} — {{ r.description }}{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted"><a href="{{ url_for('users.roles') }}">Gérer les rôles & permissions</a></small>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if user else 'Creer' }}
+                    </button>
+                    <a href="{{ url_for('users.list') }}" class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var pw1 = document.getElementById('pw1'), pw2 = document.getElementById('pw2');
+    if (!pw1 || !pw2) return;
+    var msg = document.getElementById('pwMismatch');
+    var form = pw1.closest('form');
+    function check() {
+        var bad = pw2.value && pw1.value !== pw2.value;
+        if (msg) msg.classList.toggle('d-none', !bad);
+        pw2.setCustomValidity(bad ? 'Les mots de passe ne correspondent pas.' : '');
+        return !bad;
+    }
+    pw1.addEventListener('input', check);
+    pw2.addEventListener('input', check);
+    form.addEventListener('submit', function (e) {
+        if (!check()) { e.preventDefault(); pw2.focus(); }
+    });
+})();
+</script>
+{% endblock %}

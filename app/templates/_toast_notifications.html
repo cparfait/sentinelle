@@ -1,0 +1,42 @@
+{# Toast de notification en-app. Polling toutes les 60s sur /api/alert-count.
+   Affiche un toast Bootstrap si le nombre d'alertes critiques augmente. #}
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1100">
+  <div id="alertToast" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive">
+    <div class="d-flex">
+      <div class="toast-body" id="alertToastBody">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span id="alertToastText"></span>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var lastCount = null;
+  var POLL_MS = 60000;
+  function poll() {
+    fetch('/api/alert-count', { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data) return;
+        var n = data.danger || 0;
+        if (lastCount !== null && n > lastCount) {
+          var diff = n - lastCount;
+          document.getElementById('alertToastText').textContent =
+            diff + ' nouvelle' + (diff > 1 ? 's' : '') + ' alerte' + (diff > 1 ? 's' : '') + ' critique' + (diff > 1 ? 's' : '') + ' détectée' + (diff > 1 ? 's' : '') + '.';
+          var el = document.getElementById('alertToast');
+          if (el && window.bootstrap) {
+            bootstrap.Toast.getOrCreateInstance(el, { delay: 8000 }).show();
+          }
+        }
+        lastCount = n;
+      })
+      .catch(function () {});
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    poll();
+    setInterval(poll, POLL_MS);
+  });
+})();
+</script>
