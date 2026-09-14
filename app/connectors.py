@@ -34,47 +34,6 @@ def _sesame_context():
     }
 
 
-def _inventory_context():
-    """L'integration SoftInventory : il vient lire le parc (/api/equipment).
-
-    Symetrique de Sesame, cle DISTINCTE : revoquer l'un ne coupe pas l'autre.
-    """
-    tok = current_app.config.get('INVENTORY_API_TOKEN') or ''
-    masked = (tok[:6] + '…' + tok[-4:]) if len(tok) >= 12 \
-        else ('•' * len(tok) if tok else '')
-    endpoint = (current_app.config.get('APP_BASE_URL', '').rstrip('/') + '/api/equipment')
-    return {
-        'inventory_enabled': bool(current_app.config.get('INVENTORY_API_ENABLED', False)),
-        'inventory_key_set': bool(tok),
-        'inventory_key_masked': masked,
-        'inventory_new_key': session.pop('inventory_new_key', None),
-        'inventory_endpoint': endpoint,
-    }
-
-
-def _catalogue_context():
-    """Le sens INVERSE : Sentinelle va lire le catalogue chez SoftInventory.
-
-    La cle n'est jamais reaffichee — seulement masquee : elle est emise LA-BAS,
-    et on ne la conserve que pour s'en servir.
-    """
-    cle = current_app.config.get('SOFTINVENTORY_KEY') or ''
-    masked = (cle[:6] + '…' + cle[-4:]) if len(cle) >= 12         else ('•' * len(cle) if cle else '')
-    from app.models import Software
-    return {
-        'catalogue_url': current_app.config.get('SOFTINVENTORY_URL', '') or '',
-        'catalogue_key_set': bool(cle),
-        'catalogue_key_masked': masked,
-        'catalogue_refletes': Software.query.filter_by(origin='inventory', excluded=False).count(),
-        # `is_(None)` explicite : une comparaison SQL avec NULL n'est ni vraie
-        # ni fausse, et les fiches d'avant la colonne seraient invisibles. Le
-        # comblement au demarrage les remplit, cette garde tient le premier
-        # demarrage d'une base ancienne.
-        'catalogue_locaux': Software.query.filter(
-            db.or_(Software.origin.is_(None), Software.origin != 'inventory')).count(),
-    }
-
-
 def _webhooks_context():
     from app.models import (Webhook, WEBHOOK_CHANNELS, CONFORMITY_CATEGORIES,
                             CATEGORY_LABELS)
@@ -96,8 +55,6 @@ def _webhooks_context():
 @require_admin
 def index():
     ctx = _sesame_context()
-    ctx.update(_inventory_context())
-    ctx.update(_catalogue_context())
     ctx.update(_webhooks_context())
     return render_template('connectors/index.html', **ctx)
 
@@ -195,122 +152,4 @@ def sesame():
         session['sesame_new_key'] = key
         audit_record('rotation clé API Sesame', category='preferences')
         flash("Nouvelle clé API Sesame générée — copiez-la ci-dessous, elle ne sera plus affichée.", 'success')
-    return redirect(url_for('connectors.index'))
-
-
-@bp.route('/softinventory', methods=['POST'])
-@login_required
-@require_admin
-def softinventory():
-    """Active/désactive le connecteur SoftInventory ou (re)génère sa clé d'API.
-
-    Même mécanique que Sesame, clé séparée : les deux outils lisent Sentinelle
-    pour des raisons différentes — l'un les habilitations, l'autre le parc — et
-    doivent pouvoir être coupés indépendamment.
-    """
-    action = request.form.get('action', '')
-    if action == 'save':
-        enabled = request.form.get('inventory_enabled') == 'on'
-        config_store.save({'INVENTORY_API_ENABLED': 'true' if enabled else 'false'})
-        current_app.config['INVENTORY_API_ENABLED'] = enabled
-        audit_record('config connecteur SoftInventory', detail=f'actif={enabled}',
-                     category='preferences')
-        flash('Connecteur SoftInventory ' + ('activé' if enabled else 'désactivé') + '.',
-              'success')
-    elif action == 'generate_key':
-        key = secrets.token_urlsafe(32)
-        config_store.save({'INVENTORY_API_TOKEN': key})
-        current_app.config['INVENTORY_API_TOKEN'] = key
-        # Affichée UNE fois via la session (champ copiable) : un flash serait
-        # rendu en toast auto-disparaissant, donc non copiable.
-        session['inventory_new_key'] = key
-        audit_record('rotation clé API SoftInventory', category='preferences')
-        flash("Nouvelle clé API SoftInventory générée — copiez-la ci-dessous, "
-              "elle ne sera plus affichée.", 'success')
-    return redirect(url_for('connectors.index'))
-
-
-@bp.route('/catalogue', methods=['POST'])
-@login_required
-@require_admin
-def catalogue():
-    """Où lire le catalogue des applications, et l'y lire.
-
-    SoftInventory DÉTIENT les applications ; Sentinelle en tenait une liste
-    réduite, saisie une seconde fois. Trois gestes : enregistrer le connecteur,
-    l'éprouver sans rien écrire, puis importer.
-    """
-    from app.inventory_sync import importer, lire_catalogue, previsualiser
-
-    action = request.form.get('action', '')
-
-    if action == 'save':
-        url = (request.form.get('catalogue_url') or '').strip().rstrip('/')
-        cle = (request.form.get('catalogue_key') or '').strip()
-        # Le VIDE débranche : Sentinelle retrouve son catalogue local.
-        if url and not url.lower().startswith(('http://', 'https://')):
-            flash("L'URL doit commencer par http:// ou https://", 'danger')
-            return redirect(url_for('connectors.index'))
-        maj = {'SOFTINVENTORY_URL': url}
-        # Clé vide = on conserve celle en place : on corrige une URL sans avoir
-        # à retrouver la clé, qui n'est jamais réaffichée.
-        if cle:
-            maj['SOFTINVENTORY_KEY'] = cle
-        config_store.save(maj)
-        current_app.config.update(maj)
-        audit_record('config connecteur catalogue', detail=url or '(débranché)',
-                     category='preferences')
-        flash('Connecteur catalogue enregistré.', 'success')
-
-    elif action == 'test':
-        apps, erreur = lire_catalogue()
-        if erreur:
-            flash(erreur, 'danger')
-        else:
-            flash(f'Connexion établie : {len(apps)} application(s) lisible(s).', 'success')
-
-    elif action == 'preview':
-        # Ce que l'import ferait, sans rien ecrire : l'ecran de comparaison
-        # nomme chaque application et laisse decocher. C'est la seule porte
-        # d'entree de l'import depuis l'interface.
-        plan, erreur = previsualiser()
-        if erreur:
-            flash(erreur, 'danger')
-            return redirect(url_for('connectors.index'))
-        return render_template('connectors/catalogue_plan.html', plan=plan)
-
-    elif action == 'import':
-        # Les cases cochees dans l'ecran de comparaison. Une liste vide veut
-        # dire « rien de retenu » — pas « tout », que porte `None`.
-        retenus = [int(v) for v in request.form.getlist('retenus') if v.isdigit()]
-        rapport, erreur = importer(selection=retenus)
-        if erreur:
-            flash(erreur, 'danger')
-        else:
-            parts = []
-            if rapport['crees']:
-                parts.append(f"{rapport['crees']} créée(s)")
-            if rapport['adoptes']:
-                parts.append(f"{rapport['adoptes']} rapprochée(s) d'une fiche existante")
-            if rapport['actualises']:
-                parts.append(f"{rapport['actualises']} actualisée(s)")
-            if rapport['ecartes']:
-                parts.append(f"{rapport['ecartes']} écartée(s) faute de nom")
-            if rapport['reprises']:
-                parts.append(f"{rapport['reprises']} fiche(s) reprise(s)")
-            if rapport['ecartes_fiches']:
-                parts.append(f"{rapport['ecartes_fiches']} écartée(s), donc masquée(s) ici")
-            if rapport['liens_poses'] or rapport['liens_retires']:
-                parts.append(f"{rapport['liens_poses']} installation(s) posée(s), "
-                             f"{rapport['liens_retires']} retirée(s)")
-            msg = ', '.join(parts) or 'Rien à reprendre'
-            # Ce qui demande un ARBITRAGE est nommé, jamais compté : un nombre
-            # n'aide personne à trancher.
-            if rapport['homonymes']:
-                msg += f". Noms en double, seule la première est reprise : {', '.join(rapport['homonymes'])}"
-            if rapport['conflits']:
-                msg += f". Nom déjà tenu par une autre fiche : {', '.join(rapport['conflits'])}"
-            audit_record('import du catalogue', detail=msg[:200], category='preferences')
-            flash(msg + '.', 'success')
-
     return redirect(url_for('connectors.index'))

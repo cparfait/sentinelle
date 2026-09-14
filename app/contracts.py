@@ -67,7 +67,7 @@ def _form_context():
         'nature_labels': CONTRACT_NATURE_LABELS,
         'suppliers': Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all(),
         'equipments': Equipment.query.filter_by(is_active=True).order_by(Equipment.name).all(),
-        'software_list': Software.query.filter_by(is_active=True, excluded=False)
+        'software_list': Software.query.filter_by(is_active=True)
                                        .order_by(Software.name).all(),
     }
 

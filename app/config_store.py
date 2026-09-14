@@ -19,12 +19,11 @@ logger = logging.getLogger(__name__)
 
 # Cles dont la valeur est un secret -> chiffree en base.
 SECRET_KEYS = {'MAIL_PASSWORD', 'O365_CLIENT_SECRET', 'LDAP_BIND_PASSWORD',
-               'SESAME_API_TOKEN', 'INVENTORY_API_TOKEN', 'SOFTINVENTORY_KEY'}
+               'SESAME_API_TOKEN'}
 
 # Typage applique au chargement (le reste = chaine).
 _BOOL = {'LDAP_ENABLED', 'LDAP_USE_SSL', 'LDAP_VALIDATE_CERT', 'CT_MONITORING',
-         'SESAME_API_ENABLED', 'INVENTORY_API_ENABLED', 'DASHBOARD_CUSTOM',
-         'DOCUMENTS_ENABLED'}
+         'SESAME_API_ENABLED', 'DASHBOARD_CUSTOM', 'DOCUMENTS_ENABLED'}
 _INT = {'LDAP_PORT', 'MAIL_PORT', 'DOCUMENT_MAX_MB'}
 _TRIPLET = {'THRESHOLD_EXPIRY', 'THRESHOLD_DOMAIN', 'THRESHOLD_TASK', 'THRESHOLD_CONTRACT'}
 
@@ -54,12 +53,6 @@ MANAGED = _BOOL | _INT | _TRIPLET | _CSV | {
     # Pieces jointes stockees en base (actes signes, guides, deliberations).
     'DOCUMENTS_ENABLED', 'DOCUMENT_MAX_MB',
     'SESAME_API_ENABLED', 'SESAME_API_TOKEN',  # integration Sesame (API + cle)
-    # Integration SoftInventory : l'inventaire des logiciels vient y lire le
-    # parc (/api/equipment). Cle DISTINCTE de celle de Sesame : couper l'un
-    # ne doit pas couper l'autre, et le journal dit lequel appelle.
-    'INVENTORY_API_ENABLED', 'INVENTORY_API_TOKEN',
-    # Sens inverse : ou lire le catalogue des applications, et avec quelle cle.
-    'SOFTINVENTORY_URL', 'SOFTINVENTORY_KEY',
     'UI_PRIMARY_COLOR',  # couleur principale de l'interface (hex, vide = defaut)
 }
 

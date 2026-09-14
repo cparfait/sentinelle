@@ -26,26 +26,12 @@
         <div class="data-card p-4">
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                {# Fiche REFLETEE de SoftInventory : l'identite et les serveurs
-                   d'installation s'y administrent. Les rendre modifiables ici ne
-                   tromperait que celui qui les modifie — le prochain import les
-                   ecrase. L'editeur, le contrat, la version suivie et la
-                   criticite restent ouverts : ils appartiennent a Sentinelle. #}
-                {% if reflete %}
-                <div class="alert alert-info py-2 px-3 small mb-3">
-                    <i class="bi bi-box-arrow-in-down me-1"></i>
-                    Fiche reprise de <strong>SoftInventory</strong> : le nom, les responsables,
-                    l'hébergement, l'URL, la description et les serveurs d'installation s'y
-                    modifient — le prochain import les rapporte. L'éditeur, le contrat, la version
-                    suivie et la criticité se saisissent ici.
-                </div>
-                {% endif %}
 
                 {# ── Identité ── #}
                 <div class="row g-3 mb-3">
                     <div class="col-md-5">
                         <label class="form-label fw-medium">Nom du logiciel *</label>
-                        <input type="text" name="name" class="form-control" required {% if reflete %}disabled{% endif %}
+                        <input type="text" name="name" class="form-control" required
                                value="{{ item.name if item else '' }}"
                                placeholder="ex: GLPI, Berger-Levrault, Office 365...">
                     </div>
@@ -56,11 +42,11 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-medium">Cycle de vie</label>
-                        {{ sel('lifecycle', lifecycle_labels, item.lifecycle if item else 'production', disabled=reflete) }}
+                        {{ sel('lifecycle', lifecycle_labels, item.lifecycle if item else 'production') }}
                     </div>
                     <div class="col-md-2">
                         <label class="form-label fw-medium">Mise en service</label>
-                        <input type="date" name="service_date" class="form-control" {% if reflete %}disabled{% endif %}
+                        <input type="date" name="service_date" class="form-control"
                                value="{{ item.service_date.strftime('%Y-%m-%d') if item and item.service_date else '' }}">
                     </div>
                 </div>
@@ -72,15 +58,15 @@
                         {% set cur_host = item.hosting if item else 'on_premise' %}
                         <div class="btn-group w-100" role="group" aria-label="Hébergement">
                             <input type="radio" class="btn-check" name="hosting" id="hostOnprem" value="on_premise"
-                                   {% if reflete %}disabled{% endif %} {{ 'checked' if cur_host == 'on_premise' }}>
+                                   {{ 'checked' if cur_host == 'on_premise' }}>
                             <label class="btn btn-outline-secondary btn-sm" for="hostOnprem"
                                    title="Installé sur le parc (serveurs internes)"><i class="bi bi-hdd-network me-1"></i>On premise</label>
                             <input type="radio" class="btn-check" name="hosting" id="hostSaas" value="saas"
-                                   {% if reflete %}disabled{% endif %} {{ 'checked' if cur_host == 'saas' }}>
+                                   {{ 'checked' if cur_host == 'saas' }}>
                             <label class="btn btn-outline-secondary btn-sm" for="hostSaas"
                                    title="Hébergé hors parc (Cloud éditeur)"><i class="bi bi-cloud me-1"></i>SaaS</label>
                             <input type="radio" class="btn-check" name="hosting" id="hostHybride" value="hybride"
-                                   {% if reflete %}disabled{% endif %} {{ 'checked' if cur_host == 'hybride' }}>
+                                   {{ 'checked' if cur_host == 'hybride' }}>
                             <label class="btn btn-outline-secondary btn-sm" for="hostHybride"
                                    title="Une part chez nous, une part chez l&rsquo;éditeur"><i class="bi bi-diagram-2 me-1"></i>Hybride</label>
                         </div>
@@ -88,15 +74,15 @@
                     <div class="col-md-8">
                         <label class="form-label fw-medium d-block">Nature</label>
                         <div class="d-flex flex-wrap align-items-center gap-2">
-                            <input type="checkbox" class="btn-check" name="is_docker" id="isDocker" {% if reflete %}disabled{% endif %}
+                            <input type="checkbox" class="btn-check" name="is_docker" id="isDocker"
                                    {{ 'checked' if item and item.is_docker }}>
                             <label class="btn btn-outline-primary btn-sm" for="isDocker"
                                    title="Conteneurisé (Docker) — cumulable avec tout hébergement"><i class="icon-docker me-1"></i>Docker</label>
-                            <input type="checkbox" class="btn-check" name="internal_dev" id="internalDev" {% if reflete %}disabled{% endif %}
+                            <input type="checkbox" class="btn-check" name="internal_dev" id="internalDev"
                                    {{ 'checked' if item and item.internal_dev }}>
                             <label class="btn btn-outline-primary btn-sm" for="internalDev"
                                    title="Fait et maintenu par la DSI : ni éditeur, ni support, ni contrat"><i class="bi bi-code-slash me-1"></i>Développement interne</label>
-                            <input type="checkbox" class="btn-check" name="no_server" id="noServer" {% if reflete %}disabled{% endif %}
+                            <input type="checkbox" class="btn-check" name="no_server" id="noServer"
                                    {{ 'checked' if item and item.no_server }}>
                             <label class="btn btn-outline-primary btn-sm" for="noServer"
                                    title="Ne s&rsquo;installe sur aucune machine du parc : SaaS, ou postes des agents"><i class="bi bi-slash-circle me-1"></i>Aucun serveur</label>
@@ -117,7 +103,7 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-medium">Technologie</label>
-                        <select name="technology_id" class="form-select"{{ ' disabled' if reflete }}>
+                        <select name="technology_id" class="form-select">
                             <option value="">— Non renseignée —</option>
                             {% for t in technologies %}
                             <option value="{{ t.id }}" {{ 'selected' if item and item.technology_id == t.id }}>{{ t.label }}</option>
@@ -126,11 +112,11 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-medium">Type de source</label>
-                        {{ sel('source_type', source_type_labels, item.source_type if item else 'proprietaire', disabled=reflete) }}
+                        {{ sel('source_type', source_type_labels, item.source_type if item else 'proprietaire') }}
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-medium">URL / accès</label>
-                        <input type="url" name="url" class="form-control" {% if reflete %}disabled{% endif %}
+                        <input type="url" name="url" class="form-control"
                                value="{{ item.url or '' if item else '' }}" placeholder="https://...">
                     </div>
                 </div>
@@ -139,24 +125,24 @@
                 <div class="row g-3 mb-3">
                     <div class="col-md-4">
                         <label class="form-label fw-medium">Authentification</label>
-                        {{ sel('auth_mode', auth_mode_labels, item.auth_mode if item else None, blank='— Non renseignée —', disabled=reflete) }}
+                        {{ sel('auth_mode', auth_mode_labels, item.auth_mode if item else None, blank='— Non renseignée —') }}
                     </div>
                     <div class="col-md-3 d-flex align-items-end">
                         <div class="form-check mb-2">
-                            <input type="checkbox" class="form-check-input" name="auth_strong" id="authStrong" {% if reflete %}disabled{% endif %}
+                            <input type="checkbox" class="form-check-input" name="auth_strong" id="authStrong"
                                    {{ 'checked' if item and item.auth_strong }}>
                             <label class="form-check-label" for="authStrong">Double authentification (2FA)</label>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label fw-medium">Utilisateurs</label>
-                        <input type="number" min="0" name="users_count" class="form-control" {% if reflete %}disabled{% endif %}
+                        <input type="number" min="0" name="users_count" class="form-control"
                                value="{{ item.users_count if item and item.users_count is not none else '' }}"
                                placeholder="non compté">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-medium">Plafond contractuel</label>
-                        <input type="number" min="0" name="users_max" class="form-control" {% if reflete %}disabled{% endif %}
+                        <input type="number" min="0" name="users_max" class="form-control"
                                value="{{ item.users_max if item and item.users_max is not none else '' }}"
                                placeholder="illimité">
                         <div class="form-text">Comparé au nombre d'utilisateurs : signale un dépassement de licence.</div>
@@ -192,7 +178,7 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-medium">Mention « sans contrat »</label>
-                        <input type="text" name="no_contract_note" class="form-control" {% if reflete %}disabled{% endif %}
+                        <input type="text" name="no_contract_note" class="form-control"
                                value="{{ item.no_contract_note or '' if item else '' }}"
                                placeholder="ex: contrat géré par le CCAS">
                         <div class="form-text">Affichée à la place de « aucun contrat » quand le marché est porté ailleurs.</div>
@@ -203,26 +189,26 @@
                 <div class="row g-3 mb-1">
                     <div class="col-md-3">
                         <label class="form-label fw-medium">Référent métier</label>
-                        <input type="text" name="responsible" class="form-control" {% if reflete %}disabled{% endif %}
+                        <input type="text" name="responsible" class="form-control"
                                value="{{ item.responsible or '' if item else '' }}"
                                data-ad-search data-ad-email="responsible_email"
                                placeholder="Rechercher dans l'annuaire (AD)...">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-medium">Email métier</label>
-                        <input type="email" name="responsible_email" class="form-control" {% if reflete %}disabled{% endif %}
+                        <input type="email" name="responsible_email" class="form-control"
                                value="{{ item.responsible_email or '' if item else '' }}" placeholder="responsable@collectivite.fr">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-medium">Référent technique</label>
-                        <input type="text" name="tech_responsible" class="form-control" {% if reflete %}disabled{% endif %}
+                        <input type="text" name="tech_responsible" class="form-control"
                                value="{{ item.tech_responsible or '' if item else '' }}"
                                data-ad-search data-ad-email="tech_responsible_email"
                                placeholder="Rechercher dans l'annuaire (AD)...">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-medium">Email technique</label>
-                        <input type="email" name="tech_responsible_email" class="form-control" {% if reflete %}disabled{% endif %}
+                        <input type="email" name="tech_responsible_email" class="form-control"
                                value="{{ item.tech_responsible_email or '' if item else '' }}">
                     </div>
                 </div>
@@ -234,7 +220,7 @@
                    avec leur référent. #}
                 <div class="mb-3">
                     <label class="form-label fw-medium mb-1">Services utilisateurs</label>
-                    <select name="user_service_ids" class="form-select" multiple size="5" {% if reflete %}disabled{% endif %}>
+                    <select name="user_service_ids" class="form-select" multiple size="5">
                         {% for sv in user_services %}
                         <option value="{{ sv.id }}" {{ 'selected' if item and sv in item.user_services }}>{{ sv.name }}</option>
                         {% endfor %}
@@ -251,11 +237,11 @@
                     </div>
                     <div class="input-group input-group-sm mb-1">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" id="swEquipmentSearch" class="form-control" {% if reflete %}disabled{% endif %}
+                        <input type="text" id="swEquipmentSearch" class="form-control"
                                placeholder="Filtrer les serveurs (nom, type, environnement)..."
                                autocomplete="off" aria-label="Filtrer la liste des serveurs">
                     </div>
-                    <select name="equipment_ids" id="swEquipment" class="form-select" multiple size="6" {% if reflete %}disabled{% endif %}>
+                    <select name="equipment_ids" id="swEquipment" class="form-select" multiple size="6">
                         {% for e in equipments %}
                         <option value="{{ e.id }}" {{ 'selected' if item and e in item.equipments }}>{{ e.name }} ({{ e.kind_label() }}{% if e.environment %} · {{ e.env_label() }}{% endif %})</option>
                         {% endfor %}
@@ -271,32 +257,32 @@
                     <div class="row g-3">
                         <div class="col-md-3 d-flex align-items-center">
                             <div class="form-check">
-                                <input type="checkbox" class="form-check-input" name="gdpr_personal_data" id="gdprPd" {% if reflete %}disabled{% endif %}
+                                <input type="checkbox" class="form-check-input" name="gdpr_personal_data" id="gdprPd"
                                        {{ 'checked' if item and item.gdpr_personal_data }}>
                                 <label class="form-check-label" for="gdprPd">Traite des données personnelles</label>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-medium">Catégories de données</label>
-                            <input type="text" name="gdpr_categories" class="form-control" {% if reflete %}disabled{% endif %}
+                            <input type="text" name="gdpr_categories" class="form-control"
                                    value="{{ item.gdpr_categories or '' if item else '' }}"
                                    placeholder="état civil, coordonnées, santé, NIR...">
                         </div>
                         <div class="col-md-2">
                             <label class="form-label fw-medium">Réf. registre</label>
-                            <input type="text" name="gdpr_registry_ref" class="form-control" {% if reflete %}disabled{% endif %}
+                            <input type="text" name="gdpr_registry_ref" class="form-control"
                                    value="{{ item.gdpr_registry_ref or '' if item else '' }}" placeholder="n° du traitement">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label fw-medium">Localisation des données</label>
-                            {{ sel('gdpr_location', data_location_labels, item.gdpr_location if item else 'inconnue', disabled=reflete) }}
+                            {{ sel('gdpr_location', data_location_labels, item.gdpr_location if item else 'inconnue') }}
                         </div>
                     </div>
                 </fieldset>
 
                 <div class="mb-3">
                     <label class="form-label fw-medium">Description / Notes</label>
-                    <textarea name="description" class="form-control" rows="3" {% if reflete %}disabled{% endif %}
+                    <textarea name="description" class="form-control" rows="3"
                               placeholder="Périmètre fonctionnel, dépendances, particularités...">{{ item.description or '' if item else '' }}</textarea>
                 </div>
                 <div class="d-flex justify-content-end gap-2">

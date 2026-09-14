@@ -220,8 +220,12 @@ def create_app(config_class=Config):
     with app.app_context():
         _setup_sqlite()
         _drop_legacy_login_throttle()
+        # AVANT create_all et l'ajout des colonnes : la table restauree doit
+        # ensuite recevoir les colonnes manquantes comme n'importe quelle autre.
+        _reprendre_certificat_interrompu()
         db.create_all()
         _auto_migrate_sqlite()
+        _relacher_domaine_certificat()
         _migrate_data()
         _seed_roles()
         _seed_referentials()
@@ -308,13 +312,6 @@ def _setup_logging(app):
 def _migrate_data():
     """Petites migrations de donnees idempotentes (valeurs renommees)."""
     from sqlalchemy import text
-    # Origine des fiches logiciel : la colonne a ete ajoutee a chaud par
-    # _auto_migrate_sqlite, qui ne remplit pas les lignes EXISTANTES — un defaut
-    # SQLAlchemy s'applique a l'insertion, pas au passe. Elles restaient donc a
-    # NULL, et « origin != 'inventory' » ne les comptait pas : en SQL, une
-    # comparaison avec NULL n'est ni vraie ni fausse. Le compteur des fiches
-    # locales affichait zero alors qu'il y en avait huit.
-    db.session.execute(text("UPDATE software SET origin='local' WHERE origin IS NULL"))
     # Hebergement : l'ancien booleen is_saas devient une valeur parmi trois
     # (on premise / SaaS / hybride). La colonne survit dans les bases existantes
     # -- SQLite ne sait pas la retirer sans reconstruire la table -- mais plus
@@ -333,6 +330,12 @@ def _migrate_data():
         "UPDATE software SET hosting='on_premise' WHERE hosting IS NULL OR hosting=''"))
     db.session.execute(text(
         "UPDATE software SET lifecycle='production' WHERE lifecycle IS NULL OR lifecycle=''"))
+    # Meme comblement pour les bases ou la table n'a pas eu besoin d'etre
+    # reconstruite : une colonne ajoutee a chaud laisse le passe a NULL.
+    db.session.execute(text(
+        "UPDATE certificate SET kind='tls' WHERE kind IS NULL OR kind=''"))
+    db.session.execute(text(
+        "UPDATE certificate SET validity='valide' WHERE validity IS NULL OR validity=''"))
     # Le type d'asset « server » est remplace par « divers » (les serveurs sont
     # desormais geres dans l'inventaire).
     db.session.execute(text("UPDATE asset SET asset_type='divers' WHERE asset_type='server'"))
@@ -417,6 +420,83 @@ def _drop_legacy_login_throttle():
     if 'ip' not in cols or (stale_single and not has_composite):
         db.session.execute(text('DROP TABLE login_throttle'))
         db.session.commit()
+
+
+def _reprendre_certificat_interrompu():
+    """Rattrape une reconstruction de `certificate` interrompue en cours de route.
+
+    Elle laisse les DEUX tables : la neuve, vide, et l'ancienne qui porte les
+    donnees. On repart de l'ancienne plutot que de publier une table vide --
+    une coupure ne doit rien couter. Ce rattrapage passe AVANT l'ajout des
+    colonnes manquantes, pour que la table restauree soit remise a niveau comme
+    n'importe quelle autre.
+    """
+    from sqlalchemy import inspect, text
+    if not db.engine.url.get_backend_name().startswith('sqlite'):
+        return
+    if 'certificate_ancien' not in inspect(db.engine).get_table_names():
+        return
+    db.session.execute(text('DROP TABLE IF EXISTS certificate'))
+    db.session.execute(text('ALTER TABLE certificate_ancien RENAME TO certificate'))
+    db.session.commit()
+
+
+def _relacher_domaine_certificat():
+    """Le domaine d'un certificat cesse d'etre obligatoire.
+
+    Un certificat ELECTRONIQUE n'en a pas : sa date vient de l'autorite, pas
+    d'une poignee de main reseau. Le modele le dit desormais nullable, mais
+    SQLite ne sait pas relacher un NOT NULL sur une table existante -- il faut
+    la reconstruire. Sans cela, l'insertion d'un certificat electronique echoue
+    sur une base anterieure, et seulement sur celle-la : le probleme ne se voit
+    pas en test, ou la table nait au bon schema.
+
+    La reconstruction passe par le MODELE plutot que par un CREATE TABLE
+    recopie a la main : la table renait exactement comme create_all la ferait,
+    et les colonnes ajoutees depuis ne sont pas oubliees. Les index sont
+    recrees par _auto_migrate_sqlite au demarrage suivant, et les cles
+    etrangeres qui pointent vers `certificate` ne sont pas contraintes ici
+    (SQLite ne les applique que si on le lui demande).
+    """
+    from sqlalchemy import inspect, text
+    if not db.engine.url.get_backend_name().startswith('sqlite'):
+        return
+    insp = inspect(db.engine)
+    if 'certificate' not in insp.get_table_names():
+        return
+    colonnes = {c['name']: c for c in insp.get_columns('certificate')}
+    domaine = colonnes.get('domain')
+    if domaine is None or domaine.get('nullable', True):
+        return   # deja relache, ou table neuve
+
+    # Les colonnes ajoutees A CHAUD ne remplissent pas les lignes EXISTANTES :
+    # un defaut SQLAlchemy s'applique a l'insertion, pas au passe. `kind` et
+    # `validity` y sont restes a NULL, et la table reconstruite les declare NOT
+    # NULL -- la recopie echouerait sur la premiere ligne d'avant.
+    db.session.execute(text(
+        "UPDATE certificate SET kind='tls' WHERE kind IS NULL OR kind=''"))
+    db.session.execute(text(
+        "UPDATE certificate SET validity='valide' WHERE validity IS NULL OR validity=''"))
+    db.session.commit()
+
+    table = db.metadata.tables['certificate']
+    communes = [c.name for c in table.columns if c.name in colonnes]
+    liste = ', '.join(f'"{n}"' for n in communes)
+    db.session.execute(text('ALTER TABLE certificate RENAME TO certificate_ancien'))
+    # SQLite garde les INDEX attaches a la table renommee, sous leurs noms
+    # d'origine : la recreer echouerait sur « index deja existant ». On les
+    # retire d'abord ; _auto_migrate_sqlite les repose au demarrage suivant.
+    anciens = db.session.execute(text(
+        "SELECT name FROM sqlite_master WHERE type='index' "
+        "AND tbl_name='certificate_ancien' AND name NOT LIKE 'sqlite_%'")).scalars().all()
+    for nom in anciens:
+        db.session.execute(text(f'DROP INDEX "{nom}"'))
+    db.session.commit()
+    table.create(db.engine)
+    db.session.execute(text(
+        f'INSERT INTO certificate ({liste}) SELECT {liste} FROM certificate_ancien'))
+    db.session.execute(text('DROP TABLE certificate_ancien'))
+    db.session.commit()
 
 
 def _auto_migrate_sqlite():

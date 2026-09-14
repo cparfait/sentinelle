@@ -26,7 +26,7 @@ def _software_list():
     """Le catalogue, pour rattacher une tache a un logiciel. Les fiches ecartees
     a l'import n'y sont pas : elles ne sont dans aucune lecture."""
     from app.models import Software
-    return (Software.query.filter_by(is_active=True, excluded=False)
+    return (Software.query.filter_by(is_active=True)
             .order_by(Software.name).all())
 
 

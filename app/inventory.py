@@ -13,8 +13,9 @@ bp = Blueprint('inventory', __name__)
 KIND_CHOICES = [('vm', 'VM'), ('physical', 'Serveur physique'), ('nas', 'NAS')]
 ENV_CHOICES = [('', '—'), ('prod', 'Production'), ('preprod', 'Préproduction'),
                ('dev', 'Développement'), ('decommissioned', 'Décommissionné')]
-# `business_software` n'y figure plus : la saisie libre a cede la place a la
-# liste synchronisee depuis SoftInventory, et la colonne ne se remplit plus.
+# `business_software` n'y figure plus : la saisie libre a cede la place au
+# rattachement logiciel/serveur de l'inventaire, et la colonne ne se remplit
+# plus.
 SEARCH_FIELDS = ['name', 'os', 'os_version', 'ip_address', 'host_server', 'hypervisor',
                  'role_principal', 'serial_number',
                  'manufacturer_model', 'usage', 'observations']

@@ -24,20 +24,8 @@ def _guard_view():
     return view_guard('inventory')
 
 
-def _reflete(sw):
-    """Fiche refletee de SoftInventory, qui en detient l'identite."""
-    return getattr(sw, 'origin', None) == 'inventory'
-
-
 def _fill(sw, f):
-    """Verse le formulaire dans la fiche.
-
-    Sur une fiche REFLETEE, l'identite et les serveurs d'installation viennent
-    de SoftInventory : les reecrire ici ne tiendrait que jusqu'au prochain
-    import, qui les ecraserait sans rien dire. Seul ce qui appartient a
-    Sentinelle est repris — l'editeur, le contrat, la version suivie et la
-    criticite, que SoftInventory ne renseigne pas.
-    """
+    """Verse le formulaire dans la fiche."""
     sw.supplier_id = parse_int(f.get('supplier_id'))
     # Marches couvrant ce logiciel (M:N). Le rattachement se pose des deux
     # cotes -- ici et sur la fiche du marche : c'est la MEME table, et obliger a
@@ -49,9 +37,6 @@ def _fill(sw, f):
                     if cids else [])
     sw.version = (f.get('version', '') or '').strip() or None
     sw.criticality = parse_int(f.get('criticality'))
-    if _reflete(sw):
-        return
-
     sw.name = (f.get('name', '') or '').strip()
     # Hébergement : on premise / SaaS / hybride ; Docker est cumulable avec les
     # trois — un logiciel conteneurisé est hébergé QUELQUE PART, les deux
@@ -118,7 +103,7 @@ def _form_context():
 def list():
     # Les fiches ECARTEES a l'import sont absentes de toutes les lectures :
     # seul l'ecran de comparaison les montre encore, pour revenir sur le refus.
-    items = Software.query.filter_by(is_active=True, excluded=False).order_by(Software.name).all()
+    items = Software.query.filter_by(is_active=True).order_by(Software.name).all()
     q = request.args.get('q', '').strip()
     # Filtre par hebergement (onglets, comme le filtre par type du materiel).
     # Docker est un attribut cumulable : un logiciel conteneurise apparait aussi
@@ -139,9 +124,8 @@ def list():
                                    'tech_responsible', 'tech_responsible_email', 'description'])
     items.sort(key=lambda s: status_rank(s.computed_status()))
     items, page, pages, total = paginate(items)
-    from app.inventory_sync import synchro_active
     return render_template('software/list.html', items=items, q=q, host=host,
-                           counts=counts, total_all=total_all, synchro=synchro_active(),
+                           counts=counts, total_all=total_all,
                            page=page, pages=pages, total=total)
 
 
@@ -151,12 +135,6 @@ def list():
 def quick_create():
     """Creation rapide (AJAX) d'une application/logiciel minimal depuis un autre
     formulaire (ex. revue de droits). Renvoie l'id + le nom en JSON."""
-    # Meme regle que la creation pleine : tant que la synchro tourne, le
-    # catalogue appartient a SoftInventory.
-    from app.inventory_sync import synchro_active
-    if synchro_active():
-        return jsonify(ok=False, error="Catalogue synchronisé depuis SoftInventory : "
-                                       "créez le logiciel là-bas."), 409
     name = (request.form.get('name', '') or '').strip()
     if not name:
         return jsonify(ok=False, error='Le nom est obligatoire.'), 400
@@ -171,14 +149,6 @@ def quick_create():
 @login_required
 @require_edit
 def create():
-    # Quand la synchro tourne, le catalogue vient de SoftInventory : on n'ajoute
-    # plus d'application ici. L'ecran cache deja le bouton ; ce refus-ci est
-    # celui qui compte, il tient aussi pour une adresse tapee a la main.
-    from app.inventory_sync import synchro_active
-    if synchro_active():
-        flash("Le catalogue est synchronisé depuis SoftInventory : "
-              "les logiciels s'y créent.", 'warning')
-        return redirect(url_for('software.list'))
     if request.method == 'POST':
         # Le nom se verifie AVANT de toucher a la session : une fiche sans nom
         # n'a pas a y entrer, ne serait-ce qu'en attente.
@@ -211,7 +181,6 @@ def detail(id):
     # Les deux sens du flux, separes : savoir que la paie alimente la
     # comptabilite, et non l'inverse, est tout l'interet de la ligne.
     autres = (Software.query.filter(Software.is_active.is_(True),
-                                    Software.excluded.is_(False),
                                     Software.id != item.id)
               .order_by(Software.name).all())
     return render_template('software/detail.html', item=item, updates=updates,
@@ -238,8 +207,7 @@ def edit(id):
         audit_record('modification logiciel', detail=item.name, category='inventory')
         flash('Logiciel modifié', 'success')
         return redirect(url_for('software.detail', id=id))
-    return render_template('software/form.html', item=item, reflete=_reflete(item),
-                           **_form_context())
+    return render_template('software/form.html', item=item, **_form_context())
 
 
 @bp.route('/<int:id>/delete', methods=['POST'])

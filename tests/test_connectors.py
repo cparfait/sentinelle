@@ -87,45 +87,21 @@ def test_connecteurs_reserve_admin(app):
     assert r.status_code in (301, 302)  # redirigé (accès refusé)
 
 
-def test_page_connecteurs_contient_softinventory(app, client):
+def test_page_connecteurs_annonce_sesame(app, client):
+    """Sesame reste : il lit le catalogue des applications pour les
+    habilitations, et ce besoin-là demeure. L'exposition du parc, elle, n'avait
+    qu'un consommateur — il n'existe plus."""
     body = client.get('/connecteurs/').data.decode('utf-8')
-    assert 'SoftInventory' in body
-    # Les deux cartes cohabitent : chacune son interrupteur, chacune sa clé.
-    assert 'sesame_enabled' in body and 'inventory_enabled' in body
-    assert '/api/equipment' in body
+    assert 'Sesame' in body and 'sesame_enabled' in body
+    assert '/api/assets' in body
+    assert '/api/equipment' not in body
+    assert 'SoftInventory' not in body
 
 
-def test_activation_connecteur_softinventory(app, client):
-    app.config['INVENTORY_API_ENABLED'] = False
-    client.post('/connecteurs/softinventory',
-                data={'action': 'save', 'inventory_enabled': 'on'},
-                follow_redirects=True)
-    assert app.config['INVENTORY_API_ENABLED'] is True
-    client.post('/connecteurs/softinventory', data={'action': 'save'},
-                follow_redirects=True)
-    assert app.config['INVENTORY_API_ENABLED'] is False
+def test_le_parc_n_est_plus_expose(app, client):
+    """La route a disparu avec son consommateur : la laisser ouverte, c'était
+    garder une porte que plus personne ne franchit."""
+    assert client.get('/api/equipment').status_code == 404
+    assert client.post('/connecteurs/softinventory',
+                       data={'action': 'generate_key'}).status_code == 404
 
-
-def test_generation_cle_softinventory(app, client):
-    r = client.post('/connecteurs/softinventory', data={'action': 'generate_key'},
-                    follow_redirects=True)
-    assert r.status_code == 200
-    token = app.config.get('INVENTORY_API_TOKEN')
-    assert token and len(token) >= 20
-    assert token in r.data.decode('utf-8')
-
-
-def test_les_deux_cles_sont_independantes(app, client):
-    """Révoquer l'un ne coupe pas l'autre : c'est tout l'objet de deux clés."""
-    client.post('/connecteurs/sesame', data={'action': 'generate_key'},
-                follow_redirects=True)
-    client.post('/connecteurs/softinventory', data={'action': 'generate_key'},
-                follow_redirects=True)
-    sesame = app.config['SESAME_API_TOKEN']
-    inventaire = app.config['INVENTORY_API_TOKEN']
-    assert sesame and inventaire and sesame != inventaire
-    # Régénérer celle de SoftInventory laisse celle de Sesame intacte.
-    client.post('/connecteurs/softinventory', data={'action': 'generate_key'},
-                follow_redirects=True)
-    assert app.config['SESAME_API_TOKEN'] == sesame
-    assert app.config['INVENTORY_API_TOKEN'] != inventaire

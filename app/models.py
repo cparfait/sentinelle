@@ -1404,19 +1404,6 @@ class Software(db.Model):
     gdpr_categories = db.Column(db.String(256))   # etat civil, sante, NIR...
     gdpr_registry_ref = db.Column(db.String(64))  # reference au registre des traitements
     gdpr_location = db.Column(db.String(16), default='inconnue')
-    # Origine de la fiche : 'local' (saisie ici) ou 'inventory' (reflet de
-    # SoftInventory, qui DETIENT le catalogue des applications). Une fiche
-    # refletee voit son identite rafraichie a chaque import ; ce qui est
-    # PROPRE a Sentinelle -- mises a jour, revues, contrat, serveurs -- ne
-    # bouge jamais, c'est justement ce qu'elle ajoute au catalogue.
-    # `server_default` autant que `default` : le premier vit dans le DDL et vaut
-    # pour les INSERT bruts (les migrations de donnees en font), le second dans
-    # SQLAlchemy. Sans lui, une colonne NOT NULL sans valeur par defaut au
-    # niveau SQL faisait echouer la reprise du catalogue des Preferences.
-    origin = db.Column(db.String(16), default='local', server_default='local', nullable=False)
-    # L'identifiant chez SoftInventory, pour retrouver la fiche d'un import a
-    # l'autre meme renommee. NULL pour une fiche locale.
-    inventory_id = db.Column(db.Integer, unique=True, index=True)
     url = db.Column(db.String(256))
     criticality = db.Column(db.Integer)             # 1-4
     responsible = db.Column(db.String(128))
@@ -1428,13 +1415,6 @@ class Software(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
                            onupdate=lambda: datetime.now(timezone.utc))
-    # Ecarte a l'import : SoftInventory rend cette application, on n'en veut pas
-    # ici. La fiche disparait des listes et l'import ne la repropose plus cochee
-    # — jusqu'a ce qu'on la recoche dans l'ecran de comparaison, le seul endroit
-    # qui les montre encore. Un drapeau plutot qu'une suppression : la fiche
-    # garde ses mises a jour, ses revues et son contrat, et le refus se defait
-    # d'un clic. `is_active` reste la corbeille, qui est un autre geste.
-    excluded = db.Column(db.Boolean, default=False)
     # Services utilisateurs (M:N) : les directions qui s'en servent.
     user_services = db.relationship('UserService', secondary=software_service,
                                     backref=db.backref('software', lazy='dynamic'))
@@ -1586,6 +1566,24 @@ class SchedulerRun(db.Model):
     status = db.Column(db.String(20))  # ok / error
     message = db.Column(db.Text)
     run_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class ImportMap(db.Model):
+    """Correspondance entre l'identifiant d'un objet dans l'outil D'ORIGINE et
+    celui de la fiche creee ici par la reprise.
+
+    C'est ce qui rend la reprise REJOUABLE : relancer le script sur une base a
+    moitie versee retrouve les fiches deja creees au lieu de les doubler. La
+    premiere passe revele toujours quelque chose a corriger, et sans cette
+    table il faudrait vider la base entre deux essais.
+
+    UNE table pour tous les types plutot qu'une colonne par modele : la
+    correspondance ne concerne qu'un import, pas la vie des fiches, et elle
+    s'efface d'un DELETE le jour ou la reprise est derriere nous.
+    """
+    kind = db.Column(db.String(32), primary_key=True)
+    remote_id = db.Column(db.Integer, primary_key=True)
+    local_id = db.Column(db.Integer, nullable=False)
 
 
 class ActionLog(db.Model):

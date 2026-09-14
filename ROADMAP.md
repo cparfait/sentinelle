@@ -25,6 +25,30 @@ Suivi des évolutions demandées. Légende : ✅ fait · 🚧 en cours · ⬜ à
 - ✅ **Widgets dashboard** — bandeau de **conformité globale** (% OK + barre de progression + compteurs cliquables), en plus des cartes par catégorie et de la liste des urgences déjà présentes.
 - ✅ **Export PDF « bilan COPIL »** — bouton « Bilan PDF » : conformité globale, tableau par catégorie et éléments à traiter (reportlab), filtré selon les droits.
 
+## Absorption de SoftInventory
+Un seul outil plutôt que deux : les fonctionnalités de SoftInventory (inventaire des logiciels d'une
+collectivité) vivent désormais dans Sentinelle, et ses données y ont été reprises.
+- ✅ **Fiche logiciel enrichie** — cycle de vie, technologie, type de source, mode d'authentification + 2FA,
+  utilisateurs / plafond contractuel, date de mise en service, référent technique, volet RGPD. L'hébergement
+  cesse d'être un booléen : « hybride » se dit enfin, et paraît dans les deux onglets.
+- ✅ **Annuaire éditeurs** — assistance (deux lignes d'horaires, n° client), commercial (×2), administratif,
+  DPO. Saisis une seule fois, remontés en lecture seule sur les fiches logiciel.
+- ✅ **Marchés** — nature de l'acte, référence fournisseur, plafond et total, durée ferme et reconductions,
+  relation **N-N** avec les logiciels (un marché commun en couvre plusieurs ; supprimer un logiciel
+  n'emporte plus son marché), **pièces contractuelles**.
+- ✅ **Mise en concurrence** — consultations et devis, au plus un retenu par consultation.
+- ✅ **Certificats électroniques** (RGS / eIDAS) — rejoignent le module Certificats : même échéance, mêmes
+  alertes, même agenda. Un certificat révoqué sort de la surveillance. Le code de révocation est un secret
+  opératoire : jamais transmis à un lecteur, jamais réaffiché, jamais exporté.
+- ✅ **Pièces jointes en base** — parent unique, droits hérités de la fiche portante, types en liste positive,
+  servies en pièce jointe. Activables depuis les Préférences, avec leur taille maximale.
+- ✅ **Services utilisateurs, flux entre logiciels, dossiers du partage réseau, référentiels administrables**.
+- ✅ **Retrait du connecteur** — plus de synchro, plus de fiches « reflétées », plus d'API `/api/equipment` :
+  le catalogue appartient à Sentinelle.
+- ✅ **Reprise des données** — `tools/reprise_softinventory.py` : lit la base PostgreSQL de SoftInventory
+  (ou un dump restauré) et la verse ici. Rejouable (`import_map`), avec un mode `--essai` qui compte sans
+  rien écrire et nomme ce qui ne se rapproche pas.
+
 ## Modules métier (suite)
 - ✅ **Vue serveur 360°** — liaison optionnelle des certificats, sauvegardes et mises à jour à un équipement de l'inventaire (`equipment_id`). Select dans les formulaires, lien sur les fiches, section « Éléments liés » sur la fiche équipement. Un backup actif lié couvre désormais l'alerte « criticité élevée sans sauvegarde ».
 

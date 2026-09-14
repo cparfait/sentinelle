@@ -6,8 +6,13 @@ fonctionnelle.
 ## Vue d'ensemble
 
 « Sentinelle » : tableau de bord Flask de supervision d'une DSI (comptes/mots de passe,
-certificats TLS, backups, tests récurrents) avec alertes mail. Usage interne, SQLite,
-peu d'utilisateurs.
+certificats TLS et électroniques, domaines, backups, tests récurrents) **et** inventaire
+du parc et des logiciels (éditeurs, marchés et pièces, devis, services utilisateurs,
+pièces jointes), avec alertes mail. Usage interne, SQLite, peu d'utilisateurs.
+
+L'application sœur « SoftInventory » a été absorbée : ses fonctionnalités et ses données
+vivent ici. Il n'y a plus qu'un seul outil — ne pas réintroduire de synchro externe pour
+le catalogue des logiciels.
 
 ## Commandes
 
@@ -32,7 +37,8 @@ pytest dans `requirements-dev.txt`). Toute évolution de la logique de statut
 
 - `run.py` → `create_app()` dans `app/__init__.py` (application factory).
 - Blueprints, un par domaine : `auth`, `dashboard`, `accounts`, `certificates`,
-  `backups`, `tests`, `alerts`, `users`, `search`.
+  `backups`, `tests`, `alerts`, `users`, `search`, `inventory`, `software`, `contracts`,
+  `suppliers`, `documents`, `referentials`.
 - `app/models.py` : modèles SQLAlchemy. La logique de statut (vert/orange/rouge) vit dans
   les méthodes des modèles (`status()`, `computed_status()`, `success_rate()`, `streak()`).
 - `app/scheduler.py` : jobs APScheduler quotidiens qui appellent `send_alert`.
@@ -62,5 +68,13 @@ pytest dans `requirements-dev.txt`). Toute évolution de la logique de statut
 - **Compte admin** : `_seed_default_user()` génère un mot de passe aléatoire (affiché en
   console) et réinitialise tout admin ayant encore le mot de passe `admin`. Ne jamais
   réintroduire un mot de passe par défaut en clair.
+- **Listes de valeurs** : celles dont un CALCUL dépend (cycle de vie, hébergement,
+  criticité, statut de certificat) restent des constantes dans `models.py` — en ajouter
+  laisserait des fiches orphelines et des filtres qui ne filtrent plus. Les libellés
+  purement descriptifs vivent en base (`Referential`, écran *Référentiels*, admin).
+- **Migrations de schéma SQLite** : `_auto_migrate_sqlite()` ajoute colonnes et index, mais
+  ne sait NI relâcher un `NOT NULL` NI remplir les lignes existantes. Les deux se font à la
+  main (cf. `_relacher_domaine_certificat()` et les `UPDATE` de `_migrate_data()`), et une
+  base ancienne échoue là où une base neuve passe — le tester sur `instance/`.
 - **Dates** : utiliser `datetime.now(timezone.utc)` (déjà la convention partout).
 - **Langue** : UI et messages en français.

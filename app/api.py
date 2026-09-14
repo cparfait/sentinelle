@@ -57,7 +57,7 @@ def assets():
     if atype and atype != 'application':
         rows = []
     else:
-        rows = Software.query.filter_by(is_active=True, excluded=False).order_by(
+        rows = Software.query.filter_by(is_active=True).order_by(
             Software.name.asc()).all()
     return jsonify([
         {'id': s.id, 'name': s.name, 'description': s.description or '',
@@ -65,51 +65,6 @@ def assets():
          'responsible': s.responsible or '',
          'responsible_email': s.responsible_email or ''}
         for s in rows
-    ])
-
-
-@bp.route('/equipment')
-@csrf.exempt
-@limiter.limit('60 per minute')
-def equipment():
-    """Le parc — VM, serveurs physiques et NAS — expose a SoftInventory, qui
-    rattache ses logiciels a des serveurs sans les ressaisir.
-
-    Sentinelle DETIENT le materiel : elle en connait l'IP, le VLAN,
-    l'hyperviseur, la garantie. SoftInventory n'en garde qu'une reference — de
-    quoi dire « ce logiciel tourne la » et pointer vers la fiche d'ici.
-
-    Auth : en-tete `Authorization: Bearer <cle>` (Connecteurs). Filtre optionnel
-    `?kind=vm|physical|nas`. Reponse : tableau JSON trie par nom.
-
-    Les equipements DECOMMISSIONNES sortent aussi : un logiciel peut encore
-    pointer vers un serveur qu'on vient d'eteindre, et le faire disparaitre du
-    flux romprait le lien sans rien dire. `environment` le signale.
-    """
-    err = _bearer_auth_error('INVENTORY_API_ENABLED', 'INVENTORY_API_TOKEN', 'SoftInventory')
-    if err is not None:
-        return err
-    from app.models import Equipment
-    kind = request.args.get('kind')
-    q = Equipment.query
-    if kind in ('vm', 'physical', 'nas'):
-        q = q.filter_by(kind=kind)
-    rows = q.order_by(Equipment.name.asc()).all()
-    return jsonify([
-        {
-            'id': e.id,
-            'name': e.name,
-            'kind': e.kind or 'vm',
-            'kind_label': e.kind_label(),
-            'environment': e.environment or '',
-            'os': e.os or '',
-            'os_version': e.os_version or '',
-            'ip_address': e.ip_address or '',
-            'hypervisor': e.hypervisor or '',
-            'host_server': e.host_server or '',
-            'criticality': e.criticality,
-        }
-        for e in rows
     ])
 
 

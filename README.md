@@ -31,6 +31,22 @@ applicatives. Le tout avec des **alertes automatiques** (mail + Teams), un **ré
 - **Revue de droits** — revue périodique des accès aux applications métiers.
 - **Mises à jour** — suivi des versions et du statut (à jour / disponible / critique) + qui a fait la MàJ.
 
+### Inventaire des logiciels
+- **Fiche logiciel** — éditeur, hébergement (on premise / SaaS / hybride), cycle de vie, technologie,
+  mode d'authentification et 2FA, utilisateurs face au **plafond contractuel**, référents métier **et**
+  technique, serveurs d'installation, services utilisateurs, **volet RGPD** (données personnelles,
+  catégories, réf. registre, localisation).
+- **Éditeurs** — l'assistance (portail, hotline, mail, horaires, n° client) **et** les contacts hors
+  incident : commercial (deux), administratif, DPO. Saisis une seule fois, hérités par les fiches logiciel.
+- **Marchés** — marché public ou gré à gré, montant annuel, plafond, total sur la durée, durée ferme et
+  reconductions, **plusieurs logiciels couverts par un même marché**, **pièces contractuelles**.
+- **Mise en concurrence** — consultations et devis reçus, avec celui qui a été retenu.
+- **Certificats électroniques** (RGS / eIDAS) — titulaire, fonction, usage, support (carte / clé / fichier),
+  niveau, n° de série, bon de commande, code de révocation. Mêmes alertes que les certificats TLS.
+- **Liaisons** — flux orientés entre logiciels, dossiers du partage réseau.
+- **Pièces jointes** — actes signés, délibérations, guides, stockés **en base** (une sauvegarde de la base
+  suffit à tout restaurer).
+
 ### Pilotage & alertes
 - **Tableau de bord** : conformité globale (%), compteurs par catégorie, éléments urgents.
 - **Récap quotidien** par mail, **alertes** par seuils (mail + **Microsoft Teams**), avec **anti-doublon** et **report (snooze)**.
@@ -43,6 +59,8 @@ applicatives. Le tout avec des **alertes automatiques** (mail + Teams), un **ré
 - **2FA (TOTP)**, **verrouillage** après N échecs, **expiration de session**, **politique de mot de passe**.
 - **Journal d'audit** complet (qui a fait quoi), paginé et cherchable.
 - **Corbeille** (restauration + suppression définitive), **import/export CSV**, **bilan PDF (COPIL)**.
+- **Référentiels administrables** (technologies, catégories de pièces, types de tâches) et **annuaire des
+  services utilisateurs** avec leur référent.
 - **Auto-sauvegarde** de la base + **export total de secours** (clé USB), **logs applicatifs** avec rotation.
 
 ## 🧱 Stack

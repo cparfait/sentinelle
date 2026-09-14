@@ -159,57 +159,20 @@ def test_revue_conserve_application_hors_inventaire(client):
 # pouvoir la changer. Réécrire ici ne tiendrait que jusqu'au prochain import.
 
 
-def _branche(app):
-    app.config['SOFTINVENTORY_URL'] = 'http://inventaire.test'
-    app.config['SOFTINVENTORY_KEY'] = 'cle'
-
-
-def test_pas_de_creation_locale_quand_la_synchro_tourne(client, app):
-    _branche(app)
+def test_le_catalogue_se_cree_ici(client):
+    """Le catalogue appartient à Sentinelle : rien ne refuse plus une création,
+    et la fiche est entièrement modifiable — il n'y a plus d'import pour
+    écraser la saisie."""
     r = client.get('/inventory/logiciels/create', follow_redirects=True)
-    assert 'synchronis' in r.get_data(as_text=True)
-    r = client.post('/inventory/logiciels/create', data={'name': 'Saisi ici'},
-                    follow_redirects=True)
-    assert Software.query.filter_by(name='Saisi ici').first() is None
-
-
-def test_le_bouton_d_ajout_disparait_quand_la_synchro_tourne(client, app):
-    _branche(app)
-    html = client.get('/inventory/logiciels/').get_data(as_text=True)
-    assert 'Ajouter un logiciel' not in html
-    assert 'repris de SoftInventory' in html
-
-
-def test_creation_rapide_refusee_quand_la_synchro_tourne(client, app):
-    _branche(app)
+    assert 'Ajouter un logiciel' in r.get_data(as_text=True)
+    assert 'SoftInventory' not in r.get_data(as_text=True)
+    client.post('/inventory/logiciels/create', data={'name': 'Saisi ici'},
+                follow_redirects=True)
+    assert Software.query.filter_by(name='Saisi ici').first() is not None
+    # L'ajout rapide depuis un autre formulaire ne refuse plus non plus.
     r = client.post('/inventory/logiciels/quick-create', data={'name': 'Express'})
-    assert r.status_code == 409
-    assert Software.query.filter_by(name='Express').first() is None
-
-
-def test_une_fiche_refletee_garde_son_identite_et_ses_serveurs(client):
-    e = Equipment(name='SRV-OPUS', kind='vm')
-    autre = Equipment(name='SRV-AUTRE', kind='vm')
-    db.session.add_all([e, autre])
-    db.session.commit()
-    sw = Software(name='Concerto', origin='inventory', inventory_id=7,
-                  responsible='MARTIN', hosting='saas')
-    sw.equipments = [e]
-    db.session.add(sw)
-    db.session.commit()
-
-    # Le formulaire tente de tout réécrire, y compris les serveurs.
-    client.post(f'/inventory/logiciels/{sw.id}/edit', data={
-        'name': 'Renommé à la main', 'responsible': 'AUTRE', 'hosting': 'on_premise',
-        'version': '2.4', 'criticality': '3',
-        'equipment_ids': [str(autre.id)]}, follow_redirects=True)
-
-    sw = Software.query.one()
-    # Ce que SoftInventory détient n'a pas bougé…
-    assert sw.name == 'Concerto' and sw.responsible == 'MARTIN' and sw.is_saas is True
-    assert [x.name for x in sw.equipments] == ['SRV-OPUS']
-    # …et ce qui appartient à Sentinelle a bien été pris.
-    assert sw.version == '2.4' and sw.criticality == 3
+    assert r.status_code == 200
+    assert Software.query.filter_by(name='Express').first() is not None
 
 
 def test_une_fiche_locale_reste_entierement_modifiable(client):

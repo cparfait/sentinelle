@@ -144,15 +144,6 @@ class Config:
     # Bearer). Gere depuis les Preferences (cle chiffree en base). Repli .env.
     SESAME_API_ENABLED = os.getenv('SESAME_API_ENABLED', 'false').lower() in ('true', '1', 'yes')
     SESAME_API_TOKEN = os.getenv('SESAME_API_TOKEN', '')
-    # Integration SoftInventory (inventaire des logiciels) : il lit le parc
-    # via /api/equipment pour ne pas le ressaisir.
-    INVENTORY_API_ENABLED = os.getenv('INVENTORY_API_ENABLED', 'false').lower() in ('true', '1', 'yes')
-    INVENTORY_API_TOKEN = os.getenv('INVENTORY_API_TOKEN', '')
-    # Sens INVERSE : SoftInventory detient le catalogue des applications, et
-    # Sentinelle vient l'y lire. URL + cle emise LA-BAS (Administration >
-    # Parametres > Cles d'API).
-    SOFTINVENTORY_URL = os.getenv('SOFTINVENTORY_URL', '')
-    SOFTINVENTORY_KEY = os.getenv('SOFTINVENTORY_KEY', '')
 
     # Repertoire ou sont deposes les mails recap de backup (.eml/.txt/.html).
     # Sentinelle le scanne automatiquement. Laisser vide pour desactiver.
