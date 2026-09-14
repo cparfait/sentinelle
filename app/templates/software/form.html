@@ -179,16 +179,16 @@
                         <div class="form-text">Annuaire <a href="{{ url_for('suppliers.list') }}">Fournisseurs</a> — c'est là que vivent les contacts.</div>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label fw-medium">Contrat / licence</label>
-                        <div class="input-group">
-                            <select name="contract_id" id="swContract" class="form-select">
-                                <option value="">— Aucun —</option>
-                                {% for c in contracts %}
-                                <option value="{{ c.id }}" {{ 'selected' if item and item.contract_id == c.id }}>{{ c.name }}</option>
-                                {% endfor %}
-                            </select>
-                            {% if current_user.can_edit('contracts') %}{{ qa_button('qaModalContract', 'swContract', 'Ajouter un contrat') }}{% endif %}
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-medium mb-0">Contrats / marchés</label>
+                            {% if current_user.can_edit('contracts') %}{{ qa_add_link('qaModalContract', 'swContract', 'Nouveau marché') }}{% endif %}
                         </div>
+                        <select name="contract_ids" id="swContract" class="form-select" multiple size="4">
+                            {% for c in contracts %}
+                            <option value="{{ c.id }}" {{ 'selected' if item and c in item.contracts }}>{{ c.name }}{% if c.reference %} — {{ c.reference }}{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Un marché peut en couvrir plusieurs (UGAP, marché commun) : Ctrl/Cmd pour en choisir plusieurs.</div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-medium">Mention « sans contrat »</label>

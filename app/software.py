@@ -38,7 +38,14 @@ def _fill(sw, f):
     criticite, que SoftInventory ne renseigne pas.
     """
     sw.supplier_id = parse_int(f.get('supplier_id'))
-    sw.contract_id = parse_int(f.get('contract_id'))
+    # Marches couvrant ce logiciel (M:N). Le rattachement se pose des deux
+    # cotes -- ici et sur la fiche du marche : c'est la MEME table, et obliger a
+    # passer par l'un des deux ecrans n'aurait servi qu'a le faire chercher.
+    cids = [parse_int(v) for v in f.getlist('contract_ids')]
+    cids = [i for i in cids if i]
+    sw.contracts = (Contract.query.filter(Contract.id.in_(cids),
+                                          Contract.is_active.is_(True)).all()
+                    if cids else [])
     sw.version = (f.get('version', '') or '').strip() or None
     sw.criticality = parse_int(f.get('criticality'))
     if _reflete(sw):
@@ -164,12 +171,17 @@ def create():
               "les logiciels s'y créent.", 'warning')
         return redirect(url_for('software.list'))
     if request.method == 'POST':
-        sw = Software()
-        _fill(sw, request.form)
-        if not sw.name:
+        # Le nom se verifie AVANT de toucher a la session : une fiche sans nom
+        # n'a pas a y entrer, ne serait-ce qu'en attente.
+        if not (request.form.get('name', '') or '').strip():
             flash('Le nom du logiciel est obligatoire.', 'danger')
             return render_template('software/form.html', item=None, **_form_context())
+        sw = Software(name=(request.form.get('name') or '').strip())
+        # Rattache a la session AVANT le remplissage : poser les marches d'une
+        # fiche qui n'y est pas encore laisserait le lien de cote sans rien dire
+        # -- SQLAlchemy se contente d'un avertissement.
         db.session.add(sw)
+        _fill(sw, request.form)
         db.session.commit()
         audit_record('creation logiciel', detail=sw.name, category='inventory')
         flash('Logiciel ajouté', 'success')
@@ -182,7 +194,15 @@ def create():
 def detail(id):
     item = Software.query.get_or_404(id)
     updates = item.system_updates.filter_by(is_active=True).all()
-    return render_template('software/detail.html', item=item, updates=updates)
+    # Les consultations se lisent de la plus RECENTE a la plus ancienne : c'est
+    # celle qui a abouti au marche en cours qu'on vient verifier.
+    from app.models import Consultation
+    consultations = item.consultations.order_by(
+        Consultation.date.desc().nullslast(), Consultation.id.desc()).all()
+    return render_template('software/detail.html', item=item, updates=updates,
+                           consultations=consultations,
+                           suppliers=Supplier.query.filter_by(is_active=True)
+                                                   .order_by(Supplier.name).all())
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])

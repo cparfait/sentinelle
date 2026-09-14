@@ -6,7 +6,8 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="fw-bold mb-0"><i class="bi bi-file-earmark-text me-2"></i>{{ contract.name }}</h4>
-        <small class="text-muted">{{ contract.kind_label() }}{% if contract.supplier %} — {{ contract.supplier.name }}{% endif %}</small>
+        <small class="text-muted">{{ contract.kind_label() }}{% if contract.nature_label() %} · {{ contract.nature_label() }}{% endif %}{% if contract.supplier %} — {{ contract.supplier.name }}{% endif %}
+            {%- if contract.period_label() %} · {{ contract.period_label() }}{% endif %}</small>
     </div>
     <div class="d-flex gap-2">
         {% if current_user.can_edit('contracts') %}
@@ -45,12 +46,34 @@
                     <span class="fw-medium">{{ 'Oui' if contract.auto_renew else 'Non' }}</span>
                 </div>
                 <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">N° de contrat / marché</small>
+                    <small class="text-muted d-block">Notre référence</small>
                     <span class="fw-medium">{{ contract.reference or '-' }}</span>
                 </div>
                 <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Coût annuel</small>
+                    <small class="text-muted d-block">Référence fournisseur</small>
+                    <span class="fw-medium">{{ contract.supplier_reference or '-' }}</span>
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Montant annuel</small>
                     <span class="fw-medium">{{ ('%.0f' | format(contract.cost_yearly)) ~ ' €' if contract.cost_yearly else '-' }}</span>
+                    {# Le plafond ne contraint pas le montant : c'est l'acte qui fait foi,
+                       pas l'outil. On le montre à côté plutôt que d'en tirer une alerte. #}
+                    {% if contract.cost_max_yearly %}
+                    <small class="d-block text-muted">maximum annuel : {{ '%.0f' | format(contract.cost_max_yearly) }} €</small>
+                    {% endif %}
+                    {% if contract.cost_total %}
+                    <small class="d-block text-muted">total sur la durée : {{ '%.0f' | format(contract.cost_total) }} €</small>
+                    {% endif %}
+                </div>
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Durée</small>
+                    <span class="fw-medium">
+                        {%- if contract.firm_years %}{{ contract.firm_years }} an{{ 's' if contract.firm_years > 1 }} ferme
+                        {%- else %}-{% endif -%}
+                    </span>
+                    {% if contract.renewal_label() %}
+                    <small class="d-block text-muted">{{ contract.renewal_label() }}</small>
+                    {% endif %}
                 </div>
                 <div class="col-sm-6 mb-3">
                     <small class="text-muted d-block">Début</small>
@@ -59,6 +82,19 @@
                 <div class="col-sm-6 mb-3">
                     <small class="text-muted d-block">Responsable</small>
                     <span class="fw-medium">{{ contract.responsible or '-' }}</span>
+                </div>
+                {# ── Logiciels couverts ──
+                   Le marché vit pour lui-même : il couvre autant de logiciels
+                   qu'il en couvre réellement, et en perdre le dernier ne le
+                   supprime pas. #}
+                <div class="col-12 mb-3">
+                    <small class="text-muted d-block mb-1">Logiciels couverts</small>
+                    {% for sw in contract.software %}
+                    <a href="{{ url_for('software.detail', id=sw.id) }}" class="badge bg-light text-dark border text-decoration-none me-1 mb-1">
+                        <i class="bi bi-window-stack me-1"></i>{{ sw.name }}</a>
+                    {% else %}
+                    <span class="text-muted">Aucun logiciel rattaché.</span>
+                    {% endfor %}
                 </div>
                 {% if contract.equipments %}
                 <div class="col-12 mb-3">
@@ -76,6 +112,84 @@
                 <p class="mb-0">{{ contract.description }}</p>
             </div>
             {% endif %}
+        </div>
+
+        {# ═══ Pièces du marché ═══
+           Une pièce ne décrit qu'elle-même : un poste, son coût, la date de son
+           document. Elle ne porte pas d'échéance — c'est le marché qui engage,
+           et c'est sa date de fin qu'on surveille. Les pièces se lisent de la
+           plus récente à la plus ancienne. #}
+        <div class="data-card mb-3">
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-paperclip me-2 text-primary"></i>Pièces du marché
+                    <span class="badge bg-secondary ms-1">{{ items|length }}</span>
+                    {% if items %}<small class="fw-normal text-muted ms-2">{{ '%.0f' | format(contract.items_cost()) }} € cumulés</small>{% endif %}</h6>
+                {% if current_user.can_edit('contracts') %}
+                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#nouvellePiece"><i class="bi bi-plus-lg me-1"></i> Pièce</button>
+                {% endif %}
+            </div>
+            {% if current_user.can_edit('contracts') %}
+            <div class="collapse" id="nouvellePiece">
+                <form method="POST" action="{{ url_for('contracts.item_add', id=contract.id) }}"
+                      class="p-3 border-bottom bg-body-tertiary">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label fw-medium small mb-1">Poste *</label>
+                            <input type="text" name="label" class="form-control form-control-sm" required
+                                   placeholder="ex: 50 postes, module RH">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-medium small mb-1">Nature</label>
+                            <select name="kind" class="form-select form-select-sm">
+                                {% for value, label in item_kind_labels.items() %}
+                                <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-medium small mb-1">Coût / an (€)</label>
+                            <input type="text" name="cost_yearly" class="form-control form-control-sm" inputmode="decimal">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-medium small mb-1">Date du document</label>
+                            <input type="date" name="doc_date" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-1">
+                            <button type="submit" class="btn btn-sm btn-primary w-100" title="Ajouter la pièce"
+                                    aria-label="Ajouter la pièce"><i class="bi bi-plus-lg"></i></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Poste</th><th>Nature</th><th class="text-end">Coût / an</th><th>Date du document</th><th></th></tr></thead>
+                    <tbody>
+                        {% for it in items %}
+                        <tr>
+                            <td>{{ it.label }}{% if it.notes %}<small class="d-block text-muted">{{ it.notes }}</small>{% endif %}</td>
+                            <td class="small">{{ it.kind_label() }}</td>
+                            <td class="text-end">{% if it.cost_yearly is not none %}{{ '%.2f' | format(it.cost_yearly) }} €{% else %}—{% endif %}</td>
+                            <td class="small text-nowrap">{{ it.doc_date.strftime('%d/%m/%Y') if it.doc_date else '—' }}</td>
+                            <td class="text-end">
+                                {% if current_user.can_delete('contracts') %}
+                                <form method="POST" action="{{ url_for('contracts.item_delete', item_id=it.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer la pièce"
+                                            aria-label="Supprimer la pièce" data-confirm="Supprimer cette pièce ?"><i class="bi bi-trash"></i></button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center py-3 text-muted">Aucune pièce enregistrée</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <div class="data-card">

@@ -318,6 +318,15 @@ def _migrate_data():
         "INSERT OR IGNORE INTO contract_equipment (contract_id, equipment_id) "
         "SELECT id, equipment_id FROM contract "
         "WHERE equipment_id IS NOT NULL"))
+    # Marches : l'ancien lien unique Software.contract_id devient une relation
+    # N:N (table contract_software). Un marche en couvre souvent plusieurs --
+    # UGAP, marches communs a deux applications --, ce que la cle unique ne
+    # savait pas dire. On y recopie les liens existants une fois. La colonne
+    # survit dans les bases existantes, plus rien ne la lit.
+    if 'contract_id' in _cols:
+        db.session.execute(text(
+            "INSERT OR IGNORE INTO contract_software (contract_id, software_id) "
+            "SELECT contract_id, id FROM software WHERE contract_id IS NOT NULL"))
     # Catalogue « applications » des Preferences -> inventaire Logiciels.
     # Migration unique et idempotente (par nom). Les Asset restent en base
     # (dormants) ; c'est l'ecran Preferences qui est retire.

@@ -90,15 +90,22 @@ def test_rapproche_une_fiche_locale_par_son_NOM(app):
 
 
 def test_ne_touche_pas_ce_qui_est_PROPRE_a_sentinelle(app):
-    # Les mises à jour, les revues, le contrat et les serveurs sont ce que
+    # Les mises à jour, les revues, les marchés et les serveurs sont ce que
     # Sentinelle AJOUTE au catalogue : un import qui les effacerait ne serait
     # lancé qu'une fois.
+    from app.models import Contract
     with app.app_context():
-        db.session.add(Software(name="GLPI", criticality=3, contract_id=None))
+        sw = Software(name="GLPI", criticality=3)
+        ct = Contract(name="Marché GLPI")
+        db.session.add_all([sw, ct])
+        db.session.commit()
+        sw.contracts = [ct]
         db.session.commit()
     _importer(app, [_app(7, "GLPI")])
     with app.app_context():
-        assert Software.query.one().criticality == 3
+        sw = Software.query.one()
+        assert sw.criticality == 3
+        assert [c.name for c in sw.contracts] == ["Marché GLPI"]
 
 
 def test_actualise_sans_dupliquer_au_second_passage(app):

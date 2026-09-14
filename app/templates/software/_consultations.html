@@ -1,0 +1,129 @@
+{# ═══ Mise en concurrence ═══
+   Les devis racontent l'AVANT-contrat. Ils se groupent par consultation — un
+   objet, une date — parce qu'un logiciel en accumule plusieurs au fil des
+   années : une liste plate ne saurait pas dire quel devis a été retenu pour
+   quelle consultation. Le marché qui en est issu se lit, lui, dans les
+   contrats rattachés. #}
+{% set peut_editer = current_user.can_edit('contracts') %}
+{% set peut_supprimer = current_user.can_delete('contracts') %}
+<div class="data-card mb-3">
+    <div class="card-header-custom d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-cash-coin me-2 text-primary"></i>Mise en concurrence
+            <span class="badge bg-secondary ms-1">{{ consultations|length }}</span></h6>
+        {% if peut_editer %}
+        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
+                data-bs-target="#nouvelleConsultation">
+            <i class="bi bi-plus-lg me-1"></i> Consultation
+        </button>
+        {% endif %}
+    </div>
+
+    {% if peut_editer %}
+    <div class="collapse" id="nouvelleConsultation">
+        <form method="POST" action="{{ url_for('contracts.consultation_add', software_id=item.id) }}"
+              class="p-3 border-bottom bg-body-tertiary">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-7">
+                    <label class="form-label fw-medium small mb-1">Objet de la consultation *</label>
+                    <input type="text" name="subject" class="form-control form-control-sm" required
+                           placeholder="ex: renouvellement 2027, migration vers la v5">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-medium small mb-1">Date</label>
+                    <input type="date" name="date" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-sm btn-primary w-100">Ajouter</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    {% for cons in consultations %}
+    <div class="p-3 {{ '' if loop.last else 'border-bottom' }}">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <span class="fw-medium">{{ cons.subject }}</span>
+                {% if cons.date %}<small class="text-muted ms-1">— {{ cons.date.strftime('%d/%m/%Y') }}</small>{% endif %}
+                {% if cons.notes %}<small class="d-block text-muted">{{ cons.notes }}</small>{% endif %}
+            </div>
+            {% if peut_supprimer %}
+            <form method="POST" action="{{ url_for('contracts.consultation_delete', consultation_id=cons.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer la consultation"
+                        aria-label="Supprimer la consultation"
+                        data-confirm="Supprimer cette consultation et ses devis ?"><i class="bi bi-trash"></i></button>
+            </form>
+            {% endif %}
+        </div>
+
+        <table class="table table-sm mb-2">
+            <thead><tr><th>Fournisseur</th><th class="text-end">Montant</th><th>Date</th><th></th></tr></thead>
+            <tbody>
+                {% for d in cons.quotes.order_by(None).all() | sort(attribute='amount') %}
+                <tr class="{{ 'table-success' if d.selected }}">
+                    <td>{{ d.who() }}
+                        {% if d.selected %}<span class="badge bg-success ms-1">Retenu</span>{% endif %}</td>
+                    <td class="text-end">{% if d.amount is not none %}{{ '%.2f' | format(d.amount) }} €{% else %}—{% endif %}</td>
+                    <td class="small text-nowrap">{{ d.date.strftime('%d/%m/%Y') if d.date else '—' }}</td>
+                    <td class="text-end">
+                        <div class="d-flex gap-1 justify-content-end">
+                            {% if peut_editer and not d.selected %}
+                            <form method="POST" action="{{ url_for('contracts.quote_select', quote_id=d.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-success" title="Marquer comme retenu"
+                                        aria-label="Marquer comme retenu"><i class="bi bi-check-lg"></i></button>
+                            </form>
+                            {% endif %}
+                            {% if peut_supprimer %}
+                            <form method="POST" action="{{ url_for('contracts.quote_delete', quote_id=d.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer le devis"
+                                        aria-label="Supprimer le devis" data-confirm="Supprimer ce devis ?"><i class="bi bi-trash"></i></button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-muted small py-2">Aucun devis reçu pour cette consultation.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if peut_editer %}
+        <form method="POST" action="{{ url_for('contracts.quote_add', consultation_id=cons.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <select name="supplier_id" class="form-select form-select-sm">
+                        <option value="">— Fournisseur de l'annuaire —</option>
+                        {% for s in suppliers %}
+                        <option value="{{ s.id }}">{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="supplier_name" class="form-control form-control-sm"
+                           placeholder="… ou un nom libre">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" name="amount" class="form-control form-control-sm" placeholder="Montant €">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" name="date" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-sm btn-outline-primary w-100" title="Ajouter le devis"
+                            aria-label="Ajouter le devis"><i class="bi bi-plus-lg"></i></button>
+                </div>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="p-4 text-center text-muted">Aucune consultation enregistrée.</div>
+    {% endfor %}
+</div>

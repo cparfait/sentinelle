@@ -92,8 +92,12 @@
                 </div>
                 {{ champ('Mise en service', item.service_date.strftime('%d/%m/%Y') if item.service_date else None) }}
                 <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Contrat / licence</small>
-                    {% if item.contract %}<a href="{{ url_for('contracts.detail', id=item.contract_id) }}">{{ item.contract.name }}</a>
+                    <small class="text-muted d-block">Contrats / marchés</small>
+                    {% set marches = item.contracts.filter_by(is_active=True).all() %}
+                    {% if marches %}
+                        {% for c in marches %}
+                        <a href="{{ url_for('contracts.detail', id=c.id) }}" class="d-block">{{ c.name }}{% if c.end_date %} <small class="text-muted">— {{ c.end_date.strftime('%d/%m/%Y') }}</small>{% endif %}</a>
+                        {% endfor %}
                     {% elif item.no_contract_note %}<span class="fw-medium text-muted">{{ item.no_contract_note }}</span>
                     {% else %}<span class="text-muted">Aucun contrat enregistré</span>{% endif %}
                 </div>
@@ -161,6 +165,10 @@
             <p class="text-muted mb-0">Ce logiciel ne traite pas de données personnelles.</p>
             {% endif %}
         </div>
+
+        {% if current_user.can_view('contracts') %}
+        {% include 'software/_consultations.html' %}
+        {% endif %}
 
         <div class="data-card">
             <div class="card-header-custom">

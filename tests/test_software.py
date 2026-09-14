@@ -12,11 +12,12 @@ def test_create_software_multi_serveurs(client):
     db.session.add_all([sup, e1, e2, ct])
     db.session.commit()
     r = client.post('/inventory/logiciels/create', data={
-        'name': 'Genesis', 'supplier_id': str(sup.id), 'contract_id': str(ct.id),
+        'name': 'Genesis', 'supplier_id': str(sup.id), 'contract_ids': [str(ct.id)],
         'hosting': 'saas', 'equipment_ids': [str(e1.id), str(e2.id)]}, follow_redirects=True)
     assert r.status_code == 200
     sw = Software.query.filter_by(name='Genesis').first()
-    assert sw.is_saas is True and sw.supplier_id == sup.id and sw.contract_id == ct.id
+    assert sw.is_saas is True and sw.supplier_id == sup.id
+    assert [c.name for c in sw.contracts] == ['Licence']
     assert {e.name for e in sw.equipments} == {'A', 'B'}
     # backref côté équipement (logiciels installés)
     assert sw in e1.software_list.all()

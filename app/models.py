@@ -836,6 +836,15 @@ CONTRACT_KIND_LABELS = {'maintenance': 'Maintenance', 'licence': 'Licence',
                         'subscription': 'Abonnement', 'market': 'Marché public',
                         'other': 'Autre'}
 
+# Ce qu'EST l'acte : un marche public passe apres publicite et mise en
+# concurrence, ou un contrat de gre a gre. Distinct de CONTRACT_KIND_LABELS,
+# qui dit de QUOI il s'agit (maintenance, licence, abonnement).
+CONTRACT_NATURE_LABELS = {'marche': 'Marché public', 'contrat': 'Contrat de gré à gré'}
+
+# Nature d'une PIECE du marche : le mode de licence de ce poste-la.
+CONTRACT_ITEM_KIND_LABELS = {'abonnement': 'Abonnement', 'perpetuelle': 'Licence perpétuelle',
+                             'libre': 'Libre / gratuit', 'autre': 'Autre'}
+
 
 # Equipements couverts par un contrat (relation N:N). Premiere table
 # d'association du projet ; alimentee au demarrage depuis l'ancien equipment_id.
@@ -843,6 +852,17 @@ contract_equipment = db.Table(
     'contract_equipment',
     db.Column('contract_id', db.Integer, db.ForeignKey('contract.id'), primary_key=True),
     db.Column('equipment_id', db.Integer, db.ForeignKey('equipment.id'), primary_key=True),
+)
+
+
+# Logiciels couverts par un marche (relation N:N). Un marche en couvre souvent
+# PLUSIEURS -- UGAP, marches « communs » a deux applications : il vit donc pour
+# lui-meme, et n'est plus une dependance du logiciel. Le lien ne porte rien de
+# son cote ; tout appartient au marche.
+contract_software = db.Table(
+    'contract_software',
+    db.Column('contract_id', db.Integer, db.ForeignKey('contract.id'), primary_key=True),
+    db.Column('software_id', db.Integer, db.ForeignKey('software.id'), primary_key=True),
 )
 
 
@@ -855,10 +875,37 @@ class Contract(db.Model):
     kind = db.Column(db.String(32), default='maintenance')  # cf. CONTRACT_KIND_LABELS
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), index=True)
     supplier = db.relationship('Supplier', backref=db.backref('contracts', lazy='dynamic'))
-    reference = db.Column(db.String(128))      # n° de contrat / de marche
-    cost_yearly = db.Column(db.Float)          # cout annuel TTC indicatif
+    # Marche public ou gre a gre. NULL = non renseigne : les lignes reprises de
+    # l'historique n'ont pas ete depouillees sur ce point, et rien ne permet de
+    # trancher a leur place -- l'ecran dit « — » plutot qu'une supposition.
+    nature = db.Column(db.String(16))
+    reference = db.Column(db.String(128))      # n° de contrat / de marche (le NOTRE)
+    # La reference que LE FOURNISSEUR donne au meme acte -- son numero de
+    # commande ou de contrat pour cette affaire. C'est celle-la qu'il faut citer
+    # quand on l'appelle, et personne ne la retrouvait.
+    supplier_reference = db.Column(db.String(128))
+    cost_yearly = db.Column(db.Float)          # cout annuel TTC : CE QU'ON PAIE
+    # Maximum ANNUEL, quand l'acte en fixe un. Ne contraint pas cost_yearly :
+    # c'est l'acte qui fait foi, pas l'outil. Un plafond n'est pas une depense,
+    # et n'entre donc pas dans le cout du parc.
+    cost_max_yearly = db.Column(db.Float)
+    # Ce que pese le marche sur sa DUREE ENTIERE, quand l'acte le chiffre.
+    # N'entre pas non plus dans le cout du parc, qui se compte a l'annee :
+    # l'y ajouter gonflerait le total autant de fois que le marche dure.
+    cost_total = db.Column(db.Float)
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)              # echeance du contrat
+    # Duree FERME en annees, telle que l'acte la fixe. Ne se deduit pas des
+    # dates : la periode court du debut a la fin reconductions comprises, la
+    # duree ferme est l'engagement initial.
+    firm_years = db.Column(db.Integer)
+    # « Renouvelable n fois » : zero est une VALEUR (marche sec, non
+    # reconductible), distincte de NULL qui dit que l'acte n'a pas ete depouille.
+    renewals = db.Column(db.Integer)
+    # Duree de CHAQUE reconduction, en annees. Se lit avec `renewals`, qui dit
+    # combien de fois quand celui-ci dit pour combien de temps -- une
+    # reconduction annuelle et une triennale ne pesent pas le meme engagement.
+    renewal_years = db.Column(db.Integer)
     notice_days = db.Column(db.Integer, default=0)   # preavis de resiliation (jours)
     auto_renew = db.Column(db.Boolean, default=False)  # tacite reconduction
     # Colonne historique (1 equipement) conservee pour la migration : SQLite ne
@@ -869,6 +916,13 @@ class Contract(db.Model):
     # `Equipment.contracts` reste dynamique pour la vue 360° (filter_by).
     equipments = db.relationship('Equipment', secondary=contract_equipment,
                                  backref=db.backref('contracts', lazy='dynamic'))
+    # Logiciels couverts (M:N). Remplace l'ancien Software.contract_id, qui ne
+    # savait pas dire qu'un marche en couvre plusieurs.
+    software = db.relationship('Software', secondary=contract_software,
+                               backref=db.backref('contracts', lazy='dynamic'))
+    items = db.relationship('ContractItem', backref='contract', lazy='dynamic',
+                            cascade='all, delete-orphan',
+                            order_by='ContractItem.doc_date.desc()')
     responsible = db.Column(db.String(128))
     description = db.Column(db.Text)
     priority = db.Column(db.String(20), default='medium')
@@ -881,6 +935,42 @@ class Contract(db.Model):
 
     def kind_label(self):
         return CONTRACT_KIND_LABELS.get(self.kind, self.kind or '')
+
+    def nature_label(self):
+        return CONTRACT_NATURE_LABELS.get(self.nature, '')
+
+    def period_label(self):
+        """« du 01/01/2023 au 31/12/2026 », et ce que l'on sait quand il manque
+        une des deux dates : un marche en cours a souvent un debut connu et un
+        terme qui ne l'est pas."""
+        d = self.start_date.strftime('%d/%m/%Y') if self.start_date else None
+        f = self.end_date.strftime('%d/%m/%Y') if self.end_date else None
+        if d and f:
+            return f'du {d} au {f}'
+        if d:
+            return f'depuis le {d}'
+        if f:
+            return f"jusqu'au {f}"
+        return ''
+
+    def renewal_label(self):
+        """« renouvelable 2 fois par periode de 1 an ». Zero se dit aussi :
+        « non reconductible » est une information, pas un vide."""
+        if self.renewals is None:
+            return ''
+        if self.renewals == 0:
+            return 'non reconductible'
+        fois = 'fois' if self.renewals > 1 else 'fois'
+        if self.renewal_years:
+            an = 'an' if self.renewal_years == 1 else 'ans'
+            return f'renouvelable {self.renewals} {fois} par période de {self.renewal_years} {an}'
+        return f'renouvelable {self.renewals} {fois}'
+
+    def items_cost(self):
+        """Somme des couts des pieces. INDICATIVE : c'est `cost_yearly` qui
+        engage. Un marche couvre souvent plusieurs postes dont la somme ne vaut
+        pas le montant de l'acte."""
+        return sum(i.cost_yearly or 0 for i in self.items)
 
     def action_deadline(self):
         """Date limite pour agir : echeance moins le preavis de resiliation."""
@@ -909,6 +999,76 @@ class ContractHistory(db.Model):
     comment = db.Column(db.Text)
     performed_by = db.Column(db.String(64))
     performed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class ContractItem(db.Model):
+    """Une PIECE du marche : un poste, son cout annuel, et la date de son
+    document (signature, notification).
+
+    Elle ne decrit qu'elle-meme. Elle ne porte PAS d'echeance : c'est le marche
+    qui engage, et c'est sa date de fin qu'on surveille. Un meme marche couvre
+    souvent plusieurs postes aux couts et aux termes distincts, sans que leur
+    somme ni leur echeance la plus lointaine vaillent engagement -- d'ou la
+    separation.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    contract_id = db.Column(db.Integer, db.ForeignKey('contract.id'), nullable=False, index=True)
+    label = db.Column(db.String(128))     # ex. « 50 postes », « module RH »
+    kind = db.Column(db.String(16), default='abonnement')
+    cost_yearly = db.Column(db.Float)
+    # La date du DOCUMENT, presque toujours passee : aucun rappel n'y est
+    # accroche.
+    doc_date = db.Column(db.Date, index=True)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def kind_label(self):
+        return CONTRACT_ITEM_KIND_LABELS.get(self.kind, self.kind or '')
+
+
+class Consultation(db.Model):
+    """Une mise en concurrence sur un logiciel : l'objet consulte
+    (renouvellement, migration, premiere acquisition...) et les devis recus.
+
+    Un niveau INTERMEDIAIRE, et non une liste plate de devis : un logiciel en
+    accumule plusieurs au fil des annees, et une liste plate ne saurait pas dire
+    quel devis a ete retenu pour quelle consultation.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    software_id = db.Column(db.Integer, db.ForeignKey('software.id'), nullable=False, index=True)
+    software = db.relationship('Software', backref=db.backref(
+        'consultations', lazy='dynamic', cascade='all, delete-orphan'))
+    subject = db.Column(db.String(256), nullable=False)
+    date = db.Column(db.Date)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    quotes = db.relationship('Quote', backref='consultation', lazy='dynamic',
+                             cascade='all, delete-orphan')
+
+    def selected_quote(self):
+        """Le devis retenu, s'il y en a un. AU PLUS UN par consultation :
+        l'invariant est tenu par la route qui marque (voir contracts.py)."""
+        return self.quotes.filter_by(selected=True).first()
+
+
+class Quote(db.Model):
+    """Devis recu dans le cadre d'une consultation."""
+    id = db.Column(db.Integer, primary_key=True)
+    consultation_id = db.Column(db.Integer, db.ForeignKey('consultation.id'),
+                                nullable=False, index=True)
+    # Societe qui a remis le devis. NULL quand elle n'est pas dans l'annuaire :
+    # l'historique de la consultation vaut d'etre garde meme sans fiche.
+    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), index=True)
+    supplier = db.relationship('Supplier', backref=db.backref('quotes', lazy='dynamic'))
+    supplier_name = db.Column(db.String(128))  # repli quand la societe n'a pas de fiche
+    amount = db.Column(db.Float)
+    date = db.Column(db.Date)
+    selected = db.Column(db.Boolean, default=False)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def who(self):
+        return self.supplier.name if self.supplier else (self.supplier_name or '—')
 
 
 class Referential(db.Model):
@@ -993,8 +1153,6 @@ class Software(db.Model):
     name = db.Column(db.String(128), nullable=False)
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), index=True)  # editeur/fournisseur
     supplier = db.relationship('Supplier', backref=db.backref('software', lazy='dynamic'))
-    contract_id = db.Column(db.Integer, db.ForeignKey('contract.id'), index=True)
-    contract = db.relationship('Contract', backref=db.backref('software', lazy='dynamic'))
     version = db.Column(db.String(64))
     # Hebergement : « on premise » / « SaaS » / « hybride ». L'ancien booleen
     # is_saas ne savait pas dire « hybride » -- une part chez nous, une part
