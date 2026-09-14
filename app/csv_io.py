@@ -44,6 +44,15 @@ def _parse_int(value):
         return None
 
 
+def _parse_float(value):
+    """La virgule decimale est acceptee : c'est celle que tape un tableur
+    francais, et la refuser ferait perdre la ligne sans rien dire."""
+    try:
+        return float(str(value).strip().replace(',', '.'))
+    except (ValueError, TypeError):
+        return None
+
+
 def _parse(value, kind):
     value = (value or '').strip()
     if value == '':
@@ -54,6 +63,8 @@ def _parse(value, kind):
         return _parse_bool(value)
     if kind == 'int':
         return _parse_int(value)
+    if kind == 'float':
+        return _parse_float(value)
     if kind == 'equipment_ref':
         # Renvoie l'objet Equipment : affecte a la relation, il fixe equipment_id.
         return _lookup_equipment(value)
@@ -111,14 +122,34 @@ SPECS = {
     },
     'certificates': {
         'model': Certificate, 'label': 'certificats', 'list_endpoint': 'certificates.list',
-        'columns': [('service_name', 'str'), ('domain', 'str'), ('issuer', 'str'),
-                    ('issued_at', 'date'), ('expiry_date', 'date'),
+        # Les deux natures partagent le meme fichier : une colonne `kind` les
+        # distingue, et les champs de l'autre restent vides. Deux exports
+        # separes auraient oblige a savoir lequel prendre avant de chercher.
+        # Le code de revocation n'y figure PAS : un secret n'a pas a voyager
+        # dans un tableur que l'on s'envoie par mail.
+        # `service_name` reste EN TETE : import_csv en fait la colonne-cle, celle
+        # dont le vide fait sauter la ligne. Mettre `kind` devant aurait fait
+        # ignorer en silence tout fichier qui ne la porte pas -- c'est-a-dire
+        # tous ceux exportes jusqu'ici.
+        'columns': [('service_name', 'str'), ('kind', 'str'), ('domain', 'str'),
+                    ('issuer', 'str'), ('issued_at', 'date'), ('expiry_date', 'date'),
                     ('auto_renew', 'bool'), ('priority', 'str'), ('description', 'str'),
-                    ('equipment', 'equipment_ref')],
-        'example': {'service_name': 'Site web', 'domain': 'www.collectivite.fr',
+                    ('equipment', 'equipment_ref'),
+                    ('civility', 'str'), ('first_name', 'str'), ('holder', 'str'),
+                    ('holder_role', 'str'), ('holder_email', 'str'),
+                    ('cert_usage', 'str'), ('support', 'str'), ('level', 'str'),
+                    ('serial_number', 'str'), ('duration_years', 'int'),
+                    ('amount_ttc', 'float'), ('budget_code', 'str'),
+                    ('order_signed_on', 'date'), ('validity', 'str')],
+        'example': {'service_name': 'Site web', 'kind': 'tls',
+                    'domain': 'www.collectivite.fr',
                     'issuer': "Let's Encrypt", 'issued_at': '2026-03-01',
                     'expiry_date': '2026-06-01', 'auto_renew': 'oui',
-                    'priority': 'high', 'description': '', 'equipment': 'SRV-WEB-01'},
+                    'priority': 'high', 'description': '', 'equipment': 'SRV-WEB-01',
+                    'civility': '', 'first_name': '', 'holder': '', 'holder_role': '',
+                    'holder_email': '', 'cert_usage': '', 'support': '', 'level': '',
+                    'serial_number': '', 'duration_years': '', 'amount_ttc': '',
+                    'order_signed_on': '', 'budget_code': '', 'validity': ''},
         'post': None,
     },
     'domains': {

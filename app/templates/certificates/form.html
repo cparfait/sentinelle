@@ -1,10 +1,36 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Modifier' if certificate else 'Ajouter' }} un certificat - Sentinelle{% endblock %}
 
+{% set signature = kind == 'signature' %}
+
+{% macro sel(name, labels, current, blank=None) %}
+<select name="{{ name }}" class="form-select">
+    {% if blank %}<option value="">{{ blank }}</option>{% endif %}
+    {% for value, label in labels.items() %}
+    <option value="{{ value }}" {{ 'selected' if current == value }}>{{ label }}</option>
+    {% endfor %}
+</select>
+{% endmacro %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="fw-bold mb-0"><i class="bi bi-award me-2"></i>{{ 'Modifier' if certificate else 'Ajouter' }} un certificat</h4>
+        <h4 class="fw-bold mb-0"><i class="bi bi-award me-2"></i>{{ 'Modifier' if certificate else 'Ajouter' }}
+            {{ 'un certificat électronique' if signature else 'un certificat TLS' }}</h4>
+        {% if not certificate %}
+        {# La nature se choisit à la création et ne change plus ensuite : elle
+           décide des champs que la fiche porte, et basculer de l'une à l'autre
+           laisserait un titulaire sur un certificat TLS. #}
+        <small class="text-muted">
+            {% if signature %}
+            Carte, clé USB ou fichier d'un élu ou d'un agent —
+            <a href="{{ url_for('certificates.create', kind='tls') }}">c'est un certificat TLS ?</a>
+            {% else %}
+            Certificat serveur lu sur le domaine —
+            <a href="{{ url_for('certificates.create', kind='signature') }}">c'est un certificat électronique ?</a>
+            {% endif %}
+        </small>
+        {% endif %}
     </div>
     <a href="{{ url_for('certificates.list') }}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i> Retour
@@ -12,22 +38,37 @@
 </div>
 
 <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-lg-9">
         <div class="data-card p-4">
             <form method="POST">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="kind" value="{{ kind }}">
+
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Service *</label>
                         <input type="text" name="service_name" class="form-control"
                                value="{{ certificate.service_name if certificate else '' }}" required
-                               placeholder="ex: Site web, API, VPN...">
+                               placeholder="{{ 'ex: Signature des marchés, Parapheur...' if signature else 'ex: Site web, API, VPN...' }}">
                     </div>
+                    {% if signature %}
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-medium">Autorité de certification</label>
+                        <select name="supplier_id" class="form-select">
+                            <option value="">— Sélectionner —</option>
+                            {% for s in suppliers %}
+                            <option value="{{ s.id }}" {{ 'selected' if certificate and certificate.supplier_id == s.id }}>{{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Certinomis, ChamberSign… prises dans l'annuaire
+                            <a href="{{ url_for('suppliers.list') }}">Fournisseurs</a>.</div>
+                    </div>
+                    {% else %}
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Domaine *</label>
                         <div class="input-group">
                             <input type="text" name="domain" id="domainInput" class="form-control"
-                                   value="{{ certificate.domain if certificate else '' }}" required
+                                   value="{{ certificate.domain if certificate and certificate.domain else '' }}" required
                                    placeholder="exemple.votredomaine.fr">
                             <button type="button" class="btn btn-outline-primary" id="checkTlsBtn"
                                     title="Lire le certificat du domaine">
@@ -36,16 +77,103 @@
                         </div>
                         <small id="checkTlsMsg" class="d-block mt-1"></small>
                     </div>
+                    {% endif %}
                 </div>
+
+                {% if signature %}
+                {# ── Le titulaire ──
+                   La civilité et le prénom ont chacun leur champ, à part du nom :
+                   c'est le NOM qui trie et qui se cherche. « Mme ARNAUD » se
+                   rangerait sous M, avec les autres. #}
+                <fieldset class="border rounded p-3 mb-3">
+                    <legend class="float-none w-auto px-2 fs-6 fw-medium text-muted">
+                        <i class="bi bi-person-badge me-1"></i>Titulaire
+                    </legend>
+                    <div class="row g-3">
+                        <div class="col-md-2">
+                            <label class="form-label fw-medium">Civilité</label>
+                            {{ sel('civility', civility_labels, certificate.civility if certificate else None, blank='—') }}
+                            <div class="form-text">Vide pour une machine.</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-medium">Prénom</label>
+                            <input type="text" name="first_name" class="form-control"
+                                   value="{{ certificate.first_name or '' if certificate else '' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-medium">Nom *</label>
+                            <input type="text" name="holder" class="form-control" required
+                                   value="{{ certificate.holder or '' if certificate else '' }}"
+                                   data-ad-search data-ad-email="holder_email"
+                                   placeholder="ARNAUD, ou SERVEUR CLIENT RGS">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-medium">Email</label>
+                            <input type="email" name="holder_email" class="form-control"
+                                   value="{{ certificate.holder_email or '' if certificate else '' }}">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label fw-medium">Fonction</label>
+                            <input type="text" name="holder_role" class="form-control"
+                                   value="{{ certificate.holder_role or '' if certificate else '' }}"
+                                   placeholder="Maire, Adjoint, DGA, Agent...">
+                            <div class="form-text">C'est elle qui donne sa portée juridique à la signature, pas le service.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-medium">Service utilisateur</label>
+                            <select name="service_id" class="form-select">
+                                <option value="">— Aucun —</option>
+                                {% for sv in services %}
+                                <option value="{{ sv.id }}" {{ 'selected' if certificate and certificate.service_id == sv.id }}>{{ sv.label }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Souvent vide pour un élu, qui n'en relève pas.</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-medium">Validité</label>
+                            {{ sel('validity', validity_labels, certificate.validity if certificate else 'valide') }}
+                            <div class="form-text">« Expiré » se déduit de la date.</div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                {# ── Le certificat lui-même ── #}
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">Usage</label>
+                        {{ sel('cert_usage', usage_labels, certificate.cert_usage if certificate else None, blank='— Non renseigné —') }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">Support</label>
+                        {{ sel('support', support_labels, certificate.support if certificate else None, blank='— Non renseigné —') }}
+                        <div class="form-text">Une carte se restitue, un fichier se copie.</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">Niveau de garantie</label>
+                        <input type="text" name="level" class="form-control"
+                               value="{{ certificate.level or '' if certificate else '' }}"
+                               placeholder="RGS**, eIDAS qualifié...">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">N° de série</label>
+                        <input type="text" name="serial_number" class="form-control"
+                               value="{{ certificate.serial_number or '' if certificate else '' }}">
+                        <div class="form-text">À citer pour une révocation.</div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <div class="row">
+                    {% if not signature %}
                     <div class="col-md-6 mb-3">
-                        <label class="form-label fw-medium">Emetteur</label>
+                        <label class="form-label fw-medium">Émetteur</label>
                         <input type="text" name="issuer" class="form-control"
                                value="{{ certificate.issuer if certificate and certificate.issuer else '' }}"
                                placeholder="Let's Encrypt, DigiCert...">
                     </div>
+                    {% endif %}
                     <div class="col-md-6 mb-3">
-                        <label class="form-label fw-medium">Priorite</label>
+                        <label class="form-label fw-medium">Priorité</label>
                         <select name="priority" class="form-select">
                             <option value="low" {{ 'selected' if certificate and certificate.priority == 'low' }}>Basse</option>
                             <option value="medium" {{ 'selected' if not certificate or certificate.priority == 'medium' }}>Moyenne</option>
@@ -54,22 +182,60 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-medium">Date d'emission</label>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-medium">{{ 'Début de validité' if signature else "Date d'émission" }}</label>
                         <input type="date" name="issued_at" class="form-control"
                                value="{{ certificate.issued_at.strftime('%Y-%m-%d') if certificate and certificate.issued_at else '' }}">
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-medium">Date d'expiration *</label>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-medium">{{ 'Fin de validité *' if signature else "Date d'expiration *" }}</label>
                         <input type="date" name="expiry_date" class="form-control"
-                               value="{{ certificate.expiry_date.strftime('%Y-%m-%d') if certificate else '' }}" required>
+                               value="{{ certificate.expiry_date.strftime('%Y-%m-%d') if certificate and certificate.expiry_date else '' }}" required>
+                    </div>
+                    {% if signature %}
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-medium">Durée commandée (années)</label>
+                        <input type="number" name="duration_years" class="form-control" min="0" max="10"
+                               value="{{ certificate.duration_years if certificate and certificate.duration_years is not none else '' }}">
+                        <div class="form-text">Ce qui a été commandé ; les dates disent ce qui a été délivré.</div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if signature %}
+                {# ── Commande et révocation ── #}
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">Montant TTC (€)</label>
+                        <input type="text" name="amount_ttc" class="form-control" inputmode="decimal"
+                               value="{{ certificate.amount_ttc if certificate and certificate.amount_ttc is not none else '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">Imputation budgétaire</label>
+                        <input type="text" name="budget_code" class="form-control"
+                               value="{{ certificate.budget_code or '' if certificate else '' }}" placeholder="60632">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">Bon de commande signé le</label>
+                        <input type="date" name="order_signed_on" class="form-control"
+                               value="{{ certificate.order_signed_on.strftime('%Y-%m-%d') if certificate and certificate.order_signed_on else '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">Code de révocation</label>
+                        <input type="text" name="revocation_code" class="form-control" autocomplete="off"
+                               placeholder="{{ 'enregistré — laisser vide pour le garder' if certificate and certificate.revocation_code else 'code remis par l’autorité' }}">
+                        {# Le code n'est jamais réaffiché : le renvoyer à chaque
+                           ouverture de formulaire l'exposerait pour rien. Vide =
+                           on garde, « - » = on efface. #}
+                        <div class="form-text">Il invalide le certificat — un secret. Saisir <code>-</code> pour l'effacer.</div>
                     </div>
                 </div>
+                {% else %}
                 <div class="mb-3">
                     <div class="form-check form-switch">
                         <input type="checkbox" name="auto_renew" class="form-check-input" id="autoRenew"
                                {{ 'checked' if certificate and certificate.auto_renew }}>
-                        <label class="form-check-label" for="autoRenew">Auto-renouvellement active</label>
+                        <label class="form-check-label" for="autoRenew">Auto-renouvellement activé</label>
                     </div>
                 </div>
                 <div class="mb-3">
@@ -77,10 +243,12 @@
                     {% include '_equipment_select.html' %}
                     {% endwith %}
                 </div>
+                {% endif %}
+
                 <div class="mb-3">
                     <label class="form-label fw-medium">Description / Notes</label>
                     <textarea name="description" class="form-control" rows="3"
-                              placeholder="Informations complementaires...">{{ certificate.description if certificate and certificate.description else '' }}</textarea>
+                              placeholder="Informations complémentaires...">{{ certificate.description if certificate and certificate.description else '' }}</textarea>
                 </div>
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">
@@ -93,6 +261,7 @@
     </div>
 </div>
 
+{% if not signature %}
 <script src="{{ url_for('static', filename='js/lookup_fill.js') }}"></script>
 <script>
 initLookupFill({
@@ -102,4 +271,5 @@ initLookupFill({
     successPrefix: 'Certificat lu : expire le'
 });
 </script>
+{% endif %}
 {% endblock %}

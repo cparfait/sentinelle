@@ -224,10 +224,39 @@ class AccountHistory(db.Model):
     performed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+# Ce qu'EST le certificat. Deux natures, une seule table : l'une et l'autre
+# portent une echeance a surveiller, se renouvellent et se remplacent -- ce sont
+# exactement les memes alertes, le meme agenda, le meme tableau de bord. En
+# faire deux modules aurait double tout cela pour un seul mot qui change.
+CERT_KIND_LABELS = {'tls': 'Certificat TLS', 'signature': 'Certificat électronique'}
+
+CIVILITY_LABELS = {'m': 'M.', 'mme': 'Mme'}
+# La civilite est A PART du nom, et non collee devant : « Mme ARNAUD » se
+# rangerait sous M, avec les autres, et ni le tri ni la recherche ne seraient
+# justes. NULLE pour un certificat de machine -- lui en inventer une serait
+# pire que de la laisser vide.
+CERT_USAGE_LABELS = {'signature': 'Signature', 'authentification': 'Authentification',
+                     'cachet': 'Cachet serveur', 'autre': 'Autre'}
+# Ce qui porte la cle privee. La distinction n'est pas cosmetique : une carte ou
+# une cle USB se restituent en fin de vie et se perdent, un fichier logiciel se
+# copie et ne se rend pas.
+CERT_SUPPORT_LABELS = {'carte': 'Carte à puce', 'cle_usb': 'Clé USB',
+                       'logiciel': 'Fichier logiciel', 'autre': 'Autre'}
+# Ce qu'on a DECIDE du certificat -- et rien de ce que les dates disent deja.
+# « Expire » n'en est pas : il se deduit de la date de fin, et en faire un choix
+# de liste ouvrirait deux facons de dire la meme chose, qui pourraient se
+# contredire.
+CERT_VALIDITY_LABELS = {'valide': 'Valide', 'revoque': 'Révoqué', 'suspendu': 'Suspendu'}
+
+
 class Certificate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    kind = db.Column(db.String(16), default='tls', server_default='tls', nullable=False)
     service_name = db.Column(db.String(128), nullable=False)
-    domain = db.Column(db.String(256), nullable=False)
+    # Le domaine ne vaut que pour un certificat TLS : un certificat electronique
+    # n'en a pas. NULLABLE depuis qu'ils cohabitent ; la route l'exige encore
+    # pour le TLS, ou il est ce qui identifie la fiche.
+    domain = db.Column(db.String(256))
     issuer = db.Column(db.String(128))
     # Equipement de l'inventaire qui porte ce certificat (vue 360°), optionnel.
     equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'), index=True)
@@ -242,7 +271,93 @@ class Certificate(db.Model):
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     histories = db.relationship('CertificateHistory', backref='certificate', lazy='dynamic', cascade='all, delete-orphan')
 
+    # ── Certificat electronique nominatif (kind='signature') ──
+    # L'autorite de certification est prise dans l'annuaire des societes :
+    # c'est un fournisseur comme un autre, avec son adresse et ses contacts, et
+    # rien ne justifierait un second annuaire pour Certinomis et ChamberSign.
+    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), index=True)
+    supplier = db.relationship('Supplier', backref=db.backref('certificates', lazy='dynamic'))
+    # Service utilisateur du titulaire (Referential kind='user_service').
+    # Renseigne pour les agents, souvent vide pour les elus, qui n'en relevent pas.
+    service_id = db.Column(db.Integer, db.ForeignKey('referential.id'), index=True)
+    service = db.relationship('Referential', foreign_keys=[service_id])
+    civility = db.Column(db.String(8))
+    holder = db.Column(db.String(128))          # le NOM, seul : c'est lui qui trie
+    first_name = db.Column(db.String(128))
+    # La qualite au titre de laquelle il signe -- Maire, Adjoint, DGA, Agent.
+    # C'est elle qui donne sa portee juridique a la signature, pas le service.
+    holder_role = db.Column(db.String(128))
+    holder_email = db.Column(db.String(120))
+    cert_usage = db.Column(db.String(24))
+    support = db.Column(db.String(16))
+    # Niveau de garantie tel que l'autorite l'atteste : « RGS** », « eIDAS
+    # qualifie ». Texte libre plutot qu'enumere, les appellations changeant au
+    # rythme des referentiels et non a celui de l'application.
+    level = db.Column(db.String(64))
+    # Numero de serie porte par le certificat lui-meme : a citer pour une
+    # revocation ou une reclamation.
+    serial_number = db.Column(db.String(128))
+    # Duree commandee, en annees. Ne se deduit pas des dates : elle dit ce qui a
+    # ete COMMANDE, quand les dates disent ce qui a ete DELIVRE.
+    duration_years = db.Column(db.Integer)
+    amount_ttc = db.Column(db.Float)
+    budget_code = db.Column(db.String(32))      # imputation (« 60632 »)
+    order_signed_on = db.Column(db.Date)        # bon de commande signe le
+    # Code remis par l'autorite, a garder sous la main le jour ou il faut agir
+    # vite : il invalide le certificat (perte, vol, depart du titulaire).
+    #
+    # C'est un SECRET OPERATOIRE -- revoquer le certificat d'un elu bloque ses
+    # signatures. Il n'est montre qu'a qui peut deja modifier la fiche ; la
+    # garde est posee dans la route, pas seulement dans l'affichage.
+    revocation_code = db.Column(db.String(64))
+    validity = db.Column(db.String(16), default='valide')
+
+    def kind_label(self):
+        return CERT_KIND_LABELS.get(self.kind, self.kind or '')
+
+    def civility_label(self):
+        return CIVILITY_LABELS.get(self.civility, '')
+
+    def usage_label(self):
+        return CERT_USAGE_LABELS.get(self.cert_usage, '')
+
+    def support_label(self):
+        return CERT_SUPPORT_LABELS.get(self.support, '')
+
+    def validity_label(self):
+        return CERT_VALIDITY_LABELS.get(self.validity, 'Valide')
+
+    def holder_label(self):
+        """« M. Jean ARNAUD », dans l'ordre ou on le lit. Le nom seul quand le
+        reste manque -- l'inventaire n'a longtemps porte que des patronymes."""
+        bouts = [self.civility_label(), self.first_name, self.holder]
+        return ' '.join(b for b in bouts if b)
+
+    def label(self):
+        """Le nom de la fiche, dans les listes, les alertes et les bilans.
+
+        Un certificat TLS se nomme par son domaine, un certificat electronique
+        par son titulaire : coller « service - domaine » sur le second donnerait
+        « Mairie - » dans tous les mails."""
+        if self.kind == 'signature':
+            qui = self.holder_label()
+            return f'{self.service_name} - {qui}' if qui else self.service_name
+        return f'{self.service_name} - {self.domain}' if self.domain else self.service_name
+
+    def monitored(self):
+        """Ce certificat compte-t-il encore parmi les echeances ?
+
+        Un certificat REVOQUE ne l'est plus : il n'est deja plus utilisable, sa
+        date ne veut plus rien dire, et le rappeler chaque matin ne ferait
+        qu'user l'attention. Un certificat SUSPENDU le redeviendra, et son
+        echeance continue donc de compter."""
+        return self.is_active and self.validity != 'revoque'
+
     def status(self):
+        if self.validity == 'revoque':
+            # Revoque : hors surveillance. Le badge de validite, lui, le dit en
+            # toutes lettres a cote -- c'est la qu'on lit ce qui a ete decide.
+            return 'success'
         days_left = (self.expiry_date - datetime.now(timezone.utc).date()).days
         return _status_from_days(days_left, 'THRESHOLD_EXPIRY')
 

@@ -14,7 +14,7 @@ from app.models import (Account, Certificate, Domain, Backup, TestTask,
 
 _CATS = [
     ('accounts', 'Comptes', Account, lambda o: o.status(), lambda o: f'{o.service_name} ({o.username})'),
-    ('certificates', 'Certificats', Certificate, lambda o: o.status(), lambda o: f'{o.service_name} - {o.domain}'),
+    ('certificates', 'Certificats', Certificate, lambda o: o.status(), lambda o: o.label()),
     ('domains', 'Domaines', Domain, lambda o: o.status(), lambda o: o.name),
     ('backups', 'Backups', Backup, lambda o: o.computed_status(), lambda o: o.service_name),
     ('tests', 'Tests', TestTask, lambda o: o.computed_status(), lambda o: o.name),

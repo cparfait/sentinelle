@@ -227,7 +227,7 @@ def by_status(status):
         abort(404)
     sources = [
         ('accounts', 'Comptes', Account, lambda o: f'{o.service_name} ({o.username})', 'accounts', lambda o: o.status()),
-        ('certificates', 'Certificats', Certificate, lambda o: f'{o.service_name} - {o.domain}', 'certificates', lambda o: o.status()),
+        ('certificates', 'Certificats', Certificate, lambda o: o.label(), 'certificates', lambda o: o.status()),
         ('domains', 'Domaines', Domain, lambda o: o.name, 'domains', lambda o: o.status()),
         ('backups', 'Backups', Backup, lambda o: o.service_name, 'backups', lambda o: o.computed_status()),
         ('tests', 'Tests', TestTask, lambda o: o.name, 'tests', lambda o: o.computed_status()),
@@ -317,7 +317,9 @@ def _agenda_items(user):
                 a.next_password_change, 'Rotation du mot de passe', f'/accounts/{a.id}')
     if user.can_view('certificates'):
         for c in Certificate.query.filter_by(is_active=True).all():
-            add('Certificats', 'award', f'{c.service_name} - {c.domain}',
+            if not c.monitored():
+                continue
+            add('Certificats', 'award', c.label(),
                 c.expiry_date, 'Expiration du certificat', f'/certificates/{c.id}')
     if user.can_view('domains'):
         for d in Domain.query.filter_by(is_active=True).all():

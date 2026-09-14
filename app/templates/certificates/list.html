@@ -6,14 +6,21 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="fw-bold mb-0"><i class="bi bi-award me-2"></i>Certificats</h4>
-        <small class="text-muted">Suivi des expiration SSL/TLS</small>
+        <small class="text-muted">Expirations TLS et certificats électroniques (RGS / eIDAS) — {{ total }} certificat(s)</small>
     </div>
     <div class="d-flex gap-2">
         {% with csv_key='certificates' %}{% include '_csv_toolbar.html' %}{% endwith %}
         {% if current_user.can_edit('certificates') %}
-        <a href="{{ url_for('certificates.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Ajouter un certificat
-        </a>
+        {# Deux natures, deux boutons : la nature décide des champs de la fiche
+           et ne se change plus ensuite — autant la choisir avant de saisir. #}
+        <div class="btn-group">
+            <a href="{{ url_for('certificates.create', kind='tls') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Certificat TLS
+            </a>
+            <a href="{{ url_for('certificates.create', kind='signature') }}" class="btn btn-outline-primary">
+                <i class="bi bi-person-badge me-1"></i> Certificat électronique
+            </a>
+        </div>
         {% endif %}
     </div>
 </div>
@@ -33,7 +40,15 @@
     </div>
 </div>
 
-{% include '_list_search.html' %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div class="seg-tabs">
+        <a class="seg-tab {% if not kind %}active{% endif %}" href="{{ url_for('certificates.list', q=q) }}">Tous <span class="seg-tab-count">{{ total_all }}</span></a>
+        {% for value, label in kind_labels.items() %}
+        <a class="seg-tab {% if kind == value %}active{% endif %}" href="{{ url_for('certificates.list', kind=value, q=q) }}">{{ label }} <span class="seg-tab-count">{{ counts[value] }}</span></a>
+        {% endfor %}
+    </div>
+    {% with hidden={'kind': kind} %}{% include '_list_search.html' %}{% endwith %}
+</div>
 
 <div class="data-card">
     <div class="table-responsive">
@@ -41,12 +56,12 @@
             <thead>
                 <tr>
                     <th>Service</th>
-                    <th>Domaine</th>
-                    <th>Emetteur</th>
-                    <th>Date emission</th>
+                    <th>Domaine / titulaire</th>
+                    <th>Émetteur</th>
+                    <th>Émission</th>
                     <th>Expiration</th>
                     <th>Jours restants</th>
-                    <th>Auto-renouvellement</th>
+                    <th>Renouvellement</th>
                     <th>Statut</th>
                     <th>Actions</th>
                 </tr>
@@ -59,22 +74,38 @@
                             {{ cert.service_name }}
                         </a>
                     </td>
-                    <td><code>{{ cert.domain }}</code></td>
-                    <td>{{ cert.issuer or '-' }}</td>
+                    <td>
+                        {%- if cert.kind == 'signature' %}{{ cert.holder_label() or '—' }}
+                        {%- if cert.holder_role %}<small class="d-block text-muted">{{ cert.holder_role }}</small>{% endif %}
+                        {%- else %}<code>{{ cert.domain or '—' }}</code>{% endif -%}
+                    </td>
+                    <td>
+                        {%- if cert.kind == 'signature' %}{{ cert.supplier.name if cert.supplier else '-' }}
+                        {%- else %}{{ cert.issuer or '-' }}{% endif -%}
+                    </td>
                     <td>{{ cert.issued_at.strftime('%d/%m/%Y') if cert.issued_at else '-' }}</td>
                     <td>{{ cert.expiry_date.strftime('%d/%m/%Y') }}</td>
                     <td>
+                        {# Un certificat révoqué n'est plus utilisable : le
+                           décompte de ses jours n'a plus de sens. #}
+                        {% if not cert.monitored() %}
+                        <span class="text-muted">—</span>
+                        {% else %}
                         {% set days = (cert.expiry_date - now().date()).days %}
                         <span class="fw-bold {% if days < 0 %}text-danger{% elif days <= 7 %}text-danger{% elif days <= 15 %}text-warning{% elif days <= 30 %}text-info{% else %}text-success{% endif %}">
                             {{ days }}j
                         </span>
+                        {% endif %}
                     </td>
                     <td>
-                        {% if cert.auto_renew %}
-                        <span class="badge bg-success"><i class="bi bi-arrow-repeat me-1"></i>Oui</span>
-                        {% else %}
-                        <span class="badge bg-secondary">Non</span>
-                        {% endif %}
+                        {%- if cert.kind == 'signature' -%}
+                        <span class="badge bg-{{ 'success' if cert.validity == 'valide' else ('danger' if cert.validity == 'revoque' else 'warning') }}-subtle
+                                     text-{{ 'success' if cert.validity == 'valide' else ('danger' if cert.validity == 'revoque' else 'warning') }}">{{ cert.validity_label() }}</span>
+                        {%- elif cert.auto_renew -%}
+                        <span class="badge bg-success"><i class="bi bi-arrow-repeat me-1"></i>Auto</span>
+                        {%- else -%}
+                        <span class="badge bg-secondary">Manuel</span>
+                        {%- endif -%}
                     </td>
                     <td>{{ status_badge(cert.status()) }}</td>
                     <td>
@@ -88,7 +119,7 @@
                 <tr>
                     <td colspan="9" class="text-center py-4 text-muted">
                         <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-                        <p class="mt-2 mb-0">Aucun certificat. <a href="{{ url_for('certificates.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a></p>
+                        <p class="mt-2 mb-0">Aucun certificat. <a href="{{ url_for('certificates.create', kind=kind or 'tls') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a></p>
                     </td>
                 </tr>
                 {% endfor %}

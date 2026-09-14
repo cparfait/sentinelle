@@ -48,14 +48,15 @@ def _collect():
     domains.append({'key': 'Comptes', 'total': len(accounts), 'items': items})
 
     # Certificats
-    certs = Certificate.query.filter_by(is_active=True).all()
+    certs = [c for c in Certificate.query.filter_by(is_active=True).all()
+             if c.monitored()]
     items = []
     for c in certs:
         if ('certificate', c.id) in snoozed:
             continue
         s = c.status()
         if s in ('danger', 'warning'):
-            items.append({'name': f'{c.service_name} - {c.domain}',
+            items.append({'name': c.label(),
                           'detail': 'Certificat ' + days_txt(c.expiry_date, 'expire'),
                           'status': s, 'path': f'/certificates/{c.id}'})
     domains.append({'key': 'Certificats', 'total': len(certs), 'items': items})

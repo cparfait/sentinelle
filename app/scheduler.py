@@ -48,14 +48,17 @@ def check_certificates():
     with _app.app_context():
         today = datetime.now(timezone.utc).date()
         thresholds = threshold_for('THRESHOLD_EXPIRY')
-        certs = Certificate.query.filter_by(is_active=True).all()
+        # Un certificat revoque n'est plus utilisable : sa date ne veut plus
+        # rien dire, et l'alerte non plus.
+        certs = [c for c in Certificate.query.filter_by(is_active=True).all()
+                 if c.monitored()]
         for cert in certs:
             if is_snoozed('certificate', cert.id):
                 continue
             days_left = (cert.expiry_date - today).days
             if should_send_reminder('certificate', cert.id, days_left, thresholds):
                 urgency = 'EXPIRÉ' if days_left < 0 else f'expire dans {days_left} jour(s)'
-                subject = f"Alerte certificat - {cert.domain}"
+                subject = f"Alerte certificat - {cert.label()}"
                 body = (
                     f"Le certificat suivant {urgency}:\n\n"
                     f"Service: {cert.service_name}\n"
@@ -326,7 +329,9 @@ def refresh_certificates_tls():
     met a jour les fiches. Tourne avant l'alerte certificats du matin."""
     with _app.app_context():
         from app.certificates import refresh_certificate_tls
-        certs = Certificate.query.filter_by(is_active=True).all()
+        # Seuls les certificats TLS s'interrogent sur le reseau : la date d'un
+        # certificat electronique vient de l'autorite, pas d'une poignee de main.
+        certs = Certificate.query.filter_by(is_active=True, kind='tls').all()
         for cert in certs:
             try:
                 refresh_certificate_tls(cert, 'auto-tls')
