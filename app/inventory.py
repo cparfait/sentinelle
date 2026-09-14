@@ -13,8 +13,10 @@ bp = Blueprint('inventory', __name__)
 KIND_CHOICES = [('vm', 'VM'), ('physical', 'Serveur physique'), ('nas', 'NAS')]
 ENV_CHOICES = [('', '—'), ('prod', 'Production'), ('preprod', 'Préproduction'),
                ('dev', 'Développement'), ('decommissioned', 'Décommissionné')]
+# `business_software` n'y figure plus : la saisie libre a cede la place a la
+# liste synchronisee depuis SoftInventory, et la colonne ne se remplit plus.
 SEARCH_FIELDS = ['name', 'os', 'os_version', 'ip_address', 'host_server', 'hypervisor',
-                 'role_principal', 'business_software', 'serial_number',
+                 'role_principal', 'serial_number',
                  'manufacturer_model', 'usage', 'observations']
 
 
@@ -76,7 +78,6 @@ def _apply_form(eq, f):
     eq.used_to = _pf(f.get('used_to'))
     eq.raid = _txt(f, 'raid')
     eq.role_principal = _txt(f, 'role_principal')
-    eq.business_software = _txt(f, 'business_software')
     eq.user_services = _txt(f, 'user_services')
     eq.usage = _txt(f, 'usage')
     eq.pra_pca = _txt(f, 'pra_pca')

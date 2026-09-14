@@ -43,6 +43,20 @@ def _config():
     return base, cle
 
 
+def synchro_active():
+    """Le connecteur est-il branche ? URL ET cle, les deux : une URL sans cle ne
+    rapporte rien.
+
+    Quand il l'est, le catalogue appartient a SoftInventory et ne se cree plus
+    ici — une fiche saisie a la main pendant qu'une synchro tourne n'a pas
+    d'avenir : soit elle double une application que l'import va reprendre, soit
+    elle decrit un logiciel que SoftInventory ignore, et c'est la-bas qu'il faut
+    le declarer.
+    """
+    base, cle = _config()
+    return bool(base and cle)
+
+
 def lire_catalogue():
     """Interroge `GET /api/v1/applications`.
 
@@ -94,31 +108,60 @@ def _exploitable(a):
             and isinstance(a.get('name'), str) and a['name'].strip())
 
 
-def importer(ecrire=True):
-    """Verse le catalogue dans les fiches logiciel.
+def _equipements_actifs():
+    """Le parc, indexé par identifiant — la clé du rapprochement des serveurs."""
+    from app.models import Equipment
+    return {e.id: e for e in Equipment.query.filter_by(is_active=True).all()}
 
-    Rapprochement par IDENTIFIANT distant d'abord — il survit à un renommage —,
-    par NOM ensuite : c'est ce qui permet aux fiches déjà saisies ici de
-    retrouver leur jumelle au lieu d'en créer une doublon. Le nom ne rapproche
-    que d'une fiche LIBRE, sans identifiant distant : sans cette garde, deux
-    applications homonymes se voleraient la même fiche à chaque import.
 
-    `ecrire=False` ne fait que compter : de quoi vérifier le tuyau sans rien
-    changer.
+def _serveurs_voulus(a, equipements):
+    """Les équipements de CE parc où l'application est installée.
+
+    SoftInventory publie pour chaque serveur son `sentinelle_id` : l'identifiant
+    de l'équipement ICI. C'est lui qui rapproche, jamais le nom — une machine
+    renommée d'un côté reste la même des deux.
+
+    Un serveur saisi là-bas que Sentinelle ne connaît pas porte `null`, et un
+    équipement supprimé ici a disparu du parc : dans les deux cas le lien est
+    ignoré. Poser une installation sur une machine qu'on ne sait pas nommer
+    n'apprendrait rien à personne.
+    """
+    voulus = set()
+    for s in a.get('servers') or []:
+        if not isinstance(s, dict):
+            continue
+        eid = s.get('sentinelle_id')
+        if isinstance(eid, int) and eid in equipements:
+            voulus.add(eid)
+    return voulus
+
+
+def _etapes(charge):
+    """Ce que l'import ferait, application par application, sans rien écrire.
+
+    Le rapprochement se fait par IDENTIFIANT distant d'abord — il survit à un
+    renommage —, par NOM ensuite : c'est ce qui permet aux fiches déjà saisies
+    ici de retrouver leur jumelle au lieu d'en créer une doublon. Le nom ne
+    rapproche que d'une fiche LIBRE, sans identifiant distant : sans cette
+    garde, deux applications homonymes se voleraient la même fiche à chaque
+    import.
+
+    Le calcul est SÉPARÉ de l'écriture pour que l'écran puisse annoncer ligne
+    par ligne ce qui va se passer, et laisser décocher. Il se rejoue au moment
+    d'appliquer plutôt que de voyager jusqu'au navigateur : le catalogue a pu
+    bouger entre les deux, et c'est l'état du moment qui fait foi.
     """
     from app.models import Software
 
-    charge, erreur = lire_catalogue()
-    if erreur:
-        return None, erreur
-
     valides = [a for a in charge if _exploitable(a)]
-    rapport = {'crees': 0, 'adoptes': 0, 'actualises': 0,
-               'ecartes': len(charge) - len(valides), 'homonymes': [], 'conflits': []}
+    base = {'ecartes': len(charge) - len(valides), 'homonymes': [], 'conflits': []}
 
     existants = Software.query.all()
     par_id = {s.inventory_id: s for s in existants if s.inventory_id}
     par_nom = {(s.name or '').strip().lower(): s for s in existants}
+    equipements = _equipements_actifs()
+
+    etapes = []
     vus = set()
 
     for a in valides:
@@ -127,28 +170,106 @@ def importer(ecrire=True):
         # Le catalogue peut porter deux applications de même nom ; ici le nom
         # sert de rapprochement, on garde la première et on nomme les autres.
         if cle_nom in vus:
-            rapport['homonymes'].append(nom)
+            base['homonymes'].append(nom)
             continue
         vus.add(cle_nom)
 
         par_identifiant = par_id.get(a['id'])
         par_le_nom = par_nom.get(cle_nom)
         if not par_identifiant and par_le_nom and par_le_nom.inventory_id:
-            rapport['conflits'].append(nom)
+            base['conflits'].append(nom)
             continue
 
         sw = par_identifiant or par_le_nom
-        neuf = sw is None
-        # L'origine est lue AVANT d'etre ecrasee : c'est elle qui distingue une
-        # fiche deja refletee (actualisee) d'une fiche locale qu'on adopte.
-        origine_avant = None if neuf else sw.origin
-        if neuf:
-            sw = Software(name=nom)
+        if sw is None:
+            action = 'creer'
+        elif sw.origin == 'inventory':
+            action = 'actualiser'
+        else:
+            action = 'adopter'
+
+        # Les installations : ce que SoftInventory déclare, comparé à ce que la
+        # fiche porte ici. Une fiche neuve part de rien, tout y est ajout.
+        voulus = _serveurs_voulus(a, equipements)
+        actuels = {e.id for e in sw.equipments} if sw is not None else set()
+        etapes.append({
+            'app': a,
+            'sw': sw,
+            'action': action,
+            'nom': nom,
+            'ajouts': sorted(voulus - actuels),
+            'retraits': sorted(actuels - voulus),
+            'equipements': equipements,
+        })
+
+    return etapes, base
+
+
+def previsualiser():
+    """Le plan, pour l'écran de comparaison : rien n'est écrit.
+
+    Chaque application y est nommée avec ce qui lui arriverait, et les
+    installations qui seraient posées ou retirées le sont aussi — c'est là que
+    se joue l'arbitrage, une fiche pouvant très bien être à jour tandis que ses
+    serveurs ne le sont pas.
+    """
+    charge, erreur = lire_catalogue()
+    if erreur:
+        return None, erreur
+
+    etapes, base = _etapes(charge)
+    equipements = _equipements_actifs()
+
+    def _noms(ids):
+        return [equipements[i].name for i in ids if i in equipements]
+
+    lignes = [{
+        'id': e['app']['id'],
+        'nom': e['nom'],
+        'action': e['action'],
+        'ajouts': _noms(e['ajouts']),
+        'retraits': _noms(e['retraits']),
+    } for e in etapes]
+
+    return {'lignes': lignes, **base}, None
+
+
+def importer(selection=None, ecrire=True):
+    """Verse le catalogue dans les fiches logiciel.
+
+    `selection` porte les identifiants SoftInventory retenus dans l'écran de
+    comparaison ; `None` vaut « tout », pour un appel qui ne passe pas par lui.
+    Une application écartée n'est pas refusée pour toujours : elle reparaîtra au
+    prochain import, cochée comme les autres.
+
+    `ecrire=False` ne fait que compter : de quoi vérifier le tuyau sans rien
+    changer.
+    """
+    charge, erreur = lire_catalogue()
+    if erreur:
+        return None, erreur
+
+    etapes, base = _etapes(charge)
+    retenus = None if selection is None else set(selection)
+
+    rapport = {'crees': 0, 'adoptes': 0, 'actualises': 0, 'ignores': 0,
+               'liens_poses': 0, 'liens_retires': 0, **base}
+
+    from app.models import Software
+
+    for e in etapes:
+        a, sw = e['app'], e['sw']
+        if retenus is not None and a['id'] not in retenus:
+            rapport['ignores'] += 1
+            continue
+
+        if sw is None:
+            sw = Software(name=e['nom'])
             if ecrire:
                 db.session.add(sw)
 
         if ecrire:
-            sw.name = nom
+            sw.name = e['nom']
             sw.description = (a.get('description') or '')[:2000]
             sw.responsible = (a.get('responsible') or '')[:128]
             sw.responsible_email = (a.get('responsible_email') or '')[:120]
@@ -159,9 +280,23 @@ def importer(ecrire=True):
             sw.origin = 'inventory'
             sw.inventory_id = a['id']
 
-        if neuf:
+            # Les installations suivent le catalogue : SoftInventory tient le
+            # lien logiciel/serveur, Sentinelle le recopie. Les deux sens sont
+            # appliqués — poser sans retirer laisserait une machine mise hors
+            # service porter éternellement ses applications.
+            equipements = e['equipements']
+            for eid in e['ajouts']:
+                if eid in equipements:
+                    sw.equipments.append(equipements[eid])
+            for eid in e['retraits']:
+                if eid in equipements:
+                    sw.equipments.remove(equipements[eid])
+
+        rapport['liens_poses'] += len(e['ajouts'])
+        rapport['liens_retires'] += len(e['retraits'])
+        if e['action'] == 'creer':
             rapport['crees'] += 1
-        elif origine_avant == 'inventory':
+        elif e['action'] == 'actualiser':
             rapport['actualises'] += 1
         else:
             rapport['adoptes'] += 1

@@ -63,7 +63,7 @@
                         {{ rowa('Type', item.kind_label()) }}
                         {{ rowa('Environnement', item.env_label()) }}
                         {{ rowa('Rôle principal', item.role_principal) }}
-                        {{ rowa('Logiciels métiers', item.business_software) }}
+                        {{ rowa('Logiciels métiers', item.software_list.all()|map(attribute='name')|join(', ')) }}
                         {% if item.kind in ('vm', 'physical') %}{{ rowa('Services utilisateurs', item.user_services) }}{% endif %}
                         {% if item.kind == 'nas' %}{{ rowa('Usage / données stockées', item.usage) }}{% endif %}
                     </table>

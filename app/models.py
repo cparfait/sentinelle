@@ -883,7 +883,6 @@ class Software(db.Model):
     version = db.Column(db.String(64))
     is_saas = db.Column(db.Boolean, default=False)  # heberge hors parc (Cloud)
     is_docker = db.Column(db.Boolean, default=False)  # conteneurise (Docker), cumulable avec SaaS ou on premise
-    share_sesame = db.Column(db.Boolean, default=True)  # expose via l'API Sesame
     # Origine de la fiche : 'local' (saisie ici) ou 'inventory' (reflet de
     # SoftInventory, qui DETIENT le catalogue des applications). Une fiche
     # refletee voit son identite rafraichie a chaque import ; ce qui est

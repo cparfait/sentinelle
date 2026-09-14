@@ -179,7 +179,7 @@
                     'raid': e.raid or '',
                     'access': e.access or '',
                     'role_principal': e.role_principal or '',
-                    'business_software': e.business_software or '',
+                    'business_software': e.software_list.all()|map(attribute='name')|join(', '),
                     'user_services': e.user_services or '',
                     'usage': e.usage or '',
                     'supervision': e.supervision or ('Oui' if e.supervised else ''),

@@ -240,7 +240,7 @@ def catalogue():
     réduite, saisie une seconde fois. Trois gestes : enregistrer le connecteur,
     l'éprouver sans rien écrire, puis importer.
     """
-    from app.inventory_sync import importer, lire_catalogue
+    from app.inventory_sync import importer, lire_catalogue, previsualiser
 
     action = request.form.get('action', '')
 
@@ -269,8 +269,21 @@ def catalogue():
         else:
             flash(f'Connexion établie : {len(apps)} application(s) lisible(s).', 'success')
 
+    elif action == 'preview':
+        # Ce que l'import ferait, sans rien ecrire : l'ecran de comparaison
+        # nomme chaque application et laisse decocher. C'est la seule porte
+        # d'entree de l'import depuis l'interface.
+        plan, erreur = previsualiser()
+        if erreur:
+            flash(erreur, 'danger')
+            return redirect(url_for('connectors.index'))
+        return render_template('connectors/catalogue_plan.html', plan=plan)
+
     elif action == 'import':
-        rapport, erreur = importer()
+        # Les cases cochees dans l'ecran de comparaison. Une liste vide veut
+        # dire « rien de retenu » — pas « tout », que porte `None`.
+        retenus = [int(v) for v in request.form.getlist('retenus') if v.isdigit()]
+        rapport, erreur = importer(selection=retenus)
         if erreur:
             flash(erreur, 'danger')
         else:
@@ -283,6 +296,11 @@ def catalogue():
                 parts.append(f"{rapport['actualises']} actualisée(s)")
             if rapport['ecartes']:
                 parts.append(f"{rapport['ecartes']} écartée(s) faute de nom")
+            if rapport['ignores']:
+                parts.append(f"{rapport['ignores']} laissée(s) de côté")
+            if rapport['liens_poses'] or rapport['liens_retires']:
+                parts.append(f"{rapport['liens_poses']} installation(s) posée(s), "
+                             f"{rapport['liens_retires']} retirée(s)")
             msg = ', '.join(parts) or 'Rien à reprendre'
             # Ce qui demande un ARBITRAGE est nommé, jamais compté : un nombre
             # n'aide personne à trancher.

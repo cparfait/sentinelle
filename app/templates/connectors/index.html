@@ -98,10 +98,11 @@
             </form>
             <form method="POST" action="{{ url_for('connectors.catalogue') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="action" value="import">
-                <button type="submit" class="btn btn-sm btn-outline-primary" {% if not catalogue_key_set %}disabled{% endif %}
-                        data-confirm="Importer le catalogue de SoftInventory ? Les fiches reflétées verront leur identité rafraîchie.">
-                    <i class="bi bi-download me-1"></i> Importer le catalogue
+                {# L'import passe par l'ECRAN DE COMPARAISON : on voit ce qui
+                   changerait, application par application, avant d'ecrire. #}
+                <input type="hidden" name="action" value="preview">
+                <button type="submit" class="btn btn-sm btn-outline-primary" {% if not catalogue_key_set %}disabled{% endif %}>
+                    <i class="bi bi-download me-1"></i> Importer le catalogue…
                 </button>
             </form>
         </div>

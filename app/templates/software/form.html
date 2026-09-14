@@ -17,10 +17,24 @@
         <div class="data-card p-4">
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {# Fiche REFLETEE de SoftInventory : l'identite et les serveurs
+                   d'installation s'y administrent. Les rendre modifiables ici ne
+                   tromperait que celui qui les modifie — le prochain import les
+                   ecrase. L'editeur, le contrat, la version suivie et la
+                   criticite restent ouverts : ils appartiennent a Sentinelle. #}
+                {% if reflete %}
+                <div class="alert alert-info py-2 px-3 small mb-3">
+                    <i class="bi bi-box-arrow-in-down me-1"></i>
+                    Fiche reprise de <strong>SoftInventory</strong> : le nom, les responsables,
+                    l'hébergement, l'URL, la description et les serveurs d'installation s'y
+                    modifient — le prochain import les rapporte. L'éditeur, le contrat, la version
+                    suivie et la criticité se saisissent ici.
+                </div>
+                {% endif %}
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label class="form-label fw-medium">Nom du logiciel *</label>
-                        <input type="text" name="name" class="form-control" required
+                        <input type="text" name="name" class="form-control" required {% if reflete %}disabled{% endif %}
                                value="{{ item.name if item else '' }}"
                                placeholder="ex: GLPI, Berger-Levrault, Office 365...">
                     </div>
@@ -33,16 +47,16 @@
                         <label class="form-label fw-medium d-block">Hébergement</label>
                         <div class="d-flex align-items-center gap-2">
                             <div class="btn-group" role="group" aria-label="Hébergement">
-                                <input type="radio" class="btn-check" name="hosting" id="hostOnprem" value="onprem"
+                                <input type="radio" class="btn-check" name="hosting" id="hostOnprem" value="onprem" {% if reflete %}disabled{% endif %}
                                        {{ 'checked' if not (item and item.is_saas) }}>
                                 <label class="btn btn-outline-secondary btn-sm" for="hostOnprem"
                                        title="Installé sur le parc (serveurs internes)"><i class="bi bi-hdd-network me-1"></i>On premise</label>
-                                <input type="radio" class="btn-check" name="hosting" id="hostSaas" value="saas"
+                                <input type="radio" class="btn-check" name="hosting" id="hostSaas" value="saas" {% if reflete %}disabled{% endif %}
                                        {{ 'checked' if item and item.is_saas }}>
                                 <label class="btn btn-outline-secondary btn-sm" for="hostSaas"
                                        title="Hébergé hors parc (Cloud éditeur)"><i class="bi bi-cloud me-1"></i>SaaS</label>
                             </div>
-                            <input type="checkbox" class="btn-check" name="is_docker" id="isDocker"
+                            <input type="checkbox" class="btn-check" name="is_docker" id="isDocker" {% if reflete %}disabled{% endif %}
                                    {{ 'checked' if item and item.is_docker }}>
                             <label class="btn btn-outline-primary btn-sm" for="isDocker"
                                    title="Conteneurisé (Docker) — cumulable avec SaaS ou on premise"><i class="icon-docker me-1"></i>Docker</label>
@@ -87,7 +101,7 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-medium">Responsable</label>
-                        <input type="text" name="responsible" class="form-control"
+                        <input type="text" name="responsible" class="form-control" {% if reflete %}disabled{% endif %}
                                value="{{ item.responsible or '' if item else '' }}"
                                data-ad-search data-ad-email="responsible_email"
                                placeholder="Rechercher dans l'annuaire (AD)...">
@@ -95,7 +109,7 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-medium">Email du responsable</label>
-                        <input type="email" name="responsible_email" class="form-control"
+                        <input type="email" name="responsible_email" class="form-control" {% if reflete %}disabled{% endif %}
                                value="{{ item.responsible_email or '' if item else '' }}" placeholder="responsable@collectivite.fr">
                         <div class="form-text">Pour le notifier (coupure d'accès, revue de droits). Exposé à Sesame.</div>
                     </div>
@@ -103,7 +117,7 @@
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label class="form-label fw-medium">URL / accès</label>
-                        <input type="url" name="url" class="form-control"
+                        <input type="url" name="url" class="form-control" {% if reflete %}disabled{% endif %}
                                value="{{ item.url or '' if item else '' }}" placeholder="https://...">
                     </div>
                 </div>
@@ -114,11 +128,11 @@
                     </div>
                     <div class="input-group input-group-sm mb-1">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" id="swEquipmentSearch" class="form-control"
+                        <input type="text" id="swEquipmentSearch" class="form-control" {% if reflete %}disabled{% endif %}
                                placeholder="Filtrer les serveurs (nom, type, environnement)..."
                                autocomplete="off" aria-label="Filtrer la liste des serveurs">
                     </div>
-                    <select name="equipment_ids" id="swEquipment" class="form-select" multiple size="6">
+                    <select name="equipment_ids" id="swEquipment" class="form-select" multiple size="6" {% if reflete %}disabled{% endif %}>
                         {% for e in equipments %}
                         <option value="{{ e.id }}" {{ 'selected' if item and e in item.equipments }}>{{ e.name }} ({{ e.kind_label() }}{% if e.environment %} · {{ e.env_label() }}{% endif %})</option>
                         {% endfor %}
@@ -126,16 +140,8 @@
                     <div class="form-text">Ctrl/Cmd (ou Maj) pour sélectionner plusieurs. Laissez vide pour un logiciel SaaS (hébergé hors parc).</div>
                 </div>
                 <div class="mb-3">
-                    <div class="form-check form-switch">
-                        <input type="checkbox" name="share_sesame" class="form-check-input" id="shareSesame"
-                               {{ 'checked' if (item.share_sesame if item else True) }}>
-                        <label class="form-check-label" for="shareSesame">Partagé avec Sesame (exposé via l'API)</label>
-                    </div>
-                    <div class="form-text">Décoché : ce logiciel n'est pas envoyé à Sesame lors de la synchronisation.</div>
-                </div>
-                <div class="mb-3">
                     <label class="form-label fw-medium">Description / Notes</label>
-                    <textarea name="description" class="form-control" rows="3"
+                    <textarea name="description" class="form-control" rows="3" {% if reflete %}disabled{% endif %}
                               placeholder="Périmètre fonctionnel, dépendances, particularités...">{{ item.description or '' if item else '' }}</textarea>
                 </div>
                 <div class="d-flex justify-content-end gap-2">

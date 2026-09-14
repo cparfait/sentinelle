@@ -21,17 +21,32 @@ def _guard_view():
     return view_guard('inventory')
 
 
+def _reflete(sw):
+    """Fiche refletee de SoftInventory, qui en detient l'identite."""
+    return getattr(sw, 'origin', None) == 'inventory'
+
+
 def _fill(sw, f):
-    sw.name = (f.get('name', '') or '').strip()
+    """Verse le formulaire dans la fiche.
+
+    Sur une fiche REFLETEE, l'identite et les serveurs d'installation viennent
+    de SoftInventory : les reecrire ici ne tiendrait que jusqu'au prochain
+    import, qui les ecraserait sans rien dire. Seul ce qui appartient a
+    Sentinelle est repris — l'editeur, le contrat, la version suivie et la
+    criticite, que SoftInventory ne renseigne pas.
+    """
     sw.supplier_id = parse_int(f.get('supplier_id'))
     sw.contract_id = parse_int(f.get('contract_id'))
     sw.version = (f.get('version', '') or '').strip() or None
+    sw.criticality = parse_int(f.get('criticality'))
+    if _reflete(sw):
+        return
+
+    sw.name = (f.get('name', '') or '').strip()
     # Hébergement : radio onprem / saas ; Docker est cumulable avec les deux.
     sw.is_saas = f.get('hosting') == 'saas'
     sw.is_docker = f.get('is_docker') == 'on'
-    sw.share_sesame = f.get('share_sesame') == 'on'
     sw.url = (f.get('url', '') or '').strip() or None
-    sw.criticality = parse_int(f.get('criticality'))
     sw.responsible = (f.get('responsible', '') or '').strip() or None
     sw.responsible_email = (f.get('responsible_email', '') or '').strip() or None
     sw.description = f.get('description') or None
@@ -71,8 +86,9 @@ def list():
     items = text_search(items, q, ['name', 'version', 'responsible', 'responsible_email', 'description'])
     items.sort(key=lambda s: status_rank(s.computed_status()))
     items, page, pages, total = paginate(items)
+    from app.inventory_sync import synchro_active
     return render_template('software/list.html', items=items, q=q, host=host,
-                           counts=counts, total_all=total_all,
+                           counts=counts, total_all=total_all, synchro=synchro_active(),
                            page=page, pages=pages, total=total)
 
 
@@ -82,6 +98,12 @@ def list():
 def quick_create():
     """Creation rapide (AJAX) d'une application/logiciel minimal depuis un autre
     formulaire (ex. revue de droits). Renvoie l'id + le nom en JSON."""
+    # Meme regle que la creation pleine : tant que la synchro tourne, le
+    # catalogue appartient a SoftInventory.
+    from app.inventory_sync import synchro_active
+    if synchro_active():
+        return jsonify(ok=False, error="Catalogue synchronisé depuis SoftInventory : "
+                                       "créez le logiciel là-bas."), 409
     name = (request.form.get('name', '') or '').strip()
     if not name:
         return jsonify(ok=False, error='Le nom est obligatoire.'), 400
@@ -96,6 +118,14 @@ def quick_create():
 @login_required
 @require_edit
 def create():
+    # Quand la synchro tourne, le catalogue vient de SoftInventory : on n'ajoute
+    # plus d'application ici. L'ecran cache deja le bouton ; ce refus-ci est
+    # celui qui compte, il tient aussi pour une adresse tapee a la main.
+    from app.inventory_sync import synchro_active
+    if synchro_active():
+        flash("Le catalogue est synchronisé depuis SoftInventory : "
+              "les logiciels s'y créent.", 'warning')
+        return redirect(url_for('software.list'))
     if request.method == 'POST':
         sw = Software()
         _fill(sw, request.form)
@@ -132,7 +162,8 @@ def edit(id):
         audit_record('modification logiciel', detail=item.name, category='inventory')
         flash('Logiciel modifié', 'success')
         return redirect(url_for('software.detail', id=id))
-    return render_template('software/form.html', item=item, **_form_context())
+    return render_template('software/form.html', item=item, reflete=_reflete(item),
+                           **_form_context())
 
 
 @bp.route('/<int:id>/delete', methods=['POST'])
@@ -146,15 +177,3 @@ def delete(id):
     flash('Logiciel supprimé', 'success')
     return redirect(url_for('software.list'))
 
-
-@bp.route('/<int:id>/toggle-sesame', methods=['POST'])
-@login_required
-@require_edit
-def toggle_sesame(id):
-    """Bascule le partage d'un logiciel via l'API Sesame (depuis la liste)."""
-    item = Software.query.get_or_404(id)
-    item.share_sesame = not item.share_sesame
-    db.session.commit()
-    audit_record('partage Sesame', detail=f'{item.name}={item.share_sesame}', category='inventory')
-    flash(f"« {item.name} » {'partagé avec' if item.share_sesame else 'retiré de'} Sesame.", 'success')
-    return redirect(url_for('software.list'))

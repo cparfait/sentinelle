@@ -8,10 +8,16 @@
         <h4 class="fw-bold mb-0"><i class="bi bi-window-stack me-2"></i>Logiciels métiers</h4>
         <small class="text-muted">Applications métiers, hébergement, éditeur et mises à jour — {{ total }} logiciel(s)</small>
     </div>
-    {% if current_user.can_edit('inventory') %}
+    {# Quand la synchro tourne, le catalogue vient de SoftInventory : le bouton
+       disparait plutot que de mener a un refus. #}
+    {% if current_user.can_edit('inventory') and not synchro %}
     <a href="{{ url_for('software.create') }}" class="btn btn-primary">
         <i class="bi bi-plus-lg me-1"></i> Ajouter un logiciel
     </a>
+    {% elif synchro %}
+    <span class="text-muted small">
+        <i class="bi bi-box-arrow-in-down me-1"></i>Catalogue repris de SoftInventory
+    </span>
     {% endif %}
 </div>
 
@@ -36,7 +42,6 @@
                     <th>Version</th>
                     <th>Serveurs</th>
                     <th>Hébergement</th>
-                    <th class="text-center" title="Partagé avec Sesame (API)">Sesame</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -56,17 +61,6 @@
                         {% else %}{{ s.equipments|length }}{% endif %}
                     </td>
                     <td class="text-nowrap">{% if s.is_saas %}<span class="badge bg-info-subtle text-info">SaaS</span>{% else %}<span class="badge bg-light text-dark border">On premise</span>{% endif %}{% if s.is_docker %} <span class="badge bg-primary-subtle text-primary"><i class="icon-docker me-1"></i>Docker</span>{% endif %}</td>
-                    <td class="text-center">
-                        <form method="POST" action="{{ url_for('software.toggle_sesame', id=s.id) }}" class="d-inline">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <div class="form-check form-switch d-inline-block m-0">
-                                <input class="form-check-input" type="checkbox" role="switch"
-                                       {{ 'checked' if s.share_sesame }} onchange="this.form.submit()"
-                                       {{ 'disabled' if not current_user.can_edit('inventory') }}
-                                       title="{{ 'Partagé avec Sesame' if s.share_sesame else 'Non partagé' }}">
-                            </div>
-                        </form>
-                    </td>
                     <td>
                         <div class="d-flex gap-1">
                             {% if current_user.can_edit('inventory') %}

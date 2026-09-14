@@ -137,3 +137,72 @@ def test_revue_conserve_application_hors_inventaire(client):
     db.session.add(rv); db.session.commit()
     html = client.get(f'/reviews/{rv.id}/edit').get_data(as_text=True)
     assert 'AppLegacy' in html and 'hors inventaire' in html
+
+
+# ── Ce qui vient de SoftInventory ne se modifie pas ici ─────────────────────
+# Deux règles, une même raison : l'outil qui DÉTIENT la donnée est le seul à
+# pouvoir la changer. Réécrire ici ne tiendrait que jusqu'au prochain import.
+
+
+def _branche(app):
+    app.config['SOFTINVENTORY_URL'] = 'http://inventaire.test'
+    app.config['SOFTINVENTORY_KEY'] = 'cle'
+
+
+def test_pas_de_creation_locale_quand_la_synchro_tourne(client, app):
+    _branche(app)
+    r = client.get('/inventory/logiciels/create', follow_redirects=True)
+    assert 'synchronis' in r.get_data(as_text=True)
+    r = client.post('/inventory/logiciels/create', data={'name': 'Saisi ici'},
+                    follow_redirects=True)
+    assert Software.query.filter_by(name='Saisi ici').first() is None
+
+
+def test_le_bouton_d_ajout_disparait_quand_la_synchro_tourne(client, app):
+    _branche(app)
+    html = client.get('/inventory/logiciels/').get_data(as_text=True)
+    assert 'Ajouter un logiciel' not in html
+    assert 'repris de SoftInventory' in html
+
+
+def test_creation_rapide_refusee_quand_la_synchro_tourne(client, app):
+    _branche(app)
+    r = client.post('/inventory/logiciels/quick-create', data={'name': 'Express'})
+    assert r.status_code == 409
+    assert Software.query.filter_by(name='Express').first() is None
+
+
+def test_une_fiche_refletee_garde_son_identite_et_ses_serveurs(client):
+    e = Equipment(name='SRV-OPUS', kind='vm')
+    autre = Equipment(name='SRV-AUTRE', kind='vm')
+    db.session.add_all([e, autre])
+    db.session.commit()
+    sw = Software(name='Concerto', origin='inventory', inventory_id=7,
+                  responsible='MARTIN', is_saas=True)
+    sw.equipments = [e]
+    db.session.add(sw)
+    db.session.commit()
+
+    # Le formulaire tente de tout réécrire, y compris les serveurs.
+    client.post(f'/inventory/logiciels/{sw.id}/edit', data={
+        'name': 'Renommé à la main', 'responsible': 'AUTRE', 'hosting': 'onprem',
+        'version': '2.4', 'criticality': '3',
+        'equipment_ids': [str(autre.id)]}, follow_redirects=True)
+
+    sw = Software.query.one()
+    # Ce que SoftInventory détient n'a pas bougé…
+    assert sw.name == 'Concerto' and sw.responsible == 'MARTIN' and sw.is_saas is True
+    assert [x.name for x in sw.equipments] == ['SRV-OPUS']
+    # …et ce qui appartient à Sentinelle a bien été pris.
+    assert sw.version == '2.4' and sw.criticality == 3
+
+
+def test_une_fiche_locale_reste_entierement_modifiable(client):
+    sw = Software(name='Local', responsible='MARTIN')
+    db.session.add(sw)
+    db.session.commit()
+    client.post(f'/inventory/logiciels/{sw.id}/edit', data={
+        'name': 'Local renommé', 'responsible': 'DUPONT', 'hosting': 'saas'},
+        follow_redirects=True)
+    sw = Software.query.one()
+    assert sw.name == 'Local renommé' and sw.responsible == 'DUPONT'

@@ -124,7 +124,21 @@
                 <h6 class="fw-bold mb-3"><i class="bi bi-gear-wide-connected me-2 text-primary"></i>Rôle & logiciels</h6>
                 <div class="row g-3 mb-2">
                     <div class="col-md-4"><label class="form-label small">Rôle principal</label><input type="text" name="role_principal" class="form-control" value="{{ val('role_principal') }}"></div>
-                    <div class="col-md-4"><label class="form-label small">Logiciels métiers</label><input type="text" name="business_software" class="form-control" value="{{ val('business_software') }}"></div>
+                    {# Les logiciels ne se saisissent plus ici : SoftInventory tient
+                       le lien logiciel/serveur, et l'import du catalogue le recopie.
+                       Une saisie libre a cote de la liste synchronisee donnerait deux
+                       reponses a la meme question, dont une perimee. #}
+                    <div class="col-md-4">
+                        <label class="form-label small">Logiciels métiers</label>
+                        <div class="form-control bg-light" style="min-height:2.375rem">
+                            {%- if item and item.software_list.count() -%}
+                            <span class="small">{{ item.software_list.all()|map(attribute='name')|join(', ') }}</span>
+                            {%- else -%}
+                            <span class="text-muted small">—</span>
+                            {%- endif -%}
+                        </div>
+                        <div class="form-text">Repris de SoftInventory, via l'import du catalogue.</div>
+                    </div>
                     <div class="col-md-4 kind-section" data-kinds="vm physical"><label class="form-label small">Services utilisateurs</label><input type="text" name="user_services" class="form-control" value="{{ val('user_services') }}"></div>
                     <div class="col-12 kind-section" data-kinds="nas"><label class="form-label small">Usage principal / données stockées</label><input type="text" name="usage" class="form-control" value="{{ val('usage') }}"></div>
                 </div>

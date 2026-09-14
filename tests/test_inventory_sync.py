@@ -94,11 +94,11 @@ def test_ne_touche_pas_ce_qui_est_PROPRE_a_sentinelle(app):
     # Sentinelle AJOUTE au catalogue : un import qui les effacerait ne serait
     # lancé qu'une fois.
     with app.app_context():
-        db.session.add(Software(name="GLPI", share_sesame=False, contract_id=None))
+        db.session.add(Software(name="GLPI", criticality=3, contract_id=None))
         db.session.commit()
     _importer(app, [_app(7, "GLPI")])
     with app.app_context():
-        assert Software.query.one().share_sesame is False
+        assert Software.query.one().criticality == 3
 
 
 def test_actualise_sans_dupliquer_au_second_passage(app):
@@ -145,3 +145,104 @@ def test_traduit_l_hebergement_et_la_conteneurisation(app):
 def test_ecarte_les_lignes_inexploitables_sans_tout_perdre(app):
     rapport, _ = _importer(app, [_app(1, "GLPI"), {"id": 2}, {"name": "sans id"}])
     assert rapport["crees"] == 1 and rapport["ecartes"] == 2
+
+
+# ── Les serveurs d'installation ─────────────────────────────────────────────
+# SoftInventory tient le lien logiciel/serveur ; Sentinelle le recopie sur ses
+# équipements. Le rapprochement passe par `sentinelle_id`, jamais par le nom.
+
+
+def _equipement(app, nom):
+    from app.models import Equipment
+    with app.app_context():
+        e = Equipment(name=nom, kind="vm")
+        db.session.add(e)
+        db.session.commit()
+        return e.id
+
+
+def test_pose_les_installations_declarees_par_l_inventaire(app):
+    eid = _equipement(app, "SRV-OPUS")
+    _importer(app, [_app(1, "Concerto", servers=[
+        {"id": 4, "name": "SRV-OPUS", "sentinelle_id": eid},
+    ])])
+    with app.app_context():
+        sw = Software.query.one()
+        assert [e.name for e in sw.equipments] == ["SRV-OPUS"]
+
+
+def test_retire_une_installation_que_l_inventaire_ne_declare_plus(app):
+    from app.models import Equipment
+    eid = _equipement(app, "SRV-OPUS")
+    with app.app_context():
+        sw = Software(name="Concerto", inventory_id=1, origin="inventory")
+        sw.equipments = [db.session.get(Equipment, eid)]
+        db.session.add(sw)
+        db.session.commit()
+    # Le logiciel a été déplacé là-bas : le lien doit tomber ici aussi, sans
+    # quoi une machine décommissionnée porterait ses applications à jamais.
+    _importer(app, [_app(1, "Concerto", servers=[])])
+    with app.app_context():
+        assert Software.query.one().equipments == []
+
+
+def test_ignore_un_serveur_que_sentinelle_ne_connait_pas(app):
+    # Fiche serveur saisie dans SoftInventory (`sentinelle_id` nul), ou
+    # équipement supprimé ici : rien où accrocher l'installation.
+    _importer(app, [_app(1, "Concerto", servers=[
+        {"id": 9, "name": "SRV-LOCAL", "sentinelle_id": None},
+        {"id": 8, "name": "DISPARU", "sentinelle_id": 4242},
+    ])])
+    with app.app_context():
+        assert Software.query.one().equipments == []
+
+
+def test_la_selection_laisse_de_cote_ce_qui_n_est_pas_coche(app):
+    from app.inventory_sync import importer
+    app.config["SOFTINVENTORY_URL"] = "http://inventaire.test"
+    app.config["SOFTINVENTORY_KEY"] = "cle"
+    charge = [_app(1, "Concerto"), _app(2, "GLPI")]
+    with patch("app.inventory_sync.requests.get", return_value=_Reponse(charge)):
+        with app.app_context():
+            rapport, _ = importer(selection=[1])
+    assert rapport["crees"] == 1 and rapport["ignores"] == 1
+    with app.app_context():
+        assert [s.name for s in Software.query.all()] == ["Concerto"]
+
+
+def test_la_previsualisation_annonce_sans_rien_ecrire(app):
+    from app.inventory_sync import previsualiser
+    eid = _equipement(app, "SRV-OPUS")
+    app.config["SOFTINVENTORY_URL"] = "http://inventaire.test"
+    app.config["SOFTINVENTORY_KEY"] = "cle"
+    charge = [_app(1, "Concerto", servers=[
+        {"id": 4, "name": "SRV-OPUS", "sentinelle_id": eid},
+    ])]
+    with patch("app.inventory_sync.requests.get", return_value=_Reponse(charge)):
+        with app.app_context():
+            plan, erreur = previsualiser()
+            assert erreur is None
+            assert plan["lignes"] == [{
+                "id": 1, "nom": "Concerto", "action": "creer",
+                "ajouts": ["SRV-OPUS"], "retraits": [],
+            }]
+            # Rien n'a été écrit : c'est tout l'objet de l'écran.
+            assert Software.query.count() == 0
+
+
+def test_l_ecran_de_comparaison_precede_l_import(client, app):
+    # Le bouton des Connecteurs mène à l'écran, pas à l'écriture : on voit ce
+    # qui changerait avant que quoi que ce soit soit écrit.
+    eid = _equipement(app, "SRV-OPUS")
+    app.config["SOFTINVENTORY_URL"] = "http://inventaire.test"
+    app.config["SOFTINVENTORY_KEY"] = "cle"
+    charge = [_app(1, "Concerto", servers=[
+        {"id": 4, "name": "SRV-OPUS", "sentinelle_id": eid},
+    ])]
+    with patch("app.inventory_sync.requests.get", return_value=_Reponse(charge)):
+        r = client.post("/connecteurs/catalogue", data={"action": "preview"})
+    html = r.get_data(as_text=True)
+    assert r.status_code == 200
+    assert "Concerto" in html and "SRV-OPUS" in html
+    with app.app_context():
+        assert Software.query.count() == 0
