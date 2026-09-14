@@ -18,16 +18,36 @@ def _guard_view():
     return view_guard('contracts')
 
 
+# Champs texte simples du formulaire, verses tels quels. La liste vaut
+# declaration : un champ ajoute ici et dans le gabarit suffit, sans une ligne
+# d'affectation de plus a oublier.
+_TEXT_FIELDS = (
+    'contact_name', 'phone', 'support_phone', 'email', 'support_url',
+    'support_email', 'customer_ref', 'hours', 'hours2',
+    'address', 'postal_code', 'city', 'website',
+    'commercial_contact', 'commercial_phone', 'commercial_email',
+    'admin_contact', 'admin_phone', 'admin_email',
+    'dpo_contact', 'dpo_phone', 'dpo_email',
+)
+
+# Le second commercial : le gabarit numerote le PREFIXE (commercial2_contact),
+# le modele numerote le SUFFIXE (commercial_contact2). Le gabarit gagne cote
+# formulaire -- son bloc de contact est un macro parametre par un prefixe, et
+# le decouper autrement rendrait le macro inutilisable.
+_ALIASES = {
+    'commercial_contact2': 'commercial2_contact',
+    'commercial_phone2': 'commercial2_phone',
+    'commercial_email2': 'commercial2_email',
+}
+
+
 def _fill(supplier, form):
     supplier.name = form.get('name', '').strip()
     supplier.kind = form.get('kind', 'provider')
-    supplier.contact_name = form.get('contact_name', '').strip() or None
-    supplier.phone = form.get('phone', '').strip() or None
-    supplier.support_phone = form.get('support_phone', '').strip() or None
-    supplier.email = form.get('email', '').strip() or None
-    supplier.support_url = form.get('support_url', '').strip() or None
-    supplier.customer_ref = form.get('customer_ref', '').strip() or None
-    supplier.hours = form.get('hours', '').strip() or None
+    for field in _TEXT_FIELDS:
+        setattr(supplier, field, (form.get(field, '') or '').strip() or None)
+    for attr, champ in _ALIASES.items():
+        setattr(supplier, attr, (form.get(champ, '') or '').strip() or None)
     supplier.notes = form.get('notes') or None
 
 
@@ -38,7 +58,8 @@ def list():
     q = request.args.get('q', '').strip()
     from app.paging import paginate, text_search
     suppliers = text_search(suppliers, q, ['name', 'contact_name', 'email',
-                                           'customer_ref', 'notes'])
+                                           'customer_ref', 'city', 'commercial_contact',
+                                           'admin_contact', 'notes'])
     suppliers, page, pages, total = paginate(suppliers)
     return render_template('suppliers/list.html', suppliers=suppliers, q=q,
                            page=page, pages=pages, total=total,

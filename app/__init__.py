@@ -218,6 +218,7 @@ def create_app(config_class=Config):
         _auto_migrate_sqlite()
         _migrate_data()
         _seed_roles()
+        _seed_referentials()
         _seed_default_user()
         # Configuration applicative persistee en base (messagerie, LDAP, seuils,
         # webhooks...). seed_from_env migre l'existant .env au 1er demarrage,
@@ -290,6 +291,24 @@ def _migrate_data():
     # comparaison avec NULL n'est ni vraie ni fausse. Le compteur des fiches
     # locales affichait zero alors qu'il y en avait huit.
     db.session.execute(text("UPDATE software SET origin='local' WHERE origin IS NULL"))
+    # Hebergement : l'ancien booleen is_saas devient une valeur parmi trois
+    # (on premise / SaaS / hybride). La colonne survit dans les bases existantes
+    # -- SQLite ne sait pas la retirer sans reconstruire la table -- mais plus
+    # rien ne la lit : on la verse une fois dans `hosting`, puis on l'oublie.
+    from sqlalchemy import inspect as _inspect
+    _cols = set()
+    try:
+        _cols = {c['name'] for c in _inspect(db.engine).get_columns('software')}
+    except Exception:
+        pass
+    if 'is_saas' in _cols:
+        db.session.execute(text(
+            "UPDATE software SET hosting='saas' "
+            "WHERE is_saas=1 AND (hosting IS NULL OR hosting='on_premise')"))
+    db.session.execute(text(
+        "UPDATE software SET hosting='on_premise' WHERE hosting IS NULL OR hosting=''"))
+    db.session.execute(text(
+        "UPDATE software SET lifecycle='production' WHERE lifecycle IS NULL OR lifecycle=''"))
     # Le type d'asset « server » est remplace par « divers » (les serveurs sont
     # desormais geres dans l'inventaire).
     db.session.execute(text("UPDATE asset SET asset_type='divers' WHERE asset_type='server'"))
@@ -303,8 +322,8 @@ def _migrate_data():
     # Migration unique et idempotente (par nom). Les Asset restent en base
     # (dormants) ; c'est l'ecran Preferences qui est retire.
     db.session.execute(text(
-        "INSERT INTO software (name, description, is_active, is_saas, created_at, updated_at) "
-        "SELECT a.name, a.description, 1, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP "
+        "INSERT INTO software (name, description, is_active, hosting, created_at, updated_at) "
+        "SELECT a.name, a.description, 1, 'on_premise', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP "
         "FROM asset a WHERE a.asset_type='application' AND a.is_active=1 "
         "AND NOT EXISTS (SELECT 1 FROM software s WHERE s.name = a.name)"))
     db.session.commit()
@@ -384,6 +403,25 @@ def _auto_migrate_sqlite():
             db.session.execute(text(
                 f'CREATE {unique}INDEX IF NOT EXISTS "{idx.name}" ON "{table.name}" ({idx_cols})'))
     db.session.commit()
+
+
+def _seed_referentials():
+    """Verse les valeurs de depart des listes administrables, une seule fois par
+    liste : on ne re-seme QUE si la liste est entierement vide.
+
+    Ligne par ligne, on rendrait indefiniment une valeur que l'administrateur
+    vient de supprimer -- et une liste se vide parfois exprès, pour la
+    remplacer par celle de la collectivite."""
+    from app.models import Referential, REFERENTIAL_SEEDS
+    changed = False
+    for kind, labels in REFERENTIAL_SEEDS.items():
+        if Referential.query.filter_by(kind=kind).first() is not None:
+            continue
+        for i, label in enumerate(labels):
+            db.session.add(Referential(kind=kind, label=label, position=i))
+        changed = True
+    if changed:
+        db.session.commit()
 
 
 def _seed_roles():

@@ -23,12 +23,12 @@ def test_create_software_multi_serveurs(client):
 
 
 def test_create_software_docker(client):
-    # le formulaire propose le radio on premise / SaaS et le bouton Docker (cumulable)
+    # le formulaire propose les trois regimes d'hebergement et le bouton Docker
     html = client.get('/inventory/logiciels/create').get_data(as_text=True)
-    assert 'value="onprem"' in html and 'value="saas"' in html
+    assert 'value="on_premise"' in html and 'value="saas"' in html and 'value="hybride"' in html
     assert 'name="is_docker"' in html and 'icon-docker' in html
     r = client.post('/inventory/logiciels/create',
-                    data={'name': 'Portainer', 'hosting': 'onprem', 'is_docker': 'on'},
+                    data={'name': 'Portainer', 'hosting': 'on_premise', 'is_docker': 'on'},
                     follow_redirects=True)
     assert r.status_code == 200
     sw = Software.query.filter_by(name='Portainer').first()
@@ -41,30 +41,44 @@ def test_create_software_docker(client):
     assert sw.is_saas is True and sw.is_docker is True
     # decocher Docker et repasser on premise remet les deux drapeaux a False
     client.post(f'/inventory/logiciels/{sw.id}/edit',
-                data={'name': 'Portainer', 'hosting': 'onprem'}, follow_redirects=True)
+                data={'name': 'Portainer', 'hosting': 'on_premise'}, follow_redirects=True)
     db.session.expire(sw)
     assert sw.is_docker is False and sw.is_saas is False
 
 
+def test_hybride_echappe_au_parc(client):
+    """« Hybride » : une part chez nous, une part dehors. Le booleen historique
+    is_saas dit « echappe au parc » -- il doit donc etre vrai."""
+    client.post('/inventory/logiciels/create',
+                data={'name': 'Portail Citoyen', 'hosting': 'hybride'},
+                follow_redirects=True)
+    sw = Software.query.filter_by(name='Portail Citoyen').one()
+    assert sw.hosting == 'hybride' and sw.is_saas is True
+
+
 def test_liste_filtre_hebergement(client):
     """Onglets Docker / SaaS / On premise : Docker est un attribut cumulable, un
-    logiciel conteneurise apparait aussi dans son onglet d'hebergement."""
+    logiciel conteneurise apparait aussi dans son onglet d'hebergement. Un
+    logiciel HYBRIDE parait dans les deux onglets d'hebergement -- l'exclure de
+    l'un cacherait la moitie de ce qu'il est."""
     db.session.add_all([Software(name='ConteneurGED', is_docker=True),
-                        Software(name='CloudRH', is_saas=True),
-                        Software(name='CloudDockerPaie', is_saas=True, is_docker=True),
+                        Software(name='CloudRH', hosting='saas'),
+                        Software(name='CloudDockerPaie', hosting='saas', is_docker=True),
+                        Software(name='PortailMixte', hosting='hybride'),
                         Software(name='LocalFinances')])
     db.session.commit()
     html = client.get('/inventory/logiciels/?host=docker').get_data(as_text=True)
     assert 'ConteneurGED' in html and 'CloudDockerPaie' in html
     assert 'CloudRH' not in html and 'LocalFinances' not in html
     html = client.get('/inventory/logiciels/?host=saas').get_data(as_text=True)
-    assert 'CloudRH' in html and 'CloudDockerPaie' in html and 'ConteneurGED' not in html
+    assert 'CloudRH' in html and 'CloudDockerPaie' in html and 'PortailMixte' in html
+    assert 'ConteneurGED' not in html
     html = client.get('/inventory/logiciels/?host=onprem').get_data(as_text=True)
-    assert 'LocalFinances' in html and 'ConteneurGED' in html
+    assert 'LocalFinances' in html and 'ConteneurGED' in html and 'PortailMixte' in html
     assert 'CloudRH' not in html and 'CloudDockerPaie' not in html
     # sans filtre : tout est visible
     html = client.get('/inventory/logiciels/').get_data(as_text=True)
-    for n in ('ConteneurGED', 'CloudRH', 'CloudDockerPaie', 'LocalFinances'):
+    for n in ('ConteneurGED', 'CloudRH', 'CloudDockerPaie', 'PortailMixte', 'LocalFinances'):
         assert n in html
 
 
@@ -178,14 +192,14 @@ def test_une_fiche_refletee_garde_son_identite_et_ses_serveurs(client):
     db.session.add_all([e, autre])
     db.session.commit()
     sw = Software(name='Concerto', origin='inventory', inventory_id=7,
-                  responsible='MARTIN', is_saas=True)
+                  responsible='MARTIN', hosting='saas')
     sw.equipments = [e]
     db.session.add(sw)
     db.session.commit()
 
     # Le formulaire tente de tout réécrire, y compris les serveurs.
     client.post(f'/inventory/logiciels/{sw.id}/edit', data={
-        'name': 'Renommé à la main', 'responsible': 'AUTRE', 'hosting': 'onprem',
+        'name': 'Renommé à la main', 'responsible': 'AUTRE', 'hosting': 'on_premise',
         'version': '2.4', 'criticality': '3',
         'equipment_ids': [str(autre.id)]}, follow_redirects=True)
 
@@ -206,3 +220,76 @@ def test_une_fiche_locale_reste_entierement_modifiable(client):
         follow_redirects=True)
     sw = Software.query.one()
     assert sw.name == 'Local renommé' and sw.responsible == 'DUPONT'
+
+
+# ── Fiche enrichie : qualification, utilisateurs, RGPD ──
+
+def test_creation_enregistre_la_qualification_et_le_rgpd(client):
+    from app.models import Referential
+    techno = Referential.query.filter_by(kind='technology', label='Web').one()
+    client.post('/inventory/logiciels/create', data={
+        'name': 'Concerto', 'hosting': 'hybride', 'lifecycle': 'fin_de_vie',
+        'source_type': 'opensource', 'technology_id': str(techno.id),
+        'auth_mode': 'mixte_ldap', 'auth_strong': 'on',
+        'users_count': '120', 'users_max': '100',
+        'service_date': '2019-03-01', 'internal_dev': 'on', 'no_server': 'on',
+        'tech_responsible': 'DURAND', 'tech_responsible_email': 'durand@ville.fr',
+        'no_contract_note': 'Marché porté par le CCAS',
+        'gdpr_personal_data': 'on', 'gdpr_categories': 'état civil, NIR',
+        'gdpr_registry_ref': 'T-014', 'gdpr_location': 'ue',
+    }, follow_redirects=True)
+    sw = Software.query.filter_by(name='Concerto').one()
+    assert sw.lifecycle == 'fin_de_vie' and sw.source_type == 'opensource'
+    assert sw.technology_id == techno.id and sw.auth_mode == 'mixte_ldap'
+    assert sw.auth_strong is True and sw.internal_dev is True and sw.no_server is True
+    assert sw.users_count == 120 and sw.users_max == 100
+    assert sw.service_date.isoformat() == '2019-03-01'
+    assert sw.tech_responsible_email == 'durand@ville.fr'
+    assert sw.no_contract_note == 'Marché porté par le CCAS'
+    assert sw.gdpr_personal_data is True and sw.gdpr_registry_ref == 'T-014'
+    assert sw.gdpr_location == 'ue'
+
+
+def test_valeur_de_liste_inconnue_retombe_sur_le_defaut(client):
+    """Un POST forgé ne doit pas inscrire une valeur qu'aucun écran ne sait
+    relire : le cycle de vie et l'hébergement retombent sur leur défaut, et le
+    mode d'authentification sur « non renseigné »."""
+    client.post('/inventory/logiciels/create', data={
+        'name': 'Bidon', 'hosting': 'ailleurs', 'lifecycle': 'zombie',
+        'source_type': 'magique', 'auth_mode': 'telepathie',
+        'gdpr_location': 'lune'}, follow_redirects=True)
+    sw = Software.query.filter_by(name='Bidon').one()
+    assert sw.hosting == 'on_premise' and sw.lifecycle == 'production'
+    assert sw.source_type == 'proprietaire' and sw.auth_mode is None
+    assert sw.gdpr_location == 'inconnue'
+
+
+def test_fin_de_vie_passe_le_statut_a_orange(client):
+    """Un logiciel en fin de vie est une échéance : il lui faut un successeur.
+    « Abandonné » n'en est plus une — il n'est plus en service."""
+    fin = Software(name='Vieux', lifecycle='fin_de_vie')
+    abandonne = Software(name='Retiré', lifecycle='abandonne')
+    vivant = Software(name='Actuel', lifecycle='production')
+    db.session.add_all([fin, abandonne, vivant])
+    db.session.commit()
+    assert fin.computed_status() == 'warning'
+    assert abandonne.computed_status() == 'success'
+    assert vivant.computed_status() == 'success'
+
+
+def test_une_maj_critique_prime_sur_le_cycle_de_vie(client):
+    sw = Software(name='Portail', lifecycle='fin_de_vie')
+    db.session.add(sw)
+    db.session.commit()
+    db.session.add(SystemUpdate(name='Portail', software_id=sw.id, status='critical'))
+    db.session.commit()
+    assert sw.computed_status() == 'danger'
+
+
+def test_depassement_de_licence(client):
+    """None quand l'un des deux nombres manque : sans les deux, il n'y a rien à
+    comparer, et répondre « non » laisserait croire qu'on a vérifié."""
+    assert Software(name='A', users_count=120, users_max=100).over_licence() is True
+    assert Software(name='B', users_count=80, users_max=100).over_licence() is False
+    assert Software(name='C', users_count=80).over_licence() is None
+    assert Software(name='D', users_max=100).over_licence() is None

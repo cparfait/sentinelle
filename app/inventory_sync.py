@@ -31,10 +31,10 @@ logger = logging.getLogger(__name__)
 # Au-delà, on renonce : un import ne doit pas suspendre l'écran indéfiniment.
 DELAI_S = 10
 
-# L'hébergement, dans les mots de Sentinelle. `hybride` compte comme SaaS : dès
-# qu'une part est hébergée dehors, elle échappe au parc — c'est ce que le
-# booléen veut dire ici.
-_SAAS = {'saas', 'hybride'}
+# L'hébergement, dans les mots de Sentinelle — qui sont désormais les mêmes :
+# les deux applications nomment les trois mêmes régimes. Une valeur inconnue
+# retombe sur « on premise », le cas ordinaire du parc.
+_HEBERGEMENT = {'saas', 'on_premise', 'hybride'}
 
 
 def _config():
@@ -301,7 +301,8 @@ def importer(selection=None, ecrire=True):
             sw.responsible = (a.get('responsible') or '')[:128]
             sw.responsible_email = (a.get('responsible_email') or '')[:120]
             sw.url = (a.get('url') or '')[:256]
-            sw.is_saas = (a.get('hosting') or '') in _SAAS
+            heb = a.get('hosting') or ''
+            sw.hosting = heb if heb in _HEBERGEMENT else 'on_premise'
             sw.is_docker = bool(a.get('containerized'))
             sw.is_active = bool(a.get('is_active', True))
             sw.origin = 'inventory'

@@ -8,8 +8,10 @@ from flask import (Blueprint, render_template, redirect, url_for, request, flash
                    jsonify)
 from flask_login import login_required
 from app import db
-from app.models import Software, Supplier, Contract, Equipment
-from app.forms_util import parse_int, status_rank
+from app.models import (Software, Supplier, Contract, Equipment, Referential,
+                        HOSTING_LABELS, LIFECYCLE_LABELS, SOURCE_TYPE_LABELS,
+                        AUTH_MODE_LABELS, DATA_LOCATION_LABELS)
+from app.forms_util import parse_int, parse_date, status_rank
 from app.decorators import require_edit, require_delete, view_guard
 from app.audit import record as audit_record
 
@@ -43,13 +45,36 @@ def _fill(sw, f):
         return
 
     sw.name = (f.get('name', '') or '').strip()
-    # Hébergement : radio onprem / saas ; Docker est cumulable avec les deux.
-    sw.is_saas = f.get('hosting') == 'saas'
+    # Hébergement : on premise / SaaS / hybride ; Docker est cumulable avec les
+    # trois — un logiciel conteneurisé est hébergé QUELQUE PART, les deux
+    # questions ne sont pas la même.
+    sw.hosting = f.get('hosting') if f.get('hosting') in HOSTING_LABELS else 'on_premise'
     sw.is_docker = f.get('is_docker') == 'on'
+    sw.internal_dev = f.get('internal_dev') == 'on'
+    sw.no_server = f.get('no_server') == 'on'
+    sw.lifecycle = f.get('lifecycle') if f.get('lifecycle') in LIFECYCLE_LABELS else 'production'
+    sw.source_type = (f.get('source_type') if f.get('source_type') in SOURCE_TYPE_LABELS
+                      else 'proprietaire')
+    sw.technology_id = parse_int(f.get('technology_id'))
+    # NULL = non renseigné : un défaut se serait écrit sur toute fiche créée.
+    sw.auth_mode = f.get('auth_mode') if f.get('auth_mode') in AUTH_MODE_LABELS else None
+    sw.auth_strong = f.get('auth_strong') == 'on'
+    sw.users_count = parse_int(f.get('users_count'), minimum=0)
+    sw.users_max = parse_int(f.get('users_max'), minimum=0)
+    sw.service_date = parse_date(f.get('service_date'))
     sw.url = (f.get('url', '') or '').strip() or None
     sw.responsible = (f.get('responsible', '') or '').strip() or None
     sw.responsible_email = (f.get('responsible_email', '') or '').strip() or None
+    sw.tech_responsible = (f.get('tech_responsible', '') or '').strip() or None
+    sw.tech_responsible_email = (f.get('tech_responsible_email', '') or '').strip() or None
+    sw.no_contract_note = (f.get('no_contract_note', '') or '').strip() or None
     sw.description = f.get('description') or None
+    # ── Volet RGPD ──
+    sw.gdpr_personal_data = f.get('gdpr_personal_data') == 'on'
+    sw.gdpr_categories = (f.get('gdpr_categories', '') or '').strip() or None
+    sw.gdpr_registry_ref = (f.get('gdpr_registry_ref', '') or '').strip() or None
+    sw.gdpr_location = (f.get('gdpr_location') if f.get('gdpr_location') in DATA_LOCATION_LABELS
+                        else 'inconnue')
     # Serveur(s) d'installation (multi-selection), equipements actifs uniquement.
     ids = [parse_int(v) for v in f.getlist('equipment_ids')]
     ids = [i for i in ids if i]
@@ -63,6 +88,12 @@ def _form_context():
         'suppliers': Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all(),
         'contracts': Contract.query.filter_by(is_active=True).order_by(Contract.name).all(),
         'equipments': Equipment.query.filter_by(is_active=True).order_by(Equipment.name).all(),
+        'technologies': Referential.options('technology'),
+        'hosting_labels': HOSTING_LABELS,
+        'lifecycle_labels': LIFECYCLE_LABELS,
+        'source_type_labels': SOURCE_TYPE_LABELS,
+        'auth_mode_labels': AUTH_MODE_LABELS,
+        'data_location_labels': DATA_LOCATION_LABELS,
     }
 
 
@@ -78,14 +109,18 @@ def list():
     # dans son onglet d'hebergement (SaaS ou on premise).
     host = request.args.get('host', '').strip()
     total_all = len(items)
+    # `hybride` compte dans LES DEUX onglets : une part est chez nous, une part
+    # dehors, et l'exclure de l'un ou de l'autre cacherait la moitie de ce
+    # qu'il est.
     _match = {'docker': lambda s: s.is_docker,
-              'saas': lambda s: s.is_saas,
-              'onprem': lambda s: not s.is_saas}
+              'saas': lambda s: s.hosting in ('saas', 'hybride'),
+              'onprem': lambda s: s.hosting in ('on_premise', 'hybride')}
     counts = {k: sum(1 for s in items if fn(s)) for k, fn in _match.items()}
     if host in _match:
         items = [s for s in items if _match[host](s)]
     from app.paging import paginate, text_search
-    items = text_search(items, q, ['name', 'version', 'responsible', 'responsible_email', 'description'])
+    items = text_search(items, q, ['name', 'version', 'responsible', 'responsible_email',
+                                   'tech_responsible', 'tech_responsible_email', 'description'])
     items.sort(key=lambda s: status_rank(s.computed_status()))
     items, page, pages, total = paginate(items)
     from app.inventory_sync import synchro_active

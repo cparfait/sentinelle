@@ -40,6 +40,7 @@
                     <th>Éditeur</th>
                     <th>Responsable</th>
                     <th>Version</th>
+                    <th>Cycle de vie</th>
                     <th>Serveurs</th>
                     <th>Hébergement</th>
                     <th>Actions</th>
@@ -56,11 +57,19 @@
                         {% else %}<span class="text-muted">-</span>{% endif %}
                     </td>
                     <td class="small">{{ s.version or '-' }}</td>
+                    <td class="text-nowrap"><span class="badge bg-{{ s.lifecycle_color() }}-subtle text-{{ s.lifecycle_color() }}">{{ s.lifecycle_label() }}</span></td>
                     <td class="small">
-                        {% if s.is_saas %}<span class="text-muted">—</span>
+                        {# « Aucun serveur » est une reponse, pas un vide : le tiret ne
+                           reclame pas de saisie, la ou un 0 se lirait comme un oubli. #}
+                        {% if s.no_server %}<span class="text-muted" title="Aucun serveur : hors parc">—</span>
                         {% else %}{{ s.equipments|length }}{% endif %}
                     </td>
-                    <td class="text-nowrap">{% if s.is_saas %}<span class="badge bg-info-subtle text-info">SaaS</span>{% else %}<span class="badge bg-light text-dark border">On premise</span>{% endif %}{% if s.is_docker %} <span class="badge bg-primary-subtle text-primary"><i class="icon-docker me-1"></i>Docker</span>{% endif %}</td>
+                    <td class="text-nowrap">
+                        {%- if s.hosting == 'saas' %}<span class="badge bg-info-subtle text-info">SaaS</span>
+                        {%- elif s.hosting == 'hybride' %}<span class="badge bg-warning-subtle text-warning">Hybride</span>
+                        {%- else %}<span class="badge bg-light text-dark border">On premise</span>{% endif %}
+                        {%- if s.is_docker %} <span class="badge bg-primary-subtle text-primary"><i class="icon-docker me-1"></i>Docker</span>{% endif %}
+                        {%- if s.internal_dev %} <span class="badge bg-secondary-subtle text-secondary" title="Développement interne"><i class="bi bi-code-slash"></i></span>{% endif %}</td>
                     <td>
                         <div class="d-flex gap-1">
                             {% if current_user.can_edit('inventory') %}
@@ -77,7 +86,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="8" class="text-center py-4 text-muted">
+                    <td colspan="9" class="text-center py-4 text-muted">
                         <i class="bi bi-window-stack" style="font-size: 2rem;"></i>
                         <p class="mt-2 mb-0">Aucun logiciel.
                             {% if current_user.can_edit('inventory') %}

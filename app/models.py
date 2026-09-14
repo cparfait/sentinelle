@@ -757,12 +757,21 @@ class Equipment(db.Model):
 
 
 SUPPLIER_KIND_LABELS = {'editor': 'Éditeur logiciel', 'manufacturer': 'Constructeur',
-                        'provider': 'Prestataire', 'operator': 'Opérateur', 'other': 'Autre'}
+                        'provider': 'Prestataire', 'operator': 'Opérateur',
+                        'ca': 'Autorité de certification', 'other': 'Autre'}
 
 
 class Supplier(db.Model):
-    """Annuaire fournisseurs / prestataires : qui appeler en cas d'incident
-    (hotline, n° client, portail support)."""
+    """Annuaire des societes : qui appeler en cas d'incident (hotline, n°
+    client, portail support), mais aussi qui appeler AVANT et APRES -- le
+    commercial pour l'offre et le renouvellement, l'administratif pour la
+    facturation, le DPO pour les donnees.
+
+    Ces coordonnees ne se saisissent QU'ICI, et les fiches logiciel les
+    remontent en lecture seule : la question « qui j'appelle ? » se pose devant
+    le logiciel, mais la reponse vaut pour tous ceux du meme editeur. Les
+    recopier fiche par fiche garantirait des numeros divergents.
+    """
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), nullable=False)
     kind = db.Column(db.String(32), default='provider')  # cf. SUPPLIER_KIND_LABELS
@@ -771,8 +780,40 @@ class Supplier(db.Model):
     support_phone = db.Column(db.String(64))   # hotline support
     email = db.Column(db.String(128))
     support_url = db.Column(db.String(256))    # portail de tickets
+    support_email = db.Column(db.String(128))  # adresse de l'assistance
     customer_ref = db.Column(db.String(128))   # n° client / identifiant support
     hours = db.Column(db.String(128))          # horaires du support (ex. 8h-18h, J+1...)
+    # Les horaires tiennent sur DEUX lignes parce qu'ils decrivent presque
+    # toujours deux regimes -- « lundi au vendredi 8h-17h » puis « samedi
+    # 8h-12h ». Une seule ligne obligeait a les coudre, chaque fiche inventant
+    # sa ponctuation.
+    hours2 = db.Column(db.String(128))
+    # Coordonnees postales et vitrine.
+    address = db.Column(db.String(256))
+    postal_code = db.Column(db.String(16))
+    city = db.Column(db.String(128))
+    website = db.Column(db.String(256))
+    # ── Contacts hors incident ──
+    # Chacun porte le NOM de la personne puis ses coordonnees, distincts du
+    # standard (phone/email) qui reste celui de la societe.
+    commercial_contact = db.Column(db.String(128))
+    commercial_phone = db.Column(db.String(64))
+    commercial_email = db.Column(db.String(128))
+    # Un SECOND commercial, frequent chez les editeurs qui separent le
+    # renouvellement de l'avant-vente, ou pendant une passation.
+    commercial_contact2 = db.Column(db.String(128))
+    commercial_phone2 = db.Column(db.String(64))
+    commercial_email2 = db.Column(db.String(128))
+    admin_contact = db.Column(db.String(128))    # facturation
+    admin_phone = db.Column(db.String(64))
+    admin_email = db.Column(db.String(128))
+    # Le DPO de l'EDITEUR -- celui a qui ecrire pour une violation ou une
+    # demande d'exercice de droits sur les donnees qu'il heberge. Distinct du
+    # DPO de la collectivite, qui n'a pas sa place dans un annuaire de
+    # fournisseurs.
+    dpo_contact = db.Column(db.String(128))
+    dpo_phone = db.Column(db.String(64))
+    dpo_email = db.Column(db.String(128))
     notes = db.Column(db.Text)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -781,6 +822,14 @@ class Supplier(db.Model):
 
     def kind_label(self):
         return SUPPLIER_KIND_LABELS.get(self.kind, self.kind or '')
+
+    def has_contacts(self):
+        """Un contact hors support est-il renseigne ? Sert a n'afficher la
+        carte « Contacts » que quand elle a quelque chose a dire."""
+        return any([self.commercial_contact, self.commercial_phone, self.commercial_email,
+                    self.commercial_contact2, self.commercial_phone2, self.commercial_email2,
+                    self.admin_contact, self.admin_phone, self.admin_email,
+                    self.dpo_contact, self.dpo_phone, self.dpo_email])
 
 
 CONTRACT_KIND_LABELS = {'maintenance': 'Maintenance', 'licence': 'Licence',
@@ -862,6 +911,72 @@ class ContractHistory(db.Model):
     performed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+class Referential(db.Model):
+    """Liste de valeurs administrable : technologies applicatives, categories de
+    pieces jointes, types de taches recurrentes...
+
+    UNE table pour toutes ces listes, distinguees par `kind`, plutot qu'une
+    table par liste : elles ont toutes exactement la meme forme -- un libelle et
+    un rang d'affichage -- et n'appellent chacune ni ecran ni logique propre.
+    En ouvrir une nouvelle ne coute alors qu'une cle dans REFERENTIAL_KINDS.
+
+    Les valeurs de la logique metier (statut, criticite, hebergement) ne sont
+    PAS ici : elles pilotent des calculs et des filtres, et pouvoir en ajouter
+    ou en retirer laisserait des fiches orphelines. Elles restent des constantes.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    kind = db.Column(db.String(32), nullable=False, index=True)
+    label = db.Column(db.String(64), nullable=False)
+    position = db.Column(db.Integer, default=0)
+    is_active = db.Column(db.Boolean, default=True)
+    __table_args__ = (db.UniqueConstraint('kind', 'label', name='uq_referential_kind_label'),)
+
+    @staticmethod
+    def options(kind):
+        """Les valeurs actives d'une liste, dans l'ordre d'affichage."""
+        return (Referential.query
+                .filter_by(kind=kind, is_active=True)
+                .order_by(Referential.position, Referential.label).all())
+
+
+REFERENTIAL_KINDS = {
+    'technology': 'Technologies applicatives',
+    'doc_category': 'Catégories de pièces jointes',
+    'task_type': 'Types de tâches récurrentes',
+    'user_service': 'Services utilisateurs',
+}
+
+# Valeurs de depart, versees au premier demarrage (cf. _seed_referentials).
+REFERENTIAL_SEEDS = {
+    'technology': ['Web', 'Client lourd', 'Client-serveur', 'Mobile', 'Service système'],
+    'doc_category': ['Contrat / marché', 'Devis', 'Guide utilisateur',
+                     'Documentation technique', 'Délibération', 'Arrêté', 'Autre'],
+    'task_type': ['Mise à jour', 'Renouvellement de contrat', 'Purge',
+                  'Revue des comptes', 'Renouvellement de certificat'],
+}
+
+# ── Qualification d'un logiciel ──
+# Ces listes pilotent des filtres, des compteurs et des couleurs : elles restent
+# des CONSTANTES, la ou les libelles purement descriptifs vivent en base
+# (Referential). Une valeur qu'on peut ajouter est une valeur dont aucun calcul
+# ne depend.
+HOSTING_LABELS = {'on_premise': 'On premise', 'saas': 'SaaS (hors parc)',
+                  'hybride': 'Hybride'}
+LIFECYCLE_LABELS = {'evaluation': 'En évaluation', 'production': 'En production',
+                    'fin_de_vie': 'En fin de vie', 'abandonne': 'Abandonné'}
+# Couleur du badge de cycle de vie, dans les mots de Bootstrap.
+LIFECYCLE_COLORS = {'evaluation': 'info', 'production': 'success',
+                    'fin_de_vie': 'warning', 'abandonne': 'secondary'}
+SOURCE_TYPE_LABELS = {'proprietaire': 'Propriétaire', 'opensource': 'Open source',
+                      'mixte': 'Mixte'}
+AUTH_MODE_LABELS = {'locale': 'Comptes locaux', 'ldap': 'Annuaire (LDAP/AD)',
+                    'sso': "SSO / fournisseur d'identité",
+                    'mixte_ldap': 'Locale + annuaire', 'mixte_sso': 'Locale + SSO',
+                    'aucune': 'Aucune'}
+DATA_LOCATION_LABELS = {'ue': 'Union européenne', 'hors_ue': 'Hors UE',
+                        'mixte': 'Mixte', 'inconnue': 'Non renseignée'}
+
+
 # Serveur(s) sur lesquels un logiciel est installe (relation N:N).
 software_equipment = db.Table(
     'software_equipment',
@@ -881,8 +996,50 @@ class Software(db.Model):
     contract_id = db.Column(db.Integer, db.ForeignKey('contract.id'), index=True)
     contract = db.relationship('Contract', backref=db.backref('software', lazy='dynamic'))
     version = db.Column(db.String(64))
-    is_saas = db.Column(db.Boolean, default=False)  # heberge hors parc (Cloud)
+    # Hebergement : « on premise » / « SaaS » / « hybride ». L'ancien booleen
+    # is_saas ne savait pas dire « hybride » -- une part chez nous, une part
+    # dehors --, cas qui se rencontre des qu'un logiciel installe expose un
+    # portail heberge par l'editeur. Il survit en PROPRIETE calculee : tout ce
+    # qui n'est pas entierement chez nous echappe au parc, et c'est ce que le
+    # booleen voulait dire.
+    hosting = db.Column(db.String(16), default='on_premise', server_default='on_premise',
+                        nullable=False)
     is_docker = db.Column(db.Boolean, default=False)  # conteneurise (Docker), cumulable avec SaaS ou on premise
+    # Fait et maintenu par la DSI : ni editeur, ni support, ni contrat a
+    # rattacher. Porte par le logiciel plutot que par un fournisseur fictif
+    # « Developpement interne », qui polluerait l'annuaire.
+    internal_dev = db.Column(db.Boolean, default=False)
+    # Ne s'installe sur AUCUNE machine du parc (SaaS, ou postes des agents).
+    # Sans ce marqueur, une fiche sans serveur ne se distingue pas d'une fiche
+    # dont le serveur reste a saisir.
+    no_server = db.Column(db.Boolean, default=False)
+    lifecycle = db.Column(db.String(16), default='production', server_default='production',
+                          nullable=False)
+    source_type = db.Column(db.String(16), default='proprietaire')
+    # Technologie applicative (Referential kind='technology').
+    technology_id = db.Column(db.Integer, db.ForeignKey('referential.id'), index=True)
+    technology = db.relationship('Referential', foreign_keys=[technology_id])
+    # Mode d'authentification. NULL = non renseigne : un defaut « locale » se
+    # serait ecrit sur toute fiche creee et aurait fait dire a l'inventaire ce
+    # que personne n'a saisi.
+    auth_mode = db.Column(db.String(16))
+    auth_strong = db.Column(db.Boolean, default=False)  # 2FA / MFA exigee
+    # Utilisateurs reels ; NULL = non compte. Un logiciel a zero utilisateur est
+    # un candidat au retrait, un logiciel non compte n'est qu'un trou.
+    users_count = db.Column(db.Integer)
+    users_max = db.Column(db.Integer)   # plafond contractuel ; NULL = illimite
+    service_date = db.Column(db.Date)   # mise en service
+    tech_responsible = db.Column(db.String(128))
+    tech_responsible_email = db.Column(db.String(120))
+    # Remplace le « Aucun contrat » de la fiche quand le marche est porte
+    # ailleurs (« gere par le CCAS ») : sans ce mot, le vide se lit comme un
+    # trou dans l'inventaire.
+    no_contract_note = db.Column(db.String(256))
+    # ── Volet RGPD ──
+    gdpr_personal_data = db.Column(db.Boolean, default=False)
+    gdpr_categories = db.Column(db.String(256))   # etat civil, sante, NIR...
+    gdpr_registry_ref = db.Column(db.String(64))  # reference au registre des traitements
+    gdpr_location = db.Column(db.String(16), default='inconnue')
     # Origine de la fiche : 'local' (saisie ici) ou 'inventory' (reflet de
     # SoftInventory, qui DETIENT le catalogue des applications). Une fiche
     # refletee voit son identite rafraichie a chaque import ; ce qui est
@@ -920,13 +1077,52 @@ class Software(db.Model):
     # Mises a jour rattachees (via SystemUpdate.software_id) : backref .software.
     system_updates = db.relationship('SystemUpdate', backref='software', lazy='dynamic')
 
+    @property
+    def is_saas(self):
+        """Heberge hors parc. `hybride` compte comme SaaS : des qu'une part est
+        hebergee dehors, elle echappe au parc -- c'est ce que le booleen dit."""
+        return self.hosting in ('saas', 'hybride')
+
+    def hosting_label(self):
+        return HOSTING_LABELS.get(self.hosting, self.hosting or '')
+
+    def lifecycle_label(self):
+        return LIFECYCLE_LABELS.get(self.lifecycle, self.lifecycle or '')
+
+    def lifecycle_color(self):
+        return LIFECYCLE_COLORS.get(self.lifecycle, 'secondary')
+
+    def source_type_label(self):
+        return SOURCE_TYPE_LABELS.get(self.source_type, self.source_type or '')
+
+    def auth_mode_label(self):
+        return AUTH_MODE_LABELS.get(self.auth_mode, self.auth_mode or '')
+
+    def gdpr_location_label(self):
+        return DATA_LOCATION_LABELS.get(self.gdpr_location, self.gdpr_location or '')
+
+    def over_licence(self):
+        """Le plafond contractuel d'utilisateurs est-il depasse ? None quand
+        l'un des deux nombres manque : sans les deux, il n'y a rien a comparer,
+        et repondre « non » laisserait croire qu'on a verifie."""
+        if self.users_count is None or self.users_max is None:
+            return None
+        return self.users_count > self.users_max
+
     def computed_status(self):
         """Statut agrege sur les MAJ liees : rouge si critique, orange si une
-        MAJ est disponible, vert sinon."""
+        MAJ est disponible, vert sinon.
+
+        Le cycle de vie s'y ajoute : un logiciel « en fin de vie » est une
+        echeance, au meme titre qu'une mise a jour en attente -- il faut lui
+        trouver un successeur. Un logiciel « abandonne » ne se surveille plus
+        (il n'est plus en service) et reste vert."""
         updates = self.system_updates.filter_by(is_active=True).all()
         if any(u.status == 'critical' for u in updates):
             return 'danger'
         if any(u.status == 'update_available' for u in updates):
+            return 'warning'
+        if self.lifecycle == 'fin_de_vie':
             return 'warning'
         return 'success'
 

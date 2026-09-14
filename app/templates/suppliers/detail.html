@@ -2,6 +2,20 @@
 {% block title %}{{ supplier.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
 
+{# Un contact hors incident. Rien ne s'affiche quand les trois champs sont
+   vides : une carte pleine de tirets ne dit pas qui appeler, elle dit qu'on ne
+   sait pas. #}
+{% macro contact(titre, nom, tel, mail) %}
+{% if nom or tel or mail %}
+<div class="col-sm-6 mb-3">
+    <small class="text-muted d-block">{{ titre }}</small>
+    {% if nom %}<span class="fw-medium">{{ nom }}</span>{% endif %}
+    {% if tel %}<a href="tel:{{ tel | replace(' ', '') }}" class="d-block small text-decoration-none"><i class="bi bi-telephone me-1"></i>{{ tel }}</a>{% endif %}
+    {% if mail %}<a href="mailto:{{ mail }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ mail }}</a>{% endif %}
+</div>
+{% endif %}
+{% endmacro %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -30,11 +44,13 @@
                     <span class="fw-medium"><i class="bi bi-telephone me-1"></i>
                         <a href="tel:{{ (supplier.support_phone or supplier.phone) | replace(' ', '') }}">{{ supplier.support_phone or supplier.phone }}</a></span>
                     {% if supplier.hours %}<small class="text-muted d-block">{{ supplier.hours }}</small>{% endif %}
+                    {% if supplier.hours2 %}<small class="text-muted d-block">{{ supplier.hours2 }}</small>{% endif %}
                     {% else %}<span class="text-muted">-</span>{% endif %}
                 </div>
                 <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">E-mail</small>
-                    {% if supplier.email %}<a href="mailto:{{ supplier.email }}">{{ supplier.email }}</a>{% else %}<span class="text-muted">-</span>{% endif %}
+                    <small class="text-muted d-block">E-mail de l'assistance</small>
+                    {% set mail_support = supplier.support_email or supplier.email %}
+                    {% if mail_support %}<a href="mailto:{{ mail_support }}">{{ mail_support }}</a>{% else %}<span class="text-muted">-</span>{% endif %}
                 </div>
                 <div class="col-sm-6 mb-3">
                     <small class="text-muted d-block">N° client / support</small>
@@ -43,7 +59,21 @@
                 <div class="col-sm-6 mb-3">
                     <small class="text-muted d-block">Téléphone standard</small>
                     <span class="fw-medium">{{ supplier.phone or '-' }}</span>
+                    {% if supplier.email %}<a href="mailto:{{ supplier.email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ supplier.email }}</a>{% endif %}
                 </div>
+                {% if supplier.address or supplier.city %}
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Adresse</small>
+                    <span class="fw-medium">{{ supplier.address or '' }}</span>
+                    <span class="d-block small">{{ supplier.postal_code or '' }} {{ supplier.city or '' }}</span>
+                </div>
+                {% endif %}
+                {% if supplier.website %}
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Site web</small>
+                    <a href="{{ supplier.website }}" target="_blank" rel="noopener" class="text-truncate d-block">{{ supplier.website }}</a>
+                </div>
+                {% endif %}
             </div>
             {% if supplier.support_url %}
             <a href="{{ supplier.support_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
@@ -57,6 +87,22 @@
             </div>
             {% endif %}
         </div>
+
+        {# ===== Contacts hors incident =====
+           Saisis ICI et nulle part ailleurs : les fiches logiciel les remontent
+           en lecture seule. La question « qui j'appelle ? » se pose devant le
+           logiciel, mais la réponse vaut pour tous ceux du même éditeur. #}
+        {% if supplier.has_contacts() %}
+        <div class="data-card p-4 mb-3">
+            <h6 class="fw-bold mb-3"><i class="bi bi-person-lines-fill me-2 text-info"></i>Contacts</h6>
+            <div class="row">
+                {{ contact('Commercial', supplier.commercial_contact, supplier.commercial_phone, supplier.commercial_email) }}
+                {{ contact('Commercial (second)', supplier.commercial_contact2, supplier.commercial_phone2, supplier.commercial_email2) }}
+                {{ contact('Administratif / facturation', supplier.admin_contact, supplier.admin_phone, supplier.admin_email) }}
+                {{ contact('DPO', supplier.dpo_contact, supplier.dpo_phone, supplier.dpo_email) }}
+            </div>
+        </div>
+        {% endif %}
 
         {# ===== Impacts : matériel, logiciels et contrats couverts par ce fournisseur ===== #}
         <div class="data-card mb-3">
@@ -96,7 +142,7 @@
                         <tr>
                             <td><a href="{{ url_for('software.detail', id=sw.id) }}" class="fw-medium text-decoration-none">{{ sw.name }}</a></td>
                             <td class="small">{{ sw.version or '-' }}</td>
-                            <td class="small">{{ 'SaaS' if sw.is_saas else 'Interne' }}</td>
+                            <td class="small">{{ sw.hosting_label() }}</td>
                         </tr>
                         {% else %}
                         <tr><td colspan="3" class="text-center py-3 text-muted">Aucun logiciel rattaché</td></tr>

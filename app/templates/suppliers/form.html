@@ -1,6 +1,29 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Modifier' if supplier else 'Ajouter' }} un fournisseur - Sentinelle{% endblock %}
 
+{# Un bloc de contact : nom, téléphone, mail. Les trois champs vont toujours
+   ensemble — un numéro sans nom ne dit pas qui décroche. #}
+{% macro bloc_contact(titre, prefix, aide, nom, tel, mail) %}
+<fieldset class="border rounded p-3 mb-3">
+    <legend class="float-none w-auto px-2 fs-6 fw-medium text-muted">{{ titre }}</legend>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label fw-medium">Nom</label>
+            <input type="text" name="{{ prefix }}_contact" class="form-control" value="{{ nom or '' }}">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-medium">Téléphone</label>
+            <input type="text" name="{{ prefix }}_phone" class="form-control" value="{{ tel or '' }}">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-medium">Email</label>
+            <input type="email" name="{{ prefix }}_email" class="form-control" value="{{ mail or '' }}">
+        </div>
+    </div>
+    {% if aide %}<div class="form-text mt-2">{{ aide }}</div>{% endif %}
+</fieldset>
+{% endmacro %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="fw-bold mb-0">
@@ -12,17 +35,17 @@
 </div>
 
 <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-lg-9">
         <div class="data-card p-4">
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="row g-3 mb-3">
-                    <div class="col-md-7">
+                    <div class="col-md-5">
                         <label class="form-label fw-medium">Nom *</label>
                         <input type="text" name="name" class="form-control" required
                                value="{{ supplier.name if supplier else '' }}" placeholder="ex: Dell, OVH, SSII locale...">
                     </div>
-                    <div class="col-md-5">
+                    <div class="col-md-3">
                         <label class="form-label fw-medium">Type</label>
                         <select name="kind" class="form-select">
                             {% for value, label in kind_labels.items() %}
@@ -30,48 +53,111 @@
                             {% endfor %}
                         </select>
                     </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-medium">Site web</label>
+                        <input type="url" name="website" class="form-control" placeholder="https://..."
+                               value="{{ supplier.website or '' if supplier else '' }}">
+                    </div>
                 </div>
                 <div class="row g-3 mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label fw-medium">Interlocuteur habituel</label>
                         <input type="text" name="contact_name" class="form-control"
                                value="{{ supplier.contact_name or '' if supplier else '' }}">
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-medium">Email</label>
+                    <div class="col-md-4">
+                        <label class="form-label fw-medium">Email (standard)</label>
                         <input type="email" name="email" class="form-control"
                                value="{{ supplier.email or '' if supplier else '' }}">
                     </div>
-                </div>
-                <div class="row g-3 mb-3">
                     <div class="col-md-4">
                         <label class="form-label fw-medium">Téléphone (standard)</label>
                         <input type="text" name="phone" class="form-control"
                                value="{{ supplier.phone or '' if supplier else '' }}">
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-medium">Hotline support</label>
-                        <input type="text" name="support_phone" class="form-control"
-                               value="{{ supplier.support_phone or '' if supplier else '' }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-medium">Horaires du support</label>
-                        <input type="text" name="hours" class="form-control" placeholder="ex: 8h-18h jours ouvrés"
-                               value="{{ supplier.hours or '' if supplier else '' }}">
-                    </div>
                 </div>
                 <div class="row g-3 mb-3">
-                    <div class="col-md-7">
-                        <label class="form-label fw-medium">Portail support (URL)</label>
-                        <input type="url" name="support_url" class="form-control" placeholder="https://support.exemple.fr"
-                               value="{{ supplier.support_url or '' if supplier else '' }}">
+                    <div class="col-md-6">
+                        <label class="form-label fw-medium">Adresse</label>
+                        <input type="text" name="address" class="form-control"
+                               value="{{ supplier.address or '' if supplier else '' }}">
                     </div>
-                    <div class="col-md-5">
-                        <label class="form-label fw-medium">N° client / identifiant support</label>
-                        <input type="text" name="customer_ref" class="form-control"
-                               value="{{ supplier.customer_ref or '' if supplier else '' }}">
+                    <div class="col-md-2">
+                        <label class="form-label fw-medium">Code postal</label>
+                        <input type="text" name="postal_code" class="form-control"
+                               value="{{ supplier.postal_code or '' if supplier else '' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-medium">Ville</label>
+                        <input type="text" name="city" class="form-control"
+                               value="{{ supplier.city or '' if supplier else '' }}">
                     </div>
                 </div>
+
+                {# ── Assistance ──
+                   Le support vit AU NIVEAU de la société : un même fournisseur
+                   assure celui de tous ses produits. Les fiches logiciel le
+                   remontent en lecture seule. #}
+                <fieldset class="border rounded p-3 mb-3">
+                    <legend class="float-none w-auto px-2 fs-6 fw-medium text-muted">
+                        <i class="bi bi-life-preserver me-1"></i>Assistance
+                    </legend>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium">Portail de tickets (URL)</label>
+                            <input type="url" name="support_url" class="form-control" placeholder="https://support.exemple.fr"
+                                   value="{{ supplier.support_url or '' if supplier else '' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-medium">Hotline</label>
+                            <input type="text" name="support_phone" class="form-control"
+                                   value="{{ supplier.support_phone or '' if supplier else '' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-medium">Email de l'assistance</label>
+                            <input type="email" name="support_email" class="form-control"
+                                   value="{{ supplier.support_email or '' if supplier else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-medium">N° client / identifiant support</label>
+                            <input type="text" name="customer_ref" class="form-control"
+                                   value="{{ supplier.customer_ref or '' if supplier else '' }}">
+                            <div class="form-text">Celui que l'éditeur redemande à chaque appel.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-medium">Horaires</label>
+                            <input type="text" name="hours" class="form-control" placeholder="ex: lundi au vendredi 8h-17h"
+                                   value="{{ supplier.hours or '' if supplier else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-medium">Horaires (2<sup>e</sup> ligne)</label>
+                            <input type="text" name="hours2" class="form-control" placeholder="ex: samedi 8h-12h"
+                                   value="{{ supplier.hours2 or '' if supplier else '' }}">
+                            <div class="form-text">Deux lignes : les horaires décrivent presque toujours deux régimes.</div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                {{ bloc_contact('Commercial', 'commercial',
+                                "Pour l'offre et le renouvellement. Distinct du standard ci-dessus, qui reste celui de la société.",
+                                supplier.commercial_contact if supplier else '',
+                                supplier.commercial_phone if supplier else '',
+                                supplier.commercial_email if supplier else '') }}
+                {{ bloc_contact('Commercial (second)', 'commercial2',
+                                "Fréquent chez les éditeurs qui séparent le renouvellement de l'avant-vente, ou pendant une passation.",
+                                supplier.commercial_contact2 if supplier else '',
+                                supplier.commercial_phone2 if supplier else '',
+                                supplier.commercial_email2 if supplier else '') }}
+                {{ bloc_contact('Administratif / facturation', 'admin', None,
+                                supplier.admin_contact if supplier else '',
+                                supplier.admin_phone if supplier else '',
+                                supplier.admin_email if supplier else '') }}
+                {{ bloc_contact('DPO de l\'éditeur', 'dpo',
+                                "À qui écrire pour une violation ou une demande d'exercice de droits sur les données qu'il héberge. Distinct du DPO de la collectivité.",
+                                supplier.dpo_contact if supplier else '',
+                                supplier.dpo_phone if supplier else '',
+                                supplier.dpo_email if supplier else '') }}
+
                 <div class="mb-3">
                     <label class="form-label fw-medium">Notes</label>
                     <textarea name="notes" class="form-control" rows="3"

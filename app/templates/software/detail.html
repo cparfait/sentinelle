@@ -2,13 +2,38 @@
 {% block title %}{{ item.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
 
+{# Une ligne « libellé / valeur » de la fiche. Le tiret vaut « non renseigné » :
+   un blanc se lirait comme un oubli d'affichage. #}
+{% macro champ(label, value, cols='col-sm-6') %}
+<div class="{{ cols }} mb-3">
+    <small class="text-muted d-block">{{ label }}</small>
+    <span class="fw-medium">{{ value or '-' }}</span>
+</div>
+{% endmacro %}
+
+{# Un contact de l'éditeur : nom, téléphone, mail. Rien ne s'affiche quand les
+   trois sont vides — une carte de contacts à moitié pleine de tirets ne dit pas
+   qui appeler, elle dit qu'on ne sait pas. #}
+{% macro contact(titre, nom, tel, mail) %}
+{% if nom or tel or mail %}
+<li class="mb-2">
+    <span class="text-muted d-block" style="font-size:.75rem">{{ titre }}</span>
+    {% if nom %}<span class="fw-medium">{{ nom }}</span>{% endif %}
+    {% if tel %}<a href="tel:{{ tel }}" class="d-block text-decoration-none"><i class="bi bi-telephone me-1"></i>{{ tel }}</a>{% endif %}
+    {% if mail %}<a href="mailto:{{ mail }}" class="d-block text-truncate"><i class="bi bi-envelope me-1"></i>{{ mail }}</a>{% endif %}
+</li>
+{% endif %}
+{% endmacro %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="fw-bold mb-0"><i class="bi bi-window-stack me-2"></i>{{ item.name }}
-            {% if item.is_saas %}<span class="badge bg-info-subtle text-info ms-1">SaaS</span>{% endif %}
-            {% if item.is_docker %}<span class="badge bg-primary-subtle text-primary ms-1"><i class="icon-docker me-1"></i>Docker</span>{% endif %}</h4>
-        <small class="text-muted">{% if item.supplier %}{{ item.supplier.name }}{% else %}Éditeur inconnu{% endif %}{% if item.version %} — v{{ item.version }}{% endif %}</small>
+            <span class="badge bg-{{ item.lifecycle_color() }}-subtle text-{{ item.lifecycle_color() }} ms-1">{{ item.lifecycle_label() }}</span>
+            {% if item.is_saas %}<span class="badge bg-info-subtle text-info ms-1">{{ item.hosting_label() }}</span>{% endif %}
+            {% if item.is_docker %}<span class="badge bg-primary-subtle text-primary ms-1"><i class="icon-docker me-1"></i>Docker</span>{% endif %}
+            {% if item.internal_dev %}<span class="badge bg-secondary-subtle text-secondary ms-1"><i class="bi bi-code-slash me-1"></i>Interne</span>{% endif %}</h4>
+        <small class="text-muted">{% if item.internal_dev %}Développement interne{% elif item.supplier %}{{ item.supplier.name }}{% else %}Éditeur inconnu{% endif %}{% if item.version %} — v{{ item.version }}{% endif %}</small>
     </div>
     <div class="d-flex gap-2">
         {% if current_user.can_edit('inventory') %}
@@ -29,6 +54,14 @@
     </div>
 </div>
 
+{% if item.over_licence() %}
+<div class="alert alert-warning py-2 px-3 small">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    <strong>Dépassement de licence</strong> : {{ item.users_count }} utilisateurs pour un plafond
+    contractuel de {{ item.users_max }}.
+</div>
+{% endif %}
+
 <div class="row g-3">
     <div class="{{ 'col-lg-8' if item.supplier else 'col-12' }}">
         <div class="data-card p-4 mb-3">
@@ -39,26 +72,44 @@
                 </div>
                 <div class="col-sm-6 mb-3">
                     <small class="text-muted d-block">Hébergement</small>
-                    <span class="fw-medium">{{ 'SaaS (hors parc)' if item.is_saas else 'On premise' }}{% if item.is_docker %} — container Docker{% endif %}</span>
+                    <span class="fw-medium">{{ item.hosting_label() }}{% if item.is_docker %} — conteneur Docker{% endif %}</span>
+                </div>
+                {{ champ('Version', item.version) }}
+                {{ champ('Criticité', item.criticality) }}
+                {{ champ('Technologie', item.technology.label if item.technology else None) }}
+                {{ champ('Type de source', item.source_type_label()) }}
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Authentification</small>
+                    <span class="fw-medium">{{ item.auth_mode_label() or 'Non renseignée' }}</span>
+                    {% if item.auth_strong %}<span class="badge bg-success-subtle text-success ms-1">2FA</span>{% endif %}
                 </div>
                 <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Version</small>
-                    <span class="fw-medium">{{ item.version or '-' }}</span>
+                    <small class="text-muted d-block">Utilisateurs</small>
+                    <span class="fw-medium">
+                        {%- if item.users_count is none %}Non comptés
+                        {%- else %}{{ item.users_count }}{% if item.users_max %} / {{ item.users_max }}{% endif %}{% endif -%}
+                    </span>
+                </div>
+                {{ champ('Mise en service', item.service_date.strftime('%d/%m/%Y') if item.service_date else None) }}
+                <div class="col-sm-6 mb-3">
+                    <small class="text-muted d-block">Contrat / licence</small>
+                    {% if item.contract %}<a href="{{ url_for('contracts.detail', id=item.contract_id) }}">{{ item.contract.name }}</a>
+                    {% elif item.no_contract_note %}<span class="fw-medium text-muted">{{ item.no_contract_note }}</span>
+                    {% else %}<span class="text-muted">Aucun contrat enregistré</span>{% endif %}
                 </div>
                 <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Criticité</small>
-                    <span class="fw-medium">{{ item.criticality or '-' }}</span>
-                </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Responsable</small>
+                    <small class="text-muted d-block">Référent métier</small>
                     <span class="fw-medium">{{ item.responsible or '-' }}</span>
                     {% if item.responsible_email %}
                     <a href="mailto:{{ item.responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.responsible_email }}</a>
                     {% endif %}
                 </div>
                 <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Contrat / licence</small>
-                    {% if item.contract %}<a href="{{ url_for('contracts.detail', id=item.contract_id) }}">{{ item.contract.name }}</a>{% else %}<span class="text-muted">-</span>{% endif %}
+                    <small class="text-muted d-block">Référent technique</small>
+                    <span class="fw-medium">{{ item.tech_responsible or '-' }}</span>
+                    {% if item.tech_responsible_email %}
+                    <a href="mailto:{{ item.tech_responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.tech_responsible_email }}</a>
+                    {% endif %}
                 </div>
                 {% if item.url %}
                 <div class="col-12 mb-3">
@@ -68,8 +119,8 @@
                 {% endif %}
                 <div class="col-12">
                     <small class="text-muted d-block mb-1">Serveur(s) d'installation</small>
-                    {% if item.is_saas %}
-                    <span class="text-muted">Hébergé hors parc (SaaS).</span>
+                    {% if item.no_server %}
+                    <span class="text-muted">Aucun serveur : le logiciel tourne chez l'éditeur ou sur les postes des agents.</span>
                     {% else %}
                         {% for e in item.equipments %}
                         <a href="{{ url_for('inventory.detail', id=e.id) }}" class="badge bg-light text-dark border text-decoration-none me-1 mb-1">
@@ -85,6 +136,29 @@
                 <small class="text-muted d-block">Description</small>
                 <p class="mb-0">{{ item.description }}</p>
             </div>
+            {% endif %}
+        </div>
+
+        {# ── Volet RGPD ──
+           Affiché même quand le logiciel ne traite pas de données personnelles :
+           « non » est une réponse, et la carte absente se lirait comme un oubli
+           de saisie. #}
+        <div class="data-card p-4 mb-3">
+            <h6 class="fw-bold mb-3"><i class="bi bi-shield-lock me-2 text-primary"></i>Données personnelles (RGPD)</h6>
+            {% if item.gdpr_personal_data %}
+            <div class="row">
+                {{ champ('Catégories de données', item.gdpr_categories, 'col-sm-5') }}
+                {{ champ('Réf. registre des traitements', item.gdpr_registry_ref, 'col-sm-3') }}
+                {{ champ('Localisation des données', item.gdpr_location_label(), 'col-sm-4') }}
+            </div>
+            {% if item.supplier and (item.supplier.dpo_contact or item.supplier.dpo_email) %}
+            <div class="small text-muted">
+                DPO de l'éditeur : <span class="fw-medium">{{ item.supplier.dpo_contact or '—' }}</span>
+                {% if item.supplier.dpo_email %}<a href="mailto:{{ item.supplier.dpo_email }}" class="ms-1">{{ item.supplier.dpo_email }}</a>{% endif %}
+            </div>
+            {% endif %}
+            {% else %}
+            <p class="text-muted mb-0">Ce logiciel ne traite pas de données personnelles.</p>
             {% endif %}
         </div>
 
@@ -113,17 +187,39 @@
         </div>
     </div>
 
+    {# ── Contacts de l'éditeur ──
+       HÉRITÉS, en lecture seule : ils se saisissent une seule fois, sur la fiche
+       de l'éditeur. La question « qui j'appelle ? » se pose devant le logiciel,
+       mais la réponse vaut pour tous les logiciels du même éditeur — la recopier
+       fiche par fiche garantirait des numéros divergents. #}
     {% if item.supplier %}
+    {% set sup = item.supplier %}
     <div class="col-lg-4">
         <div class="data-card p-4 mb-3">
             <h6 class="fw-bold mb-2"><i class="bi bi-building me-2 text-info"></i>Éditeur</h6>
-            <div class="fw-medium mb-1"><a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}">{{ item.supplier.name }}</a></div>
+            <div class="fw-medium mb-2"><a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}">{{ sup.name }}</a></div>
             <ul class="list-unstyled small mb-0">
-                {% if item.supplier.support_phone or item.supplier.phone %}
-                <li><i class="bi bi-telephone me-1"></i>{{ item.supplier.support_phone or item.supplier.phone }}</li>{% endif %}
-                {% if item.supplier.email %}<li><i class="bi bi-envelope me-1"></i>{{ item.supplier.email }}</li>{% endif %}
+                {% if sup.customer_ref %}<li class="mb-1"><span class="text-muted">N° client</span> <span class="fw-medium">{{ sup.customer_ref }}</span></li>{% endif %}
+                {% if sup.support_url %}<li><i class="bi bi-life-preserver me-1"></i><a href="{{ sup.support_url }}" target="_blank" rel="noopener">Portail de tickets</a></li>{% endif %}
+                {% if sup.support_phone or sup.phone %}<li><i class="bi bi-telephone me-1"></i>{{ sup.support_phone or sup.phone }}</li>{% endif %}
+                {% if sup.support_email or sup.email %}<li class="text-truncate"><i class="bi bi-envelope me-1"></i><a href="mailto:{{ sup.support_email or sup.email }}">{{ sup.support_email or sup.email }}</a></li>{% endif %}
+                {% if sup.hours %}<li class="text-muted"><i class="bi bi-clock me-1"></i>{{ sup.hours }}</li>{% endif %}
+                {% if sup.hours2 %}<li class="text-muted"><i class="bi bi-clock invisible me-1"></i>{{ sup.hours2 }}</li>{% endif %}
             </ul>
         </div>
+        {% if sup.has_contacts() %}
+        <div class="data-card p-4 mb-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-person-lines-fill me-2 text-info"></i>Contacts
+                <small class="fw-normal text-muted">(de l'éditeur)</small></h6>
+            <ul class="list-unstyled small mb-0">
+                {{ contact('Commercial', sup.commercial_contact, sup.commercial_phone, sup.commercial_email) }}
+                {{ contact('Commercial (2)', sup.commercial_contact2, sup.commercial_phone2, sup.commercial_email2) }}
+                {{ contact('Administratif / facturation', sup.admin_contact, sup.admin_phone, sup.admin_email) }}
+                {{ contact('DPO', sup.dpo_contact, sup.dpo_phone, sup.dpo_email) }}
+            </ul>
+            <div class="form-text mt-2">Se modifient sur la <a href="{{ url_for('suppliers.edit', id=sup.id) }}">fiche de l'éditeur</a>.</div>
+        </div>
+        {% endif %}
     </div>
     {% endif %}
 </div>
