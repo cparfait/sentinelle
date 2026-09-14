@@ -1,0 +1,24 @@
+# .env EXCLU VOLONTAIREMENT : config.py fait load_dotenv(override=True), donc un
+# .env embarque dans l'image ECRASERAIT les variables passees par Portainer.
+.env
+
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+instance/
+o365_token.json
+.git/
+.github/
+.pytest_cache/
+.ruff_cache/
+.coverage
+tests/
+tools/
+scripts/
+seed_demo.py
+ci_smoke.py
+*.db
+*.db-shm
+*.db-wal

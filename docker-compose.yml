@@ -1,0 +1,123 @@
+# ============================================================================
+#  Sentinelle — stack Portainer (Web editor)
+#
+#  UNE image se construit sur le serveur depuis le clone git :
+#    cd /home/sysadmin/docker/sentinelle/sentinelle_data && git pull
+#    docker build -t sentinelle:local .
+#  puis coller ce fichier dans Portainer → Stacks → Web editor.
+#
+#  Preparer UNE FOIS les emplacements persistants (en SSH), sinon Docker cree
+#  o365_token.json comme un REPERTOIRE et l'authentification O365 echoue :
+#    mkdir -p /home/sysadmin/docker/sentinelle/instance
+#    touch    /home/sysadmin/docker/sentinelle/o365_token.json
+#    chown -R 1000:1000 /home/sysadmin/docker/sentinelle
+#
+#  Variables a renseigner dans Portainer (Environment variables) — les deux
+#  premieres sont OBLIGATOIRES, le deploiement echoue tant qu'il en manque une :
+#    SECRET_KEY     32 octets aleatoires (openssl rand -hex 32)
+#                   ⚠ chiffre AUSSI les secrets stockes en base (mot de passe
+#                   SMTP, secret O365, mot de passe du compte de service LDAP,
+#                   cles d'API) et le jeton O365 sur disque. La changer rend
+#                   ces valeurs illisibles : il faut les ressaisir dans
+#                   Preferences et refaire la connexion O365. A conserver.
+#    APP_BASE_URL   https://sentinelle.chatillon92.fr
+#    ADMIN_INITIAL_PASSWORD  (optionnel) mot de passe du compte admin cree au
+#                   premier demarrage ; sinon un aleatoire est genere et
+#                   AFFICHE DANS LES LOGS (docker logs sentinelle_web).
+#
+#  Le SMTP n'est PAS ici : la messagerie se regle dans l'application,
+#  Preferences › Messagerie, et vit en base (chiffree). Changer de relais ne
+#  redeploie donc rien. Meme chose pour l'annuaire LDAP/AD, les seuils de
+#  statut, les destinataires d'alerte, les webhooks et la surveillance CT.
+#
+#  Pas de service de base de donnees : Sentinelle utilise SQLite, dans le
+#  volume instance/. Le schema se cree et se met a jour tout seul au demarrage
+#  (db.create_all + _auto_migrate_sqlite) — rien a lancer a la main.
+#
+#  Mise a jour : git pull + docker build (commandes ci-dessus), puis
+#  « Update the stack » avec « Re-pull image and redeploy » dans Portainer.
+# ============================================================================
+services:
+  app:
+    image: sentinelle:local
+    container_name: sentinelle_web
+    restart: unless-stopped
+    # UN SEUL exemplaire : le planificateur d'alertes tourne dans le process.
+    # Deux conteneurs = deux planificateurs = alertes en double.
+    environment:
+      SECRET_KEY: ${SECRET_KEY:?definir SECRET_KEY (32 caracteres minimum, non modifiable ensuite sans perdre les secrets chiffres)}
+      # L'adresse par laquelle les agents ATTEIGNENT l'application : elle part
+      # dans les liens des e-mails d'alerte (echeances de mots de passe, de
+      # certificats, de contrats). Une alerte se lit ailleurs que la ou elle a
+      # ete declenchee. Pas de valeur par defaut VOLONTAIREMENT : un domaine
+      # d'exemple oublie ici ne se verrait qu'a la premiere alerte, sur des
+      # liens morts.
+      APP_BASE_URL: ${APP_BASE_URL:?definir APP_BASE_URL (URL publique complete, https://...)}
+      APP_HOST: 0.0.0.0
+      APP_PORT: 5000
+      APP_DEBUG: "false"
+      WAITRESS_THREADS: ${WAITRESS_THREADS:-8}
+      # Base SQLite : chemin relatif => resolu dans instance/, donc dans le
+      # volume. Ne pas y toucher sans deplacer le volume.
+      DATABASE_URL: sqlite:///admin_dashboard.db
+      # "true" des lors que l'acces se fait en https derriere NPM : le cookie de
+      # session part alors avec l'attribut Secure. A ne mettre a "false" que
+      # pour un acces http de test — sinon la session voyage en clair sur le LAN.
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
+      SESSION_LIFETIME_MINUTES: ${SESSION_LIFETIME_MINUTES:-480}
+      # Derriere le reverse proxy, l'IP vue par l'app est celle de NPM. Sans
+      # ceci, le blocage anti-bruteforce compterait les echecs de TOUS les
+      # postes sur une seule IP. A laisser "false" si l'app est exposee en
+      # direct : l'en-tete X-Forwarded-For est alors forgeable par le client.
+      TRUST_PROXY: ${TRUST_PROXY:-true}
+      LOGIN_MAX_ATTEMPTS: ${LOGIN_MAX_ATTEMPTS:-5}
+      LOGIN_LOCKOUT_MINUTES: ${LOGIN_LOCKOUT_MINUTES:-15}
+      PASSWORD_MIN_LENGTH: ${PASSWORD_MIN_LENGTH:-8}
+      # Double authentification imposee aux comptes admin (recommande : la
+      # section qui centralise l'etat du SI justifie un facteur fort).
+      REQUIRE_2FA_ADMIN: ${REQUIRE_2FA_ADMIN:-false}
+      # Compte admin du PREMIER demarrage. Vide => mot de passe aleatoire
+      # affiche dans les logs du conteneur.
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-informatique@chatillon92.fr}
+      # Sauvegarde automatique de la base (01h00) : repertoire vide =>
+      # instance/db_backups, donc dans le volume. Un simple copier du dossier
+      # instance/ suffit alors a tout restaurer.
+      BACKUP_DB_KEEP: ${BACKUP_DB_KEEP:-14}
+      # Jeton d'ingestion des mails recap de backup (POST /backups/ingest).
+      # Vide = point d'entree desactive.
+      BACKUP_INGEST_TOKEN: ${BACKUP_INGEST_TOKEN:-}
+      # Le reste (messagerie, LDAP, seuils, webhooks, CT, cles d'API) se regle
+      # dans Preferences et vit en base : rien a mettre ici.
+      TZ: Europe/Paris
+      # LDAPS avec une autorite interne : le magasin de certificats de l'image
+      # ne connait que les AC publiques. Deposer la CA dans le repertoire monte
+      # ci-dessous et pointer LDAP_CA_CERT dessus (Preferences › LDAP accepte
+      # aussi un televersement, stocke dans instance/ldap_ca.pem).
+      # LDAP_CA_CERT: /certs/ca-chatillon.crt
+    volumes:
+      # Base SQLite, journaux applicatifs et sauvegardes automatiques.
+      - /home/sysadmin/docker/sentinelle/instance:/app/sentinelle/instance
+      # Jeton OAuth2 Microsoft Graph (chiffre avec SECRET_KEY). Sans ce montage,
+      # il faudrait refaire « Connecter O365 » a chaque redeploiement. Le
+      # fichier doit EXISTER avant le premier demarrage (voir l'en-tete).
+      - /home/sysadmin/docker/sentinelle/o365_token.json:/app/o365_token.json
+      - ${CA_CERTS_DIR:-/home/sysadmin/docker/certs_ca}:/certs:ro
+      # Optionnel : depot des mails recap de backup (.eml/.txt/.html), scanne
+      # toutes les 30 min. Decommenter ET definir BACKUP_INBOX_DIR=/inbox.
+      # - /home/sysadmin/docker/sentinelle/inbox:/inbox
+    networks:
+      - sentinelle_net
+      - containers-lan
+    # Le reverse proxy NPM joint le conteneur via containers-lan
+    # (http://sentinelle_web:5000) : aucun port publie sur l'hote.
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 512
+
+networks:
+  sentinelle_net:
+    driver: bridge
+  containers-lan:
+    external: true
