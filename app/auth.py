@@ -405,6 +405,24 @@ def preferences():
             audit_record('config surveillance CT', detail=f'actif={enabled}', category='preferences')
             flash('Surveillance Certificate Transparency ' + ('activée' if enabled else 'désactivée') + '.', 'success')
 
+        elif action == 'save_documents':
+            enabled = request.form.get('documents_enabled') == 'on'
+            # Le plafond est borne des deux cotes : zero rendrait tout depot
+            # impossible sans le dire, et un chiffre sans limite ferait de la
+            # base un partage de fichiers.
+            try:
+                max_mb = max(1, min(100, int(request.form.get('document_max_mb') or 10)))
+            except (TypeError, ValueError):
+                max_mb = 10
+            _persist_config({'DOCUMENTS_ENABLED': 'true' if enabled else 'false',
+                             'DOCUMENT_MAX_MB': str(max_mb)})
+            current_app.config['DOCUMENTS_ENABLED'] = enabled
+            current_app.config['DOCUMENT_MAX_MB'] = max_mb
+            audit_record('config pieces jointes', detail=f'actif={enabled}, max={max_mb} Mo',
+                         category='preferences')
+            flash('Pièces jointes ' + ('activées' if enabled else 'désactivées')
+                  + f' ({max_mb} Mo maximum).', 'success')
+
         elif action == 'save_dashboard_custom':
             enabled = request.form.get('dashboard_custom') == 'on'
             _persist_config({'DASHBOARD_CUSTOM': 'true' if enabled else 'false'})
@@ -651,6 +669,8 @@ def preferences():
                            report_recipients=', '.join(current_app.config.get('REPORT_RECIPIENTS') or []),
                            ct_monitoring=current_app.config.get('CT_MONITORING', True),
                            dashboard_custom=current_app.config.get('DASHBOARD_CUSTOM', True),
+                           documents_enabled=current_app.config.get('DOCUMENTS_ENABLED', True),
+                           document_max_mb=current_app.config.get('DOCUMENT_MAX_MB', 10),
                            ui_primary_color=current_app.config.get('UI_PRIMARY_COLOR', ''),
                            db_backups=db_backups, thresholds=thresholds,
                            ldap_config=ldap_config,

@@ -1400,6 +1400,91 @@ class Software(db.Model):
         return 'success'
 
 
+# Les parents possibles d'une piece jointe : la colonne qui la rattache, et la
+# categorie de droits qui decide qui peut la deposer et la retirer. Une piece
+# suit la fiche a laquelle elle est accrochee -- lire un marche et lire ses
+# pieces sont la meme permission.
+DOCUMENT_PARENTS = {
+    'software': ('software_id', 'inventory'),
+    'supplier': ('supplier_id', 'contracts'),
+    'contract': ('contract_id', 'contracts'),
+    'contract_item': ('contract_item_id', 'contracts'),
+    'quote': ('quote_id', 'contracts'),
+    'certificate': ('certificate_id', 'certificates'),
+    'equipment': ('equipment_id', 'inventory'),
+}
+
+
+class Document(db.Model):
+    """Piece jointe : un fichier accroche a une fiche.
+
+    Les OCTETS vivent a part, dans `DocumentContent`. Lister les pieces d'une
+    fiche lit alors des metadonnees de quelques octets et jamais les megaoctets
+    du fichier : une jointure oubliee ne peut pas couter cher par accident.
+
+    Ils vivent en BASE et non sur le disque : une sauvegarde de la base est
+    complete a elle seule, aucun fichier ne peut se retrouver orphelin d'une
+    ligne ni une ligne d'un fichier, et le chemin d'acces ne vient jamais du
+    client -- le telechargement se fait par identifiant, et rien d'autre.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    # EXACTEMENT UN parent est renseigne. Une contrainte SQL le dirait mieux,
+    # mais SQLite ne sait pas l'ajouter a une table existante : la garde est
+    # dans la route qui depose, seule porte d'entree.
+    software_id = db.Column(db.Integer, db.ForeignKey('software.id'), index=True)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), index=True)
+    contract_id = db.Column(db.Integer, db.ForeignKey('contract.id'), index=True)
+    contract_item_id = db.Column(db.Integer, db.ForeignKey('contract_item.id'), index=True)
+    quote_id = db.Column(db.Integer, db.ForeignKey('quote.id'), index=True)
+    certificate_id = db.Column(db.Integer, db.ForeignKey('certificate.id'), index=True)
+    equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'), index=True)
+    # Categorie de piece (Referential kind='doc_category') : contrat, guide,
+    # deliberation, arrete...
+    category_id = db.Column(db.Integer, db.ForeignKey('referential.id'), index=True)
+    category = db.relationship('Referential', foreign_keys=[category_id])
+
+    filename = db.Column(db.String(256), nullable=False)   # nom d'origine
+    mime = db.Column(db.String(128))
+    size = db.Column(db.Integer)
+    # Deposant DENORMALISE : la trace survit a la suppression du compte.
+    uploaded_by = db.Column(db.String(64))
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    content = db.relationship('DocumentContent', backref='document', uselist=False,
+                              cascade='all, delete-orphan')
+
+    def parent_kind(self):
+        """Le type de parent auquel cette piece est accrochee."""
+        for kind, (col, _cat) in DOCUMENT_PARENTS.items():
+            if getattr(self, col, None):
+                return kind
+        return None
+
+    def permission_category(self):
+        """La categorie de droits a exiger pour la lire ou la retirer. Sans
+        parent identifiable, on retombe sur la plus restrictive plutot que sur
+        la plus permissive : une piece orpheline ne s'ouvre pas au premier
+        venu."""
+        kind = self.parent_kind()
+        return DOCUMENT_PARENTS[kind][1] if kind else 'contracts'
+
+    def size_label(self):
+        """La taille dans l'unite ou on la lit : « 1,2 Mo » et non 1258291."""
+        n = self.size or 0
+        if n < 1024:
+            return f'{n} o'
+        if n < 1024 * 1024:
+            return f'{n / 1024:.0f} Ko'
+        return f'{n / (1024 * 1024):.1f} Mo'.replace('.', ',')
+
+
+class DocumentContent(db.Model):
+    """Les octets d'une piece jointe, dans une table A PART (cf. Document).
+    Le contenu suit la ligne a la suppression (cascade cote relation)."""
+    document_id = db.Column(db.Integer, db.ForeignKey('document.id'), primary_key=True)
+    data = db.Column(db.LargeBinary, nullable=False)
+
+
 class SchedulerRun(db.Model):
     """Trace d'execution d'un job planifie (diagnostic des alertes)."""
     id = db.Column(db.Integer, primary_key=True)

@@ -23,8 +23,9 @@ SECRET_KEYS = {'MAIL_PASSWORD', 'O365_CLIENT_SECRET', 'LDAP_BIND_PASSWORD',
 
 # Typage applique au chargement (le reste = chaine).
 _BOOL = {'LDAP_ENABLED', 'LDAP_USE_SSL', 'LDAP_VALIDATE_CERT', 'CT_MONITORING',
-         'SESAME_API_ENABLED', 'INVENTORY_API_ENABLED', 'DASHBOARD_CUSTOM'}
-_INT = {'LDAP_PORT', 'MAIL_PORT'}
+         'SESAME_API_ENABLED', 'INVENTORY_API_ENABLED', 'DASHBOARD_CUSTOM',
+         'DOCUMENTS_ENABLED'}
+_INT = {'LDAP_PORT', 'MAIL_PORT', 'DOCUMENT_MAX_MB'}
 _TRIPLET = {'THRESHOLD_EXPIRY', 'THRESHOLD_DOMAIN', 'THRESHOLD_TASK', 'THRESHOLD_CONTRACT'}
 
 # Destinataires : liste globale + une liste optionnelle par categorie d'entite
@@ -50,6 +51,8 @@ MANAGED = _BOOL | _INT | _TRIPLET | _CSV | {
     'REPORT_SCHEDULE',  # envoi planifie du bilan PDF : off / monthly / weekly
     'CT_MONITORING',    # surveillance Certificate Transparency (crt.sh) : on/off
     'DASHBOARD_CUSTOM', # tableau de bord personnalisable par utilisateur : on/off
+    # Pieces jointes stockees en base (actes signes, guides, deliberations).
+    'DOCUMENTS_ENABLED', 'DOCUMENT_MAX_MB',
     'SESAME_API_ENABLED', 'SESAME_API_TOKEN',  # integration Sesame (API + cle)
     # Integration SoftInventory : l'inventaire des logiciels vient y lire le
     # parc (/api/equipment). Cle DISTINCTE de celle de Sesame : couper l'un

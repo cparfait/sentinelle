@@ -192,6 +192,8 @@
             </div>
         </div>
 
+        {% with doc_parent_kind='contract', doc_parent_id=contract.id, doc_permission='contracts' %}{% include '_documents.html' %}{% endwith %}
+
         <div class="data-card">
             <div class="card-header-custom">
                 <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique</h6>

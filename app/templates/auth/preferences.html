@@ -425,6 +425,46 @@
                 </div>
             </div>
 
+            {# ===================== PIECES JOINTES ===================== #}
+            <div class="accordion-item" style="order:10;">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secDocuments" aria-expanded="false" aria-controls="secDocuments">
+                        <i class="bi bi-paperclip me-2"></i>Pièces jointes
+                        {% if documents_enabled %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Activées ({{ document_max_mb }} Mo)</span>{% else %}<span class="badge bg-secondary ms-2">Désactivées</span>{% endif %}
+                    </button>
+                </h2>
+                <div id="secDocuments" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
+                    <div class="accordion-body">
+                        <form method="POST" action="{{ url_for('auth.preferences') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="save_documents">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       id="documentsEnabled" name="documents_enabled" {% if documents_enabled %}checked{% endif %}>
+                                <label class="form-check-label fw-medium" for="documentsEnabled">Pièces jointes sur les fiches</label>
+                            </div>
+                            <p class="text-muted small mt-1 mb-2">Marchés signés, délibérations, guides, attestations d'autorité —
+                                déposés sur la fiche qu'ils documentent. Les fichiers vivent <strong>en base</strong> : une
+                                sauvegarde de la base est complète à elle seule, aucun fichier ne peut se retrouver orphelin.
+                                Désactivées, elles disparaissent des écrans ; les fichiers déjà déposés restent en base.</p>
+                            <div class="row g-2 align-items-end mb-2" style="max-width:22rem">
+                                <div class="col-7">
+                                    <label class="form-label small mb-1" for="documentMaxMb">Taille maximale par fichier</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control" id="documentMaxMb"
+                                               name="document_max_mb" min="1" max="100" value="{{ document_max_mb }}">
+                                        <span class="input-group-text">Mo</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> Enregistrer
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
             {# ===================== AFFICHAGE / TABLEAU DE BORD ===================== #}
             <div class="accordion-item" style="order:11;">
                 <h2 class="accordion-header">

@@ -170,6 +170,9 @@
         {% include 'software/_consultations.html' %}
         {% endif %}
 
+        {% with doc_parent_kind='software', doc_parent_id=item.id, doc_permission='inventory', doc_title='Documents' %}{% include '_documents.html' %}{% endwith %}
+
+
         <div class="data-card">
             <div class="card-header-custom">
                 <h6 class="fw-bold mb-0"><i class="bi bi-arrow-up-circle me-2 text-primary"></i>Mises à jour liées

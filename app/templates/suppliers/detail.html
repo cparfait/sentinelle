@@ -104,6 +104,8 @@
         </div>
         {% endif %}
 
+        {% with doc_parent_kind='supplier', doc_parent_id=supplier.id, doc_permission='contracts' %}{% include '_documents.html' %}{% endwith %}
+
         {# ===== Impacts : matériel, logiciels et contrats couverts par ce fournisseur ===== #}
         <div class="data-card mb-3">
             <div class="card-header-custom">

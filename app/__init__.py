@@ -211,6 +211,9 @@ def create_app(config_class=Config):
     from app.pdf_export import bp as pdf_export_bp
     app.register_blueprint(pdf_export_bp)
 
+    from app.documents import bp as documents_bp
+    app.register_blueprint(documents_bp)
+
     with app.app_context():
         _setup_sqlite()
         _drop_legacy_login_throttle()
@@ -226,6 +229,24 @@ def create_app(config_class=Config):
         from app import config_store
         config_store.seed_from_env(app)
         config_store.load(app)
+
+    @app.context_processor
+    def inject_documents():
+        """Ce dont `_documents.html` a besoin, partout ou il est inclus : rien a
+        passer depuis chaque route qui l'affiche. Le partial est pose sur une
+        dizaine de fiches, et faire porter le contexte par chacune n'aurait
+        garanti qu'une chose : qu'on l'oublie sur la onzieme."""
+        from flask_login import current_user
+        from app.documents import enabled, for_parent, DEFAULT_MAX_MB
+        if not current_user.is_authenticated or not enabled():
+            return {'documents_enabled': False}
+        from app.models import Referential
+        return {
+            'documents_enabled': True,
+            'attached_documents': for_parent,
+            'doc_categories': Referential.options('doc_category'),
+            'document_max_mb': app.config.get('DOCUMENT_MAX_MB') or DEFAULT_MAX_MB,
+        }
 
     @app.template_global()
     def static_v(filename):

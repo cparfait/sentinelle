@@ -77,6 +77,12 @@ class Config:
     # Surveillance Certificate Transparency (crt.sh) : detection des certificats
     # emis pour les domaines suivis a l'insu de la DSI. Desactivable globalement.
     CT_MONITORING = os.getenv('CT_MONITORING', 'true').lower() in ('true', '1', 'yes')
+    # Pieces jointes : actives par defaut -- elles ne coutent rien tant qu'on
+    # n'en depose pas, et l'ecran serait introuvable autrement. La taille
+    # maximale borne ce que la base a vocation a heberger : une piece jointe est
+    # un acte scanne ou un guide, pas une image disque.
+    DOCUMENTS_ENABLED = os.getenv('DOCUMENTS_ENABLED', 'true').lower() in ('true', '1', 'yes')
+    DOCUMENT_MAX_MB = int(os.getenv('DOCUMENT_MAX_MB', '10'))
 
     # Tableau de bord personnalisable (chaque utilisateur choisit et ordonne ses
     # blocs). Desactivable globalement -> disposition par defaut pour tous.
