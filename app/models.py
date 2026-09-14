@@ -907,6 +907,13 @@ class Software(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
                            onupdate=lambda: datetime.now(timezone.utc))
+    # Ecarte a l'import : SoftInventory rend cette application, on n'en veut pas
+    # ici. La fiche disparait des listes et l'import ne la repropose plus cochee
+    # — jusqu'a ce qu'on la recoche dans l'ecran de comparaison, le seul endroit
+    # qui les montre encore. Un drapeau plutot qu'une suppression : la fiche
+    # garde ses mises a jour, ses revues et son contrat, et le refus se defait
+    # d'un clic. `is_active` reste la corbeille, qui est un autre geste.
+    excluded = db.Column(db.Boolean, default=False)
     # Serveur(s) d'installation (M:N). Backref Equipment.software_list.
     equipments = db.relationship('Equipment', secondary=software_equipment,
                                  backref=db.backref('software_list', lazy='dynamic'))

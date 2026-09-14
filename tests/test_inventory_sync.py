@@ -197,7 +197,7 @@ def test_ignore_un_serveur_que_sentinelle_ne_connait_pas(app):
         assert Software.query.one().equipments == []
 
 
-def test_la_selection_laisse_de_cote_ce_qui_n_est_pas_coche(app):
+def test_ce_qui_est_decoche_est_ECARTE_donc_invisible(app):
     from app.inventory_sync import importer
     app.config["SOFTINVENTORY_URL"] = "http://inventaire.test"
     app.config["SOFTINVENTORY_KEY"] = "cle"
@@ -205,9 +205,45 @@ def test_la_selection_laisse_de_cote_ce_qui_n_est_pas_coche(app):
     with patch("app.inventory_sync.requests.get", return_value=_Reponse(charge)):
         with app.app_context():
             rapport, _ = importer(selection=[1])
-    assert rapport["crees"] == 1 and rapport["ignores"] == 1
+    assert rapport["crees"] == 1 and rapport["ecartes_fiches"] == 1
     with app.app_context():
-        assert [s.name for s in Software.query.all()] == ["Concerto"]
+        # La fiche ecartee EXISTE — c'est ainsi que le refus se retient — mais
+        # elle est marquee, et toutes les lectures de l'application l'excluent.
+        assert Software.query.filter_by(excluded=False).one().name == "Concerto"
+        assert Software.query.filter_by(excluded=True).one().name == "GLPI"
+
+
+def test_un_refus_tient_d_un_import_a_l_autre(app):
+    from app.inventory_sync import importer, previsualiser
+    app.config["SOFTINVENTORY_URL"] = "http://inventaire.test"
+    app.config["SOFTINVENTORY_KEY"] = "cle"
+    charge = [_app(1, "Concerto"), _app(2, "GLPI")]
+    with patch("app.inventory_sync.requests.get", return_value=_Reponse(charge)):
+        with app.app_context():
+            importer(selection=[1])
+            # L'ecran la represente DECOCHEE : on n'a pas a redire non a chaque
+            # import.
+            plan, _ = previsualiser()
+            assert [l["action"] for l in plan["lignes"] if l["nom"] == "GLPI"] == ["ecarte"]
+            # Et un import automatique (sans selection) respecte le refus.
+            rapport, _ = importer()
+            assert rapport["ecartes_fiches"] == 1
+            assert Software.query.filter_by(excluded=True).one().name == "GLPI"
+
+
+def test_recocher_une_fiche_ecartee_la_fait_revenir(app):
+    from app.inventory_sync import importer
+    app.config["SOFTINVENTORY_URL"] = "http://inventaire.test"
+    app.config["SOFTINVENTORY_KEY"] = "cle"
+    charge = [_app(1, "Concerto"), _app(2, "GLPI")]
+    with patch("app.inventory_sync.requests.get", return_value=_Reponse(charge)):
+        with app.app_context():
+            importer(selection=[1])
+            rapport, _ = importer(selection=[1, 2])
+    assert rapport["reprises"] == 1
+    with app.app_context():
+        assert Software.query.filter_by(excluded=True).count() == 0
+        assert {s.name for s in Software.query.all()} == {"Concerto", "GLPI"}
 
 
 def test_la_previsualisation_annonce_sans_rien_ecrire(app):

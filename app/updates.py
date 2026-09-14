@@ -165,7 +165,8 @@ def _active_assets():
     from types import SimpleNamespace
     from app.models import Software, Equipment
     apps = [SimpleNamespace(name=s.name, asset_type='application')
-            for s in Software.query.filter_by(is_active=True).order_by(Software.name).all()]
+            for s in Software.query.filter_by(is_active=True, excluded=False)
+            .order_by(Software.name).all()]
     systems = [SimpleNamespace(name=e.name, asset_type='system')
                for e in Equipment.query.filter_by(is_active=True).order_by(Equipment.name).all()]
     return apps + systems

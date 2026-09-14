@@ -129,4 +129,4 @@ def delete(id):
 def _app_assets():
     """Revues de droits : suggestions issues de l'inventaire Logiciels métiers."""
     from app.models import Software
-    return Software.query.filter_by(is_active=True).order_by(Software.name).all()
+    return Software.query.filter_by(is_active=True, excluded=False).order_by(Software.name).all()

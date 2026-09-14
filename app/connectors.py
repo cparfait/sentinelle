@@ -65,7 +65,7 @@ def _catalogue_context():
         'catalogue_url': current_app.config.get('SOFTINVENTORY_URL', '') or '',
         'catalogue_key_set': bool(cle),
         'catalogue_key_masked': masked,
-        'catalogue_refletes': Software.query.filter_by(origin='inventory').count(),
+        'catalogue_refletes': Software.query.filter_by(origin='inventory', excluded=False).count(),
         # `is_(None)` explicite : une comparaison SQL avec NULL n'est ni vraie
         # ni fausse, et les fiches d'avant la colonne seraient invisibles. Le
         # comblement au demarrage les remplit, cette garde tient le premier
@@ -296,8 +296,10 @@ def catalogue():
                 parts.append(f"{rapport['actualises']} actualisée(s)")
             if rapport['ecartes']:
                 parts.append(f"{rapport['ecartes']} écartée(s) faute de nom")
-            if rapport['ignores']:
-                parts.append(f"{rapport['ignores']} laissée(s) de côté")
+            if rapport['reprises']:
+                parts.append(f"{rapport['reprises']} fiche(s) reprise(s)")
+            if rapport['ecartes_fiches']:
+                parts.append(f"{rapport['ecartes_fiches']} écartée(s), donc masquée(s) ici")
             if rapport['liens_poses'] or rapport['liens_retires']:
                 parts.append(f"{rapport['liens_poses']} installation(s) posée(s), "
                              f"{rapport['liens_retires']} retirée(s)")

@@ -8,10 +8,14 @@
    installation a saute parce que SoftInventory ne la declare plus. L'ecran pose
    la question au bon moment.
 
-   Tout est coche d'office : reprendre le catalogue entier reste le geste
-   ordinaire, et decocher doit etre l'exception qu'on prend la peine de faire.
-   Decocher n'ecarte que pour cette fois — l'application reparaitra au prochain
-   import, cochee comme les autres. #}
+   Tout est coche d'office — sauf ce qui a deja ete ecarte : reprendre le
+   catalogue entier reste le geste ordinaire, et decocher doit etre l'exception
+   qu'on prend la peine de faire.
+
+   Decocher ECARTE la fiche : elle disparait de Sentinelle et l'import ne la
+   repropose plus cochee. Le refus se memorise — decocher vingt applications de
+   test a chaque import serait un travail sans fin. Rien n'est supprime pour
+   autant : recocher fait revenir la fiche avec tout ce qu'elle porte. #}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -35,8 +39,10 @@
             {% else %}
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <small class="text-muted">
-                    {{ plan.lignes|length }} application(s) reprenable(s). Décochez ce que vous ne
-                    voulez pas reprendre.
+                    {{ plan.lignes|length }} application(s). Décochez ce que vous ne voulez pas ici :
+                    la fiche sera <strong>écartée</strong> — plus affichée nulle part dans Sentinelle,
+                    et l'import ne la reproposera plus cochée. Rien n'est supprimé : la recocher la
+                    fait revenir avec ses mises à jour, ses revues et son contrat.
                 </small>
                 <button type="button" class="btn btn-sm btn-outline-secondary" id="toutBasculer">
                     Tout décocher
@@ -58,12 +64,15 @@
                         <tr>
                             <td>
                                 <input class="form-check-input ligne-import" type="checkbox"
-                                       name="retenus" value="{{ l.id }}" checked
+                                       name="retenus" value="{{ l.id }}"
+                                       {{ '' if l.action == 'ecarte' else 'checked' }}
                                        aria-label="Reprendre {{ l.nom }}">
                             </td>
                             <td class="fw-medium">{{ l.nom }}</td>
                             <td>
-                                {% if l.action == 'creer' %}
+                                {% if l.action == 'ecarte' %}
+                                <span class="badge bg-secondary-subtle text-secondary">Écartée — cochez pour la faire revenir</span>
+                                {% elif l.action == 'creer' %}
                                 <span class="badge bg-success-subtle text-success">Création</span>
                                 {% elif l.action == 'adopter' %}
                                 <span class="badge bg-warning-subtle text-warning-emphasis">Rapprochement d'une fiche saisie ici</span>

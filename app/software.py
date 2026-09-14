@@ -69,7 +69,9 @@ def _form_context():
 @bp.route('/')
 @login_required
 def list():
-    items = Software.query.filter_by(is_active=True).order_by(Software.name).all()
+    # Les fiches ECARTEES a l'import sont absentes de toutes les lectures :
+    # seul l'ecran de comparaison les montre encore, pour revenir sur le refus.
+    items = Software.query.filter_by(is_active=True, excluded=False).order_by(Software.name).all()
     q = request.args.get('q', '').strip()
     # Filtre par hebergement (onglets, comme le filtre par type du materiel).
     # Docker est un attribut cumulable : un logiciel conteneurise apparait aussi

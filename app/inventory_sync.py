@@ -181,7 +181,12 @@ def _etapes(charge):
             continue
 
         sw = par_identifiant or par_le_nom
-        if sw is None:
+        # Une fiche ECARTEE s'annonce comme telle : l'ecran la presente decochee,
+        # et la recocher la fait revenir avec tout ce qu'elle porte — mises a
+        # jour suivies, revues de droits, contrat.
+        if sw is not None and sw.excluded:
+            action = 'ecarte'
+        elif sw is None:
             action = 'creer'
         elif sw.origin == 'inventory':
             action = 'actualiser'
@@ -252,15 +257,35 @@ def importer(selection=None, ecrire=True):
     etapes, base = _etapes(charge)
     retenus = None if selection is None else set(selection)
 
-    rapport = {'crees': 0, 'adoptes': 0, 'actualises': 0, 'ignores': 0,
-               'liens_poses': 0, 'liens_retires': 0, **base}
+    rapport = {'crees': 0, 'adoptes': 0, 'actualises': 0, 'ecartes_fiches': 0,
+               'reprises': 0, 'liens_poses': 0, 'liens_retires': 0, **base}
 
     from app.models import Software
 
     for e in etapes:
         a, sw = e['app'], e['sw']
-        if retenus is not None and a['id'] not in retenus:
-            rapport['ignores'] += 1
+        ecartee = sw is not None and sw.excluded
+
+        # Sans selection (appel automatique), on respecte les refus deja pris et
+        # on n'en prend aucun nouveau : un import qui tourne seul n'a pas a
+        # decider ce qu'on garde.
+        if retenus is None:
+            if ecartee:
+                rapport['ecartes_fiches'] += 1
+                continue
+        elif a['id'] not in retenus:
+            # Decoche : la fiche est ECARTEE. Elle existe deja, ou on la cree
+            # ecartee — c'est ainsi que le refus se retient d'un import a
+            # l'autre. Ses champs ne sont pas actualises : on n'a pas a
+            # rafraichir ce qu'on vient de mettre de cote.
+            if ecrire:
+                if sw is None:
+                    sw = Software(name=e['nom'], origin='inventory',
+                                  inventory_id=a['id'], excluded=True)
+                    db.session.add(sw)
+                else:
+                    sw.excluded = True
+            rapport['ecartes_fiches'] += 1
             continue
 
         if sw is None:
@@ -269,6 +294,8 @@ def importer(selection=None, ecrire=True):
                 db.session.add(sw)
 
         if ecrire:
+            # Cochee : la fiche est (ou redevient) visible.
+            sw.excluded = False
             sw.name = e['nom']
             sw.description = (a.get('description') or '')[:2000]
             sw.responsible = (a.get('responsible') or '')[:128]
@@ -294,7 +321,9 @@ def importer(selection=None, ecrire=True):
 
         rapport['liens_poses'] += len(e['ajouts'])
         rapport['liens_retires'] += len(e['retraits'])
-        if e['action'] == 'creer':
+        if ecartee:
+            rapport['reprises'] += 1
+        elif e['action'] == 'creer':
             rapport['crees'] += 1
         elif e['action'] == 'actualiser':
             rapport['actualises'] += 1
