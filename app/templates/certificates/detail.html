@@ -46,7 +46,7 @@
                         <tr><td class="text-muted">Fonction</td><td class="fw-medium">{{ certificate.holder_role or '-' }}</td></tr>
                         <tr><td class="text-muted">E-mail</td>
                             <td>{% if certificate.holder_email %}<a href="mailto:{{ certificate.holder_email }}">{{ certificate.holder_email }}</a>{% else %}-{% endif %}</td></tr>
-                        <tr><td class="text-muted">Service utilisateur</td><td class="fw-medium">{{ certificate.service.label if certificate.service else '-' }}</td></tr>
+                        <tr><td class="text-muted">Service utilisateur</td><td class="fw-medium">{{ certificate.service.name if certificate.service else '-' }}</td></tr>
                         <tr><td class="text-muted">Autorité</td>
                             <td>{% if certificate.supplier %}<a href="{{ url_for('suppliers.detail', id=certificate.supplier_id) }}" class="fw-medium">{{ certificate.supplier.name }}</a>{% else %}-{% endif %}</td></tr>
                         <tr><td class="text-muted">Usage</td><td class="fw-medium">{{ certificate.usage_label() or '-' }}</td></tr>

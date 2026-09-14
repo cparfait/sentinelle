@@ -124,7 +124,7 @@
                             <select name="service_id" class="form-select">
                                 <option value="">— Aucun —</option>
                                 {% for sv in services %}
-                                <option value="{{ sv.id }}" {{ 'selected' if certificate and certificate.service_id == sv.id }}>{{ sv.label }}</option>
+                                <option value="{{ sv.id }}" {{ 'selected' if certificate and certificate.service_id == sv.id }}>{{ sv.name }}</option>
                                 {% endfor %}
                             </select>
                             <div class="form-text">Souvent vide pour un élu, qui n'en relève pas.</div>

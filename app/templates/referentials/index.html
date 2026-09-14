@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Référentiels - Sentinelle{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-0"><i class="bi bi-list-ul me-2"></i>Référentiels</h4>
+        <small class="text-muted">Les listes de valeurs proposées dans les formulaires</small>
+    </div>
+    <a href="{{ url_for('auth.preferences') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Préférences
+    </a>
+</div>
+
+<div class="alert alert-info py-2 px-3 small">
+    <i class="bi bi-info-circle me-1"></i>
+    Seuls les libellés <strong>descriptifs</strong> se règlent ici. Le cycle de vie d'un logiciel,
+    l'hébergement, la criticité ou le statut d'un certificat pilotent des filtres, des compteurs et
+    des couleurs : ils restent fixes, parce qu'en ajouter ou en retirer laisserait des fiches
+    orphelines et des filtres qui ne filtrent plus.
+</div>
+
+<div class="row g-3">
+    {% for kind, label in kind_labels.items() %}
+    <div class="col-lg-4">
+        <div class="data-card h-100">
+            <div class="card-header-custom">
+                <h6 class="fw-bold mb-0">{{ label }}
+                    <span class="badge bg-secondary ms-1">{{ listes[kind] | length }}</span></h6>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for item in listes[kind] %}
+                <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                    <span>{{ item.label }}</span>
+                    <form method="POST" action="{{ url_for('referentials.delete', id=item.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer de la liste"
+                                aria-label="Retirer de la liste"
+                                data-confirm="Retirer « {{ item.label }} » ? Les fiches qui la portent la gardent."><i class="bi bi-x-lg"></i></button>
+                    </form>
+                </li>
+                {% else %}
+                <li class="list-group-item text-muted py-3 text-center">Liste vide</li>
+                {% endfor %}
+            </ul>
+            <form method="POST" action="{{ url_for('referentials.add') }}" class="p-2 border-top">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="kind" value="{{ kind }}">
+                <div class="input-group input-group-sm">
+                    <input type="text" name="label" class="form-control" placeholder="Nouvelle valeur"
+                           aria-label="Nouvelle valeur pour {{ label }}" required>
+                    <button type="submit" class="btn btn-outline-primary" title="Ajouter"
+                            aria-label="Ajouter"><i class="bi bi-plus-lg"></i></button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{# ═══ Services utilisateurs ═══
+   Une table et non une simple liste : un service porte un référent, avec son
+   adresse et son téléphone. C'est à lui qu'on écrit pour une revue de droits
+   ou une coupure d'accès. #}
+<div class="data-card mt-3">
+    <div class="card-header-custom">
+        <h6 class="fw-bold mb-0"><i class="bi bi-people me-2 text-primary"></i>Services utilisateurs
+            <span class="badge bg-secondary ms-1">{{ services | selectattr('is_active') | list | length }}</span></h6>
+    </div>
+    <form method="POST" action="{{ url_for('referentials.service_add') }}"
+          class="p-3 border-bottom bg-body-tertiary">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-medium small mb-1">Service *</label>
+                <input type="text" name="name" class="form-control form-control-sm" required
+                       placeholder="État civil, Urbanisme, Finances...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-medium small mb-1">Référent</label>
+                <input type="text" name="contact_name" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-medium small mb-1">Email</label>
+                <input type="email" name="contact_email" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-medium small mb-1">Téléphone</label>
+                <input type="text" name="contact_phone" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-sm btn-primary w-100" title="Ajouter le service"
+                        aria-label="Ajouter le service"><i class="bi bi-plus-lg"></i></button>
+            </div>
+        </div>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>Service</th><th>Référent</th><th>Email</th><th>Téléphone</th><th>Logiciels</th><th></th></tr></thead>
+            <tbody>
+                {% for sv in services %}
+                <tr class="{{ '' if sv.is_active else 'opacity-50' }}">
+                    <form method="POST" action="{{ url_for('referentials.service_edit', id=sv.id) }}" id="svc{{ sv.id }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    </form>
+                    <td><input type="text" name="name" form="svc{{ sv.id }}" value="{{ sv.name }}"
+                               class="form-control form-control-sm border-0" aria-label="Nom du service"></td>
+                    <td><input type="text" name="contact_name" form="svc{{ sv.id }}" value="{{ sv.contact_name or '' }}"
+                               class="form-control form-control-sm border-0" aria-label="Référent"></td>
+                    <td><input type="email" name="contact_email" form="svc{{ sv.id }}" value="{{ sv.contact_email or '' }}"
+                               class="form-control form-control-sm border-0" aria-label="Email du référent"></td>
+                    <td><input type="text" name="contact_phone" form="svc{{ sv.id }}" value="{{ sv.contact_phone or '' }}"
+                               class="form-control form-control-sm border-0" aria-label="Téléphone du référent"></td>
+                    <td class="small text-nowrap">{{ sv.software.filter_by(is_active=True).count() }}</td>
+                    <td class="text-end text-nowrap">
+                        <div class="d-flex gap-1 justify-content-end">
+                            <button type="submit" form="svc{{ sv.id }}" class="btn btn-sm btn-outline-primary"
+                                    title="Enregistrer" aria-label="Enregistrer"><i class="bi bi-check-lg"></i></button>
+                            {% if sv.is_active %}
+                            <form method="POST" action="{{ url_for('referentials.service_delete', id=sv.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer des listes"
+                                        aria-label="Retirer des listes"
+                                        data-confirm="Retirer « {{ sv.name }} » des listes ? Les fiches qui le nomment continuent de l'afficher."><i class="bi bi-x-lg"></i></button>
+                            </form>
+                            {% else %}
+                            <span class="badge bg-secondary align-self-center">Retiré</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center py-3 text-muted">Aucun service enregistré</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

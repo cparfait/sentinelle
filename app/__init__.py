@@ -214,6 +214,9 @@ def create_app(config_class=Config):
     from app.documents import bp as documents_bp
     app.register_blueprint(documents_bp)
 
+    from app.referentials import bp as referentials_bp
+    app.register_blueprint(referentials_bp)
+
     with app.app_context():
         _setup_sqlite()
         _drop_legacy_login_throttle()
@@ -348,6 +351,15 @@ def _migrate_data():
         db.session.execute(text(
             "INSERT OR IGNORE INTO contract_software (contract_id, software_id) "
             "SELECT contract_id, id FROM software WHERE contract_id IS NOT NULL"))
+    # Les services utilisateurs ont quitte la table des libelles pour la leur :
+    # ils portent un referent, avec son adresse. Les certificats qui pointaient
+    # sur l'ancienne liste pointeraient desormais sur des identifiants d'une
+    # autre table -- on les detache plutot que de laisser un rattachement faux,
+    # et les lignes de l'ancienne liste s'en vont avec.
+    db.session.execute(text(
+        "UPDATE certificate SET service_id = NULL WHERE service_id IN "
+        "(SELECT id FROM referential WHERE kind = 'user_service')"))
+    db.session.execute(text("DELETE FROM referential WHERE kind = 'user_service'"))
     # Catalogue « applications » des Preferences -> inventaire Logiciels.
     # Migration unique et idempotente (par nom). Les Asset restent en base
     # (dormants) ; c'est l'ecran Preferences qui est retire.

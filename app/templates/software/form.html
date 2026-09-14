@@ -228,6 +228,21 @@
                 </div>
                 <div class="form-text mb-3">Écrire au métier pour une revue de droits, au technique pour un incident d'exploitation : les deux adresses évitent de manquer la cible.</div>
 
+                {# ── Services utilisateurs ──
+                   Un logiciel sert souvent plusieurs directions, et une direction
+                   en utilise plusieurs. Ils s'administrent dans les Référentiels,
+                   avec leur référent. #}
+                <div class="mb-3">
+                    <label class="form-label fw-medium mb-1">Services utilisateurs</label>
+                    <select name="user_service_ids" class="form-select" multiple size="5" {% if reflete %}disabled{% endif %}>
+                        {% for sv in user_services %}
+                        <option value="{{ sv.id }}" {{ 'selected' if item and sv in item.user_services }}>{{ sv.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">Les directions qui s'en servent. La liste se gère dans
+                        {% if current_user.is_admin %}<a href="{{ url_for('referentials.index') }}">Référentiels</a>{% else %}les Référentiels (admin){% endif %}.</div>
+                </div>
+
                 {# ── Serveurs d'installation ── #}
                 <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-1">

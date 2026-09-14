@@ -24,6 +24,19 @@
                                placeholder="ex: Restauration base SQL prod">
                     </div>
                     <div class="col-md-6 mb-3">
+                        {# Rattachement facultatif : une restauration de sauvegarde
+                           ou un PCA ne portent sur aucun logiciel en particulier. #}
+                        <label class="form-label fw-medium">Logiciel concerné</label>
+                        <select name="software_id" class="form-select">
+                            <option value="">— Aucun —</option>
+                            {% for sw in software_list %}
+                            <option value="{{ sw.id }}" {{ 'selected' if test and test.software_id == sw.id }}>{{ sw.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Mise à jour annuelle, purge, revue des comptes… La tâche
+                            apparaît alors sur la fiche du logiciel.</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Type de test *</label>
                         <select name="test_type" class="form-select" required>
                             {% for value, label in test_types %}

@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_required, current_user
 from app import db
-from app.models import (Certificate, CertificateHistory, Supplier, Referential,
+from app.models import (Certificate, CertificateHistory, Supplier, UserService,
                         CERT_KIND_LABELS, CIVILITY_LABELS, CERT_USAGE_LABELS,
                         CERT_SUPPORT_LABELS, CERT_VALIDITY_LABELS)
 from app.cert_checker import fetch_cert_info
@@ -26,7 +26,7 @@ def _form_context():
     return {
         'equipments': _active_equipments(),
         'suppliers': Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all(),
-        'services': Referential.options('user_service'),
+        'services': UserService.options(),
         'kind_labels': CERT_KIND_LABELS,
         'civility_labels': CIVILITY_LABELS,
         'usage_labels': CERT_USAGE_LABELS,

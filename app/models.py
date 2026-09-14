@@ -277,10 +277,11 @@ class Certificate(db.Model):
     # rien ne justifierait un second annuaire pour Certinomis et ChamberSign.
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), index=True)
     supplier = db.relationship('Supplier', backref=db.backref('certificates', lazy='dynamic'))
-    # Service utilisateur du titulaire (Referential kind='user_service').
-    # Renseigne pour les agents, souvent vide pour les elus, qui n'en relevent pas.
-    service_id = db.Column(db.Integer, db.ForeignKey('referential.id'), index=True)
-    service = db.relationship('Referential', foreign_keys=[service_id])
+    # Service utilisateur du titulaire. Renseigne pour les agents, souvent vide
+    # pour les elus, qui n'en relevent pas.
+    service_id = db.Column(db.Integer, db.ForeignKey('user_service.id'), index=True)
+    service = db.relationship('UserService', foreign_keys=[service_id],
+                              backref=db.backref('certificates', lazy='dynamic'))
     civility = db.Column(db.String(8))
     holder = db.Column(db.String(128))          # le NOM, seul : c'est lui qui trie
     first_name = db.Column(db.String(128))
@@ -503,6 +504,11 @@ class TestTask(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), nullable=False)
     test_type = db.Column(db.String(64), nullable=False)
+    # Logiciel concerne, quand la tache en vise un : mise a jour annuelle,
+    # purge, renouvellement, revue des comptes. Optionnel -- une restauration de
+    # sauvegarde ou un PCA ne portent sur aucun logiciel en particulier.
+    software_id = db.Column(db.Integer, db.ForeignKey('software.id'), index=True)
+    software = db.relationship('Software', backref=db.backref('tasks', lazy='dynamic'))
     description = db.Column(db.Text)
     last_performed = db.Column(db.Date)
     next_due = db.Column(db.Date)
@@ -1218,7 +1224,6 @@ REFERENTIAL_KINDS = {
     'technology': 'Technologies applicatives',
     'doc_category': 'Catégories de pièces jointes',
     'task_type': 'Types de tâches récurrentes',
-    'user_service': 'Services utilisateurs',
 }
 
 # Valeurs de depart, versees au premier demarrage (cf. _seed_referentials).
@@ -1229,6 +1234,92 @@ REFERENTIAL_SEEDS = {
     'task_type': ['Mise à jour', 'Renouvellement de contrat', 'Purge',
                   'Revue des comptes', 'Renouvellement de certificat'],
 }
+
+# Services utilisateurs d'un logiciel (relation N:N). Un logiciel sert souvent
+# plusieurs directions -- l'etat civil ET l'urbanisme pour un parapheur --, et
+# une direction en utilise plusieurs.
+software_service = db.Table(
+    'software_service',
+    db.Column('software_id', db.Integer, db.ForeignKey('software.id'), primary_key=True),
+    db.Column('user_service_id', db.Integer, db.ForeignKey('user_service.id'), primary_key=True),
+)
+
+
+class UserService(db.Model):
+    """Service utilisateur : la direction ou le service de la collectivite qui
+    se sert d'un logiciel -- etat civil, urbanisme, finances, RH.
+
+    Une TABLE et non une simple liste de libelles (cf. `Referential`) : un
+    service a un referent, avec son adresse et son telephone. C'est a lui qu'on
+    ecrit pour une revue de droits ou une coupure, et le chercher ailleurs a
+    chaque fois est precisement ce qu'un inventaire doit eviter.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=False, unique=True)
+    contact_name = db.Column(db.String(128))
+    contact_email = db.Column(db.String(120))
+    contact_phone = db.Column(db.String(64))
+    position = db.Column(db.Integer, default=0)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    @staticmethod
+    def options():
+        return (UserService.query.filter_by(is_active=True)
+                .order_by(UserService.position, UserService.name).all())
+
+
+class SoftwareLink(db.Model):
+    """Flux ORIENTE entre deux logiciels : « export paie mensuel vers X ».
+
+    Le sens compte -- savoir que la paie alimente la comptabilite, et non
+    l'inverse, est tout l'interet de la ligne. La fiche d'un logiciel montre
+    donc les DEUX sens, en les distinguant.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    source_id = db.Column(db.Integer, db.ForeignKey('software.id'), nullable=False, index=True)
+    target_id = db.Column(db.Integer, db.ForeignKey('software.id'), nullable=False, index=True)
+    description = db.Column(db.String(256))
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    source = db.relationship('Software', foreign_keys=[source_id],
+                             backref=db.backref('links_out', lazy='dynamic',
+                                                cascade='all, delete-orphan'))
+    target = db.relationship('Software', foreign_keys=[target_id],
+                             backref=db.backref('links_in', lazy='dynamic',
+                                                cascade='all, delete-orphan'))
+    # Le meme flux deux fois n'apprend rien a personne.
+    __table_args__ = (db.UniqueConstraint('source_id', 'target_id', name='uq_link_source_target'),)
+
+
+class SoftwareShare(db.Model):
+    """Un dossier du PARTAGE RESEAU rattache a un logiciel : la ou vivent ses
+    installeurs, ses outils, ses notes de version -- tout ce qui est trop lourd
+    ou trop vivant pour une piece jointe, qui ne recoit que des actes figes.
+
+    Une TABLE et non un champ sur le logiciel : les dossiers d'une application
+    se comptent rarement a l'unite -- les installeurs d'un cote, la
+    documentation de l'editeur de l'autre --, et rien ne dirait lequel est
+    « le » bon.
+
+    Le chemin est un chemin WINDOWS, pas une URL : l'application l'AFFICHE et le
+    fait COPIER, elle ne l'ouvre jamais. Un navigateur refuse de suivre un lien
+    `file://` pose par une page servie en http(s) -- le clic ne ferait rien,
+    sans meme un message. C'est a l'Explorateur de l'ouvrir, et les droits du
+    partage decident seuls de qui y entre.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    software_id = db.Column(db.Integer, db.ForeignKey('software.id'), nullable=False, index=True)
+    # A quoi sert ce dossier. FACULTATIF : un chemin qui finit par le nom du
+    # logiciel se passe de legende.
+    label = db.Column(db.String(128))
+    path = db.Column(db.String(512), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    software = db.relationship('Software', backref=db.backref(
+        'shares', lazy='dynamic', cascade='all, delete-orphan'))
+    __table_args__ = (db.UniqueConstraint('software_id', 'path', name='uq_share_software_path'),)
+
 
 # ── Qualification d'un logiciel ──
 # Ces listes pilotent des filtres, des compteurs et des couleurs : elles restent
@@ -1344,6 +1435,9 @@ class Software(db.Model):
     # garde ses mises a jour, ses revues et son contrat, et le refus se defait
     # d'un clic. `is_active` reste la corbeille, qui est un autre geste.
     excluded = db.Column(db.Boolean, default=False)
+    # Services utilisateurs (M:N) : les directions qui s'en servent.
+    user_services = db.relationship('UserService', secondary=software_service,
+                                    backref=db.backref('software', lazy='dynamic'))
     # Serveur(s) d'installation (M:N). Backref Equipment.software_list.
     equipments = db.relationship('Equipment', secondary=software_equipment,
                                  backref=db.backref('software_list', lazy='dynamic'))

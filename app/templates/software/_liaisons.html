@@ -1,0 +1,173 @@
+{# ═══ Liaisons ═══
+   Les flux entre logiciels et les dossiers du partage réseau. Deux choses que
+   la fiche seule ne savait pas dire : par où passent les données, et où vivent
+   les installeurs. #}
+{% set peut_editer = current_user.can_edit('inventory') %}
+{% set peut_supprimer = current_user.can_delete('inventory') %}
+
+<div class="data-card mb-3">
+    <div class="card-header-custom d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-diagram-3 me-2 text-primary"></i>Flux avec d'autres logiciels
+            <span class="badge bg-secondary ms-1">{{ (sortants | length) + (entrants | length) }}</span></h6>
+        {% if peut_editer and autres_logiciels %}
+        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
+                data-bs-target="#nouveauFlux"><i class="bi bi-plus-lg me-1"></i> Flux</button>
+        {% endif %}
+    </div>
+
+    {% if peut_editer and autres_logiciels %}
+    <div class="collapse" id="nouveauFlux">
+        <form method="POST" action="{{ url_for('software.link_add', id=item.id) }}"
+              class="p-3 border-bottom bg-body-tertiary">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-medium small mb-1">{{ item.name }} alimente…</label>
+                    <select name="target_id" class="form-select form-select-sm" required>
+                        <option value="">— Logiciel destinataire —</option>
+                        {% for sw in autres_logiciels %}
+                        <option value="{{ sw.id }}">{{ sw.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-7">
+                    <label class="form-label fw-medium small mb-1">Nature du flux</label>
+                    <input type="text" name="description" class="form-control form-control-sm"
+                           placeholder="ex: export paie mensuel, interface comptable quotidienne">
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-sm btn-primary w-100" title="Ajouter le flux"
+                            aria-label="Ajouter le flux"><i class="bi bi-plus-lg"></i></button>
+                </div>
+            </div>
+            <div class="form-text mt-2">Le sens est porté par la ligne : la fiche d'en face le verra
+                comme entrant, sans qu'on ait à le saisir deux fois.</div>
+        </form>
+    </div>
+    {% endif %}
+
+    <ul class="list-group list-group-flush">
+        {% for lien in sortants %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>
+                <i class="bi bi-arrow-right-circle text-primary me-2" title="Flux sortant"></i>
+                vers <a href="{{ url_for('software.detail', id=lien.target_id) }}" class="fw-medium">{{ lien.target.name }}</a>
+                {% if lien.description %}<small class="text-muted">— {{ lien.description }}</small>{% endif %}
+            </span>
+            {% if peut_supprimer %}
+            <form method="POST" action="{{ url_for('software.link_delete', link_id=lien.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="from_id" value="{{ item.id }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer le flux"
+                        aria-label="Supprimer le flux" data-confirm="Supprimer ce flux ?"><i class="bi bi-trash"></i></button>
+            </form>
+            {% endif %}
+        </li>
+        {% endfor %}
+        {% for lien in entrants %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>
+                <i class="bi bi-arrow-left-circle text-success me-2" title="Flux entrant"></i>
+                depuis <a href="{{ url_for('software.detail', id=lien.source_id) }}" class="fw-medium">{{ lien.source.name }}</a>
+                {% if lien.description %}<small class="text-muted">— {{ lien.description }}</small>{% endif %}
+            </span>
+            {% if peut_supprimer %}
+            <form method="POST" action="{{ url_for('software.link_delete', link_id=lien.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="from_id" value="{{ item.id }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer le flux"
+                        aria-label="Supprimer le flux" data-confirm="Supprimer ce flux ?"><i class="bi bi-trash"></i></button>
+            </form>
+            {% endif %}
+        </li>
+        {% endfor %}
+        {% if not sortants and not entrants %}
+        <li class="list-group-item text-center text-muted py-3">Aucun flux déclaré.</li>
+        {% endif %}
+    </ul>
+</div>
+
+<div class="data-card mb-3">
+    <div class="card-header-custom d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-folder2-open me-2 text-primary"></i>Dossiers du partage réseau
+            <span class="badge bg-secondary ms-1">{{ partages | length }}</span></h6>
+        {% if peut_editer %}
+        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
+                data-bs-target="#nouveauPartage"><i class="bi bi-plus-lg me-1"></i> Dossier</button>
+        {% endif %}
+    </div>
+
+    {% if peut_editer %}
+    <div class="collapse" id="nouveauPartage">
+        <form method="POST" action="{{ url_for('software.share_add', id=item.id) }}"
+              class="p-3 border-bottom bg-body-tertiary">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-medium small mb-1">Libellé</label>
+                    <input type="text" name="label" class="form-control form-control-sm"
+                           placeholder="Installeurs, Documentation…">
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label fw-medium small mb-1">Chemin *</label>
+                    <input type="text" name="path" class="form-control form-control-sm" required
+                           placeholder="\\serveur\partage\Applications\...">
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-sm btn-primary w-100" title="Ajouter le dossier"
+                            aria-label="Ajouter le dossier"><i class="bi bi-plus-lg"></i></button>
+                </div>
+            </div>
+            <div class="form-text mt-2">Les installeurs, les outils, les notes de version — tout ce qui
+                est trop lourd ou trop vivant pour une pièce jointe, qui ne reçoit que des actes figés.</div>
+        </form>
+    </div>
+    {% endif %}
+
+    <ul class="list-group list-group-flush">
+        {% for p in partages %}
+        <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+            <span class="text-truncate">
+                {% if p.label %}<span class="fw-medium">{{ p.label }}</span><br>{% endif %}
+                <code class="small js-chemin">{{ p.path }}</code>
+            </span>
+            <span class="d-flex gap-1 flex-shrink-0">
+                {# Le chemin se COPIE, il ne s'ouvre pas : un navigateur refuse de
+                   suivre un lien file:// posé par une page servie en http(s), et
+                   le clic ne ferait rien — sans même un message. C'est à
+                   l'Explorateur de l'ouvrir. #}
+                <button type="button" class="btn btn-sm btn-outline-secondary js-copier"
+                        title="Copier le chemin" aria-label="Copier le chemin"><i class="bi bi-clipboard"></i></button>
+                {% if peut_supprimer %}
+                <form method="POST" action="{{ url_for('software.share_delete', share_id=p.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer le dossier"
+                            aria-label="Retirer le dossier" data-confirm="Retirer ce dossier ?"><i class="bi bi-trash"></i></button>
+                </form>
+                {% endif %}
+            </span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-center text-muted py-3">Aucun dossier rattaché.</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<script>
+// Copie du chemin dans le presse-papiers, puis retour a l'icone d'origine : le
+// chemin se colle dans la barre d'adresse de l'Explorateur, l'application ne
+// l'ouvre jamais elle-meme.
+(function () {
+    document.querySelectorAll('.js-copier').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var ligne = btn.closest('li');
+            var code = ligne && ligne.querySelector('.js-chemin');
+            if (!code || !navigator.clipboard) return;
+            navigator.clipboard.writeText(code.textContent.trim()).then(function () {
+                btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+                setTimeout(function () { btn.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 1500);
+            });
+        });
+    });
+})();
+</script>

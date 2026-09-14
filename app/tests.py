@@ -22,6 +22,14 @@ TEST_TYPES = [
 ]
 
 
+def _software_list():
+    """Le catalogue, pour rattacher une tache a un logiciel. Les fiches ecartees
+    a l'import n'y sont pas : elles ne sont dans aucune lecture."""
+    from app.models import Software
+    return (Software.query.filter_by(is_active=True, excluded=False)
+            .order_by(Software.name).all())
+
+
 @bp.route('/')
 @login_required
 def list():
@@ -83,7 +91,8 @@ def create():
         name = (request.form.get('name') or '').strip()
         if not name:
             flash('Le nom du test est obligatoire.', 'danger')
-            return render_template('tests/form.html', test=None, test_types=TEST_TYPES)
+            return render_template('tests/form.html', test=None, test_types=TEST_TYPES,
+                               software_list=_software_list())
         last_performed = parse_date(request.form.get('last_performed'))
         freq = parse_int(request.form.get('frequency_days'), 90, minimum=1)
         next_due = parse_date(request.form.get('next_due'))
@@ -98,6 +107,7 @@ def create():
             frequency_days=freq,
             status='pending',
             priority=request.form.get('priority', 'medium'),
+            software_id=parse_int(request.form.get('software_id')),
         )
         db.session.add(t)
         db.session.commit()
@@ -110,7 +120,8 @@ def create():
         db.session.commit()
         flash('Test ajouté avec succès', 'success')
         return redirect(url_for('tests.list'))
-    return render_template('tests/form.html', test=None, test_types=TEST_TYPES)
+    return render_template('tests/form.html', test=None, test_types=TEST_TYPES,
+                               software_list=_software_list())
 
 
 @bp.route('/<int:id>')
@@ -130,7 +141,8 @@ def edit(id):
         name = (request.form.get('name') or '').strip()
         if not name:
             flash('Le nom du test est obligatoire.', 'danger')
-            return render_template('tests/form.html', test=test, test_types=TEST_TYPES)
+            return render_template('tests/form.html', test=test, test_types=TEST_TYPES,
+                               software_list=_software_list())
         test.name = name
         test.test_type = request.form.get('test_type')
         test.description = request.form.get('description')
@@ -138,10 +150,12 @@ def edit(id):
         test.frequency_days = parse_int(request.form.get('frequency_days'), 90, minimum=1)
         test.next_due = parse_date(request.form.get('next_due'))
         test.priority = request.form.get('priority', 'medium')
+        test.software_id = parse_int(request.form.get('software_id'))
         db.session.commit()
         flash('Test modifié avec succès', 'success')
         return redirect(url_for('tests.detail', id=id))
-    return render_template('tests/form.html', test=test, test_types=TEST_TYPES)
+    return render_template('tests/form.html', test=test, test_types=TEST_TYPES,
+                               software_list=_software_list())
 
 
 @bp.route('/<int:id>/complete', methods=['POST'])

@@ -9,6 +9,7 @@ from flask import (Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required
 from app import db
 from app.models import (Software, Supplier, Contract, Equipment, Referential,
+                        UserService, SoftwareLink, SoftwareShare,
                         HOSTING_LABELS, LIFECYCLE_LABELS, SOURCE_TYPE_LABELS,
                         AUTH_MODE_LABELS, DATA_LOCATION_LABELS)
 from app.forms_util import parse_int, parse_date, status_rank
@@ -88,6 +89,13 @@ def _fill(sw, f):
     sw.equipments = (Equipment.query.filter(Equipment.id.in_(ids),
                                             Equipment.is_active.is_(True)).all()
                      if ids else [])
+    # Services utilisateurs : les directions qui s'en servent. Un logiciel en
+    # sert souvent plusieurs, et une direction en utilise plusieurs.
+    svids = [parse_int(v) for v in f.getlist('user_service_ids')]
+    svids = [i for i in svids if i]
+    sw.user_services = (UserService.query.filter(UserService.id.in_(svids),
+                                                 UserService.is_active.is_(True)).all()
+                        if svids else [])
 
 
 def _form_context():
@@ -96,6 +104,7 @@ def _form_context():
         'contracts': Contract.query.filter_by(is_active=True).order_by(Contract.name).all(),
         'equipments': Equipment.query.filter_by(is_active=True).order_by(Equipment.name).all(),
         'technologies': Referential.options('technology'),
+        'user_services': UserService.options(),
         'hosting_labels': HOSTING_LABELS,
         'lifecycle_labels': LIFECYCLE_LABELS,
         'source_type_labels': SOURCE_TYPE_LABELS,
@@ -199,8 +208,18 @@ def detail(id):
     from app.models import Consultation
     consultations = item.consultations.order_by(
         Consultation.date.desc().nullslast(), Consultation.id.desc()).all()
+    # Les deux sens du flux, separes : savoir que la paie alimente la
+    # comptabilite, et non l'inverse, est tout l'interet de la ligne.
+    autres = (Software.query.filter(Software.is_active.is_(True),
+                                    Software.excluded.is_(False),
+                                    Software.id != item.id)
+              .order_by(Software.name).all())
     return render_template('software/detail.html', item=item, updates=updates,
                            consultations=consultations,
+                           sortants=item.links_out.all(), entrants=item.links_in.all(),
+                           partages=item.shares.order_by(SoftwareShare.label).all(),
+                           autres_logiciels=autres,
+                           taches=item.tasks.filter_by(is_active=True).all(),
                            suppliers=Supplier.query.filter_by(is_active=True)
                                                    .order_by(Supplier.name).all())
 
@@ -234,3 +253,96 @@ def delete(id):
     flash('Logiciel supprimé', 'success')
     return redirect(url_for('software.list'))
 
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  Interconnexions : les flux entre logiciels
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bp.route('/<int:id>/links/add', methods=['POST'])
+@login_required
+@require_edit
+def link_add(id):
+    """Declare un flux SORTANT depuis cette fiche. Le sens est porte par la
+    ligne ; la fiche d'en face le verra comme entrant, sans qu'on ait a le
+    saisir deux fois."""
+    sw = Software.query.get_or_404(id)
+    cible_id = parse_int(request.form.get('target_id'))
+    cible = Software.query.get(cible_id) if cible_id else None
+    if cible is None:
+        flash('Choisissez le logiciel destinataire du flux.', 'danger')
+        return redirect(url_for('software.detail', id=id))
+    if cible.id == sw.id:
+        # Un flux d'un logiciel vers lui-meme ne decrit rien.
+        flash("Un logiciel ne peut pas alimenter lui-même.", 'danger')
+        return redirect(url_for('software.detail', id=id))
+    if SoftwareLink.query.filter_by(source_id=sw.id, target_id=cible.id).first():
+        flash('Ce flux est déjà déclaré.', 'warning')
+        return redirect(url_for('software.detail', id=id))
+    db.session.add(SoftwareLink(
+        source_id=sw.id, target_id=cible.id,
+        description=(request.form.get('description', '') or '').strip() or None))
+    db.session.commit()
+    audit_record('ajout interconnexion', detail=f'{sw.name} -> {cible.name}',
+                 category='inventory')
+    flash('Flux ajouté', 'success')
+    return redirect(url_for('software.detail', id=id))
+
+
+@bp.route('/links/<int:link_id>/delete', methods=['POST'])
+@login_required
+@require_delete
+def link_delete(link_id):
+    lien = SoftwareLink.query.get_or_404(link_id)
+    # On revient sur la fiche d'ou l'on a clique, qui n'est pas toujours la
+    # source : les deux sens s'affichent et se retirent des deux cotes.
+    retour = parse_int(request.form.get('from_id')) or lien.source_id
+    detail = f'{lien.source.name} -> {lien.target.name}'
+    db.session.delete(lien)
+    db.session.commit()
+    audit_record('suppression interconnexion', detail=detail, category='inventory')
+    flash('Flux supprimé', 'success')
+    return redirect(url_for('software.detail', id=retour))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  Partages reseau
+#
+#  Le chemin est AFFICHE et COPIE, jamais ouvert : un navigateur refuse de
+#  suivre un lien `file://` pose par une page servie en http(s) -- le clic ne
+#  ferait rien, sans meme un message. C'est a l'Explorateur de l'ouvrir.
+# ═══════════════════════════════════════════════════════════════════════════
+
+@bp.route('/<int:id>/shares/add', methods=['POST'])
+@login_required
+@require_edit
+def share_add(id):
+    sw = Software.query.get_or_404(id)
+    chemin = (request.form.get('path', '') or '').strip()
+    if not chemin:
+        flash('Indiquez le chemin du dossier.', 'danger')
+        return redirect(url_for('software.detail', id=id))
+    if SoftwareShare.query.filter_by(software_id=sw.id, path=chemin).first():
+        # Le meme dossier deux fois sur la meme fiche n'apprend rien a personne.
+        flash('Ce dossier est déjà rattaché à cette fiche.', 'warning')
+        return redirect(url_for('software.detail', id=id))
+    db.session.add(SoftwareShare(
+        software_id=sw.id, path=chemin[:512],
+        label=(request.form.get('label', '') or '').strip() or None))
+    db.session.commit()
+    audit_record('ajout partage reseau', detail=f'{sw.name} : {chemin}', category='inventory')
+    flash('Dossier ajouté', 'success')
+    return redirect(url_for('software.detail', id=id))
+
+
+@bp.route('/shares/<int:share_id>/delete', methods=['POST'])
+@login_required
+@require_delete
+def share_delete(share_id):
+    partage = SoftwareShare.query.get_or_404(share_id)
+    swid, chemin = partage.software_id, partage.path
+    db.session.delete(partage)
+    db.session.commit()
+    audit_record('suppression partage reseau', detail=chemin, category='inventory')
+    flash('Dossier retiré', 'success')
+    return redirect(url_for('software.detail', id=swid))
