@@ -133,3 +133,18 @@ def test_les_pieces_jointes_sont_a_un_clic(client, jeu):
     # Le volet existe dans la page : l'onglet ne renvoie pas vers une autre URL,
     # il devoile ce qui est deja rendu — pas de second aller-retour serveur.
     assert 'id="vol-documents"' in html
+
+
+def test_chaque_fiche_a_ses_onglets(client, jeu):
+    """Mesurees avant la refonte, les fiches faisaient 1450 a 1950 px de haut
+    pour un ecran de 900 : l'historique et les pieces jointes vivaient sous la
+    pliure, sans que rien ne les annonce.
+
+    Une exception assumee : la fiche serveur garde sa continuite dans l'onglet
+    « Fiche », parce que c'est elle qui dit si la machine est sauvegardee —
+    donc ce qui decide de sa couleur de statut.
+    """
+    for url, base in _fiches(jeu):
+        html = client.get(url).get_data(as_text=True)
+        assert 'fiche-onglets' in html, f'{url} : pas de barre d onglets'
+        assert 'id="vol-detail"' in html, f'{url} : pas de volet principal'

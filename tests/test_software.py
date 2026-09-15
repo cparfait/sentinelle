@@ -320,4 +320,4 @@ def test_la_fiche_sans_editeur_prend_toute_la_largeur(client):
     assert 'col-lg-4' not in html
     # Le volet RGPD parait meme quand il n'y a rien a declarer : « non » est une
     # reponse, et la rubrique absente se lirait comme un oubli de saisie.
-    assert 'Aucune donnee personnelle' in html
+    assert 'Aucune donnée personnelle' in html

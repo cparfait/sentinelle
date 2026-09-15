@@ -226,18 +226,18 @@
                             </div>
                         </div>
 
-                        {# Le volet RGPD parait MEME quand le logiciel ne traite pas de
-                           donnees personnelles : « non » est une reponse, et la rubrique
+                        {# Le volet RGPD paraît MÊME quand le logiciel ne traite pas de
+                           données personnelles : « non » est une réponse, et la rubrique
                            absente se lirait comme un oubli de saisie. #}
                         <div class="fiche-bloc fiche-bloc--violet">
-                            {{ titre_section('Donnees personnelles (RGPD)', 'bi-shield-lock', 'violet', 'mb-0') }}
+                            {{ titre_section('Données personnelles (RGPD)', 'bi-shield-lock', 'violet', 'mb-0') }}
                             <div class="fiche-grille">
                                 {% if item.gdpr_personal_data %}
-                                {{ champ('Categories', item.gdpr_categories) }}
-                                {{ champ('Ref. registre', item.gdpr_registry_ref) }}
+                                {{ champ('Catégories', item.gdpr_categories) }}
+                                {{ champ('Réf. registre', item.gdpr_registry_ref) }}
                                 {{ champ('Localisation', item.gdpr_location_label()) }}
                                 {% if item.supplier and (item.supplier.dpo_contact or item.supplier.dpo_email) %}
-                                {% call bloc("DPO de l'editeur") %}
+                                {% call bloc("DPO de l'éditeur") %}
                                 {{ item.supplier.dpo_contact or '-' }}
                                 {% if item.supplier.dpo_email %}
                                 <a href="mailto:{{ item.supplier.dpo_email }}" class="d-block small text-truncate">{{ item.supplier.dpo_email }}</a>
@@ -245,7 +245,7 @@
                                 {% endcall %}
                                 {% endif %}
                                 {% else %}
-                                {% call bloc('Traitement') %}<span class="text-muted">Aucune donnee personnelle</span>{% endcall %}
+                                {% call bloc('Traitement') %}<span class="text-muted">Aucune donnée personnelle</span>{% endcall %}
                                 {% endif %}
                             </div>
                         </div>

@@ -2,6 +2,7 @@
 {% block title %}{{ contract.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
+{% from '_onglets.html' import barre, onglet, volets, volet %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -22,8 +23,19 @@
     </div>
 </div>
 
-<div class="row g-3">
-    <div class="col-lg-8">
+{% call barre('ficheContract') %}
+    {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+    {{ onglet('pieces-du', 'Pièces du marché', 'bi-paperclip') }}
+    {% if documents_enabled %}
+    {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=attached_documents('contract', contract.id)|length if documents_enabled else 0) }}
+    {% endif %}
+    {{ onglet('historique', 'Historique', 'bi-clock-history') }}
+{% endcall %}
+
+{% call volets() %}
+    {% call volet('detail', actif=True) %}
+    <div class="row g-3">
+        <div class="col-lg-8">
         <div class="data-card p-3 mb-3">
             {% call faits() %}
                 {% call fait_bloc('Statut') %}{{ status_badge(contract.status()) }}{% endcall %}
@@ -158,111 +170,7 @@
                 {% endif %}
             </div>
         </div>
-
-        {# ═══ Pièces du marché ═══
-           Une pièce ne décrit qu'elle-même : un poste, son coût, la date de son
-           document. Elle ne porte pas d'échéance — c'est le marché qui engage,
-           et c'est sa date de fin qu'on surveille. Les pièces se lisent de la
-           plus récente à la plus ancienne. #}
-        <div class="data-card mb-3">
-            <div class="card-header-custom d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold fiche-titre fiche-titre--indigo mb-0"><i class="bi bi-paperclip me-2"></i>Pièces du marché
-                    <span class="badge bg-secondary ms-1">{{ items|length }}</span>
-                    {% if items %}<small class="fw-normal text-muted ms-2">{{ '%.0f' | format(contract.items_cost()) }} € cumulés</small>{% endif %}</h6>
-                {% if current_user.can_edit('contracts') %}
-                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#nouvellePiece"><i class="bi bi-plus-lg me-1"></i> Pièce</button>
-                {% endif %}
-            </div>
-            {% if current_user.can_edit('contracts') %}
-            <div class="collapse" id="nouvellePiece">
-                <form method="POST" action="{{ url_for('contracts.item_add', id=contract.id) }}"
-                      class="p-3 border-bottom bg-body-tertiary">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="row g-2 align-items-end">
-                        <div class="col-md-4">
-                            <label class="form-label fw-medium small mb-1">Poste *</label>
-                            <input type="text" name="label" class="form-control form-control-sm" required
-                                   placeholder="ex: 50 postes, module RH">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-medium small mb-1">Nature</label>
-                            <select name="kind" class="form-select form-select-sm">
-                                {% for value, label in item_kind_labels.items() %}
-                                <option value="{{ value }}">{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-medium small mb-1">Coût / an (€)</label>
-                            <input type="text" name="cost_yearly" class="form-control form-control-sm" inputmode="decimal">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-medium small mb-1">Date du document</label>
-                            <input type="date" name="doc_date" class="form-control form-control-sm">
-                        </div>
-                        <div class="col-md-1">
-                            <button type="submit" class="btn btn-sm btn-primary w-100" title="Ajouter la pièce"
-                                    aria-label="Ajouter la pièce"><i class="bi bi-plus-lg"></i></button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            {% endif %}
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead><tr><th>Poste</th><th>Nature</th><th class="text-end">Coût / an</th><th>Date du document</th><th></th></tr></thead>
-                    <tbody>
-                        {% for it in items %}
-                        <tr>
-                            <td>{{ it.label }}{% if it.notes %}<small class="d-block text-muted">{{ it.notes }}</small>{% endif %}</td>
-                            <td class="small">{{ it.kind_label() }}</td>
-                            <td class="text-end">{% if it.cost_yearly is not none %}{{ '%.2f' | format(it.cost_yearly) }} €{% else %}—{% endif %}</td>
-                            <td class="small text-nowrap">{{ it.doc_date.strftime('%d/%m/%Y') if it.doc_date else '—' }}</td>
-                            <td class="text-end">
-                                {% if current_user.can_delete('contracts') %}
-                                <form method="POST" action="{{ url_for('contracts.item_delete', item_id=it.id) }}">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer la pièce"
-                                            aria-label="Supprimer la pièce" data-confirm="Supprimer cette pièce ?"><i class="bi bi-trash"></i></button>
-                                </form>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="5" class="text-center py-3 text-muted">Aucune pièce enregistrée</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
         </div>
-
-        {% with doc_parent_kind='contract', doc_parent_id=contract.id, doc_permission='contracts' %}{% include '_documents.html' %}{% endwith %}
-
-        <div class="data-card">
-            <div class="card-header-custom">
-                <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0"><i class="bi bi-clock-history me-2"></i>Historique</h6>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead><tr><th>Date</th><th>Action</th><th>Commentaire</th><th>Par</th></tr></thead>
-                    <tbody>
-                        {% for h in histories %}
-                        <tr>
-                            <td class="text-nowrap">{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</td>
-                            <td>{{ h.action }}</td>
-                            <td>{{ h.comment or '-' }}</td>
-                            <td class="text-nowrap">{{ h.performed_by or '-' }}</td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="4" class="text-center py-3 text-muted">Aucun historique</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
     <div class="col-lg-4">
         {% if contract.supplier %}
         <div class="data-card p-4 mb-3">
@@ -311,5 +219,116 @@
         </div>
         {% endif %}
     </div>
-</div>
+    </div>
+    {% endcall %}
+
+    {% call volet('pieces-du') %}
+    {# ═══ Pièces du marché ═══
+       Une pièce ne décrit qu'elle-même : un poste, son coût, la date de son
+       document. Elle ne porte pas d'échéance — c'est le marché qui engage,
+       et c'est sa date de fin qu'on surveille. Les pièces se lisent de la
+       plus récente à la plus ancienne. #}
+    <div class="data-card mb-3">
+        <div class="card-header-custom d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold fiche-titre fiche-titre--indigo mb-0"><i class="bi bi-paperclip me-2"></i>Pièces du marché
+                <span class="badge bg-secondary ms-1">{{ items|length }}</span>
+                {% if items %}<small class="fw-normal text-muted ms-2">{{ '%.0f' | format(contract.items_cost()) }} € cumulés</small>{% endif %}</h6>
+            {% if current_user.can_edit('contracts') %}
+            <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#nouvellePiece"><i class="bi bi-plus-lg me-1"></i> Pièce</button>
+            {% endif %}
+        </div>
+        {% if current_user.can_edit('contracts') %}
+        <div class="collapse" id="nouvellePiece">
+            <form method="POST" action="{{ url_for('contracts.item_add', id=contract.id) }}"
+                  class="p-3 border-bottom bg-body-tertiary">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label fw-medium small mb-1">Poste *</label>
+                        <input type="text" name="label" class="form-control form-control-sm" required
+                               placeholder="ex: 50 postes, module RH">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium small mb-1">Nature</label>
+                        <select name="kind" class="form-select form-select-sm">
+                            {% for value, label in item_kind_labels.items() %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-medium small mb-1">Coût / an (€)</label>
+                        <input type="text" name="cost_yearly" class="form-control form-control-sm" inputmode="decimal">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-medium small mb-1">Date du document</label>
+                        <input type="date" name="doc_date" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-sm btn-primary w-100" title="Ajouter la pièce"
+                                aria-label="Ajouter la pièce"><i class="bi bi-plus-lg"></i></button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Poste</th><th>Nature</th><th class="text-end">Coût / an</th><th>Date du document</th><th></th></tr></thead>
+                <tbody>
+                    {% for it in items %}
+                    <tr>
+                        <td>{{ it.label }}{% if it.notes %}<small class="d-block text-muted">{{ it.notes }}</small>{% endif %}</td>
+                        <td class="small">{{ it.kind_label() }}</td>
+                        <td class="text-end">{% if it.cost_yearly is not none %}{{ '%.2f' | format(it.cost_yearly) }} €{% else %}—{% endif %}</td>
+                        <td class="small text-nowrap">{{ it.doc_date.strftime('%d/%m/%Y') if it.doc_date else '—' }}</td>
+                        <td class="text-end">
+                            {% if current_user.can_delete('contracts') %}
+                            <form method="POST" action="{{ url_for('contracts.item_delete', item_id=it.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer la pièce"
+                                        aria-label="Supprimer la pièce" data-confirm="Supprimer cette pièce ?"><i class="bi bi-trash"></i></button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="text-center py-3 text-muted">Aucune pièce enregistrée</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endcall %}
+
+    {% call volet('documents') %}
+    {% with doc_parent_kind='contract', doc_parent_id=contract.id, doc_permission='contracts' %}{% include '_documents.html' %}{% endwith %}
+    {% endcall %}
+
+    {% call volet('historique') %}
+    <div class="data-card">
+        <div class="card-header-custom">
+            <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0"><i class="bi bi-clock-history me-2"></i>Historique</h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Date</th><th>Action</th><th>Commentaire</th><th>Par</th></tr></thead>
+                <tbody>
+                    {% for h in histories %}
+                    <tr>
+                        <td class="text-nowrap">{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>{{ h.action }}</td>
+                        <td>{{ h.comment or '-' }}</td>
+                        <td class="text-nowrap">{{ h.performed_by or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center py-3 text-muted">Aucun historique</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endcall %}
+{% endcall %}
 {% endblock %}

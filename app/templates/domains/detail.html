@@ -2,6 +2,7 @@
 {% block title %}{{ domain.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
+{% from '_onglets.html' import barre, onglet, volets, volet %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -24,8 +25,16 @@
     </div>
 </div>
 
-<div class="row g-3">
-    <div class="col-lg-8">
+{% call barre('ficheDomain') %}
+    {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+    {{ onglet('certificate-transparency', 'Certificate Transparency', 'bi-search') }}
+    {{ onglet('historique', 'Historique', 'bi-clock-history') }}
+{% endcall %}
+
+{% call volets() %}
+    {% call volet('detail', actif=True) %}
+    <div class="row g-3">
+        <div class="col-lg-8">
         <div class="data-card p-3 mb-3">
             {% call faits() %}
                 {% call fait_bloc('Statut') %}{{ status_badge(domain.status()) }}{% endcall %}
@@ -68,62 +77,7 @@
                 {% endif %}
             </div>
         </div>
-
-        <div class="data-card mb-3">
-            <div class="card-header-custom d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold fiche-titre fiche-titre--violet mb-0"><i class="bi bi-shield-lock me-2"></i>Certificate Transparency
-                    {% if ct_new %}<span class="badge bg-warning text-dark ms-1">{{ ct_new }} nouveau{{ 's' if ct_new > 1 }}</span>{% endif %}
-                </h6>
-                <small class="text-muted">Certificats emis pour ce domaine (crt.sh)</small>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover mb-0 align-middle">
-                    <thead><tr><th>Nom(s)</th><th>Émetteur</th><th class="text-nowrap">Émis le</th><th>Statut</th></tr></thead>
-                    <tbody>
-                        {% for e in ct_entries %}
-                        <tr{% if e.status == 'new' %} class="table-warning"{% endif %}>
-                            <td class="small">{{ e.sans()[:3] | join(', ') }}{% if e.sans()|length > 3 %} <span class="text-muted">(+{{ e.sans()|length - 3 }})</span>{% endif %}</td>
-                            <td class="small">{{ e.issuer_name or '-' }}</td>
-                            <td class="text-nowrap small">{{ e.not_before.strftime('%d/%m/%Y') if e.not_before else '-' }}</td>
-                            <td>
-                                {% if e.status == 'new' %}<span class="badge bg-warning text-dark">Nouveau</span>
-                                {% elif e.status == 'acknowledged' %}<span class="badge bg-success-subtle text-success">Vérifié</span>
-                                {% elif e.status == 'baseline' %}<span class="badge bg-secondary-subtle text-secondary">Base</span>
-                                {% else %}<span class="badge bg-light text-muted">{{ e.status }}</span>{% endif %}
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="4" class="text-center py-3 text-muted">Aucun certificat observé. Lancez un scan pour établir la ligne de base.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
         </div>
-
-        <div class="data-card">
-            <div class="card-header-custom">
-                <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0"><i class="bi bi-clock-history me-2"></i>Historique</h6>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead><tr><th>Date</th><th>Action</th><th>Commentaire</th><th>Par</th></tr></thead>
-                    <tbody>
-                        {% for h in histories %}
-                        <tr>
-                            <td class="text-nowrap">{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</td>
-                            <td>{{ h.action }}</td>
-                            <td>{{ h.comment or '-' }}</td>
-                            <td class="text-nowrap">{{ h.performed_by or '-' }}</td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="4" class="text-center py-3 text-muted">Aucun historique</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
     <div class="col-lg-4">
         {% if current_user.can_edit('domains') %}
         <div class="data-card p-4 mb-3">
@@ -166,5 +120,65 @@
         </div>
         {% endif %}
     </div>
-</div>
+    </div>
+    {% endcall %}
+
+    {% call volet('certificate-transparency') %}
+    <div class="data-card mb-3">
+        <div class="card-header-custom d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold fiche-titre fiche-titre--violet mb-0"><i class="bi bi-shield-lock me-2"></i>Certificate Transparency
+                {% if ct_new %}<span class="badge bg-warning text-dark ms-1">{{ ct_new }} nouveau{{ 's' if ct_new > 1 }}</span>{% endif %}
+            </h6>
+            <small class="text-muted">Certificats emis pour ce domaine (crt.sh)</small>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead><tr><th>Nom(s)</th><th>Émetteur</th><th class="text-nowrap">Émis le</th><th>Statut</th></tr></thead>
+                <tbody>
+                    {% for e in ct_entries %}
+                    <tr{% if e.status == 'new' %} class="table-warning"{% endif %}>
+                        <td class="small">{{ e.sans()[:3] | join(', ') }}{% if e.sans()|length > 3 %} <span class="text-muted">(+{{ e.sans()|length - 3 }})</span>{% endif %}</td>
+                        <td class="small">{{ e.issuer_name or '-' }}</td>
+                        <td class="text-nowrap small">{{ e.not_before.strftime('%d/%m/%Y') if e.not_before else '-' }}</td>
+                        <td>
+                            {% if e.status == 'new' %}<span class="badge bg-warning text-dark">Nouveau</span>
+                            {% elif e.status == 'acknowledged' %}<span class="badge bg-success-subtle text-success">Vérifié</span>
+                            {% elif e.status == 'baseline' %}<span class="badge bg-secondary-subtle text-secondary">Base</span>
+                            {% else %}<span class="badge bg-light text-muted">{{ e.status }}</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center py-3 text-muted">Aucun certificat observé. Lancez un scan pour établir la ligne de base.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endcall %}
+
+    {% call volet('historique') %}
+    <div class="data-card">
+        <div class="card-header-custom">
+            <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0"><i class="bi bi-clock-history me-2"></i>Historique</h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Date</th><th>Action</th><th>Commentaire</th><th>Par</th></tr></thead>
+                <tbody>
+                    {% for h in histories %}
+                    <tr>
+                        <td class="text-nowrap">{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>{{ h.action }}</td>
+                        <td>{{ h.comment or '-' }}</td>
+                        <td class="text-nowrap">{{ h.performed_by or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center py-3 text-muted">Aucun historique</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endcall %}
+{% endcall %}
 {% endblock %}

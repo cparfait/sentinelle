@@ -2,6 +2,7 @@
 {% block title %}{{ backup.service_name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
+{% from '_onglets.html' import barre, onglet, volets, volet %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -19,9 +20,15 @@
     </div>
 </div>
 
-<div class="row g-3">
-    <!-- Colonne principale : configuration + historique -->
-    <div class="col-lg-8">
+{% call barre('ficheBackup') %}
+    {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+    {{ onglet('historique-des', 'Historique des statuts', 'bi-clock-history') }}
+{% endcall %}
+
+{% call volets() %}
+    {% call volet('detail', actif=True) %}
+    <div class="row g-3">
+        <div class="col-lg-8">
         <div class="data-card p-3 mb-3">
             <div class="d-flex justify-content-between align-items-start mb-3">
                 <h6 class="fw-bold mb-0">Configuration</h6>
@@ -95,49 +102,7 @@
                 {% endif %}
             </div>
         </div>
-
-        <div class="data-card">
-            <div class="card-header-custom">
-                <div>
-                    <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0"><i class="bi bi-clock-history me-2"></i>Historique des statuts</h6>
-                    <small class="text-muted">Toutes les saisies, y compris plusieurs le meme jour. Les statistiques retiennent le premier statut du jour ; l'etat actuel reflete le dernier.</small>
-                </div>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>Date et heure</th>
-                            <th>Statut</th>
-                            <th>Detail</th>
-                            <th>Verifie par</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for e in check_events %}
-                        <tr>
-                            <td class="text-nowrap">{{ e.performed_at.strftime('%d/%m/%Y %H:%M') }}</td>
-                            <td>
-                                {% if e.status == 'ok' %}<span class="badge-status badge-success">OK</span>
-                                {% elif e.status == 'failed' %}<span class="badge-status badge-danger">Echoue</span>
-                                {% elif e.status == 'warning' %}<span class="badge-status badge-warning">Warning</span>
-                                {% else %}<span class="badge-status badge-info">-</span>{% endif %}
-                            </td>
-                            <td>{{ e.comment or '-' }}</td>
-                            <td class="text-nowrap">{{ e.performed_by or '-' }}</td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center py-3 text-muted">Aucun check enregistre</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
         </div>
-    </div>
-
-    <!-- Colonne laterale : actions -->
     <div class="col-lg-4">
         {% if current_user.can_edit('backups') %}
         <div class="data-card p-4 mb-3">
@@ -179,5 +144,49 @@
         </div>
         {% endif %}
     </div>
-</div>
+    </div>
+    {% endcall %}
+
+    {% call volet('historique-des') %}
+    <div class="data-card">
+        <div class="card-header-custom">
+            <div>
+                <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0"><i class="bi bi-clock-history me-2"></i>Historique des statuts</h6>
+                <small class="text-muted">Toutes les saisies, y compris plusieurs le meme jour. Les statistiques retiennent le premier statut du jour ; l'etat actuel reflete le dernier.</small>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Date et heure</th>
+                        <th>Statut</th>
+                        <th>Detail</th>
+                        <th>Verifie par</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in check_events %}
+                    <tr>
+                        <td class="text-nowrap">{{ e.performed_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>
+                            {% if e.status == 'ok' %}<span class="badge-status badge-success">OK</span>
+                            {% elif e.status == 'failed' %}<span class="badge-status badge-danger">Echoue</span>
+                            {% elif e.status == 'warning' %}<span class="badge-status badge-warning">Warning</span>
+                            {% else %}<span class="badge-status badge-info">-</span>{% endif %}
+                        </td>
+                        <td>{{ e.comment or '-' }}</td>
+                        <td class="text-nowrap">{{ e.performed_by or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-3 text-muted">Aucun check enregistre</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endcall %}
+{% endcall %}
 {% endblock %}

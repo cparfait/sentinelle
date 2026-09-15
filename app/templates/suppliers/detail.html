@@ -2,6 +2,7 @@
 {% block title %}{{ supplier.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
+{% from '_onglets.html' import barre, onglet, volets, volet %}
 
 {# Un contact hors incident. Rien ne s'affiche quand les trois champs sont
    vides : une carte pleine de tirets ne dit pas qui appeler, elle dit qu'on ne
@@ -35,8 +36,23 @@
     </div>
 </div>
 
-<div class="row g-3">
-    <div class="col-lg-8">
+{% call barre('ficheSupplier') %}
+    {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+    {% if supplier.has_contacts() %}
+    {{ onglet('contacts', 'Contacts', 'bi-person-lines-fill') }}
+    {% endif %}
+    {% if documents_enabled %}
+    {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=attached_documents('supplier', supplier.id)|length if documents_enabled else 0) }}
+    {% endif %}
+    {{ onglet('materiel-couvert', 'Matériel couvert', 'bi-hdd-stack') }}
+    {{ onglet('logiciels', 'Logiciels', 'bi-window-stack') }}
+    {{ onglet('contrats', 'Contrats', 'bi-file-earmark-text') }}
+{% endcall %}
+
+{% call volets() %}
+    {% call volet('detail', actif=True) %}
+    <div class="row g-3">
+        <div class="col-lg-8">
         <div class="data-card p-3 mb-3">
             {# Un fournisseur n'a pas de statut : la question qu'on se pose devant sa
                fiche est « qui j'appelle, et pour quoi il intervient chez nous ». #}
@@ -112,98 +128,7 @@
                 {% endif %}
             </div>
         </div>
-
-        {# ===== Contacts hors incident =====
-           Saisis ICI et nulle part ailleurs : les fiches logiciel les remontent
-           en lecture seule. La question « qui j'appelle ? » se pose devant le
-           logiciel, mais la réponse vaut pour tous ceux du même éditeur. #}
-        {% if supplier.has_contacts() %}
-        <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold fiche-titre fiche-titre--rose mb-3"><i class="bi bi-person-lines-fill me-2"></i>Contacts</h6>
-            <div class="fiche-grille">
-                {{ contact('Commercial', supplier.commercial_contact, supplier.commercial_phone, supplier.commercial_email) }}
-                {{ contact('Commercial (second)', supplier.commercial_contact2, supplier.commercial_phone2, supplier.commercial_email2) }}
-                {{ contact('Administratif / facturation', supplier.admin_contact, supplier.admin_phone, supplier.admin_email) }}
-                {{ contact('DPO', supplier.dpo_contact, supplier.dpo_phone, supplier.dpo_email) }}
-            </div>
         </div>
-        {% endif %}
-
-        {% with doc_parent_kind='supplier', doc_parent_id=supplier.id, doc_permission='contracts' %}{% include '_documents.html' %}{% endwith %}
-
-        {# ===== Impacts : matériel, logiciels et contrats couverts par ce fournisseur ===== #}
-        <div class="data-card mb-3">
-            <div class="card-header-custom">
-                <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0"><i class="bi bi-hdd-network me-2"></i>Matériel couvert
-                    <span class="badge bg-secondary ms-1">{{ equipments|length }}</span></h6>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead><tr><th>Nom</th><th>Type</th><th>Environnement</th><th>Criticité</th></tr></thead>
-                    <tbody>
-                        {% for e in equipments %}
-                        <tr>
-                            <td><a href="{{ url_for('inventory.detail', id=e.id) }}" class="fw-medium text-decoration-none">{{ e.name }}</a></td>
-                            <td class="small">{{ e.kind_label() }}</td>
-                            <td class="small">{{ e.env_label() if e.environment else '-' }}</td>
-                            <td class="small">{{ e.criticality or '-' }}</td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="4" class="text-center py-3 text-muted">Aucun matériel rattaché</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="data-card mb-3">
-            <div class="card-header-custom">
-                <h6 class="fw-bold fiche-titre fiche-titre--violet mb-0"><i class="bi bi-window-stack me-2"></i>Logiciels
-                    <span class="badge bg-secondary ms-1">{{ software|length }}</span></h6>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead><tr><th>Nom</th><th>Version</th><th>Hébergement</th></tr></thead>
-                    <tbody>
-                        {% for sw in software %}
-                        <tr>
-                            <td><a href="{{ url_for('software.detail', id=sw.id) }}" class="fw-medium text-decoration-none">{{ sw.name }}</a></td>
-                            <td class="small">{{ sw.version or '-' }}</td>
-                            <td class="small">{{ sw.hosting_label() }}</td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="3" class="text-center py-3 text-muted">Aucun logiciel rattaché</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="data-card">
-            <div class="card-header-custom">
-                <h6 class="fw-bold fiche-titre fiche-titre--amber mb-0"><i class="bi bi-file-earmark-text me-2"></i>Contrats
-                    <span class="badge bg-secondary ms-1">{{ contracts|length }}</span></h6>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead><tr><th>Contrat</th><th>Type</th><th>Échéance</th><th>Statut</th></tr></thead>
-                    <tbody>
-                        {% for c in contracts %}
-                        <tr>
-                            <td><a href="{{ url_for('contracts.detail', id=c.id) }}" class="fw-medium text-decoration-none">{{ c.name }}</a></td>
-                            <td class="small">{{ c.kind_label() }}</td>
-                            <td class="small text-nowrap">{{ c.end_date.strftime('%d/%m/%Y') if c.end_date else '-' }}</td>
-                            <td>{{ status_badge(c.status()) }}</td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="4" class="text-center py-3 text-muted">Aucun contrat rattaché</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
     <div class="col-lg-4">
         {% if current_user.can_edit('contracts') %}
         <div class="data-card p-4 mb-3">
@@ -227,5 +152,107 @@
         </div>
         {% endif %}
     </div>
-</div>
+    </div>
+    {% endcall %}
+
+    {% call volet('contacts') %}
+    {# ===== Contacts hors incident =====
+       Saisis ICI et nulle part ailleurs : les fiches logiciel les remontent
+       en lecture seule. La question « qui j'appelle ? » se pose devant le
+       logiciel, mais la réponse vaut pour tous ceux du même éditeur. #}
+    {% if supplier.has_contacts() %}
+    <div class="data-card p-4 mb-3">
+        <h6 class="fw-bold fiche-titre fiche-titre--rose mb-3"><i class="bi bi-person-lines-fill me-2"></i>Contacts</h6>
+        <div class="fiche-grille">
+            {{ contact('Commercial', supplier.commercial_contact, supplier.commercial_phone, supplier.commercial_email) }}
+            {{ contact('Commercial (second)', supplier.commercial_contact2, supplier.commercial_phone2, supplier.commercial_email2) }}
+            {{ contact('Administratif / facturation', supplier.admin_contact, supplier.admin_phone, supplier.admin_email) }}
+            {{ contact('DPO', supplier.dpo_contact, supplier.dpo_phone, supplier.dpo_email) }}
+        </div>
+    </div>
+    {% endif %}
+    {% endcall %}
+
+    {% call volet('documents') %}
+    {% with doc_parent_kind='supplier', doc_parent_id=supplier.id, doc_permission='contracts' %}{% include '_documents.html' %}{% endwith %}
+    {% endcall %}
+
+    {% call volet('materiel-couvert') %}
+    {# ===== Impacts : matériel, logiciels et contrats couverts par ce fournisseur ===== #}
+    <div class="data-card mb-3">
+        <div class="card-header-custom">
+            <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0"><i class="bi bi-hdd-network me-2"></i>Matériel couvert
+                <span class="badge bg-secondary ms-1">{{ equipments|length }}</span></h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Nom</th><th>Type</th><th>Environnement</th><th>Criticité</th></tr></thead>
+                <tbody>
+                    {% for e in equipments %}
+                    <tr>
+                        <td><a href="{{ url_for('inventory.detail', id=e.id) }}" class="fw-medium text-decoration-none">{{ e.name }}</a></td>
+                        <td class="small">{{ e.kind_label() }}</td>
+                        <td class="small">{{ e.env_label() if e.environment else '-' }}</td>
+                        <td class="small">{{ e.criticality or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center py-3 text-muted">Aucun matériel rattaché</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endcall %}
+
+    {% call volet('logiciels') %}
+    <div class="data-card mb-3">
+        <div class="card-header-custom">
+            <h6 class="fw-bold fiche-titre fiche-titre--violet mb-0"><i class="bi bi-window-stack me-2"></i>Logiciels
+                <span class="badge bg-secondary ms-1">{{ software|length }}</span></h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Nom</th><th>Version</th><th>Hébergement</th></tr></thead>
+                <tbody>
+                    {% for sw in software %}
+                    <tr>
+                        <td><a href="{{ url_for('software.detail', id=sw.id) }}" class="fw-medium text-decoration-none">{{ sw.name }}</a></td>
+                        <td class="small">{{ sw.version or '-' }}</td>
+                        <td class="small">{{ sw.hosting_label() }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="text-center py-3 text-muted">Aucun logiciel rattaché</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endcall %}
+
+    {% call volet('contrats') %}
+    <div class="data-card">
+        <div class="card-header-custom">
+            <h6 class="fw-bold fiche-titre fiche-titre--amber mb-0"><i class="bi bi-file-earmark-text me-2"></i>Contrats
+                <span class="badge bg-secondary ms-1">{{ contracts|length }}</span></h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Contrat</th><th>Type</th><th>Échéance</th><th>Statut</th></tr></thead>
+                <tbody>
+                    {% for c in contracts %}
+                    <tr>
+                        <td><a href="{{ url_for('contracts.detail', id=c.id) }}" class="fw-medium text-decoration-none">{{ c.name }}</a></td>
+                        <td class="small">{{ c.kind_label() }}</td>
+                        <td class="small text-nowrap">{{ c.end_date.strftime('%d/%m/%Y') if c.end_date else '-' }}</td>
+                        <td>{{ status_badge(c.status()) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center py-3 text-muted">Aucun contrat rattaché</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endcall %}
+{% endcall %}
 {% endblock %}

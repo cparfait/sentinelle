@@ -42,6 +42,7 @@
    le materiel est ambre des deux cotes, le reseau turquoise, la continuite
    verte. Voir _fiche_section.html. #}
 {% from '_fiche_section.html' import titre_section, faits, fait, fait_bloc %}
+{% from '_onglets.html' import barre, onglet, volets, volet %}
 {% macro section(icon, title, couleur='indigo') %}
 {{ titre_section(title, icon, couleur) }}
 {% endmacro %}
@@ -67,8 +68,16 @@
     </div>
 </div>
 
-<div class="row g-3">
-    <div class="col-lg-8">
+{% call barre('ficheItem') %}
+    {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+    {{ onglet('elements', 'Éléments liés', 'bi-diagram-3') }}
+    {{ onglet('logiciels', 'Logiciels installés', 'bi-window-stack') }}
+{% endcall %}
+
+{% call volets() %}
+    {% call volet('detail', actif=True) %}
+    <div class="row g-3">
+        <div class="col-lg-8">
         <div class="data-card p-3">
             <div class="d-flex justify-content-between align-items-start mb-3">
                 <h6 class="fw-bold mb-0">Fiche équipement</h6>
@@ -202,9 +211,8 @@
             <small class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Aucune sauvegarde renseignée.</small>
             {% endif %}
         </div>
-    </div>
-
-    <div class="col-lg-4">
+        </div>
+        <div class="col-lg-4">
         {% if item.supplier %}
         <div class="data-card p-4 mb-3">
             {{ titre_section('Support / fournisseur', 'bi-building', 'rose', 'mb-3') }}
@@ -223,82 +231,88 @@
             {% endif %}
         </div>
         {% endif %}
-
-        {% set linked = item.linked_items() %}
-        {% set show_certs = current_user.can_view('certificates') and linked['certificates'] %}
-        {% set show_bkps = current_user.can_view('backups') and linked['backups'] %}
-        {% set show_upds = current_user.can_view('updates') and linked['updates'] %}
-        {% set show_ctrs = current_user.can_view('contracts') and linked['contracts'] %}
-        {% if show_certs or show_bkps or show_upds or show_ctrs %}
-        <div class="data-card p-4 mb-3">
-            {{ titre_section('Éléments liés', 'bi-diagram-3', 'slate', 'mb-3') }}
-            {% if show_certs %}
-            <small class="text-muted d-block mb-1">Certificats</small>
-            <ul class="list-unstyled mb-2">
-                {% for c in linked['certificates'] %}
-                <li class="mb-1">
-                    <span class="badge-status badge-{{ c.status() }} me-1"></span>
-                    <a href="{{ url_for('certificates.detail', id=c.id) }}">{{ c.service_name }} — {{ c.domain }}</a>
-                    <small class="text-muted">exp. {{ c.expiry_date.strftime('%d/%m/%Y') }}</small>
-                </li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-            {% if show_bkps %}
-            <small class="text-muted d-block mb-1">Sauvegardes</small>
-            <ul class="list-unstyled mb-2">
-                {% for b in linked['backups'] %}
-                <li class="mb-1">
-                    <span class="badge-status badge-{{ b.computed_status() }} me-1"></span>
-                    <a href="{{ url_for('backups.detail', id=b.id) }}">{{ b.service_name }}</a>
-                    <small class="text-muted">{{ b.frequency_label().lower() }}</small>
-                </li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-            {% if show_upds %}
-            <small class="text-muted d-block mb-1">Mises à jour</small>
-            <ul class="list-unstyled {{ 'mb-2' if show_ctrs else 'mb-0' }}">
-                {% for u in linked['updates'] %}
-                <li class="mb-1">
-                    <span class="badge-status badge-{{ u.status_color() }} me-1"></span>
-                    <a href="{{ url_for('updates.detail', id=u.id) }}">{{ u.name }}</a>
-                    {% if u.current_version %}<small class="text-muted">v{{ u.current_version }}</small>{% endif %}
-                </li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-            {% if show_ctrs %}
-            <small class="text-muted d-block mb-1">Contrats</small>
-            <ul class="list-unstyled mb-0">
-                {% for c in linked['contracts'] %}
-                <li class="mb-1">
-                    <span class="badge-status badge-{{ c.status() }} me-1"></span>
-                    <a href="{{ url_for('contracts.detail', id=c.id) }}">{{ c.name }}</a>
-                    {% if c.end_date %}<small class="text-muted">éch. {{ c.end_date.strftime('%d/%m/%Y') }}</small>{% endif %}
-                </li>
-                {% endfor %}
-            </ul>
-            {% endif %}
         </div>
+    </div>
+    {% endcall %}
+
+    {% call volet('elements') %}
+    {% set linked = item.linked_items() %}
+    {% set show_certs = current_user.can_view('certificates') and linked['certificates'] %}
+    {% set show_bkps = current_user.can_view('backups') and linked['backups'] %}
+    {% set show_upds = current_user.can_view('updates') and linked['updates'] %}
+    {% set show_ctrs = current_user.can_view('contracts') and linked['contracts'] %}
+    {% if show_certs or show_bkps or show_upds or show_ctrs %}
+    <div class="data-card p-4 mb-3">
+        {{ titre_section('Éléments liés', 'bi-diagram-3', 'slate', 'mb-3') }}
+        {% if show_certs %}
+        <small class="text-muted d-block mb-1">Certificats</small>
+        <ul class="list-unstyled mb-2">
+            {% for c in linked['certificates'] %}
+            <li class="mb-1">
+                <span class="badge-status badge-{{ c.status() }} me-1"></span>
+                <a href="{{ url_for('certificates.detail', id=c.id) }}">{{ c.service_name }} — {{ c.domain }}</a>
+                <small class="text-muted">exp. {{ c.expiry_date.strftime('%d/%m/%Y') }}</small>
+            </li>
+            {% endfor %}
+        </ul>
         {% endif %}
-
-        {% set installed = item.software_list.filter_by(is_active=True).all() %}
-        {% if installed %}
-        <div class="data-card p-4 mb-3">
-            {{ titre_section('Logiciels installés', 'bi-window-stack', 'violet', 'mb-3') }}
-            <ul class="list-unstyled mb-0">
-                {% for s in installed %}
-                <li class="mb-1">
-                    <span class="badge-status badge-{{ s.computed_status() }} me-1"></span>
-                    <a href="{{ url_for('software.detail', id=s.id) }}">{{ s.name }}</a>
-                    {% if s.version %}<small class="text-muted">v{{ s.version }}</small>{% endif %}
-                    {% if s.is_saas %}<small class="text-muted">(SaaS)</small>{% endif %}
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
+        {% if show_bkps %}
+        <small class="text-muted d-block mb-1">Sauvegardes</small>
+        <ul class="list-unstyled mb-2">
+            {% for b in linked['backups'] %}
+            <li class="mb-1">
+                <span class="badge-status badge-{{ b.computed_status() }} me-1"></span>
+                <a href="{{ url_for('backups.detail', id=b.id) }}">{{ b.service_name }}</a>
+                <small class="text-muted">{{ b.frequency_label().lower() }}</small>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% if show_upds %}
+        <small class="text-muted d-block mb-1">Mises à jour</small>
+        <ul class="list-unstyled {{ 'mb-2' if show_ctrs else 'mb-0' }}">
+            {% for u in linked['updates'] %}
+            <li class="mb-1">
+                <span class="badge-status badge-{{ u.status_color() }} me-1"></span>
+                <a href="{{ url_for('updates.detail', id=u.id) }}">{{ u.name }}</a>
+                {% if u.current_version %}<small class="text-muted">v{{ u.current_version }}</small>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% if show_ctrs %}
+        <small class="text-muted d-block mb-1">Contrats</small>
+        <ul class="list-unstyled mb-0">
+            {% for c in linked['contracts'] %}
+            <li class="mb-1">
+                <span class="badge-status badge-{{ c.status() }} me-1"></span>
+                <a href="{{ url_for('contracts.detail', id=c.id) }}">{{ c.name }}</a>
+                {% if c.end_date %}<small class="text-muted">éch. {{ c.end_date.strftime('%d/%m/%Y') }}</small>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
         {% endif %}
     </div>
-</div>
+    {% endif %}
+    {% endcall %}
+
+    {% call volet('logiciels') %}
+    {% set installed = item.software_list.filter_by(is_active=True).all() %}
+    {% if installed %}
+    <div class="data-card p-4 mb-3">
+        {{ titre_section('Logiciels installés', 'bi-window-stack', 'violet', 'mb-3') }}
+        <ul class="list-unstyled mb-0">
+            {% for s in installed %}
+            <li class="mb-1">
+                <span class="badge-status badge-{{ s.computed_status() }} me-1"></span>
+                <a href="{{ url_for('software.detail', id=s.id) }}">{{ s.name }}</a>
+                {% if s.version %}<small class="text-muted">v{{ s.version }}</small>{% endif %}
+                {% if s.is_saas %}<small class="text-muted">(SaaS)</small>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    {% endcall %}
+{% endcall %}
 {% endblock %}
