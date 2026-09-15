@@ -34,8 +34,23 @@
 #  volume instance/. Le schema se cree et se met a jour tout seul au demarrage
 #  (db.create_all + _auto_migrate_sqlite) — rien a lancer a la main.
 #
-#  Mise a jour : git pull + docker build (commandes ci-dessus), puis
-#  « Update the stack » avec « Re-pull image and redeploy » dans Portainer.
+#  Mise a jour :  sudo ./scripts/deployer.sh  (git pull + docker build, avec
+#  les verifications), puis dans Portainer « Update the stack » en laissant
+#  « Re-pull image » DECOCHE.
+#
+#  ⚠ Ne JAMAIS cocher « Re-pull image » : l'image est construite sur cette
+#  machine et n'existe dans aucun registre. Docker irait la chercher sur le Hub
+#  et echouerait sur « pull access denied » — sans rien deployer.
+#
+#  ⚠ Portainer travaille sur une COPIE de ce fichier, prise le jour ou la pile
+#  a ete creee : elle ne suit pas le depot. Si ce fichier change ici, recopiez-le
+#  dans l'editeur de Portainer AVANT de redeployer, sinon c'est la definition
+#  perimee qui s'applique (montages et variables d'alors). deployer.sh previent
+#  quand un pull l'a modifie.
+#
+#  ⚠ Relancez deployer.sh APRES le redeploiement : il verifie que le conteneur
+#  a bien pris la nouvelle image. Un redeploiement sans effet ne se signale
+#  pas — l'application repart, en bonne sante, sur le code de la veille.
 # ============================================================================
 services:
   app:
