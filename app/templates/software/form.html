@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from '_quick_add.html' import qa_button, qa_add_link, qa_modal_supplier, qa_modal_contract, qa_modal_equipment %}
 {% block title %}{{ 'Modifier' if item else 'Ajouter' }} un logiciel - Sentinelle{% endblock %}
+{% from '_form_section.html' import section %}
 
 {% macro sel(name, labels, current, blank=None, disabled=False) %}
 <select name="{{ name }}" class="form-select"{{ ' disabled' if disabled }}>
@@ -27,6 +28,7 @@
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
+                {% call section('Identité', 'bi-window-stack', 'indigo') %}
                 {# ── Identité ── #}
                 <div class="row g-3 mb-3">
                     <div class="col-md-5">
@@ -51,6 +53,9 @@
                     </div>
                 </div>
 
+                {% endcall %}
+
+                {% call section('Hébergement & nature', 'bi-cloud', 'sky') %}
                 {# ── Hébergement et nature ── #}
                 <div class="row g-3 mb-3">
                     <div class="col-md-4">
@@ -91,6 +96,9 @@
                     </div>
                 </div>
 
+                {% endcall %}
+
+                {% call section('Qualification', 'bi-sliders', 'violet') %}
                 {# ── Qualification ── #}
                 <div class="row g-3 mb-3">
                     <div class="col-md-3">
@@ -121,6 +129,9 @@
                     </div>
                 </div>
 
+                {% endcall %}
+
+                {% call section('Authentification & utilisateurs', 'bi-person-lock', 'teal') %}
                 {# ── Authentification et utilisateurs ── #}
                 <div class="row g-3 mb-3">
                     <div class="col-md-4">
@@ -149,6 +160,9 @@
                     </div>
                 </div>
 
+                {% endcall %}
+
+                {% call section('Éditeur & contrat', 'bi-building', 'amber') %}
                 {# ── Éditeur et contrat ── #}
                 <div class="row g-3 mb-3">
                     <div class="col-md-4">
@@ -185,6 +199,9 @@
                     </div>
                 </div>
 
+                {% endcall %}
+
+                {% call section("Qui s'en sert", 'bi-people', 'emerald') %}
                 {# ── Référents ── #}
                 <div class="row g-3 mb-1">
                     <div class="col-md-3">
@@ -214,7 +231,7 @@
                 </div>
                 <div class="form-text mb-3">Écrire au métier pour une revue de droits, au technique pour un incident d'exploitation : les deux adresses évitent de manquer la cible.</div>
 
-                {# ── Services utilisateurs ──
+                {# ── Services utilisateurs, dans la meme section ──
                    Un logiciel sert souvent plusieurs directions, et une direction
                    en utilise plusieurs. Ils s'administrent dans les Référentiels,
                    avec leur référent. #}
@@ -229,6 +246,9 @@
                         {% if current_user.is_admin %}<a href="{{ url_for('referentials.index') }}">Référentiels</a>{% else %}les Référentiels (admin){% endif %}.</div>
                 </div>
 
+                {% endcall %}
+
+                {% call section("Serveurs d'installation", 'bi-hdd-stack', 'slate') %}
                 {# ── Serveurs d'installation ── #}
                 <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-1">
@@ -249,11 +269,10 @@
                     <div class="form-text">Ctrl/Cmd (ou Maj) pour sélectionner plusieurs. Cochez « Aucun serveur » plus haut si le logiciel n'en utilise pas.</div>
                 </div>
 
+                {% endcall %}
+
                 {# ── Volet RGPD ── #}
-                <fieldset class="border rounded p-3 mb-3">
-                    <legend class="float-none w-auto px-2 fs-6 fw-medium text-muted">
-                        <i class="bi bi-shield-lock me-1"></i>Données personnelles (RGPD)
-                    </legend>
+                {% call section('Données personnelles (RGPD)', 'bi-shield-lock', 'rose') %}
                     <div class="row g-3">
                         <div class="col-md-3 d-flex align-items-center">
                             <div class="form-check">
@@ -278,13 +297,16 @@
                             {{ sel('gdpr_location', data_location_labels, item.gdpr_location if item else 'inconnue') }}
                         </div>
                     </div>
-                </fieldset>
+                {% endcall %}
 
+                {% call section('Description', 'bi-journal-text', 'slate') %}
                 <div class="mb-3">
                     <label class="form-label fw-medium">Description / Notes</label>
                     <textarea name="description" class="form-control" rows="3"
                               placeholder="Périmètre fonctionnel, dépendances, particularités...">{{ item.description or '' if item else '' }}</textarea>
                 </div>
+                {% endcall %}
+
                 <div class="d-flex justify-content-end gap-2">
                     <a href="{{ url_for('software.list') }}" class="btn btn-outline-secondary">Annuler</a>
                     <button type="submit" class="btn btn-primary">

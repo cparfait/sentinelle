@@ -1,0 +1,33 @@
+{# ═══ Sections de formulaire ═══
+   Un long formulaire sans relief se lit mal : trente champs de même poids
+   visuel, et l'œil n'a nulle part où s'accrocher. Chaque section reçoit donc
+   une COULEUR propre — bandeau teinté, icône, barre d'accent — pour qu'on
+   retrouve « le réseau » ou « la garantie » d'un coup d'œil plutôt qu'en
+   lisant les intitulés un par un.
+
+   La couleur n'est pas décorative : elle est le repère. Deux sections de même
+   couleur dans un même formulaire annuleraient l'effet — d'où une couleur par
+   section, prise dans la palette de `style.css`.
+
+   Usage :
+
+     {% from '_form_section.html' import section %}
+     {% call section('Identification', 'bi-tag', 'indigo') %}
+         … les champs …
+     {% endcall %}
+
+   `kinds` pose l'attribut `data-kinds` de l'inventaire : la section se montre
+   ou se cache selon la nature d'équipement choisie. #}
+
+{% macro section(titre, icone, couleur='indigo', kinds=None, aide=None) %}
+<fieldset class="form-section form-section--{{ couleur }}{{ ' kind-section' if kinds }}"
+          {% if kinds %}data-kinds="{{ kinds }}"{% endif %}>
+    <legend class="form-section-titre">
+        <i class="bi {{ icone }}"></i>{{ titre }}
+    </legend>
+    {% if aide %}<p class="form-section-aide">{{ aide }}</p>{% endif %}
+    <div class="form-section-corps">
+        {{ caller() }}
+    </div>
+</fieldset>
+{% endmacro %}

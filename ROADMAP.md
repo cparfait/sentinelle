@@ -127,6 +127,17 @@ collectivité) vivent désormais dans Sentinelle, et ses données y ont été re
 - ✅ **Politique de mot de passe + expiration des sessions** — longueur minimale configurable (`PASSWORD_MIN_LENGTH`), déconnexion auto après inactivité (`SESSION_LIFETIME_MINUTES`, défaut 8 h), cookies durcis (HttpOnly, SameSite=Lax).
 
 ## Ergonomie / UX
+- ✅ **Formulaires en sections colorées** — treize formulaires, dont certains de trente champs, n'offraient
+  aucun relief : tout y avait le même poids visuel et l'œil n'avait nulle part où s'accrocher. Chaque section
+  porte désormais **sa couleur** — bandeau teinté, icône, barre d'accent —, posée par un composant unique
+  (`_form_section.html` + `.form-section` dans `style.css`) plutôt que main par main. La couleur est un
+  **repère, pas une décoration** : une même teinte ne se répète pas dans un écran (sauf l'ardoise, qui est la
+  teinte neutre), et un test le vérifie. Grammaire : indigo *identité* · sky *technique* · teal *réseau et
+  accès* · violet *personnes et ressources* · amber *argent* · emerald *échéances* · rose *sensible* ·
+  ardoise *notes*.
+- ✅ **Un test ouvre TOUS les formulaires** — `/updates/create` est resté cassé plusieurs jours (un filtre sur
+  une colonne retirée avec le connecteur) parce qu'aucun test n'ouvrait cet écran. Un formulaire qui ne
+  s'ouvre pas ne se signale nulle part : il attend qu'on clique dessus.
 - ✅ **Tri & filtres** sur les listes — tri automatique par criticité + surlignage + **filtres interactifs par statut** (barre Tous/Critique/Attention/À surveiller/OK générée en JS sur les tableaux `js-filterable`).
 - ✅ **Pagination / recherche** — journal d'audit (50/page + recherche plein-texte). Les listes métier disposent du tri + filtres par statut (volumes modestes).
 - ✅ **Badges de compteur** dans la sidebar — nombre d'éléments critiques (rouges) par section (comptes, certificats, domaines, backups, tests).

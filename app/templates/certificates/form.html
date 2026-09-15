@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Modifier' if certificate else 'Ajouter' }} un certificat - Sentinelle{% endblock %}
+{% from '_form_section.html' import section %}
 
 {% set signature = kind == 'signature' %}
 
@@ -44,6 +45,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="kind" value="{{ kind }}">
 
+                {% call section('Identité', 'bi-award', 'indigo') %}
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Service *</label>
@@ -80,15 +82,14 @@
                     {% endif %}
                 </div>
 
+                {% endcall %}
+
                 {% if signature %}
                 {# ── Le titulaire ──
                    La civilité et le prénom ont chacun leur champ, à part du nom :
                    c'est le NOM qui trie et qui se cherche. « Mme ARNAUD » se
                    rangerait sous M, avec les autres. #}
-                <fieldset class="border rounded p-3 mb-3">
-                    <legend class="float-none w-auto px-2 fs-6 fw-medium text-muted">
-                        <i class="bi bi-person-badge me-1"></i>Titulaire
-                    </legend>
+                {% call section('Titulaire', 'bi-person-badge', 'violet') %}
                     <div class="row g-3">
                         <div class="col-md-2">
                             <label class="form-label fw-medium">Civilité</label>
@@ -135,10 +136,11 @@
                             <div class="form-text">« Expiré » se déduit de la date.</div>
                         </div>
                     </div>
-                </fieldset>
+                {% endcall %}
 
                 {# ── Le certificat lui-même ── #}
-                <div class="row g-3 mb-3">
+                {% call section('Le certificat', 'bi-patch-check', 'sky') %}
+                <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label fw-medium">Usage</label>
                         {{ sel('cert_usage', usage_labels, certificate.cert_usage if certificate else None, blank='— Non renseigné —') }}
@@ -161,8 +163,10 @@
                         <div class="form-text">À citer pour une révocation.</div>
                     </div>
                 </div>
+                {% endcall %}
                 {% endif %}
 
+                {% call section('Émetteur & priorité', 'bi-flag', 'teal') %}
                 <div class="row">
                     {% if not signature %}
                     <div class="col-md-6 mb-3">
@@ -181,6 +185,9 @@
                         </select>
                     </div>
                 </div>
+                {% endcall %}
+
+                {% call section('Validité', 'bi-calendar-range', 'emerald') %}
                 <div class="row">
                     <div class="col-md-4 mb-3">
                         <label class="form-label fw-medium">{{ 'Début de validité' if signature else "Date d'émission" }}</label>
@@ -203,9 +210,15 @@
                     {% endif %}
                 </div>
 
+                {% endcall %}
+
                 {% if signature %}
-                {# ── Commande et révocation ── #}
-                <div class="row g-3 mb-3">
+                {# ── Commande et révocation ──
+                   En ROSE, comme tout ce qui touche a un secret : la section
+                   porte le code de revocation, qui bloque les signatures de son
+                   titulaire. La couleur previent avant qu'on lise. #}
+                {% call section('Commande & révocation', 'bi-shield-lock', 'rose') %}
+                <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label fw-medium">Montant TTC (€)</label>
                         <input type="text" name="amount_ttc" class="form-control" inputmode="decimal"
@@ -231,7 +244,9 @@
                         <div class="form-text">Il invalide le certificat — un secret. Saisir <code>-</code> pour l'effacer.</div>
                     </div>
                 </div>
+                {% endcall %}
                 {% else %}
+                {% call section('Renouvellement & équipement', 'bi-arrow-repeat', 'amber') %}
                 <div class="mb-3">
                     <div class="form-check form-switch">
                         <input type="checkbox" name="auto_renew" class="form-check-input" id="autoRenew"
@@ -244,13 +259,17 @@
                     {% include '_equipment_select.html' %}
                     {% endwith %}
                 </div>
+                {% endcall %}
                 {% endif %}
 
+                {% call section('Notes', 'bi-journal-text', 'slate') %}
                 <div class="mb-3">
                     <label class="form-label fw-medium">Description / Notes</label>
                     <textarea name="description" class="form-control" rows="3"
                               placeholder="Informations complémentaires...">{{ certificate.description if certificate and certificate.description else '' }}</textarea>
                 </div>
+                {% endcall %}
+
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if certificate else 'Ajouter' }}

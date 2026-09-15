@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Modifier' if user else 'Nouvel' }} utilisateur - Sentinelle{% endblock %}
+{% from '_form_section.html' import section %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -16,6 +17,7 @@
         <div class="data-card p-4">
             <form method="POST">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% call section('Identité', 'bi-person', 'indigo') %}
                 <div class="mb-3">
                     <label class="form-label fw-medium">Nom d'utilisateur</label>
                     {% if user %}
@@ -31,6 +33,9 @@
                            value="{{ user.email if user else '' }}"
                            placeholder="email@domaine.com">
                 </div>
+                {% endcall %}
+
+                {% call section('Mot de passe', 'bi-shield-lock', 'rose') %}
                 {% if user and user.is_ldap %}
                 <div class="mb-3">
                     <label class="form-label fw-medium">Mot de passe</label>
@@ -53,6 +58,9 @@
                     <small class="text-danger d-none" id="pwMismatch"><i class="bi bi-exclamation-triangle me-1"></i>Les deux mots de passe ne correspondent pas.</small>
                 </div>
                 {% endif %}
+                {% endcall %}
+
+                {% call section('Rôle', 'bi-person-badge', 'violet') %}
                 <div class="mb-3">
                     <label class="form-label fw-medium">Rôle *</label>
                     <select name="role" class="form-select" required>
@@ -64,6 +72,8 @@
                     </select>
                     <small class="text-muted"><a href="{{ url_for('users.roles') }}">Gérer les rôles & permissions</a></small>
                 </div>
+                {% endcall %}
+
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if user else 'Creer' }}

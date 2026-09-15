@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Modifier' if backup else 'Ajouter' }} un backup - Sentinelle{% endblock %}
+{% from '_form_section.html' import section %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -16,6 +17,7 @@
         <div class="data-card p-4">
             <form method="POST">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% call section('Identité', 'bi-hdd', 'indigo') %}
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Service *</label>
@@ -35,6 +37,9 @@
                         </select>
                     </div>
                 </div>
+                {% endcall %}
+
+                {% call section('Planification', 'bi-calendar-check', 'emerald') %}
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Emplacement</label>
@@ -68,11 +73,19 @@
                         </select>
                     </div>
                 </div>
+                {% endcall %}
+
+                {% call section('Équipement sauvegardé', 'bi-hdd-stack', 'teal') %}
                 <div class="mb-3">
                     {% with selected_id = backup.equipment_id if backup else none %}
                     {% include '_equipment_select.html' %}
                     {% endwith %}
                 </div>
+                {% endcall %}
+
+                {% call section('Notes', 'bi-journal-text', 'slate') %}
+                {% endcall %}
+
                 <div class="mb-3">
                     <label class="form-label fw-medium">Description / Notes</label>
                     <textarea name="description" class="form-control" rows="3"

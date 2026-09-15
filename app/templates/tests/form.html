@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Modifier' if test else 'Ajouter' }} un test - Sentinelle{% endblock %}
+{% from '_form_section.html' import section %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -16,6 +17,7 @@
         <div class="data-card p-4">
             <form method="POST">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% call section('Identité', 'bi-clipboard-check', 'indigo') %}
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Nom du test *</label>
@@ -45,6 +47,9 @@
                         </select>
                     </div>
                 </div>
+                {% endcall %}
+
+                {% call section('Cadence', 'bi-calendar-check', 'emerald') %}
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Derniere execution</label>
@@ -72,6 +77,11 @@
                         </select>
                     </div>
                 </div>
+                {% endcall %}
+
+                {% call section('Procédure', 'bi-journal-text', 'slate') %}
+                {% endcall %}
+
                 <div class="mb-3">
                     <label class="form-label fw-medium">Description / Procedure</label>
                     <textarea name="description" class="form-control" rows="4"

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Modifier' if account else 'Ajouter' }} un compte - Sentinelle{% endblock %}
+{% from '_form_section.html' import section %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -18,6 +19,7 @@
         <div class="data-card p-4">
             <form method="POST">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% call section('Identité', 'bi-key', 'indigo') %}
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Service *</label>
@@ -48,6 +50,9 @@
                         </select>
                     </div>
                 </div>
+                {% endcall %}
+
+                {% call section('Rotation du mot de passe', 'bi-arrow-repeat', 'emerald') %}
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-medium">Dernier changement de MDP</label>
@@ -60,6 +65,11 @@
                                value="{{ account.rotation_days if account else 90 }}" min="1" required>
                     </div>
                 </div>
+                {% endcall %}
+
+                {% call section('Notes', 'bi-journal-text', 'slate') %}
+                {% endcall %}
+
                 <div class="mb-3">
                     <label class="form-label fw-medium">Description / Notes</label>
                     <textarea name="description" class="form-control" rows="3"

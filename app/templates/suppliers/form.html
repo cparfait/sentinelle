@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Modifier' if supplier else 'Ajouter' }} un fournisseur - Sentinelle{% endblock %}
+{% from '_form_section.html' import section %}
 
 {# Un bloc de contact : nom, téléphone, mail. Les trois champs vont toujours
    ensemble — un numéro sans nom ne dit pas qui décroche. #}
-{% macro bloc_contact(titre, prefix, aide, nom, tel, mail) %}
-<fieldset class="border rounded p-3 mb-3">
-    <legend class="float-none w-auto px-2 fs-6 fw-medium text-muted">{{ titre }}</legend>
+{% macro bloc_contact(titre, prefix, aide, nom, tel, mail, icone, couleur) %}
+{% call section(titre, icone, couleur, aide=aide) %}
     <div class="row g-3">
         <div class="col-md-4">
             <label class="form-label fw-medium">Nom</label>
@@ -20,8 +20,7 @@
             <input type="email" name="{{ prefix }}_email" class="form-control" value="{{ mail or '' }}">
         </div>
     </div>
-    {% if aide %}<div class="form-text mt-2">{{ aide }}</div>{% endif %}
-</fieldset>
+{% endcall %}
 {% endmacro %}
 
 {% block content %}
@@ -39,7 +38,8 @@
         <div class="data-card p-4">
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="row g-3 mb-3">
+                {% call section('Identité', 'bi-building', 'indigo') %}
+                <div class="row g-3">
                     <div class="col-md-5">
                         <label class="form-label fw-medium">Nom *</label>
                         <input type="text" name="name" class="form-control" required
@@ -58,8 +58,6 @@
                         <input type="url" name="website" class="form-control" placeholder="https://..."
                                value="{{ supplier.website or '' if supplier else '' }}">
                     </div>
-                </div>
-                <div class="row g-3 mb-3">
                     <div class="col-md-4">
                         <label class="form-label fw-medium">Interlocuteur habituel</label>
                         <input type="text" name="contact_name" class="form-control"
@@ -75,8 +73,6 @@
                         <input type="text" name="phone" class="form-control"
                                value="{{ supplier.phone or '' if supplier else '' }}">
                     </div>
-                </div>
-                <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label class="form-label fw-medium">Adresse</label>
                         <input type="text" name="address" class="form-control"
@@ -93,15 +89,13 @@
                                value="{{ supplier.city or '' if supplier else '' }}">
                     </div>
                 </div>
+                {% endcall %}
 
                 {# ── Assistance ──
                    Le support vit AU NIVEAU de la société : un même fournisseur
                    assure celui de tous ses produits. Les fiches logiciel le
                    remontent en lecture seule. #}
-                <fieldset class="border rounded p-3 mb-3">
-                    <legend class="float-none w-auto px-2 fs-6 fw-medium text-muted">
-                        <i class="bi bi-life-preserver me-1"></i>Assistance
-                    </legend>
+                {% call section('Assistance', 'bi-life-preserver', 'sky') %}
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-medium">Portail de tickets (URL)</label>
@@ -136,33 +130,36 @@
                             <div class="form-text">Deux lignes : les horaires décrivent presque toujours deux régimes.</div>
                         </div>
                     </div>
-                </fieldset>
+                {% endcall %}
 
                 {{ bloc_contact('Commercial', 'commercial',
                                 "Pour l'offre et le renouvellement. Distinct du standard ci-dessus, qui reste celui de la société.",
                                 supplier.commercial_contact if supplier else '',
                                 supplier.commercial_phone if supplier else '',
-                                supplier.commercial_email if supplier else '') }}
+                                supplier.commercial_email if supplier else '',
+                                'bi-person-badge', 'emerald') }}
                 {{ bloc_contact('Commercial (second)', 'commercial2',
                                 "Fréquent chez les éditeurs qui séparent le renouvellement de l'avant-vente, ou pendant une passation.",
                                 supplier.commercial_contact2 if supplier else '',
                                 supplier.commercial_phone2 if supplier else '',
-                                supplier.commercial_email2 if supplier else '') }}
+                                supplier.commercial_email2 if supplier else '',
+                                'bi-person-badge', 'teal') }}
                 {{ bloc_contact('Administratif / facturation', 'admin', None,
                                 supplier.admin_contact if supplier else '',
                                 supplier.admin_phone if supplier else '',
-                                supplier.admin_email if supplier else '') }}
+                                supplier.admin_email if supplier else '',
+                                'bi-receipt', 'amber') }}
                 {{ bloc_contact('DPO de l\'éditeur', 'dpo',
                                 "À qui écrire pour une violation ou une demande d'exercice de droits sur les données qu'il héberge. Distinct du DPO de la collectivité.",
                                 supplier.dpo_contact if supplier else '',
                                 supplier.dpo_phone if supplier else '',
-                                supplier.dpo_email if supplier else '') }}
+                                supplier.dpo_email if supplier else '',
+                                'bi-shield-lock', 'rose') }}
 
-                <div class="mb-3">
-                    <label class="form-label fw-medium">Notes</label>
+                {% call section('Notes', 'bi-journal-text', 'slate') %}
                     <textarea name="notes" class="form-control" rows="3"
                               placeholder="Procédure d'ouverture de ticket, escalade, infos contrat...">{{ supplier.notes or '' if supplier else '' }}</textarea>
-                </div>
+                {% endcall %}
                 <div class="d-flex justify-content-end gap-2">
                     <a href="{{ url_for('suppliers.list') }}" class="btn btn-outline-secondary">Annuler</a>
                     <button type="submit" class="btn btn-primary">
