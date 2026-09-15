@@ -318,4 +318,6 @@ def test_la_fiche_sans_editeur_prend_toute_la_largeur(client):
     db.session.commit()
     html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
     assert 'col-lg-4' not in html
-    assert 'Ce logiciel ne traite pas de données personnelles' in html
+    # Le volet RGPD parait meme quand il n'y a rien a declarer : « non » est une
+    # reponse, et la rubrique absente se lirait comme un oubli de saisie.
+    assert 'Aucune donnee personnelle' in html

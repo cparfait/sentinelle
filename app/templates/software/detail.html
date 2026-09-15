@@ -2,6 +2,7 @@
 {% block title %}{{ item.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
 {% from '_fiche_section.html' import titre_section, faits, fait, fait_bloc %}
+{% from '_onglets.html' import barre, onglet, volets, volet %}
 
 {# ═══ Disposition ═══
    La fiche tenait sur deux tiers de largeur, en deux colonnes de champs très
@@ -85,208 +86,238 @@
 {% endif %}
 
 {# ═══ En haut : ce qui identifie le logiciel ═══ #}
-<div class="row g-3">
-    <div class="{{ 'col-lg-8' if item.supplier else 'col-12' }}">
-        <div class="data-card p-3 mb-3">
-            {% call faits() %}
-                {% call fait_bloc('Statut MAJ') %}{{ status_badge(item.computed_status()) }}{% endcall %}
-                {% call fait_bloc('Cycle de vie') %}
-                <span class="badge bg-{{ item.lifecycle_color() }}-subtle text-{{ item.lifecycle_color() }}">{{ item.lifecycle_label() }}</span>
-                {% endcall %}
-                {{ fait('Version', item.version) }}
-                {{ fait('Criticité', item.criticality) }}
-                {{ fait('Hébergement', item.hosting_label()) }}
-                {% call fait_bloc('Utilisateurs') %}
-                {%- if item.users_count is none %}<small>Non comptés</small>
-                {%- else %}{{ item.users_count }}{% if item.users_max %} <small>/ {{ item.users_max }}</small>{% endif %}{% endif -%}
-                {% endcall %}
+        {% call faits() %}
+            {% call fait_bloc('Statut MAJ') %}{{ status_badge(item.computed_status()) }}{% endcall %}
+            {% call fait_bloc('Cycle de vie') %}
+            <span class="badge bg-{{ item.lifecycle_color() }}-subtle text-{{ item.lifecycle_color() }}">{{ item.lifecycle_label() }}</span>
             {% endcall %}
+            {{ fait('Version', item.version) }}
+            {{ fait('Criticité', item.criticality) }}
+            {{ fait('Hébergement', item.hosting_label()) }}
+            {% call fait_bloc('Utilisateurs') %}
+            {%- if item.users_count is none %}<small>Non comptés</small>
+            {%- else %}{{ item.users_count }}{% if item.users_max %} <small>/ {{ item.users_max }}</small>{% endif %}{% endif -%}
+            {% endcall %}
+        {% endcall %}
 
-            <div class="fiche-sections">
-                <div class="fiche-bloc fiche-bloc--indigo">
-                    {{ titre_section('Identité', 'bi-window-stack', 'indigo', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% call bloc('Statut MAJ') %}{{ status_badge(item.computed_status()) }}{% endcall %}
-                        {{ champ('Version', item.version) }}
-                        {{ champ('Mise en service', item.service_date.strftime('%d/%m/%Y') if item.service_date else None) }}
-                        {% if item.url %}
-                        {% call bloc('URL / accès') %}
-                        <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.url }}</a>
-                        {% endcall %}
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div class="fiche-bloc fiche-bloc--sky">
-                    {{ titre_section('Hébergement & nature', 'bi-cloud', 'sky', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {{ champ('Hébergement', item.hosting_label() ~ (' — Docker' if item.is_docker else '')) }}
-                        {{ champ('Type de source', item.source_type_label()) }}
-                    </div>
-                </div>
-
-                <div class="fiche-bloc fiche-bloc--violet">
-                    {{ titre_section('Qualification', 'bi-sliders', 'violet', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {{ champ('Criticité', item.criticality) }}
-                        {{ champ('Technologie', item.technology.label if item.technology else None) }}
-                    </div>
-                </div>
-
-                <div class="fiche-bloc fiche-bloc--teal">
-                    {{ titre_section('Authentification & utilisateurs', 'bi-person-lock', 'teal', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% call bloc('Authentification') %}
-                        {{ item.auth_mode_label() or 'Non renseignée' }}
-                        {% if item.auth_strong %}<span class="badge bg-success-subtle text-success ms-1">2FA</span>{% endif %}
-                        {% endcall %}
-                        {% call bloc('Utilisateurs') %}
-                        {%- if item.users_count is none %}Non comptés
-                        {%- else %}{{ item.users_count }}{% if item.users_max %} / {{ item.users_max }}{% endif %}{% endif -%}
-                        {% endcall %}
-                    </div>
-                </div>
-
-                <div class="fiche-bloc fiche-bloc--amber">
-                    {{ titre_section('Éditeur & contrat', 'bi-building', 'amber', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% call bloc('Contrats / marchés', large=True) %}
-                        {% set marches = item.contracts.filter_by(is_active=True).all() %}
-                        {% if marches %}
-                            {% for c in marches %}
-                            <a href="{{ url_for('contracts.detail', id=c.id) }}" class="me-3">{{ c.name }}{% if c.end_date %} <small class="text-muted">— {{ c.end_date.strftime('%d/%m/%Y') }}</small>{% endif %}</a>
-                            {% endfor %}
-                        {% elif item.no_contract_note %}<span class="text-muted">{{ item.no_contract_note }}</span>
-                        {% else %}<span class="text-muted">Aucun contrat enregistré</span>{% endif %}
-                        {% endcall %}
-                    </div>
-                </div>
-
-                <div class="fiche-bloc fiche-bloc--emerald">
-                    {{ titre_section("Qui s'en sert", 'bi-people', 'emerald', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% call bloc('Référent métier') %}
-                        {{ item.responsible or '-' }}
-                        {% if item.responsible_email %}
-                        <a href="mailto:{{ item.responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.responsible_email }}</a>
-                        {% endif %}
-                        {% endcall %}
-                        {% call bloc('Référent technique') %}
-                        {{ item.tech_responsible or '-' }}
-                        {% if item.tech_responsible_email %}
-                        <a href="mailto:{{ item.tech_responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.tech_responsible_email }}</a>
-                        {% endif %}
-                        {% endcall %}
-                        {% call bloc('Services utilisateurs', large=True) %}
-                        {% for sv in item.user_services %}
-                        <span class="badge bg-light text-dark border me-1"
-                              title="{{ sv.contact_name or '' }}{% if sv.contact_email %} — {{ sv.contact_email }}{% endif %}">
-                            <i class="bi bi-people me-1"></i>{{ sv.name }}</span>
-                        {% else %}
-                        <span class="text-muted">Aucun service renseigné.</span>
-                        {% endfor %}
-                        {% endcall %}
-                    </div>
-                </div>
-
-                <div class="fiche-bloc fiche-bloc--slate">
-                    {{ titre_section("Serveurs d'installation", 'bi-hdd-stack', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% call bloc("Serveur(s)", large=True) %}
-                        {% if item.no_server %}
-                        <span class="text-muted">Aucun serveur : le logiciel tourne chez l'éditeur ou sur les postes des agents.</span>
-                        {% else %}
-                            {% for e in item.equipments %}
-                            <a href="{{ url_for('inventory.detail', id=e.id) }}" class="badge bg-light text-dark border text-decoration-none me-1">
-                                <i class="bi bi-hdd-network me-1"></i>{{ e.name }}</a>
-                            {% else %}
-                            <span class="text-muted">Aucun serveur renseigné.</span>
-                            {% endfor %}
-                        {% endif %}
-                        {% endcall %}
-                    </div>
-                </div>
-
-                {% if item.description %}
-                <div class="fiche-bloc fiche-bloc--rose">
-                    {{ titre_section('Description', 'bi-journal-text', 'rose', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% call bloc('Notes', large=True) %}{{ item.description }}{% endcall %}
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    {# ── Contacts de l'éditeur ──
-       HÉRITÉS, en lecture seule : ils se saisissent une seule fois, sur la fiche
-       de l'éditeur. La question « qui j'appelle ? » se pose devant le logiciel,
-       mais la réponse vaut pour tous les logiciels du même éditeur — la recopier
-       fiche par fiche garantirait des numéros divergents. #}
-    {% if item.supplier %}
-    {% set sup = item.supplier %}
-    <div class="col-lg-4">
-        <div class="fiche-cote">
-            <div class="data-card p-4 mb-3">
-                <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2"><i class="bi bi-building me-2"></i>Éditeur</h6>
-                <div class="fw-medium mb-2"><a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}">{{ sup.name }}</a></div>
-                <ul class="list-unstyled small mb-0">
-                    {% if sup.customer_ref %}<li class="mb-1"><span class="text-muted">N° client</span> <span class="fw-medium">{{ sup.customer_ref }}</span></li>{% endif %}
-                    {% if sup.support_url %}<li><i class="bi bi-life-preserver me-1"></i><a href="{{ sup.support_url }}" target="_blank" rel="noopener">Portail de tickets</a></li>{% endif %}
-                    {% if sup.support_phone or sup.phone %}<li><i class="bi bi-telephone me-1"></i>{{ sup.support_phone or sup.phone }}</li>{% endif %}
-                    {% if sup.support_email or sup.email %}<li class="text-truncate"><i class="bi bi-envelope me-1"></i><a href="mailto:{{ sup.support_email or sup.email }}">{{ sup.support_email or sup.email }}</a></li>{% endif %}
-                    {% if sup.hours %}<li class="text-muted"><i class="bi bi-clock me-1"></i>{{ sup.hours }}</li>{% endif %}
-                    {% if sup.hours2 %}<li class="text-muted"><i class="bi bi-clock invisible me-1"></i>{{ sup.hours2 }}</li>{% endif %}
-                </ul>
-            </div>
-            {% if sup.has_contacts() %}
-            <div class="data-card p-4 mb-3">
-                <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2"><i class="bi bi-person-lines-fill me-2"></i>Contacts
-                    <small class="fw-normal text-muted">(de l'éditeur)</small></h6>
-                <ul class="list-unstyled small mb-0">
-                    {{ contact('Commercial', sup.commercial_contact, sup.commercial_phone, sup.commercial_email) }}
-                    {{ contact('Commercial (2)', sup.commercial_contact2, sup.commercial_phone2, sup.commercial_email2) }}
-                    {{ contact('Administratif / facturation', sup.admin_contact, sup.admin_phone, sup.admin_email) }}
-                    {{ contact('DPO', sup.dpo_contact, sup.dpo_phone, sup.dpo_email) }}
-                </ul>
-                <div class="form-text mt-2">Se modifient sur la <a href="{{ url_for('suppliers.edit', id=sup.id) }}">fiche de l'éditeur</a>.</div>
-            </div>
-            {% endif %}
-        </div>
-    </div>
+{# ═══ Les onglets ═══
+   Tout tenait sur une seule colonne : le detail, puis les flux, puis les
+   consultations, puis les pieces jointes. Ces dernieres — ce qu'on vient
+   chercher le plus souvent — se trouvaient a deux ecrans du haut, et rien
+   n'annoncait leur existence depuis le premier. #}
+{% set pieces = attached_documents('software', item.id) if documents_enabled else [] %}
+{% call barre('ficheLogiciel') %}
+    {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+    {% if documents_enabled %}{{ onglet('documents', 'Documents', 'bi-paperclip', compteur=pieces|length) }}{% endif %}
+    {{ onglet('liens', 'Liens', 'bi-diagram-3', compteur=(sortants|length) + (entrants|length) + (partages|length)) }}
+    {{ onglet('suivi', 'Suivi', 'bi-activity', compteur=(updates|length) + (taches|length)) }}
+    {% if current_user.can_view('contracts') %}
+    {{ onglet('achat', 'Mise en concurrence', 'bi-cash-coin', compteur=consultations|length) }}
     {% endif %}
-</div>
+{% endcall %}
 
-{# ═══ En bas : ce qui se rattache au logiciel, sur toute la largeur ═══
-   Deux par deux quand la largeur le permet. Les cartes à tableau (consultations,
-   documents) gardent la ligne entière : une colonne de moitié les rendrait
-   illisibles. #}
-<div class="row g-3">
-    {# Le volet RGPD paraît MÊME quand le logiciel ne traite pas de données
-       personnelles : « non » est une réponse, et la carte absente se lirait
-       comme un oubli de saisie. #}
-    <div class="col-xl-6">
-        <div class="data-card p-4 h-100">
-            <h6 class="fw-bold fiche-titre fiche-titre--rose mb-3"><i class="bi bi-shield-lock me-2"></i>Données personnelles (RGPD)</h6>
-            {% if item.gdpr_personal_data %}
-            <div class="fiche-grille">
-                {{ champ('Catégories de données', item.gdpr_categories) }}
-                {{ champ('Réf. registre des traitements', item.gdpr_registry_ref) }}
-                {{ champ('Localisation des données', item.gdpr_location_label()) }}
+{% call volets() %}
+    {% call volet('detail', actif=True) %}
+        <div class="row g-3">
+            <div class="{{ 'col-lg-8' if item.supplier else 'col-12' }}">
+                <div class="data-card p-3 mb-3">
+                    <div class="fiche-sections">
+                        <div class="fiche-bloc fiche-bloc--indigo">
+                            {{ titre_section('Identité', 'bi-window-stack', 'indigo', 'mb-0') }}
+                            <div class="fiche-grille">
+                                {% call bloc('Statut MAJ') %}{{ status_badge(item.computed_status()) }}{% endcall %}
+                                {{ champ('Version', item.version) }}
+                                {{ champ('Mise en service', item.service_date.strftime('%d/%m/%Y') if item.service_date else None) }}
+                                {% if item.url %}
+                                {% call bloc('URL / accès') %}
+                                <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.url }}</a>
+                                {% endcall %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="fiche-bloc fiche-bloc--sky">
+                            {{ titre_section('Hébergement & nature', 'bi-cloud', 'sky', 'mb-0') }}
+                            <div class="fiche-grille">
+                                {{ champ('Hébergement', item.hosting_label() ~ (' — Docker' if item.is_docker else '')) }}
+                                {{ champ('Type de source', item.source_type_label()) }}
+                            </div>
+                        </div>
+
+                        <div class="fiche-bloc fiche-bloc--violet">
+                            {{ titre_section('Qualification', 'bi-sliders', 'violet', 'mb-0') }}
+                            <div class="fiche-grille">
+                                {{ champ('Criticité', item.criticality) }}
+                                {{ champ('Technologie', item.technology.label if item.technology else None) }}
+                            </div>
+                        </div>
+
+                        <div class="fiche-bloc fiche-bloc--teal">
+                            {{ titre_section('Authentification & utilisateurs', 'bi-person-lock', 'teal', 'mb-0') }}
+                            <div class="fiche-grille">
+                                {% call bloc('Authentification') %}
+                                {{ item.auth_mode_label() or 'Non renseignée' }}
+                                {% if item.auth_strong %}<span class="badge bg-success-subtle text-success ms-1">2FA</span>{% endif %}
+                                {% endcall %}
+                                {% call bloc('Utilisateurs') %}
+                                {%- if item.users_count is none %}Non comptés
+                                {%- else %}{{ item.users_count }}{% if item.users_max %} / {{ item.users_max }}{% endif %}{% endif -%}
+                                {% endcall %}
+                            </div>
+                        </div>
+
+                        <div class="fiche-bloc fiche-bloc--amber">
+                            {{ titre_section('Éditeur & contrat', 'bi-building', 'amber', 'mb-0') }}
+                            <div class="fiche-grille">
+                                {% call bloc('Contrats / marchés', large=True) %}
+                                {% set marches = item.contracts.filter_by(is_active=True).all() %}
+                                {% if marches %}
+                                    {% for c in marches %}
+                                    <a href="{{ url_for('contracts.detail', id=c.id) }}" class="me-3">{{ c.name }}{% if c.end_date %} <small class="text-muted">— {{ c.end_date.strftime('%d/%m/%Y') }}</small>{% endif %}</a>
+                                    {% endfor %}
+                                {% elif item.no_contract_note %}<span class="text-muted">{{ item.no_contract_note }}</span>
+                                {% else %}<span class="text-muted">Aucun contrat enregistré</span>{% endif %}
+                                {% endcall %}
+                            </div>
+                        </div>
+
+                        <div class="fiche-bloc fiche-bloc--emerald">
+                            {{ titre_section("Qui s'en sert", 'bi-people', 'emerald', 'mb-0') }}
+                            <div class="fiche-grille">
+                                {% call bloc('Référent métier') %}
+                                {{ item.responsible or '-' }}
+                                {% if item.responsible_email %}
+                                <a href="mailto:{{ item.responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.responsible_email }}</a>
+                                {% endif %}
+                                {% endcall %}
+                                {% call bloc('Référent technique') %}
+                                {{ item.tech_responsible or '-' }}
+                                {% if item.tech_responsible_email %}
+                                <a href="mailto:{{ item.tech_responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.tech_responsible_email }}</a>
+                                {% endif %}
+                                {% endcall %}
+                                {% call bloc('Services utilisateurs', large=True) %}
+                                {% for sv in item.user_services %}
+                                <span class="badge bg-light text-dark border me-1"
+                                      title="{{ sv.contact_name or '' }}{% if sv.contact_email %} — {{ sv.contact_email }}{% endif %}">
+                                    <i class="bi bi-people me-1"></i>{{ sv.name }}</span>
+                                {% else %}
+                                <span class="text-muted">Aucun service renseigné.</span>
+                                {% endfor %}
+                                {% endcall %}
+                            </div>
+                        </div>
+
+                        <div class="fiche-bloc fiche-bloc--slate">
+                            {{ titre_section("Serveurs d'installation", 'bi-hdd-stack', 'slate', 'mb-0') }}
+                            <div class="fiche-grille">
+                                {% call bloc("Serveur(s)", large=True) %}
+                                {% if item.no_server %}
+                                <span class="text-muted">Aucun serveur : le logiciel tourne chez l'éditeur ou sur les postes des agents.</span>
+                                {% else %}
+                                    {% for e in item.equipments %}
+                                    <a href="{{ url_for('inventory.detail', id=e.id) }}" class="badge bg-light text-dark border text-decoration-none me-1">
+                                        <i class="bi bi-hdd-network me-1"></i>{{ e.name }}</a>
+                                    {% else %}
+                                    <span class="text-muted">Aucun serveur renseigné.</span>
+                                    {% endfor %}
+                                {% endif %}
+                                {% endcall %}
+                            </div>
+                        </div>
+
+                        {# Le volet RGPD parait MEME quand le logiciel ne traite pas de
+                           donnees personnelles : « non » est une reponse, et la rubrique
+                           absente se lirait comme un oubli de saisie. #}
+                        <div class="fiche-bloc fiche-bloc--violet">
+                            {{ titre_section('Donnees personnelles (RGPD)', 'bi-shield-lock', 'violet', 'mb-0') }}
+                            <div class="fiche-grille">
+                                {% if item.gdpr_personal_data %}
+                                {{ champ('Categories', item.gdpr_categories) }}
+                                {{ champ('Ref. registre', item.gdpr_registry_ref) }}
+                                {{ champ('Localisation', item.gdpr_location_label()) }}
+                                {% if item.supplier and (item.supplier.dpo_contact or item.supplier.dpo_email) %}
+                                {% call bloc("DPO de l'editeur") %}
+                                {{ item.supplier.dpo_contact or '-' }}
+                                {% if item.supplier.dpo_email %}
+                                <a href="mailto:{{ item.supplier.dpo_email }}" class="d-block small text-truncate">{{ item.supplier.dpo_email }}</a>
+                                {% endif %}
+                                {% endcall %}
+                                {% endif %}
+                                {% else %}
+                                {% call bloc('Traitement') %}<span class="text-muted">Aucune donnee personnelle</span>{% endcall %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if item.description %}
+                        <div class="fiche-bloc fiche-bloc--rose">
+                            {{ titre_section('Description', 'bi-journal-text', 'rose', 'mb-0') }}
+                            <div class="fiche-grille">
+                                {% call bloc('Notes', large=True) %}{{ item.description }}{% endcall %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
-            {% if item.supplier and (item.supplier.dpo_contact or item.supplier.dpo_email) %}
-            <div class="small text-muted mt-3">
-                DPO de l'éditeur : <span class="fw-medium">{{ item.supplier.dpo_contact or '—' }}</span>
-                {% if item.supplier.dpo_email %}<a href="mailto:{{ item.supplier.dpo_email }}" class="ms-1">{{ item.supplier.dpo_email }}</a>{% endif %}
+
+            {# ── Contacts de l'éditeur ──
+               HÉRITÉS, en lecture seule : ils se saisissent une seule fois, sur la fiche
+               de l'éditeur. La question « qui j'appelle ? » se pose devant le logiciel,
+               mais la réponse vaut pour tous les logiciels du même éditeur — la recopier
+               fiche par fiche garantirait des numéros divergents. #}
+            {% if item.supplier %}
+            {% set sup = item.supplier %}
+            <div class="col-lg-4">
+                <div class="fiche-cote">
+                    <div class="data-card p-4 mb-3">
+                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2"><i class="bi bi-building me-2"></i>Éditeur</h6>
+                        <div class="fw-medium mb-2"><a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}">{{ sup.name }}</a></div>
+                        <ul class="list-unstyled small mb-0">
+                            {% if sup.customer_ref %}<li class="mb-1"><span class="text-muted">N° client</span> <span class="fw-medium">{{ sup.customer_ref }}</span></li>{% endif %}
+                            {% if sup.support_url %}<li><i class="bi bi-life-preserver me-1"></i><a href="{{ sup.support_url }}" target="_blank" rel="noopener">Portail de tickets</a></li>{% endif %}
+                            {% if sup.support_phone or sup.phone %}<li><i class="bi bi-telephone me-1"></i>{{ sup.support_phone or sup.phone }}</li>{% endif %}
+                            {% if sup.support_email or sup.email %}<li class="text-truncate"><i class="bi bi-envelope me-1"></i><a href="mailto:{{ sup.support_email or sup.email }}">{{ sup.support_email or sup.email }}</a></li>{% endif %}
+                            {% if sup.hours %}<li class="text-muted"><i class="bi bi-clock me-1"></i>{{ sup.hours }}</li>{% endif %}
+                            {% if sup.hours2 %}<li class="text-muted"><i class="bi bi-clock invisible me-1"></i>{{ sup.hours2 }}</li>{% endif %}
+                        </ul>
+                    </div>
+                    {% if sup.has_contacts() %}
+                    <div class="data-card p-4 mb-3">
+                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2"><i class="bi bi-person-lines-fill me-2"></i>Contacts
+                            <small class="fw-normal text-muted">(de l'éditeur)</small></h6>
+                        <ul class="list-unstyled small mb-0">
+                            {{ contact('Commercial', sup.commercial_contact, sup.commercial_phone, sup.commercial_email) }}
+                            {{ contact('Commercial (2)', sup.commercial_contact2, sup.commercial_phone2, sup.commercial_email2) }}
+                            {{ contact('Administratif / facturation', sup.admin_contact, sup.admin_phone, sup.admin_email) }}
+                            {{ contact('DPO', sup.dpo_contact, sup.dpo_phone, sup.dpo_email) }}
+                        </ul>
+                        <div class="form-text mt-2">Se modifient sur la <a href="{{ url_for('suppliers.edit', id=sup.id) }}">fiche de l'éditeur</a>.</div>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
-            {% endif %}
-            {% else %}
-            <p class="text-muted mb-0">Ce logiciel ne traite pas de données personnelles.</p>
             {% endif %}
         </div>
-    </div>
 
+    {% endcall %}
+
+    {% if documents_enabled %}
+    {% call volet('documents') %}
+        {% with doc_parent_kind='software', doc_parent_id=item.id, doc_permission='inventory', doc_title='Documents' %}{% include '_documents.html' %}{% endwith %}
+    {% endcall %}
+    {% endif %}
+
+    {% call volet('liens') %}
+    <div class="row g-3">
+        <div class="col-xl-6">{% include 'software/_flux.html' %}</div>
+        <div class="col-xl-6">{% include 'software/_partages.html' %}</div>
+    </div>
+    {% endcall %}
+
+    {% call volet('suivi') %}
+    <div class="row g-3">
     <div class="col-xl-6">
         <div class="data-card h-100">
             <div class="card-header-custom">
@@ -340,16 +371,13 @@
         </div>
     </div>
     {% endif %}
-
-    <div class="col-xl-6">{% include 'software/_flux.html' %}</div>
-    <div class="col-xl-6">{% include 'software/_partages.html' %}</div>
+    </div>
+    {% endcall %}
 
     {% if current_user.can_view('contracts') %}
-    <div class="col-12">{% include 'software/_consultations.html' %}</div>
+    {% call volet('achat') %}
+        {% include 'software/_consultations.html' %}
+    {% endcall %}
     {% endif %}
-
-    <div class="col-12">
-        {% with doc_parent_kind='software', doc_parent_id=item.id, doc_permission='inventory', doc_title='Documents' %}{% include '_documents.html' %}{% endwith %}
-    </div>
-</div>
+{% endcall %}
 {% endblock %}

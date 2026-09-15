@@ -1,0 +1,58 @@
+{# ═══ Onglets de fiche ═══
+   Une fiche portait tout sur une seule colonne : le détail, les flux, les
+   consultations, les pièces jointes, l'historique. Les pièces jointes — ce
+   qu'on vient chercher le plus souvent — se trouvaient à deux écrans du haut,
+   et rien n'annonçait leur existence depuis le premier.
+
+   Les onglets les remontent TOUS à portée d'un clic, et affichent leur nombre
+   sans qu'on ait à descendre : « Documents 3 » se lit depuis le haut de la
+   page.
+
+   Le bandeau de faits reste AU-DESSUS des onglets : c'est le résumé de la
+   fiche entière, il ne dépend pas de l'onglet ouvert.
+
+   Usage :
+     {% from '_onglets.html' import barre, onglet, volets, volet %}
+     {% call barre('ficheLogiciel') %}
+         {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+         {{ onglet('docs', 'Documents', 'bi-paperclip', compteur=pieces|length) }}
+     {% endcall %}
+     {% call volets() %}
+         {% call volet('detail', actif=True) %}…{% endcall %}
+         {% call volet('docs') %}…{% endcall %}
+     {% endcall %}
+#}
+
+{% macro barre(id) %}
+<ul class="nav fiche-onglets" id="{{ id }}" role="tablist" data-onglets="{{ id }}">
+    {{ caller() }}
+</ul>
+{% endmacro %}
+
+{# `compteur` vaut 0 aussi bien que None, et les deux se disent differemment :
+   0 affiche une pastille grise (« on a regarde, il n'y en a pas »), None
+   n'affiche rien (« ca ne se compte pas »). #}
+{% macro onglet(cible, libelle, icone, compteur=None, actif=False) %}
+<li class="nav-item" role="presentation">
+    <button class="nav-link{{ ' active' if actif }}" id="ong-{{ cible }}"
+            data-bs-toggle="tab" data-bs-target="#vol-{{ cible }}" type="button"
+            role="tab" aria-controls="vol-{{ cible }}"
+            aria-selected="{{ 'true' if actif else 'false' }}">
+        <i class="bi {{ icone }}"></i>{{ libelle }}
+        {%- if compteur is not none %}
+        <span class="fiche-onglet-nb{{ ' est-vide' if not compteur }}">{{ compteur }}</span>
+        {%- endif %}
+    </button>
+</li>
+{% endmacro %}
+
+{% macro volets() %}
+<div class="tab-content fiche-volets">{{ caller() }}</div>
+{% endmacro %}
+
+{% macro volet(cible, actif=False) %}
+<div class="tab-pane fade{{ ' show active' if actif }}" id="vol-{{ cible }}"
+     role="tabpanel" aria-labelledby="ong-{{ cible }}">
+    {{ caller() }}
+</div>
+{% endmacro %}

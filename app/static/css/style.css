@@ -1728,3 +1728,63 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     .fiche-champ { display: block; }
     .fiche-champ .fiche-valeur { text-align: left; margin-top: 2px; }
 }
+
+/* ==========================================================================
+   ONGLETS DE FICHE
+   Les pieces jointes, les flux, les consultations vivaient deux ecrans plus
+   bas, et rien ne signalait leur existence depuis le haut. Les onglets les
+   remontent a portee d'un clic et affichent leur nombre : « Documents 3 » se
+   lit sans descendre.
+
+   Dessin : un soulignement, pas des boites. Des onglets encadres ajouteraient
+   un troisieme niveau de cadre a une page qui en a deja deux (la carte, les
+   rubriques) — et le trait suffit a dire lequel est ouvert.
+   ========================================================================== */
+.fiche-onglets {
+    gap: 2px;
+    margin: 0 0 16px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+.fiche-onglets .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 14px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 8px 8px 0 0;
+    background: none;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    font-weight: 600;
+    /* Le trait du bas deborde d'un pixel sur celui du conteneur : sans cela
+       l'onglet actif parait pose au-dessus de la ligne, pas dessus. */
+    margin-bottom: -1px;
+}
+.fiche-onglets .nav-link:hover { color: var(--text); background: var(--hover-bg, rgba(0, 0, 0, 0.03)); }
+.fiche-onglets .nav-link.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    background: none;
+}
+.fiche-onglets .nav-link i { font-size: 0.95rem; }
+
+/* La pastille de comptage : zero se dit, il ne se tait pas. Une pastille grise
+   a zero signifie « on a regarde, il n'y en a pas » ; pas de pastille du tout
+   signifierait que la chose ne se compte pas. */
+.fiche-onglet-nb {
+    min-width: 20px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: rgba(var(--sec-indigo), 0.12);
+    color: rgb(var(--sec-indigo));
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: center;
+}
+.fiche-onglet-nb.est-vide {
+    background: var(--border);
+    color: var(--text-muted);
+}
+.fiche-volets > .tab-pane { outline: none; }

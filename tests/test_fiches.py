@@ -119,3 +119,17 @@ def test_la_valeur_se_pose_en_face_de_son_intitule(client, jeu):
     # Le gabarit ne doit plus produire de bloc colore : la couleur est passee au
     # filet du titre, et huit fonds colores se neutralisaient l'un l'autre.
     assert 'form-section' not in html
+
+
+def test_les_pieces_jointes_sont_a_un_clic(client, jeu):
+    """Elles vivaient a deux ecrans du haut de la fiche, et rien n'annoncait
+    leur existence depuis le premier. L'onglet les remonte ET affiche leur
+    nombre : « Documents 3 » se lit sans descendre."""
+    sw = jeu['/inventory/logiciels']
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    assert 'fiche-onglets' in html
+    assert 'data-bs-target="#vol-documents"' in html
+    assert 'data-bs-target="#vol-detail"' in html
+    # Le volet existe dans la page : l'onglet ne renvoie pas vers une autre URL,
+    # il devoile ce qui est deja rendu — pas de second aller-retour serveur.
+    assert 'id="vol-documents"' in html
