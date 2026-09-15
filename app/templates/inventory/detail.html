@@ -77,16 +77,10 @@
 {% call volets() %}
     {% call volet('detail', actif=True) %}
     <div class="row g-3">
-        <div class="col-lg-8">
+        {# Sans fournisseur, la colonne de droite n'a rien a montrer : la fiche
+           prend alors toute la largeur au lieu de laisser un tiers blanc. #}
+        <div class="{{ 'col-lg-8' if item.supplier else 'col-12' }}">
         <div class="data-card p-3">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <h6 class="fw-bold mb-0">Fiche équipement</h6>
-                <div class="d-flex gap-2 align-items-center">
-                    {% if item.criticality %}<span class="badge bg-{{ crit_colors.get(item.criticality, 'secondary') }}">Criticité {{ item.criticality }}</span>{% endif %}
-                    {{ status_badge(item.computed_status(), kind='inventory') }}
-                </div>
-            </div>
-
             {% if item.status_reasons() %}
             <div class="alert alert-warning py-2 small">
                 <i class="bi bi-exclamation-triangle me-1"></i>
@@ -187,6 +181,25 @@
                     </div>
                 </div>
                 {% endif %}
+                {# La continuite reste SUR la fiche : c'est elle qui dit si la
+                   machine est sauvegardee, donc ce qui decide de sa couleur de
+                   statut. La reléguer ailleurs cacherait la reponse a la question
+                   qu'on se pose en ouvrant la fiche. #}
+                <div class="fiche-bloc fiche-bloc--emerald">
+                    {{ titre_section('Continuité', 'bi-shield-check', 'emerald', 'mb-0') }}
+                    <div class="fiche-grille">
+                    {{ champ('Sauvegarde 1', ((item.backup1 or '') ~ (' (' ~ item.backup1_freq ~ ')' if item.backup1_freq else '')) | trim) }}
+                    {% if item.porte('virtualisation') %}
+                    {{ champ('Sauvegarde 2', ((item.backup2 or '') ~ (' (' ~ item.backup2_freq ~ ')' if item.backup2_freq else '')) | trim) }}
+                    {% endif %}
+                    {% if item.porte('pra') %}{{ champ('PRA / PCA', item.pra_pca) }}{% endif %}
+                    {% if not item.backup1 and not item.backup2 %}
+                    <div class="fiche-champ">
+                        <span class="fiche-valeur text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Aucune sauvegarde renseignée.</span>
+                    </div>
+                    {% endif %}
+                    </div>
+                </div>
             </div>
 
             {% if item.observations %}
@@ -198,19 +211,6 @@
             </div>
         </div>
 
-        <div class="data-card p-4 mt-3">
-            {{ titre_section('Continuité', 'bi-shield-check', 'emerald', 'mb-2') }}
-            <div class="fiche-grille">
-                {{ champ('Sauvegarde 1', ((item.backup1 or '') ~ (' (' ~ item.backup1_freq ~ ')' if item.backup1_freq else '')) | trim) }}
-                {% if item.porte('virtualisation') %}
-                {{ champ('Sauvegarde 2', ((item.backup2 or '') ~ (' (' ~ item.backup2_freq ~ ')' if item.backup2_freq else '')) | trim) }}
-                {% endif %}
-                {% if item.porte('pra') %}{{ champ('PRA / PCA', item.pra_pca) }}{% endif %}
-            </div>
-            {% if not item.backup1 and not item.backup2 %}
-            <small class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Aucune sauvegarde renseignée.</small>
-            {% endif %}
-        </div>
         </div>
         <div class="col-lg-4">
         {% if item.supplier %}

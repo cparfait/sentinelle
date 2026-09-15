@@ -30,10 +30,6 @@
     <div class="row g-3">
         <div class="col-lg-8">
         <div class="data-card p-3 mb-3">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <h6 class="fw-bold mb-0">Configuration</h6>
-                {{ status_badge(backup.computed_status(), kind='backup', fallback='-') }}
-            </div>
             {% call faits() %}
                 {% call fait_bloc('Statut') %}{{ status_badge(backup.computed_status(), kind='backup', fallback='-') }}{% endcall %}
                 {{ fait('Fréquence', {'daily': 'Quotidien', 'weekly': 'Hebdomadaire', 'monthly': 'Mensuel'}.get(backup.frequency, backup.frequency)) }}

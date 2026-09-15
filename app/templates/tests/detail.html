@@ -37,10 +37,6 @@
     <div class="row g-3">
         <div class="col-lg-8">
         <div class="data-card p-3 mb-3">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <h6 class="fw-bold mb-0">Details du test</h6>
-                {{ status_badge(test.computed_status(), kind='test', fallback=test.status) }}
-            </div>
             {% call faits() %}
                 {% call fait_bloc('Statut') %}{{ status_badge(test.computed_status(), kind='test', fallback=test.status) }}{% endcall %}
                 {{ fait('Prochaine échéance', test.next_due.strftime('%d/%m/%Y') if test.next_due else None) }}
