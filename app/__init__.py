@@ -336,6 +336,14 @@ def _migrate_data():
         "UPDATE certificate SET kind='tls' WHERE kind IS NULL OR kind=''"))
     db.session.execute(text(
         "UPDATE certificate SET validity='valide' WHERE validity IS NULL OR validity=''"))
+    # Les reglages du connecteur SoftInventory, retire : l'URL et la cle du
+    # catalogue, la cle d'exposition du parc. `config_store.load()` ignore deja
+    # ce qui n'est plus declare dans MANAGED -- ces lignes ne font donc rien de
+    # mal, mais une cle d'API oubliee en base est une cle d'API de trop.
+    db.session.execute(text(
+        "DELETE FROM app_config WHERE key IN "
+        "('SOFTINVENTORY_URL', 'SOFTINVENTORY_KEY', "
+        " 'INVENTORY_API_ENABLED', 'INVENTORY_API_TOKEN')"))
     # Le type d'asset « server » est remplace par « divers » (les serveurs sont
     # desormais geres dans l'inventaire).
     db.session.execute(text("UPDATE asset SET asset_type='divers' WHERE asset_type='server'"))

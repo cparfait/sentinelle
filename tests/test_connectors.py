@@ -105,3 +105,23 @@ def test_le_parc_n_est_plus_expose(app, client):
     assert client.post('/connecteurs/softinventory',
                        data={'action': 'generate_key'}).status_code == 404
 
+
+
+def test_les_reglages_du_connecteur_retire_sont_effaces(app):
+    """Une clé d'API oubliée en base est une clé d'API de trop : celles du
+    connecteur SoftInventory s'en vont avec lui."""
+    from sqlalchemy import text
+    from app import db, _migrate_data
+    for cle in ('SOFTINVENTORY_URL', 'SOFTINVENTORY_KEY',
+                'INVENTORY_API_ENABLED', 'INVENTORY_API_TOKEN'):
+        db.session.execute(text(
+            'INSERT OR REPLACE INTO app_config (key, value, is_secret) '
+            'VALUES (:k, :v, 0)'), {'k': cle, 'v': 'reste'})
+    db.session.commit()
+
+    _migrate_data()
+
+    restants = db.session.execute(text(
+        "SELECT count(*) FROM app_config WHERE key LIKE 'SOFTINVENTORY%' "
+        "OR key LIKE 'INVENTORY_API%'")).scalar()
+    assert restants == 0
