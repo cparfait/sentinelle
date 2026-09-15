@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ contract.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
-{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -25,6 +25,30 @@
 <div class="row g-3">
     <div class="col-lg-8">
         <div class="data-card p-3 mb-3">
+            {% call faits() %}
+                {% call fait_bloc('Statut') %}{{ status_badge(contract.status()) }}{% endcall %}
+                {{ fait('Échéance', contract.end_date.strftime('%d/%m/%Y') if contract.end_date else None) }}
+                {# La date qui compte pour AGIR n'est pas l'echeance mais
+                   l'echeance moins le preavis : au-dela, on subit la tacite
+                   reconduction ou la coupure. #}
+                {% call fait_bloc('Agir avant') %}
+                {% set days = contract.days_left() %}
+                {%- if days is not none -%}
+                {{ contract.action_deadline().strftime('%d/%m/%Y') }}
+                <small>({{ days }} j)</small>
+                {%- else -%}-{%- endif -%}
+                {% endcall %}
+                {% call fait_bloc('Montant annuel') %}
+                {{ ('%.0f' | format(contract.cost_yearly)) ~ ' €' if contract.cost_yearly else '-' }}
+                {% endcall %}
+                {% if contract.supplier %}
+                {% call fait_bloc('Fournisseur') %}
+                <a href="{{ url_for('suppliers.detail', id=contract.supplier_id) }}">{{ contract.supplier.name }}</a>
+                {% endcall %}
+                {% endif %}
+                {{ fait('Reconduction', 'Tacite' if contract.auto_renew else 'Non') }}
+            {% endcall %}
+
             <div class="fiche-sections">
                 <div class="fiche-bloc fiche-bloc--indigo">
                     {{ titre_section("Nature de l'acte", 'bi-file-earmark-text', 'indigo', 'mb-0') }}

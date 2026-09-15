@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ review.application }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
-{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -15,6 +15,14 @@
 <div class="row g-3">
     <div class="col-lg-8">
         <div class="data-card p-3 mb-3">
+            {% call faits() %}
+                {% call fait_bloc('Statut') %}{{ status_badge(review.computed_status()) }}{% endcall %}
+                {{ fait('Prochaine revue', review.next_review.strftime('%d/%m/%Y') if review.next_review else 'Non planifiée') }}
+                {{ fait('Dernière revue', review.last_review.strftime('%d/%m/%Y') if review.last_review else None) }}
+                {{ fait('Fréquence', '%d j' % review.frequency_days if review.frequency_days else None) }}
+                {{ fait('Responsable', review.responsible) }}
+            {% endcall %}
+
             <div class="fiche-sections">
                 <div class="fiche-bloc fiche-bloc--indigo">
                     {{ titre_section('Identité', 'bi-person-check', 'indigo', 'mb-0') }}

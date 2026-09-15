@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ supplier.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
-{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
 
 {# Un contact hors incident. Rien ne s'affiche quand les trois champs sont
    vides : une carte pleine de tirets ne dit pas qui appeler, elle dit qu'on ne
@@ -38,6 +38,22 @@
 <div class="row g-3">
     <div class="col-lg-8">
         <div class="data-card p-3 mb-3">
+            {# Un fournisseur n'a pas de statut : la question qu'on se pose devant sa
+               fiche est « qui j'appelle, et pour quoi il intervient chez nous ». #}
+            {% call faits() %}
+                {% call fait_bloc('Hotline') %}
+                {%- if supplier.support_phone or supplier.phone -%}
+                <a href="tel:{{ (supplier.support_phone or supplier.phone) | replace(' ', '') }}">{{ supplier.support_phone or supplier.phone }}</a>
+                {%- else -%}-{%- endif -%}
+                {% endcall %}
+                {% call fait_bloc('N° client') %}
+                {%- if supplier.customer_ref %}<code>{{ supplier.customer_ref }}</code>{% else %}-{% endif -%}
+                {% endcall %}
+                {{ fait('Contrats', supplier.contracts.count()) }}
+                {{ fait('Logiciels', supplier.software.count() if supplier.software else 0) }}
+                {{ fait('Horaires', supplier.hours) }}
+            {% endcall %}
+
             <div class="fiche-sections">
                 <div class="fiche-bloc fiche-bloc--sky">
                     {{ titre_section('Assistance', 'bi-life-preserver', 'sky', 'mb-0') }}

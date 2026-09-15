@@ -1522,55 +1522,164 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .form-section--slate   { --sec: var(--sec-slate); }
 
 /* ==========================================================================
-   FICHES : grille dense
-   Une fiche de vingt champs disposes en deux colonnes larges etire la lecture
-   sur deux ecrans et laisse la moitie de la ligne vide. La grille se remplit
-   d'elle-meme : autant de colonnes que la largeur en permet, et l'intitule
-   au-dessus de la valeur plutot qu'a cote — un libelle long ne repousse plus
-   la valeur du champ voisin.
+   FICHES
+   ------------------------------------------------------------------
+   Une fiche n'est pas un formulaire. Un formulaire de trente champs a besoin
+   qu'on le decoupe en boites ; une fiche de quinze valeurs a besoin d'etre lue
+   vite. Trois versions l'ont oublie : huit boites colorees, l'intitule pose
+   AU-DESSUS de sa valeur — donc deux fois plus haut —, et des blocs pleine
+   largeur pour un seul badge.
+
+   Ce qui reste : l'essentiel en tete, en tuiles ; le detail en colonnes qui
+   COULENT, valeur a droite de son intitule. Trois principes tiennent le
+   dessin.
+
+   1. La couleur nomme, elle ne remplit pas. Chaque rubrique porte sa teinte sur
+      une pastille d'icone et un filet qui s'efface — jamais sur un aplat : huit
+      aplats font un damier, et un damier ne repere rien.
+   2. Le trait separe, le blanc groupe. Les lignes se touchent presque, les
+      rubriques respirent : c'est l'ecart qui dit ou finit une idee.
+   3. Rien ne bouge au survol sauf ce qu'on survole.
    ========================================================================== */
-.fiche-grille {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 14px 24px;
+
+/* ---- Le bandeau : ce qu'on vient verifier neuf fois sur dix ----
+   En tuiles separees plutot qu'en bande jointive : chacune porte son filet
+   d'accent a gauche, et la derniere ligne n'a pas de case vide a combler. ---- */
+.fiche-faits {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 22px;
 }
-.fiche-champ { min-width: 0; }
-.fiche-champ .fiche-label {
+.fiche-fait {
+    --sec: var(--sec-slate);
+    flex: 1 1 150px;
+    min-width: 0;
+    position: relative;
+    padding: 11px 14px 11px 15px;
+    border: 1px solid var(--border);
+    border-left: 3px solid rgb(var(--sec));
+    border-radius: 4px 10px 10px 4px;
+    background:
+        linear-gradient(105deg, rgba(var(--sec), 0.07), rgba(var(--sec), 0) 62%),
+        var(--card);
+}
+.fiche-fait-k {
     display: block;
-    font-size: 0.72rem;
-    font-weight: 600;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--text-muted);
-    margin-bottom: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.fiche-fait-v {
+    margin-top: 4px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.25;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+.fiche-fait-v small { font-weight: 500; font-size: 0.78rem; color: var(--text-muted); }
+.fiche-fait-v .badge, .fiche-fait-v .badge-status { font-size: 0.78rem; vertical-align: 1px; }
+
+/* ---- Le detail : des colonnes qui coulent ----
+   Avec une grille, un groupe de deux lignes voisinait un groupe de six : la
+   ligne prenait la hauteur du plus grand et laissait un trou sous le plus
+   petit. Les colonnes se remplissent d'elles-memes. ---- */
+.fiche-sections { columns: 280px 3; column-gap: 34px; }
+.fiche-bloc {
+    --sec: var(--sec-indigo);
+    min-width: 0;
+    margin: 0 0 22px;
+    /* Un groupe ne se coupe jamais entre deux colonnes : son titre resterait en
+       bas de l'une et ses valeurs en haut de l'autre. */
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+}
+
+/* ---- La rubrique : pastille, intitule, filet qui s'efface ---- */
+.data-card .fiche-bloc > h6.fiche-titre {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0 0 9px;
+    padding: 0;
+    font-size: 0.71rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: rgb(var(--sec));
+    background: none;
+    border: 0;
+}
+.data-card .fiche-bloc > h6.fiche-titre::before { display: none; }
+.data-card .fiche-bloc > h6.fiche-titre > i {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 25px;
+    height: 25px;
+    margin: 0;
+    border-radius: 8px;
+    font-size: 0.84rem;
+    color: rgb(var(--sec)) !important;
+    background: rgba(var(--sec), 0.13);
+}
+/* Le filet prolonge l'intitule jusqu'au bord de la colonne et s'y dissout :
+   il dit ou commence la rubrique sans tracer de cadre autour d'elle. */
+.data-card .fiche-bloc > h6.fiche-titre::after {
+    content: "";
+    flex: 1 1 auto;
+    height: 1px;
+    background: linear-gradient(to right, rgba(var(--sec), 0.45), rgba(var(--sec), 0));
+}
+
+/* ---- La ligne : intitule a gauche, valeur a droite ----
+   C'est la correction qui compte le plus : l'intitule pose au-dessus de sa
+   valeur doublait la hauteur de chaque champ, et la fiche defilait sur deux
+   ecrans pour quinze valeurs. ---- */
+.fiche-grille { display: block; padding: 0; }
+.fiche-champ {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 14px;
+    min-width: 0;
+    margin: 0 -8px;
+    padding: 5px 8px;
+    border-radius: 7px;
+}
+.fiche-champ + .fiche-champ { box-shadow: inset 0 1px 0 var(--border); }
+.fiche-champ:hover { background: rgba(var(--sec), 0.06); }
+.fiche-champ .fiche-label {
+    flex: 0 1 auto;
+    font-size: 0.815rem;
+    color: var(--text-muted);
 }
 .fiche-champ .fiche-valeur {
-    font-size: 0.9rem;
+    flex: 0 1 auto;
+    min-width: 0;
+    font-weight: 600;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+/* Une liste de badges ou un paragraphe : l'alignement a droite les hacherait.
+   Ceux-la reprennent l'intitule au-dessus, et toute la largeur. */
+.fiche-champ--large { display: block; }
+.fiche-champ--large .fiche-valeur {
+    display: block;
+    margin-top: 4px;
+    text-align: left;
     font-weight: 500;
-    color: var(--text);
-    overflow-wrap: anywhere;   /* une URL longue ne deborde pas de sa colonne */
 }
-.fiche-champ .fiche-valeur a { font-weight: 500; }
-/* Un champ qui porte une liste (serveurs, services) prend la ligne entiere :
-   l'enfermer dans une colonne de 200px le ferait deborder sur six lignes. */
-.fiche-champ--large { grid-column: 1 / -1; }
+.fiche-bloc > *:not(h6):not(.fiche-grille) { padding-left: 0; }
 
-/* La colonne laterale suit la lecture au lieu de disparaitre en haut de page. */
-@media (min-width: 992px) {
-    .fiche-cote { position: sticky; top: 16px; }
-}
-
-/* ==========================================================================
-   FICHES : une couleur par section, la MEME que dans le formulaire
-   Les formulaires portaient deja leurs couleurs ; les fiches gardaient un
-   liseré indigo partout, si bien que la meme information changeait de repere
-   selon qu'on la saisissait ou qu'on la lisait. Le materiel est ambre des deux
-   cotes, le reseau turquoise, la continuite verte : l'oeil retrouve la section
-   au meme endroit du spectre, quel que soit l'ecran.
-
-   Plus leger qu'un formulaire : la barre d'accent et l'icone se teintent, sans
-   fond ni bordure. Une fiche se parcourt du regard — la remplir de blocs
-   colores la rendrait bruyante la ou un formulaire, lui, a besoin qu'on
-   decoupe sa longueur.
-   ========================================================================== */
+/* ---- Les titres des cartes autonomes : la barre d'accent, teintee ---- */
 .fiche-titre { --sec: var(--sec-indigo); }
 .data-card h6.fiche-titre { color: rgb(var(--sec)); }
 .data-card h6.fiche-titre::before { background: rgb(var(--sec)); }
@@ -1587,62 +1696,6 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .fiche-titre--teal    { --sec: var(--sec-teal); }
 .fiche-titre--slate   { --sec: var(--sec-slate); }
 
-/* Les sections d'une fiche se suivent en PLEINE largeur : une section de trois
-   champs logee dans une demi-colonne laissait l'autre moitie vide, et deux
-   sections cote a cote se decalaient des que l'une etait plus longue. En pleine
-   largeur, la grille dense y range d'elle-meme autant de colonnes que possible
-   — six champs tiennent souvent sur une seule ligne. (L'ecart entre sections
-   vient de la marge basse des blocs.) */
-
-/* ---- Sections de fiche : le bloc, pas seulement le lisere ----
-   Un simple trait d'accent a gauche du titre ne suffit pas a decouper une
-   fiche de trente champs : l'oeil ne voit qu'une suite d'intitules. La section
-   devient donc un bloc, comme dans les formulaires — bandeau teinte, bordure
-   d'accent — pour qu'on repere « Materiel & garantie » sans lire son titre.
-   ---- */
-/* Les blocs se rangent en COLONNES, pas en pile.
-   Empiles sur toute la largeur, une section de trois champs laissait les trois
-   quarts de sa ligne vides et la fiche s'etirait sur deux ecrans. Ils se
-   rangent donc deux ou trois de front selon la place, et seuls les blocs qui
-   portent une liste (contrats, services, serveurs) prennent la ligne entiere :
-   une liste de badges coupee a 300 px se replie en escalier. */
-.fiche-sections {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 12px;
-    align-items: start;
-}
-.fiche-bloc {
-    --sec: var(--sec-indigo);
-    border: 1px solid var(--border);
-    border-left: 4px solid rgb(var(--sec));
-    border-radius: var(--radius-lg);
-    background: var(--card);
-    overflow: hidden;
-}
-.fiche-bloc:has(.fiche-champ--large) { grid-column: 1 / -1; }
-/* Le titre redevient un bandeau plein : la barre d'accent qu'il portait tout
-   seul ferait doublon avec la bordure du bloc. */
-.data-card .fiche-bloc > h6.fiche-titre {
-    margin: 0;
-    padding: 7px 14px;
-    font-size: 0.82rem;
-    color: rgb(var(--sec));
-    background: rgba(var(--sec), 0.08);
-    border-bottom: 1px solid rgba(var(--sec), 0.18);
-}
-.data-card .fiche-bloc > h6.fiche-titre::before { display: none; }
-/* Dans un bloc, les colonnes se resserrent : le bloc est deja etroit, et un
-   minimum de 200 px n'y laisserait qu'une seule colonne. */
-.fiche-bloc > .fiche-grille {
-    padding: 12px 14px;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 10px 18px;
-}
-/* Ce qui suit la grille dans un bloc — les temoins de supervision, par
-   exemple — se retrouverait colle au bord sans cela. */
-.fiche-bloc > *:not(h6):not(.fiche-grille) { padding: 0 14px 10px; }
-
 .fiche-bloc--indigo  { --sec: var(--sec-indigo); }
 .fiche-bloc--sky     { --sec: var(--sec-sky); }
 .fiche-bloc--emerald { --sec: var(--sec-emerald); }
@@ -1651,3 +1704,22 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .fiche-bloc--violet  { --sec: var(--sec-violet); }
 .fiche-bloc--teal    { --sec: var(--sec-teal); }
 .fiche-bloc--slate   { --sec: var(--sec-slate); }
+
+/* Les tuiles du bandeau peuvent porter la meme teinte que leur rubrique. */
+.fiche-fait--indigo  { --sec: var(--sec-indigo); }
+.fiche-fait--sky     { --sec: var(--sec-sky); }
+.fiche-fait--emerald { --sec: var(--sec-emerald); }
+.fiche-fait--amber   { --sec: var(--sec-amber); }
+.fiche-fait--rose    { --sec: var(--sec-rose); }
+.fiche-fait--violet  { --sec: var(--sec-violet); }
+.fiche-fait--teal    { --sec: var(--sec-teal); }
+
+@media (min-width: 992px) { .fiche-cote { position: sticky; top: 16px; } }
+
+/* Sur un telephone, une seule colonne — et la valeur repasse sous son intitule :
+   « Contrat de maintenance » et sa valeur ne tiennent pas de front sur 360 px. */
+@media (max-width: 575.98px) {
+    .fiche-sections { columns: 1; }
+    .fiche-champ { display: block; }
+    .fiche-champ .fiche-valeur { text-align: left; margin-top: 2px; }
+}

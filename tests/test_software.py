@@ -84,8 +84,10 @@ def test_liste_filtre_hebergement(client):
 
 
 def test_edit_remplace_serveurs(client):
-    e1 = Equipment(name='A', kind='vm'); e2 = Equipment(name='B', kind='vm')
-    db.session.add_all([e1, e2]); db.session.commit()
+    e1 = Equipment(name='A', kind='vm')
+    e2 = Equipment(name='B', kind='vm')
+    db.session.add_all([e1, e2])
+    db.session.commit()
     client.post('/inventory/logiciels/create',
                 data={'name': 'GX', 'equipment_ids': [str(e1.id)]}, follow_redirects=True)
     sw = Software.query.filter_by(name='GX').first()
@@ -96,7 +98,9 @@ def test_edit_remplace_serveurs(client):
 
 
 def test_computed_status_depuis_updates(app):
-    sw = Software(name='S'); db.session.add(sw); db.session.commit()
+    sw = Software(name='S')
+    db.session.add(sw)
+    db.session.commit()
     assert sw.computed_status() == 'success'
     db.session.add(SystemUpdate(name='u', status='update_available', software_id=sw.id))
     db.session.commit()
@@ -117,7 +121,9 @@ def test_migration_asset_application(app):
 
 
 def test_delete_software(client):
-    sw = Software(name='Z'); db.session.add(sw); db.session.commit()
+    sw = Software(name='Z')
+    db.session.add(sw)
+    db.session.commit()
     client.post(f'/inventory/logiciels/{sw.id}/delete', follow_redirects=True)
     db.session.expire(sw)
     assert sw.is_active is False
@@ -149,7 +155,8 @@ def test_revue_conserve_application_hors_inventaire(client):
     sa valeur (option « hors inventaire ») a l'edition."""
     from app.models import AccessReview
     rv = AccessReview(application='AppLegacy', frequency_days=365, status='pending')
-    db.session.add(rv); db.session.commit()
+    db.session.add(rv)
+    db.session.commit()
     html = client.get(f'/reviews/{rv.id}/edit').get_data(as_text=True)
     assert 'AppLegacy' in html and 'hors inventaire' in html
 

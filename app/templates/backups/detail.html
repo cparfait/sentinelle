@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ backup.service_name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
-{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -27,6 +27,21 @@
                 <h6 class="fw-bold mb-0">Configuration</h6>
                 {{ status_badge(backup.computed_status(), kind='backup', fallback='-') }}
             </div>
+            {% call faits() %}
+                {% call fait_bloc('Statut') %}{{ status_badge(backup.computed_status(), kind='backup', fallback='-') }}{% endcall %}
+                {{ fait('Fréquence', {'daily': 'Quotidien', 'weekly': 'Hebdomadaire', 'monthly': 'Mensuel'}.get(backup.frequency, backup.frequency)) }}
+                {% call fait_bloc('Réussite 30 j') %}
+                {% set rate = backup.success_rate(30) %}
+                {%- if rate is not none -%}
+                <span class="{% if rate >= 95 %}text-success{% elif rate >= 80 %}text-warning{% else %}text-danger{% endif %}">{{ rate }}%</span>
+                {%- else -%}-{%- endif -%}
+                {% endcall %}
+                {% call fait_bloc('Série OK') %}
+                <span class="text-success">{{ backup.streak() }}</span> <small>jour(s)</small>
+                {% endcall %}
+                {{ fait('Emplacement', backup.location) }}
+            {% endcall %}
+
             <div class="fiche-sections">
                 <div class="fiche-bloc fiche-bloc--indigo">
                     {{ titre_section('Identité', 'bi-hdd', 'indigo', 'mb-0') }}

@@ -41,7 +41,7 @@
 {# Les couleurs sont celles du formulaire d'equipement, section par section :
    le materiel est ambre des deux cotes, le reseau turquoise, la continuite
    verte. Voir _fiche_section.html. #}
-{% from '_fiche_section.html' import titre_section %}
+{% from '_fiche_section.html' import titre_section, faits, fait, fait_bloc %}
 {% macro section(icon, title, couleur='indigo') %}
 {{ titre_section(title, icon, couleur) }}
 {% endmacro %}
@@ -84,6 +84,17 @@
                 {{ item.status_reasons() | join(' · ') }}
             </div>
             {% endif %}
+
+            {% call faits() %}
+                {% call fait_bloc('Statut') %}{{ status_badge(item.computed_status(), kind='inventory') }}{% endcall %}
+                {{ fait('Criticité', item.criticality) }}
+                {{ fait('Type', item.kind_label()) }}
+                {{ fait('OS', ((item.os or '') ~ (' ' ~ item.os_version if item.os_version else '')) | trim) }}
+                {% if item.porte('reseau') %}{{ fait('Adresse IP', item.ip_address) }}{% endif %}
+                {% call fait_bloc('Sauvegarde') %}
+                {%- if item.backup1 %}{{ item.backup1 }}{% else %}<small class="text-danger">aucune</small>{% endif -%}
+                {% endcall %}
+            {% endcall %}
 
             <div class="fiche-sections">
                 <div class="fiche-bloc fiche-bloc--indigo">

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ certificate.service_name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
-{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -38,6 +38,28 @@
                 <h6 class="fw-bold mb-0">Details du certificat</h6>
                 {{ status_badge(certificate.status()) }}
             </div>
+            {% call faits() %}
+                {% call fait_bloc('Statut') %}{{ status_badge(certificate.status()) }}{% endcall %}
+                {{ fait('Expiration', certificate.expiry_date.strftime('%d/%m/%Y') if certificate.expiry_date else 'à compléter') }}
+                {# Un certificat revoque n'est plus utilisable : le decompte de ses jours
+                   n'a plus de sens, et un chiffre rassurant serait un mensonge. #}
+                {% call fait_bloc('Jours restants') %}
+                {%- if not certificate.expiry_date -%}<small>non renseignée</small>
+                {%- elif not certificate.monitored() -%}<small>hors surveillance</small>
+                {%- else -%}
+                <span class="{% if certificate.status() == 'danger' %}text-danger{% elif certificate.status() == 'warning' %}text-warning{% else %}text-success{% endif %}">
+                    {{ (certificate.expiry_date - now().date()).days }}</span> <small>jour(s)</small>
+                {%- endif -%}
+                {% endcall %}
+                {% if certificate.kind == 'signature' %}
+                {{ fait('Titulaire', certificate.holder_label()) }}
+                {{ fait('Usage', certificate.usage_label()) }}
+                {% else %}
+                {{ fait('Domaine', certificate.domain) }}
+                {{ fait('Émetteur', certificate.issuer) }}
+                {% endif %}
+            {% endcall %}
+
             <div class="fiche-sections">
                 <div class="fiche-bloc fiche-bloc--indigo">
                     {{ titre_section('Identité', 'bi-award', 'indigo', 'mb-0') }}

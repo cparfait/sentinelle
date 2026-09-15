@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ item.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
-{% from '_fiche_section.html' import titre_section %}
+{% from '_fiche_section.html' import titre_section, faits, fait, fait_bloc %}
 
 {# ═══ Disposition ═══
    La fiche tenait sur deux tiers de largeur, en deux colonnes de champs très
@@ -88,6 +88,20 @@
 <div class="row g-3">
     <div class="{{ 'col-lg-8' if item.supplier else 'col-12' }}">
         <div class="data-card p-3 mb-3">
+            {% call faits() %}
+                {% call fait_bloc('Statut MAJ') %}{{ status_badge(item.computed_status()) }}{% endcall %}
+                {% call fait_bloc('Cycle de vie') %}
+                <span class="badge bg-{{ item.lifecycle_color() }}-subtle text-{{ item.lifecycle_color() }}">{{ item.lifecycle_label() }}</span>
+                {% endcall %}
+                {{ fait('Version', item.version) }}
+                {{ fait('Criticité', item.criticality) }}
+                {{ fait('Hébergement', item.hosting_label()) }}
+                {% call fait_bloc('Utilisateurs') %}
+                {%- if item.users_count is none %}<small>Non comptés</small>
+                {%- else %}{{ item.users_count }}{% if item.users_max %} <small>/ {{ item.users_max }}</small>{% endif %}{% endif -%}
+                {% endcall %}
+            {% endcall %}
+
             <div class="fiche-sections">
                 <div class="fiche-bloc fiche-bloc--indigo">
                     {{ titre_section('Identité', 'bi-window-stack', 'indigo', 'mb-0') }}

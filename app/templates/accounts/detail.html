@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ account.service_name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
-{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -29,6 +29,19 @@
                 <h6 class="fw-bold mb-0">Informations du compte</h6>
                 {{ status_badge(account.status()) }}
             </div>
+            {% call faits() %}
+                {% call fait_bloc('Statut') %}{{ status_badge(account.status()) }}{% endcall %}
+                {{ fait('Prochain changement', account.next_password_change.strftime('%d/%m/%Y') if account.next_password_change else None) }}
+                {% call fait_bloc('Jours restants') %}
+                {%- if account.next_password_change -%}
+                <span class="{% if account.status() == 'danger' %}text-danger{% elif account.status() == 'warning' %}text-warning{% else %}text-success{% endif %}">
+                    {{ (account.next_password_change - now().date()).days }}</span> <small>jour(s)</small>
+                {%- else -%}-{%- endif -%}
+                {% endcall %}
+                {{ fait('Rotation', '%d j' % account.rotation_days if account.rotation_days else None) }}
+                {{ fait('Utilisateur', account.username) }}
+            {% endcall %}
+
             <div class="fiche-sections">
                 <div class="fiche-bloc fiche-bloc--indigo">
                     {{ titre_section('Identité', 'bi-key', 'indigo', 'mb-0') }}

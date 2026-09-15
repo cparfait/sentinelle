@@ -5,7 +5,6 @@ Modele : au premier scan d'un domaine, on etablit une ligne de base silencieuse
 (les certificats deja publies ne declenchent pas d'alerte). Ensuite, tout nouveau
 certificat apparaissant dans les journaux CT declenche une alerte.
 """
-from datetime import datetime, timezone
 
 from flask import current_app
 

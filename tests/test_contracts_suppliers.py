@@ -22,8 +22,10 @@ def test_contract_multi_equipements(client):
 
 
 def test_edit_remplace_les_equipements(client):
-    e1 = Equipment(name='A', kind='vm'); e2 = Equipment(name='B', kind='vm')
-    db.session.add_all([e1, e2]); db.session.commit()
+    e1 = Equipment(name='A', kind='vm')
+    e2 = Equipment(name='B', kind='vm')
+    db.session.add_all([e1, e2])
+    db.session.commit()
     client.post('/contracts/create', data={'name': 'C', 'equipment_ids': [str(e1.id)]},
                 follow_redirects=True)
     ct = Contract.query.filter_by(name='C').first()
@@ -36,10 +38,12 @@ def test_edit_remplace_les_equipements(client):
 
 def test_migration_ancien_equipment_id(app):
     e = Equipment(name='LegacySRV', kind='physical')
-    db.session.add(e); db.session.commit()
+    db.session.add(e)
+    db.session.commit()
     ct = Contract(name='Ancien')
     ct.equipment_id = e.id          # ancien lien direct, sans ligne d'association
-    db.session.add(ct); db.session.commit()
+    db.session.add(ct)
+    db.session.commit()
     assert ct.equipments == []
     _migrate_data()                 # doit recopier equipment_id -> contract_equipment
     db.session.expire(ct)
@@ -100,10 +104,12 @@ def test_formulaires_affichent_bouton_ajout_rapide(client):
 
 def test_fiche_fournisseur_impacts(client):
     sup = Supplier(name='OVH')
-    db.session.add(sup); db.session.commit()
+    db.session.add(sup)
+    db.session.commit()
     e = Equipment(name='SRVWEB', kind='physical', supplier_id=sup.id)
     ct = Contract(name='Hebergement', supplier_id=sup.id)
-    db.session.add_all([e, ct]); db.session.commit()
+    db.session.add_all([e, ct])
+    db.session.commit()
     html = client.get(f'/suppliers/{sup.id}').get_data(as_text=True)
     assert html.count('SRVWEB') and 'Hebergement' in html
     assert 'Matériel couvert' in html and 'Contrats' in html

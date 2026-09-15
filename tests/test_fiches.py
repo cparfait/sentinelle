@@ -93,3 +93,29 @@ def test_les_balises_se_ferment(client, jeu):
     for url, _ in _fiches(jeu):
         html = client.get(url).get_data(as_text=True)
         assert html.count('<div') == html.count('</div>'), url
+
+
+def test_chaque_fiche_repond_avant_d_etre_lue(client, jeu):
+    """Le bandeau de faits porte ce qu'on vient verifier neuf fois sur dix.
+
+    Six cases au plus : au-dela ce n'est plus un resume, c'est un tableau, et il
+    faudrait de nouveau le lire — ce qui etait precisement le defaut d'avant.
+    """
+    import re
+    for url, _ in _fiches(jeu):
+        html = client.get(url).get_data(as_text=True)
+        assert 'fiche-faits' in html, f'{url} : pas de bandeau de faits'
+        cases = len(re.findall(r'class="fiche-fait"', html))
+        assert 3 <= cases <= 6, f'{url} : {cases} case(s) dans le bandeau'
+
+
+def test_la_valeur_se_pose_en_face_de_son_intitule(client, jeu):
+    """L'intitule etait AU-DESSUS de sa valeur : chaque champ pesait deux lignes,
+    les blocs doublaient de hauteur et la fiche defilait. Les deux sont
+    desormais sur la meme ligne — sauf les listes, que l'alignement a droite
+    hacherait."""
+    html = client.get(f"/inventory/logiciels/{jeu['/inventory/logiciels'].id}").get_data(as_text=True)
+    assert 'fiche-champ' in html
+    # Le gabarit ne doit plus produire de bloc colore : la couleur est passee au
+    # filet du titre, et huit fonds colores se neutralisaient l'un l'autre.
+    assert 'form-section' not in html

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ domain.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
-{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -27,6 +27,17 @@
 <div class="row g-3">
     <div class="col-lg-8">
         <div class="data-card p-3 mb-3">
+            {% call faits() %}
+                {% call fait_bloc('Statut') %}{{ status_badge(domain.status()) }}{% endcall %}
+                {{ fait('Expiration', domain.expiry_date.strftime('%d/%m/%Y') if domain.expiry_date else None) }}
+                {% call fait_bloc('Jours restants') %}
+                {%- if domain.expiry_date -%}{{ (domain.expiry_date - now().date()).days }} <small>jour(s)</small>
+                {%- else -%}-{%- endif -%}
+                {% endcall %}
+                {{ fait('Registrar', domain.registrar) }}
+                {{ fait('Auto-renouvellement', 'Oui' if domain.auto_renew else 'Non') }}
+            {% endcall %}
+
             <div class="fiche-sections">
                 <div class="fiche-bloc fiche-bloc--indigo">
                     {{ titre_section('Identité', 'bi-globe', 'indigo', 'mb-0') }}

@@ -26,7 +26,7 @@
 {% macro champ(label, value) %}
 <div class="fiche-champ">
     <span class="fiche-label">{{ label }}</span>
-    <div class="fiche-valeur">{{ value if value or value == 0 else '-' }}</div>
+    <span class="fiche-valeur">{{ value if value or value == 0 else '-' }}</span>
 </div>
 {% endmacro %}
 
@@ -35,6 +35,32 @@
 {% macro champ_bloc(label) %}
 <div class="fiche-champ">
     <span class="fiche-label">{{ label }}</span>
-    <div class="fiche-valeur">{{ caller() }}</div>
+    <span class="fiche-valeur">{{ caller() }}</span>
+</div>
+{% endmacro %}
+
+{# ═══ Le bandeau de faits ═══
+   Ce qu'on vient verifier neuf fois sur dix, en tete et en grand : on repond a
+   la question courante SANS lire la fiche, qui reste la pour les neuf autres
+   cas. Six cases au plus — au-dela, ce n'est plus un resume, c'est un tableau,
+   et il faudrait de nouveau le lire.
+
+   Chaque type de fiche choisit ses faits : l'echeance pour un certificat, le
+   dernier statut pour une sauvegarde, les jours restants pour un compte. #}
+{% macro faits() %}
+<div class="fiche-faits">{{ caller() }}</div>
+{% endmacro %}
+
+{% macro fait(label, value) %}
+<div class="fiche-fait">
+    <span class="fiche-fait-k">{{ label }}</span>
+    <div class="fiche-fait-v">{{ value if value or value == 0 else '-' }}</div>
+</div>
+{% endmacro %}
+
+{% macro fait_bloc(label) %}
+<div class="fiche-fait">
+    <span class="fiche-fait-k">{{ label }}</span>
+    <div class="fiche-fait-v">{{ caller() }}</div>
 </div>
 {% endmacro %}

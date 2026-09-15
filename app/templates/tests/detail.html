@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ test.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
-{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -33,6 +33,19 @@
                 <h6 class="fw-bold mb-0">Details du test</h6>
                 {{ status_badge(test.computed_status(), kind='test', fallback=test.status) }}
             </div>
+            {% call faits() %}
+                {% call fait_bloc('Statut') %}{{ status_badge(test.computed_status(), kind='test', fallback=test.status) }}{% endcall %}
+                {{ fait('Prochaine échéance', test.next_due.strftime('%d/%m/%Y') if test.next_due else None) }}
+                {% call fait_bloc('Jours restants') %}
+                {%- if test.next_due -%}
+                <span class="{% if test.computed_status() == 'danger' %}text-danger{% elif test.computed_status() == 'warning' %}text-warning{% else %}text-success{% endif %}">
+                    {{ (test.next_due - now().date()).days }}</span> <small>jour(s)</small>
+                {%- else -%}-{%- endif -%}
+                {% endcall %}
+                {{ fait('Fréquence', '%d j' % test.frequency_days if test.frequency_days else None) }}
+                {{ fait('Dernière exécution', test.last_performed.strftime('%d/%m/%Y') if test.last_performed else None) }}
+            {% endcall %}
+
             <div class="fiche-sections">
                 <div class="fiche-bloc fiche-bloc--indigo">
                     {{ titre_section('Identité', 'bi-clipboard-check', 'indigo', 'mb-0') }}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
 {% block title %}{{ update.name }} - Sentinelle{% endblock %}
 {% set status_labels = dict(status_choices) %}
 {% set type_labels = dict(type_choices) %}
@@ -16,6 +16,20 @@
 <div class="row g-3">
     <div class="col-lg-8">
         <div class="data-card p-3 mb-3">
+            {% call faits() %}
+                {% call fait_bloc('Statut') %}
+                <span class="badge-status badge-{{ update.status_color() }}">{{ status_labels.get(update.status, update.status) }}</span>
+                {% endcall %}
+                {% call fait_bloc('Version actuelle') %}<code>{{ update.current_version or '-' }}</code>{% endcall %}
+                {% call fait_bloc('Dernière disponible') %}<code>{{ update.latest_version or '-' }}</code>{% endcall %}
+                {{ fait('Dernière mise à jour', update.last_update.strftime('%d/%m/%Y') if update.last_update else None) }}
+                {% if update.equipment %}
+                {% call fait_bloc('Équipement') %}
+                <a href="{{ url_for('inventory.detail', id=update.equipment.id) }}">{{ update.equipment.name }}</a>
+                {% endcall %}
+                {% endif %}
+            {% endcall %}
+
             <div class="fiche-sections">
                 <div class="fiche-bloc fiche-bloc--indigo">
                     {{ titre_section('Identité', 'bi-arrow-up-circle', 'indigo', 'mb-0') }}
