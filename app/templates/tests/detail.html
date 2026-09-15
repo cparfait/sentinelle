@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ test.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -32,46 +33,49 @@
                 <h6 class="fw-bold mb-0">Details du test</h6>
                 {{ status_badge(test.computed_status(), kind='test', fallback=test.status) }}
             </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <table class="table table-borderless table-sm mb-0">
-                        <tr><td class="text-muted">Nom</td><td class="fw-medium">{{ test.name }}</td></tr>
-                        <tr><td class="text-muted">Type</td>
-                            <td class="fw-medium">
-                                {% for value, label in test_types %}
-                                    {% if test.test_type == value %}{{ label }}{% endif %}
-                                {% endfor %}
-                            </td>
-                        </tr>
-                        <tr><td class="text-muted">Frequence</td><td class="fw-medium">Tous les {{ test.frequency_days }} jours</td></tr>
-                        <tr><td class="text-muted">Priorite</td>
-                            <td><span class="badge bg-{% if test.priority == 'high' %}danger{% elif test.priority == 'medium' %}warning{% else %}secondary{% endif %}">
-                                {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(test.priority, test.priority) }}
-                            </span></td>
-                        </tr>
-                    </table>
+            <div class="fiche-sections">
+                <div class="fiche-bloc fiche-bloc--indigo">
+                    {{ titre_section('Identité', 'bi-clipboard-check', 'indigo', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {{ champ('Nom', test.name) }}
+                        {% call champ_bloc('Type') %}
+                        {%- for value, label in test_types %}{% if test.test_type == value %}{{ label }}{% endif %}{% endfor -%}
+                        {% endcall %}
+                        {% call champ_bloc('Priorité') %}
+                        <span class="badge bg-{% if test.priority == 'high' %}danger{% elif test.priority == 'medium' %}warning{% else %}secondary{% endif %}">
+                            {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(test.priority, test.priority) }}</span>
+                        {% endcall %}
+                        {{ champ('Résultat du dernier', test.result) }}
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <table class="table table-borderless table-sm mb-0">
-                        <tr><td class="text-muted">Derniere execution</td><td class="fw-medium">{{ test.last_performed.strftime('%d/%m/%Y') if test.last_performed else '-' }}</td></tr>
-                        <tr><td class="text-muted">Prochaine echeance</td><td class="fw-medium {% if test.computed_status() == 'danger' %}text-danger{% endif %}">{{ test.next_due.strftime('%d/%m/%Y') if test.next_due else '-' }}</td></tr>
-                        <tr><td class="text-muted">Jours restants</td>
-                            <td class="fw-bold {% if test.computed_status() == 'danger' %}text-danger{% elif test.computed_status() == 'warning' %}text-warning{% else %}text-success{% endif %}">
-                                {% if test.next_due %}
-                                    {% set days = (test.next_due - now().date()).days %}{{ days }} jour(s)
-                                {% else %}-{% endif %}
-                            </td>
-                        </tr>
-                        <tr><td class="text-muted">Resultat dernier</td><td>{{ test.result or '-' }}</td></tr>
-                    </table>
+
+                <div class="fiche-bloc fiche-bloc--emerald">
+                    {{ titre_section('Cadence', 'bi-calendar-check', 'emerald', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {{ champ('Fréquence', 'Tous les %d jours' % test.frequency_days if test.frequency_days else None) }}
+                        {{ champ('Dernière exécution', test.last_performed.strftime('%d/%m/%Y') if test.last_performed else None) }}
+                        {% call champ_bloc('Prochaine échéance') %}
+                        <span class="{% if test.computed_status() == 'danger' %}text-danger{% endif %}">
+                            {{ test.next_due.strftime('%d/%m/%Y') if test.next_due else '-' }}</span>
+                        {% endcall %}
+                        {% call champ_bloc('Jours restants') %}
+                        <span class="fw-bold {% if test.computed_status() == 'danger' %}text-danger{% elif test.computed_status() == 'warning' %}text-warning{% else %}text-success{% endif %}">
+                            {%- if test.next_due %}{{ (test.next_due - now().date()).days }} jour(s){% else %}-{% endif -%}</span>
+                        {% endcall %}
+                    </div>
                 </div>
+
+                {% if test.description %}
+                <div class="fiche-bloc fiche-bloc--slate">
+                    {{ titre_section('Procédure', 'bi-journal-text', 'slate', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Comment le test se fait') %}
+                        <span style="white-space: pre-line">{{ test.description }}</span>
+                        {% endcall %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
-            {% if test.description %}
-            <div class="mt-2 pt-2 border-top">
-                <small class="text-muted">Procedure / Description :</small>
-                <p class="mb-0" style="white-space: pre-line;">{{ test.description }}</p>
-            </div>
-            {% endif %}
         </div>
 
         <div class="data-card">

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ certificate.service_name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -37,71 +38,111 @@
                 <h6 class="fw-bold mb-0">Details du certificat</h6>
                 {{ status_badge(certificate.status()) }}
             </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <table class="table table-borderless table-sm mb-0">
-                        <tr><td class="text-muted">Service</td><td class="fw-medium">{{ certificate.service_name }}</td></tr>
-                        {% if certificate.kind == 'signature' %}
-                        <tr><td class="text-muted">Titulaire</td><td class="fw-medium">{{ certificate.holder_label() or '-' }}</td></tr>
-                        <tr><td class="text-muted">Fonction</td><td class="fw-medium">{{ certificate.holder_role or '-' }}</td></tr>
-                        <tr><td class="text-muted">E-mail</td>
-                            <td>{% if certificate.holder_email %}<a href="mailto:{{ certificate.holder_email }}">{{ certificate.holder_email }}</a>{% else %}-{% endif %}</td></tr>
-                        <tr><td class="text-muted">Service utilisateur</td><td class="fw-medium">{{ certificate.service.name if certificate.service else '-' }}</td></tr>
-                        <tr><td class="text-muted">Autorité</td>
-                            <td>{% if certificate.supplier %}<a href="{{ url_for('suppliers.detail', id=certificate.supplier_id) }}" class="fw-medium">{{ certificate.supplier.name }}</a>{% else %}-{% endif %}</td></tr>
-                        <tr><td class="text-muted">Usage</td><td class="fw-medium">{{ certificate.usage_label() or '-' }}</td></tr>
-                        <tr><td class="text-muted">Support</td><td class="fw-medium">{{ certificate.support_label() or '-' }}</td></tr>
-                        {% else %}
-                        <tr><td class="text-muted">Domaine</td><td class="fw-medium"><code>{{ certificate.domain or '-' }}</code></td></tr>
-                        <tr><td class="text-muted">Émetteur</td><td class="fw-medium">{{ certificate.issuer or '-' }}</td></tr>
-                        <tr><td class="text-muted">Auto-renouvellement</td>
-                            <td>{% if certificate.auto_renew %}<span class="badge bg-success">Oui</span>{% else %}<span class="badge bg-secondary">Non</span>{% endif %}</td>
-                        </tr>
+            <div class="fiche-sections">
+                <div class="fiche-bloc fiche-bloc--indigo">
+                    {{ titre_section('Identité', 'bi-award', 'indigo', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {{ champ('Service', certificate.service_name) }}
+                        {% call champ_bloc('Priorité') %}
+                        <span class="badge bg-{% if certificate.priority == 'high' %}danger{% elif certificate.priority == 'medium' %}warning{% else %}secondary{% endif %}">
+                            {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(certificate.priority, certificate.priority) }}</span>
+                        {% endcall %}
+                    </div>
+                </div>
+
+                {% if certificate.kind == 'signature' %}
+                <div class="fiche-bloc fiche-bloc--violet">
+                    {{ titre_section('Titulaire', 'bi-person-badge', 'violet', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {{ champ('Titulaire', certificate.holder_label()) }}
+                        {{ champ('Fonction', certificate.holder_role) }}
+                        {% call champ_bloc('E-mail') %}
+                        {% if certificate.holder_email %}<a href="mailto:{{ certificate.holder_email }}">{{ certificate.holder_email }}</a>{% else %}-{% endif %}
+                        {% endcall %}
+                        {{ champ('Service utilisateur', certificate.service.name if certificate.service else None) }}
+                    </div>
+                </div>
+
+                <div class="fiche-bloc fiche-bloc--sky">
+                    {{ titre_section('Le certificat', 'bi-patch-check', 'sky', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {{ champ('Usage', certificate.usage_label()) }}
+                        {{ champ('Support', certificate.support_label()) }}
+                        {{ champ('Niveau', certificate.level) }}
+                        {% call champ_bloc('N° de série') %}
+                        {% if certificate.serial_number %}<code>{{ certificate.serial_number }}</code>{% else %}-{% endif %}
+                        {% endcall %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="fiche-bloc fiche-bloc--sky">
+                    {{ titre_section('Le certificat', 'bi-patch-check', 'sky', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Domaine') %}<code>{{ certificate.domain or '-' }}</code>{% endcall %}
+                        {% call champ_bloc('Auto-renouvellement') %}
+                        {% if certificate.auto_renew %}<span class="badge bg-success">Oui</span>{% else %}<span class="badge bg-secondary">Non</span>{% endif %}
+                        {% endcall %}
                         {% if certificate.equipment %}
-                        <tr><td class="text-muted">Équipement</td>
-                            <td><a href="{{ url_for('inventory.detail', id=certificate.equipment.id) }}" class="fw-medium">
-                                <i class="bi bi-hdd-stack me-1"></i>{{ certificate.equipment.name }}</a></td>
-                        </tr>
+                        {% call champ_bloc('Équipement') %}
+                        <a href="{{ url_for('inventory.detail', id=certificate.equipment.id) }}">
+                            <i class="bi bi-hdd-stack me-1"></i>{{ certificate.equipment.name }}</a>
+                        {% endcall %}
                         {% endif %}
-                        {% endif %}
-                    </table>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <table class="table table-borderless table-sm mb-0">
-                        <tr><td class="text-muted">Date emission</td><td class="fw-medium">{{ certificate.issued_at.strftime('%d/%m/%Y') if certificate.issued_at else '-' }}</td></tr>
-                        <tr><td class="text-muted">Expiration</td><td class="fw-medium {% if certificate.status() == 'danger' %}text-danger{% endif %}">{{ certificate.expiry_date.strftime('%d/%m/%Y') if certificate.expiry_date else 'à compléter' }}</td></tr>
-                        <tr><td class="text-muted">Jours restants</td>
-                            {# Un certificat révoqué n'est plus utilisable : le
-                               décompte de ses jours n'a plus de sens. #}
-                            {% if not certificate.expiry_date %}
-                            <td class="text-muted">échéance non renseignée</td>
-                            {% elif not certificate.monitored() %}
-                            <td class="text-muted">hors surveillance ({{ certificate.validity_label()|lower }})</td>
-                            {% else %}
-                            <td class="fw-bold {% if certificate.status() == 'danger' %}text-danger{% elif certificate.status() == 'warning' %}text-warning{% else %}text-success{% endif %}">
-                                {% set days = (certificate.expiry_date - now().date()).days %}{{ days }} jour(s)
-                            </td>
-                            {% endif %}
-                        </tr>
+                {% endif %}
+
+                <div class="fiche-bloc fiche-bloc--teal">
+                    {{ titre_section('Émetteur', 'bi-flag', 'teal', 'mb-0') }}
+                    <div class="fiche-grille">
                         {% if certificate.kind == 'signature' %}
-                        <tr><td class="text-muted">Durée commandée</td>
-                            <td class="fw-medium">{{ (certificate.duration_years ~ ' an(s)') if certificate.duration_years else '-' }}</td></tr>
-                        <tr><td class="text-muted">Niveau</td><td class="fw-medium">{{ certificate.level or '-' }}</td></tr>
-                        <tr><td class="text-muted">N° de série</td>
-                            <td class="fw-medium">{% if certificate.serial_number %}<code>{{ certificate.serial_number }}</code>{% else %}-{% endif %}</td></tr>
-                        <tr><td class="text-muted">Montant TTC</td>
-                            <td class="fw-medium">{{ ('%.2f' | format(certificate.amount_ttc)) ~ ' €' if certificate.amount_ttc is not none else '-' }}
-                                {%- if certificate.budget_code %} <small class="text-muted">(imputation {{ certificate.budget_code }})</small>{% endif %}</td></tr>
-                        <tr><td class="text-muted">Bon de commande</td>
-                            <td class="fw-medium">{{ certificate.order_signed_on.strftime('%d/%m/%Y') if certificate.order_signed_on else '-' }}</td></tr>
+                        {% call champ_bloc('Autorité') %}
+                        {% if certificate.supplier %}<a href="{{ url_for('suppliers.detail', id=certificate.supplier_id) }}">{{ certificate.supplier.name }}</a>{% else %}-{% endif %}
+                        {% endcall %}
+                        {% else %}
+                        {{ champ('Émetteur', certificate.issuer) }}
                         {% endif %}
-                        <tr><td class="text-muted">Priorite</td>
-                            <td><span class="badge bg-{% if certificate.priority == 'high' %}danger{% elif certificate.priority == 'medium' %}warning{% else %}secondary{% endif %}">
-                                {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(certificate.priority, certificate.priority) }}
-                            </span></td>
-                        </tr>
-                    </table>
+                    </div>
                 </div>
+
+                <div class="fiche-bloc fiche-bloc--emerald">
+                    {{ titre_section('Validité', 'bi-calendar-range', 'emerald', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {{ champ("Date d'émission", certificate.issued_at.strftime('%d/%m/%Y') if certificate.issued_at else None) }}
+                        {% call champ_bloc('Expiration') %}
+                        <span class="{% if certificate.status() == 'danger' %}text-danger{% endif %}">
+                            {{ certificate.expiry_date.strftime('%d/%m/%Y') if certificate.expiry_date else 'à compléter' }}</span>
+                        {% endcall %}
+                        {# Un certificat révoqué n'est plus utilisable : le décompte de ses
+                           jours n'a plus de sens. #}
+                        {% call champ_bloc('Jours restants') %}
+                        {% if not certificate.expiry_date %}
+                        <span class="text-muted">échéance non renseignée</span>
+                        {% elif not certificate.monitored() %}
+                        <span class="text-muted">hors surveillance ({{ certificate.validity_label()|lower }})</span>
+                        {% else %}
+                        <span class="fw-bold {% if certificate.status() == 'danger' %}text-danger{% elif certificate.status() == 'warning' %}text-warning{% else %}text-success{% endif %}">
+                            {{ (certificate.expiry_date - now().date()).days }} jour(s)</span>
+                        {% endif %}
+                        {% endcall %}
+                        {% if certificate.kind == 'signature' %}
+                        {{ champ('Durée commandée', (certificate.duration_years ~ ' an(s)') if certificate.duration_years else None) }}
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if certificate.kind == 'signature' %}
+                <div class="fiche-bloc fiche-bloc--amber">
+                    {{ titre_section('Commande', 'bi-receipt', 'amber', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Montant TTC') %}
+                        {{ ('%.2f' | format(certificate.amount_ttc)) ~ ' EUR' if certificate.amount_ttc is not none else '-' }}
+                        {%- if certificate.budget_code %} <small class="text-muted">(imputation {{ certificate.budget_code }})</small>{% endif %}
+                        {% endcall %}
+                        {{ champ('Bon de commande', certificate.order_signed_on.strftime('%d/%m/%Y') if certificate.order_signed_on else None) }}
+                    </div>
+                </div>
+                {% endif %}
             </div>
             {# Le code de révocation bloque les signatures de son titulaire : la
                route ne le transmet qu'à qui peut déjà modifier la fiche, et il

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ item.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
+{% from '_fiche_section.html' import titre_section %}
 
 {# ═══ Disposition ═══
    La fiche tenait sur deux tiers de largeur, en deux colonnes de champs très
@@ -87,75 +88,118 @@
 <div class="row g-3">
     <div class="{{ 'col-lg-8' if item.supplier else 'col-12' }}">
         <div class="data-card p-4 mb-3">
-            <div class="fiche-grille">
-                {% call bloc('Statut MAJ') %}{{ status_badge(item.computed_status()) }}{% endcall %}
-                {{ champ('Hébergement', item.hosting_label() ~ (' — Docker' if item.is_docker else '')) }}
-                {{ champ('Version', item.version) }}
-                {{ champ('Criticité', item.criticality) }}
-                {{ champ('Technologie', item.technology.label if item.technology else None) }}
-                {{ champ('Type de source', item.source_type_label()) }}
-                {% call bloc('Authentification') %}
-                    {{ item.auth_mode_label() or 'Non renseignée' }}
-                    {% if item.auth_strong %}<span class="badge bg-success-subtle text-success ms-1">2FA</span>{% endif %}
-                {% endcall %}
-                {% call bloc('Utilisateurs') %}
-                    {%- if item.users_count is none %}Non comptés
-                    {%- else %}{{ item.users_count }}{% if item.users_max %} / {{ item.users_max }}{% endif %}{% endif -%}
-                {% endcall %}
-                {{ champ('Mise en service', item.service_date.strftime('%d/%m/%Y') if item.service_date else None) }}
-                {% call bloc('Référent métier') %}
-                    {{ item.responsible or '-' }}
-                    {% if item.responsible_email %}
-                    <a href="mailto:{{ item.responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.responsible_email }}</a>
-                    {% endif %}
-                {% endcall %}
-                {% call bloc('Référent technique') %}
-                    {{ item.tech_responsible or '-' }}
-                    {% if item.tech_responsible_email %}
-                    <a href="mailto:{{ item.tech_responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.tech_responsible_email }}</a>
-                    {% endif %}
-                {% endcall %}
-                {% if item.url %}
-                {% call bloc('URL / accès') %}
-                    <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.url }}</a>
-                {% endcall %}
-                {% endif %}
+            <div class="fiche-sections">
+                <div class="fiche-bloc fiche-bloc--indigo">
+                    {{ titre_section('Identité', 'bi-window-stack', 'indigo', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call bloc('Statut MAJ') %}{{ status_badge(item.computed_status()) }}{% endcall %}
+                        {{ champ('Version', item.version) }}
+                        {{ champ('Mise en service', item.service_date.strftime('%d/%m/%Y') if item.service_date else None) }}
+                        {% if item.url %}
+                        {% call bloc('URL / accès') %}
+                        <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.url }}</a>
+                        {% endcall %}
+                        {% endif %}
+                    </div>
+                </div>
 
-                {% call bloc('Contrats / marchés', large=True) %}
-                    {% set marches = item.contracts.filter_by(is_active=True).all() %}
-                    {% if marches %}
-                        {% for c in marches %}
-                        <a href="{{ url_for('contracts.detail', id=c.id) }}" class="me-3">{{ c.name }}{% if c.end_date %} <small class="text-muted">— {{ c.end_date.strftime('%d/%m/%Y') }}</small>{% endif %}</a>
-                        {% endfor %}
-                    {% elif item.no_contract_note %}<span class="text-muted">{{ item.no_contract_note }}</span>
-                    {% else %}<span class="text-muted">Aucun contrat enregistré</span>{% endif %}
-                {% endcall %}
+                <div class="fiche-bloc fiche-bloc--sky">
+                    {{ titre_section('Hébergement & nature', 'bi-cloud', 'sky', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {{ champ('Hébergement', item.hosting_label() ~ (' — Docker' if item.is_docker else '')) }}
+                        {{ champ('Type de source', item.source_type_label()) }}
+                    </div>
+                </div>
 
-                {% call bloc('Services utilisateurs', large=True) %}
-                    {% for sv in item.user_services %}
-                    <span class="badge bg-light text-dark border me-1"
-                          title="{{ sv.contact_name or '' }}{% if sv.contact_email %} — {{ sv.contact_email }}{% endif %}">
-                        <i class="bi bi-people me-1"></i>{{ sv.name }}</span>
-                    {% else %}
-                    <span class="text-muted">Aucun service renseigné.</span>
-                    {% endfor %}
-                {% endcall %}
+                <div class="fiche-bloc fiche-bloc--violet">
+                    {{ titre_section('Qualification', 'bi-sliders', 'violet', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {{ champ('Criticité', item.criticality) }}
+                        {{ champ('Technologie', item.technology.label if item.technology else None) }}
+                    </div>
+                </div>
 
-                {% call bloc("Serveur(s) d'installation", large=True) %}
-                    {% if item.no_server %}
-                    <span class="text-muted">Aucun serveur : le logiciel tourne chez l'éditeur ou sur les postes des agents.</span>
-                    {% else %}
-                        {% for e in item.equipments %}
-                        <a href="{{ url_for('inventory.detail', id=e.id) }}" class="badge bg-light text-dark border text-decoration-none me-1">
-                            <i class="bi bi-hdd-network me-1"></i>{{ e.name }}</a>
+                <div class="fiche-bloc fiche-bloc--teal">
+                    {{ titre_section('Authentification & utilisateurs', 'bi-person-lock', 'teal', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call bloc('Authentification') %}
+                        {{ item.auth_mode_label() or 'Non renseignée' }}
+                        {% if item.auth_strong %}<span class="badge bg-success-subtle text-success ms-1">2FA</span>{% endif %}
+                        {% endcall %}
+                        {% call bloc('Utilisateurs') %}
+                        {%- if item.users_count is none %}Non comptés
+                        {%- else %}{{ item.users_count }}{% if item.users_max %} / {{ item.users_max }}{% endif %}{% endif -%}
+                        {% endcall %}
+                    </div>
+                </div>
+
+                <div class="fiche-bloc fiche-bloc--amber">
+                    {{ titre_section('Éditeur & contrat', 'bi-building', 'amber', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call bloc('Contrats / marchés', large=True) %}
+                        {% set marches = item.contracts.filter_by(is_active=True).all() %}
+                        {% if marches %}
+                            {% for c in marches %}
+                            <a href="{{ url_for('contracts.detail', id=c.id) }}" class="me-3">{{ c.name }}{% if c.end_date %} <small class="text-muted">— {{ c.end_date.strftime('%d/%m/%Y') }}</small>{% endif %}</a>
+                            {% endfor %}
+                        {% elif item.no_contract_note %}<span class="text-muted">{{ item.no_contract_note }}</span>
+                        {% else %}<span class="text-muted">Aucun contrat enregistré</span>{% endif %}
+                        {% endcall %}
+                    </div>
+                </div>
+
+                <div class="fiche-bloc fiche-bloc--emerald">
+                    {{ titre_section("Qui s'en sert", 'bi-people', 'emerald', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call bloc('Référent métier') %}
+                        {{ item.responsible or '-' }}
+                        {% if item.responsible_email %}
+                        <a href="mailto:{{ item.responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.responsible_email }}</a>
+                        {% endif %}
+                        {% endcall %}
+                        {% call bloc('Référent technique') %}
+                        {{ item.tech_responsible or '-' }}
+                        {% if item.tech_responsible_email %}
+                        <a href="mailto:{{ item.tech_responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.tech_responsible_email }}</a>
+                        {% endif %}
+                        {% endcall %}
+                        {% call bloc('Services utilisateurs', large=True) %}
+                        {% for sv in item.user_services %}
+                        <span class="badge bg-light text-dark border me-1"
+                              title="{{ sv.contact_name or '' }}{% if sv.contact_email %} — {{ sv.contact_email }}{% endif %}">
+                            <i class="bi bi-people me-1"></i>{{ sv.name }}</span>
                         {% else %}
-                        <span class="text-muted">Aucun serveur renseigné.</span>
+                        <span class="text-muted">Aucun service renseigné.</span>
                         {% endfor %}
-                    {% endif %}
-                {% endcall %}
+                        {% endcall %}
+                    </div>
+                </div>
+
+                <div class="fiche-bloc fiche-bloc--slate">
+                    {{ titre_section("Serveurs d'installation", 'bi-hdd-stack', 'slate', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call bloc("Serveur(s)", large=True) %}
+                        {% if item.no_server %}
+                        <span class="text-muted">Aucun serveur : le logiciel tourne chez l'éditeur ou sur les postes des agents.</span>
+                        {% else %}
+                            {% for e in item.equipments %}
+                            <a href="{{ url_for('inventory.detail', id=e.id) }}" class="badge bg-light text-dark border text-decoration-none me-1">
+                                <i class="bi bi-hdd-network me-1"></i>{{ e.name }}</a>
+                            {% else %}
+                            <span class="text-muted">Aucun serveur renseigné.</span>
+                            {% endfor %}
+                        {% endif %}
+                        {% endcall %}
+                    </div>
+                </div>
 
                 {% if item.description %}
-                {% call bloc('Description', large=True) %}{{ item.description }}{% endcall %}
+                <div class="fiche-bloc fiche-bloc--rose">
+                    {{ titre_section('Description', 'bi-journal-text', 'rose', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call bloc('Notes', large=True) %}{{ item.description }}{% endcall %}
+                    </div>
+                </div>
                 {% endif %}
             </div>
         </div>

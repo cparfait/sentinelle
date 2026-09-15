@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ backup.service_name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -26,49 +27,58 @@
                 <h6 class="fw-bold mb-0">Configuration</h6>
                 {{ status_badge(backup.computed_status(), kind='backup', fallback='-') }}
             </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <table class="table table-borderless table-sm mb-0">
-                        <tr><td class="text-muted">Service</td><td class="fw-medium">{{ backup.service_name }}</td></tr>
-                        <tr><td class="text-muted">Type</td><td class="fw-medium">{{ {'full': 'Complet', 'incremental': 'Incremental', 'differential': 'Differentiel', 'snapshot': 'Snapshot'}.get(backup.backup_type, backup.backup_type or '-') }}</td></tr>
-                        <tr><td class="text-muted">Emplacement</td><td class="fw-medium">{{ backup.location or '-' }}</td></tr>
-                        <tr><td class="text-muted">Frequence</td><td class="fw-medium">{{ {'daily': 'Quotidien', 'weekly': 'Hebdomadaire', 'monthly': 'Mensuel'}.get(backup.frequency, backup.frequency or '-') }}</td></tr>
-                        {% if backup.equipment %}
-                        <tr><td class="text-muted">Équipement</td>
-                            <td><a href="{{ url_for('inventory.detail', id=backup.equipment.id) }}" class="fw-medium">
-                                <i class="bi bi-hdd-stack me-1"></i>{{ backup.equipment.name }}</a></td>
-                        </tr>
-                        {% endif %}
-                    </table>
+            <div class="fiche-sections">
+                <div class="fiche-bloc fiche-bloc--indigo">
+                    {{ titre_section('Identité', 'bi-hdd', 'indigo', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {{ champ('Service', backup.service_name) }}
+                        {{ champ('Type', {'full': 'Complet', 'incremental': 'Incrémental', 'differential': 'Différentiel', 'snapshot': 'Snapshot'}.get(backup.backup_type, backup.backup_type)) }}
+                        {{ champ('Emplacement', backup.location) }}
+                        {% call champ_bloc('Priorité') %}
+                        <span class="badge bg-{% if backup.priority == 'high' %}danger{% elif backup.priority == 'medium' %}warning{% else %}secondary{% endif %}">
+                            {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(backup.priority, backup.priority) }}</span>
+                        {% endcall %}
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <table class="table table-borderless table-sm mb-0">
-                        <tr><td class="text-muted">Heure prevue</td><td class="fw-medium">{{ backup.expected_time or '-' }}</td></tr>
-                        <tr><td class="text-muted">Priorite</td>
-                            <td><span class="badge bg-{% if backup.priority == 'high' %}danger{% elif backup.priority == 'medium' %}warning{% else %}secondary{% endif %}">
-                                {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(backup.priority, backup.priority) }}
-                            </span></td>
-                        </tr>
-                        <tr><td class="text-muted">Taux reussite 30j</td>
-                            <td class="fw-bold">
-                                {% set rate = backup.success_rate(30) %}
-                                {% if rate is not none %}
-                                    <span class="{% if rate >= 95 %}text-success{% elif rate >= 80 %}text-warning{% else %}text-danger{% endif %}">{{ rate }}%</span>
-                                {% else %}-{% endif %}
-                            </td>
-                        </tr>
-                        <tr><td class="text-muted">Serie OK en cours</td>
-                            <td class="fw-bold text-success">{{ backup.streak() }} jour(s)</td>
-                        </tr>
-                    </table>
+
+                <div class="fiche-bloc fiche-bloc--emerald">
+                    {{ titre_section('Planification & santé', 'bi-calendar-check', 'emerald', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {{ champ('Fréquence', {'daily': 'Quotidien', 'weekly': 'Hebdomadaire', 'monthly': 'Mensuel'}.get(backup.frequency, backup.frequency)) }}
+                        {{ champ('Heure prévue', backup.expected_time) }}
+                        {% call champ_bloc('Taux de réussite 30 j') %}
+                        {% set rate = backup.success_rate(30) %}
+                        {% if rate is not none %}
+                        <span class="fw-bold {% if rate >= 95 %}text-success{% elif rate >= 80 %}text-warning{% else %}text-danger{% endif %}">{{ rate }}%</span>
+                        {% else %}-{% endif %}
+                        {% endcall %}
+                        {% call champ_bloc('Série OK en cours') %}
+                        <span class="fw-bold text-success">{{ backup.streak() }} jour(s)</span>
+                        {% endcall %}
+                    </div>
                 </div>
+
+                {% if backup.equipment %}
+                <div class="fiche-bloc fiche-bloc--teal">
+                    {{ titre_section('Équipement sauvegardé', 'bi-hdd-stack', 'teal', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Équipement') %}
+                        <a href="{{ url_for('inventory.detail', id=backup.equipment.id) }}">
+                            <i class="bi bi-hdd-stack me-1"></i>{{ backup.equipment.name }}</a>
+                        {% endcall %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if backup.description %}
+                <div class="fiche-bloc fiche-bloc--slate">
+                    {{ titre_section('Notes', 'bi-journal-text', 'slate', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Description') %}{{ backup.description }}{% endcall %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
-            {% if backup.description %}
-            <div class="mt-2 pt-2 border-top">
-                <small class="text-muted">Description :</small>
-                <p class="mb-0">{{ backup.description }}</p>
-            </div>
-            {% endif %}
         </div>
 
         <div class="data-card">

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ domain.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -26,35 +27,35 @@
 <div class="row g-3">
     <div class="col-lg-8">
         <div class="data-card p-4 mb-3">
-            <div class="row">
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Statut</small>
-                    {{ status_badge(domain.status()) }}
+            <div class="fiche-sections">
+                <div class="fiche-bloc fiche-bloc--indigo">
+                    {{ titre_section('Identité', 'bi-globe', 'indigo', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Statut') %}{{ status_badge(domain.status()) }}{% endcall %}
+                        {{ champ('Registrar', domain.registrar) }}
+                    </div>
                 </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Expiration</small>
-                    <span class="fw-medium">
-                        {{ domain.expiry_date.strftime('%d/%m/%Y') if domain.expiry_date else 'Non renseignee' }}
-                        {% if domain.expiry_date %}
-                        ({{ (domain.expiry_date - now().date()).days }}j)
-                        {% endif %}
-                    </span>
+
+                <div class="fiche-bloc fiche-bloc--emerald">
+                    {{ titre_section('Échéance', 'bi-calendar-event', 'emerald', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Expiration') %}
+                        {{ domain.expiry_date.strftime('%d/%m/%Y') if domain.expiry_date else 'Non renseignée' }}
+                        {% if domain.expiry_date %}({{ (domain.expiry_date - now().date()).days }} j){% endif %}
+                        {% endcall %}
+                        {{ champ('Auto-renouvellement', 'Oui' if domain.auto_renew else 'Non') }}
+                    </div>
                 </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Registrar</small>
-                    <span class="fw-medium">{{ domain.registrar or '-' }}</span>
+
+                {% if domain.description %}
+                <div class="fiche-bloc fiche-bloc--slate">
+                    {{ titre_section('Notes', 'bi-journal-text', 'slate', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Description') %}{{ domain.description }}{% endcall %}
+                    </div>
                 </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Auto-renouvellement</small>
-                    <span class="fw-medium">{{ 'Oui' if domain.auto_renew else 'Non' }}</span>
-                </div>
+                {% endif %}
             </div>
-            {% if domain.description %}
-            <div class="mt-2 pt-2 border-top">
-                <small class="text-muted d-block">Description</small>
-                <p class="mb-0">{{ domain.description }}</p>
-            </div>
-            {% endif %}
         </div>
 
         <div class="data-card mb-3">

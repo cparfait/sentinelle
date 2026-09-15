@@ -14,3 +14,27 @@
 <h6 class="fw-bold fiche-titre fiche-titre--{{ couleur }} {{ classes }}">
     <i class="bi {{ icone }} me-2"></i>{{ titre }}</h6>
 {% endmacro %}
+
+{# ═══ Un champ de la grille dense ═══
+   L'intitule se pose AU-DESSUS de la valeur. Les fiches alignaient jusqu'ici
+   leurs champs dans des tableaux ou l'intitule occupait 45 % de la largeur :
+   plusieurs centimetres de vide entre « Type » et sa valeur, et une section
+   d'un seul champ qui mangeait une demi-page.
+
+   Le tiret vaut « non renseigne » : un blanc se lirait comme un oubli
+   d'affichage. #}
+{% macro champ(label, value) %}
+<div class="fiche-champ">
+    <span class="fiche-label">{{ label }}</span>
+    <div class="fiche-valeur">{{ value if value or value == 0 else '-' }}</div>
+</div>
+{% endmacro %}
+
+{# Meme chose quand la valeur est du balisage — un badge, un lien : {% call %}
+   plutot qu'un argument, pour n'avoir jamais a marquer une valeur comme sure. #}
+{% macro champ_bloc(label) %}
+<div class="fiche-champ">
+    <span class="fiche-label">{{ label }}</span>
+    <div class="fiche-valeur">{{ caller() }}</div>
+</div>
+{% endmacro %}

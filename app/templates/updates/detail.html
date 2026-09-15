@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
 {% block title %}{{ update.name }} - Sentinelle{% endblock %}
 {% set status_labels = dict(status_choices) %}
 {% set type_labels = dict(type_choices) %}
@@ -15,43 +16,58 @@
 <div class="row g-3">
     <div class="col-lg-8">
         <div class="data-card p-4 mb-3">
-            <div class="row">
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Statut</small>
-                    <span class="badge-status badge-{{ update.status_color() }}">{{ status_labels.get(update.status, update.status) }}</span>
+            <div class="fiche-sections">
+                <div class="fiche-bloc fiche-bloc--indigo">
+                    {{ titre_section('Identité', 'bi-arrow-up-circle', 'indigo', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Statut') %}
+                        <span class="badge-status badge-{{ update.status_color() }}">{{ status_labels.get(update.status, update.status) }}</span>
+                        {% endcall %}
+                        {{ champ('Dernière mise à jour', update.last_update.strftime('%d/%m/%Y') if update.last_update else None) }}
+                    </div>
                 </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Dernière mise à jour</small>
-                    <span class="fw-medium">{{ update.last_update.strftime('%d/%m/%Y') if update.last_update else '-' }}</span>
+
+                <div class="fiche-bloc fiche-bloc--sky">
+                    {{ titre_section('Versions', 'bi-tags', 'sky', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Version actuelle') %}<code>{{ update.current_version or '-' }}</code>{% endcall %}
+                        {% call champ_bloc('Dernière version disponible') %}<code>{{ update.latest_version or '-' }}</code>{% endcall %}
+                    </div>
                 </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Version actuelle</small>
-                    <span class="fw-medium"><code>{{ update.current_version or '-' }}</code></span>
-                </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Dernière version disponible</small>
-                    <span class="fw-medium"><code>{{ update.latest_version or '-' }}</code></span>
-                </div>
-                {% if update.equipment %}
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Équipement</small>
-                    <a href="{{ url_for('inventory.detail', id=update.equipment.id) }}" class="fw-medium">
-                        <i class="bi bi-hdd-stack me-1"></i>{{ update.equipment.name }}</a>
-                </div>
-                {% endif %}
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Réalisée par</small>
-                    <span class="fw-medium">
+
+                <div class="fiche-bloc fiche-bloc--violet">
+                    {{ titre_section('Qui a fait la mise à jour', 'bi-person-gear', 'violet', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Réalisée par') %}
                         {{ update.updated_by or '-' }}
                         {% if update.updated_by %}
                         <span class="badge bg-light text-dark border ms-1">{{ 'Prestataire' if update.updater_type == 'prestataire' else 'Interne' }}</span>
                         {% endif %}
-                    </span>
+                        {% endcall %}
+                    </div>
                 </div>
+
+                {% if update.equipment %}
+                <div class="fiche-bloc fiche-bloc--teal">
+                    {{ titre_section('Équipement concerné', 'bi-hdd-stack', 'teal', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Équipement') %}
+                        <a href="{{ url_for('inventory.detail', id=update.equipment.id) }}">
+                            <i class="bi bi-hdd-stack me-1"></i>{{ update.equipment.name }}</a>
+                        {% endcall %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if update.description %}
+                <div class="fiche-bloc fiche-bloc--slate">
+                    {{ titre_section('Notes', 'bi-journal-text', 'slate', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Description') %}{{ update.description }}{% endcall %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
-            {% if update.description %}
-            <div class="mt-2 pt-2 border-top"><small class="text-muted d-block">Description</small><p class="mb-0">{{ update.description }}</p></div>
-            {% endif %}
         </div>
 
         <div class="data-card">

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ account.service_name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -28,41 +29,47 @@
                 <h6 class="fw-bold mb-0">Informations du compte</h6>
                 {{ status_badge(account.status()) }}
             </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <table class="table table-borderless table-sm mb-0">
-                        <tr><td class="text-muted">Service</td><td class="fw-medium">{{ account.service_name }}</td></tr>
-                        <tr><td class="text-muted">Utilisateur</td><td class="fw-medium">{{ account.username }}</td></tr>
-                        <tr><td class="text-muted">URL</td><td class="fw-medium">{{ account.url or '-' }}</td></tr>
-                        <tr><td class="text-muted">Priorite</td>
-                            <td><span class="badge bg-{% if account.priority == 'high' %}danger{% elif account.priority == 'medium' %}warning{% else %}secondary{% endif %}">
-                                {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(account.priority, account.priority) }}
-                            </span></td>
-                        </tr>
-                    </table>
+            <div class="fiche-sections">
+                <div class="fiche-bloc fiche-bloc--indigo">
+                    {{ titre_section('Identité', 'bi-key', 'indigo', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {{ champ('Service', account.service_name) }}
+                        {{ champ('Utilisateur', account.username) }}
+                        {{ champ('URL', account.url) }}
+                        {% call champ_bloc('Priorité') %}
+                        <span class="badge bg-{% if account.priority == 'high' %}danger{% elif account.priority == 'medium' %}warning{% else %}secondary{% endif %}">
+                            {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(account.priority, account.priority) }}</span>
+                        {% endcall %}
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <table class="table table-borderless table-sm mb-0">
-                        <tr><td class="text-muted">Dernier changement</td><td class="fw-medium">{{ account.last_password_change.strftime('%d/%m/%Y') if account.last_password_change else '-' }}</td></tr>
-                        <tr><td class="text-muted">Prochain changement</td><td class="fw-medium {% if account.status() == 'danger' %}text-danger{% endif %}">{{ account.next_password_change.strftime('%d/%m/%Y') if account.next_password_change else '-' }}</td></tr>
-                        <tr><td class="text-muted">Rotation</td><td class="fw-medium">Tous les {{ account.rotation_days }} jours</td></tr>
-                        <tr><td class="text-muted">Jours restants</td>
-                            <td class="fw-bold {% if account.status() == 'danger' %}text-danger{% elif account.status() == 'warning' %}text-warning{% else %}text-success{% endif %}">
-                                {% if account.next_password_change %}
-                                    {% set days = (account.next_password_change - now().date()).days %}
-                                    {{ days }} jour(s)
-                                {% else %}-{% endif %}
-                            </td>
-                        </tr>
-                    </table>
+
+                <div class="fiche-bloc fiche-bloc--emerald">
+                    {{ titre_section('Rotation du mot de passe', 'bi-arrow-repeat', 'emerald', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {{ champ('Dernier changement', account.last_password_change.strftime('%d/%m/%Y') if account.last_password_change else None) }}
+                        {% call champ_bloc('Prochain changement') %}
+                        <span class="{% if account.status() == 'danger' %}text-danger{% endif %}">
+                            {{ account.next_password_change.strftime('%d/%m/%Y') if account.next_password_change else '-' }}</span>
+                        {% endcall %}
+                        {{ champ('Rotation', 'Tous les %d jours' % account.rotation_days if account.rotation_days else None) }}
+                        {% call champ_bloc('Jours restants') %}
+                        <span class="fw-bold {% if account.status() == 'danger' %}text-danger{% elif account.status() == 'warning' %}text-warning{% else %}text-success{% endif %}">
+                            {%- if account.next_password_change -%}
+                            {{ (account.next_password_change - now().date()).days }} jour(s)
+                            {%- else -%}-{%- endif -%}</span>
+                        {% endcall %}
+                    </div>
                 </div>
+
+                {% if account.description %}
+                <div class="fiche-bloc fiche-bloc--slate">
+                    {{ titre_section('Notes', 'bi-journal-text', 'slate', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Description') %}{{ account.description }}{% endcall %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
-            {% if account.description %}
-            <div class="mt-2 pt-2 border-top">
-                <small class="text-muted">Description :</small>
-                <p class="mb-0">{{ account.description }}</p>
-            </div>
-            {% endif %}
         </div>
 
         <div class="data-card">

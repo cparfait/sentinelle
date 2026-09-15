@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ review.application }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -14,34 +15,38 @@
 <div class="row g-3">
     <div class="col-lg-8">
         <div class="data-card p-4 mb-3">
-            <div class="row">
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Statut</small>
-                    {{ status_badge(review.computed_status()) }}
+            <div class="fiche-sections">
+                <div class="fiche-bloc fiche-bloc--indigo">
+                    {{ titre_section('Identité', 'bi-person-check', 'indigo', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Statut') %}{{ status_badge(review.computed_status()) }}{% endcall %}
+                        {% call champ_bloc('Responsable') %}
+                        {{ review.responsible or '-' }}
+                        {% if review.responsible_email %}
+                        <a href="mailto:{{ review.responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ review.responsible_email }}</a>
+                        {% endif %}
+                        {% endcall %}
+                    </div>
                 </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Prochaine revue</small>
-                    <span class="fw-medium">{{ review.next_review.strftime('%d/%m/%Y') if review.next_review else 'Non planifiée' }}</span>
+
+                <div class="fiche-bloc fiche-bloc--emerald">
+                    {{ titre_section('Cadence', 'bi-calendar-check', 'emerald', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {{ champ('Prochaine revue', review.next_review.strftime('%d/%m/%Y') if review.next_review else 'Non planifiée') }}
+                        {{ champ('Dernière revue', review.last_review.strftime('%d/%m/%Y') if review.last_review else None) }}
+                        {{ champ('Fréquence', '%d jours' % review.frequency_days if review.frequency_days else None) }}
+                    </div>
                 </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Dernière revue</small>
-                    <span class="fw-medium">{{ review.last_review.strftime('%d/%m/%Y') if review.last_review else '-' }}</span>
+
+                {% if review.scope %}
+                <div class="fiche-bloc fiche-bloc--slate">
+                    {{ titre_section('Périmètre', 'bi-journal-text', 'slate', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Ce que la revue couvre') %}{{ review.scope }}{% endcall %}
+                    </div>
                 </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Fréquence</small>
-                    <span class="fw-medium">{{ review.frequency_days }} jours</span>
-                </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Responsable</small>
-                    <span class="fw-medium">{{ review.responsible or '-' }}</span>
-                    {% if review.responsible_email %}
-                    <a href="mailto:{{ review.responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ review.responsible_email }}</a>
-                    {% endif %}
-                </div>
+                {% endif %}
             </div>
-            {% if review.scope %}
-            <div class="mt-2 pt-2 border-top"><small class="text-muted d-block">Périmètre</small><p class="mb-0">{{ review.scope }}</p></div>
-            {% endif %}
         </div>
 
         <div class="data-card">

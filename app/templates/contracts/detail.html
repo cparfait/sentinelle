@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ contract.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -24,94 +25,114 @@
 <div class="row g-3">
     <div class="col-lg-8">
         <div class="data-card p-4 mb-3">
-            <div class="row">
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Statut</small>
-                    {{ status_badge(contract.status()) }}
+            <div class="fiche-sections">
+                <div class="fiche-bloc fiche-bloc--indigo">
+                    {{ titre_section("Nature de l'acte", 'bi-file-earmark-text', 'indigo', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Statut') %}{{ status_badge(contract.status()) }}{% endcall %}
+                        {{ champ('Type', contract.kind) }}
+                    </div>
                 </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Échéance</small>
-                    <span class="fw-medium">{{ contract.end_date.strftime('%d/%m/%Y') if contract.end_date else 'Non renseignée' }}</span>
+
+                <div class="fiche-bloc fiche-bloc--violet">
+                    {{ titre_section('Fournisseur & références', 'bi-building', 'violet', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {{ champ('Notre référence', contract.reference) }}
+                        {{ champ('Référence fournisseur', contract.supplier_reference) }}
+                    </div>
                 </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Agir avant <span class="text-muted">(échéance − préavis {{ contract.notice_days or 0 }}j)</span></small>
-                    {% set days = contract.days_left() %}
-                    {% if days is not none %}
-                    <span class="fw-bold">{{ contract.action_deadline().strftime('%d/%m/%Y') }}
-                        ({{ days }}j restant{{ 's' if days > 1 }})</span>
-                    {% else %}<span class="text-muted">-</span>{% endif %}
+
+                <div class="fiche-bloc fiche-bloc--amber">
+                    {{ titre_section('Montants', 'bi-cash-coin', 'amber', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {# Le plafond ne contraint pas le montant : c'est l'acte qui fait
+                           foi, pas l'outil. On le montre a cote plutot que d'en tirer
+                           une alerte. #}
+                        {% call champ_bloc('Montant annuel') %}
+                        {{ ('%.0f' | format(contract.cost_yearly)) ~ ' EUR' if contract.cost_yearly else '-' }}
+                        {% if contract.cost_max_yearly %}
+                        <small class="d-block text-muted">maximum annuel : {{ '%.0f' | format(contract.cost_max_yearly) }} EUR</small>
+                        {% endif %}
+                        {% if contract.cost_total %}
+                        <small class="d-block text-muted">total sur la durée : {{ '%.0f' | format(contract.cost_total) }} EUR</small>
+                        {% endif %}
+                        {% endcall %}
+                    </div>
                 </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Tacite reconduction</small>
-                    <span class="fw-medium">{{ 'Oui' if contract.auto_renew else 'Non' }}</span>
+
+                <div class="fiche-bloc fiche-bloc--emerald">
+                    {{ titre_section('Échéance & durée', 'bi-calendar-event', 'emerald', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {{ champ('Début', contract.start_date.strftime('%d/%m/%Y') if contract.start_date else None) }}
+                        {{ champ('Échéance', contract.end_date.strftime('%d/%m/%Y') if contract.end_date else 'Non renseignée') }}
+                        {% call champ_bloc('Agir avant (échéance moins préavis)') %}
+                        {% set days = contract.days_left() %}
+                        {% if days is not none %}
+                        <span class="fw-bold">{{ contract.action_deadline().strftime('%d/%m/%Y') }}
+                            ({{ days }} j restant{{ 's' if days > 1 }})</span>
+                        {% else %}<span class="text-muted">-</span>{% endif %}
+                        <small class="d-block text-muted">préavis de {{ contract.notice_days or 0 }} jours</small>
+                        {% endcall %}
+                        {% call champ_bloc('Durée') %}
+                        {%- if contract.firm_years %}{{ contract.firm_years }} an{{ 's' if contract.firm_years > 1 }} ferme{% else %}-{% endif %}
+                        {% if contract.renewal_label() %}
+                        <small class="d-block text-muted">{{ contract.renewal_label() }}</small>
+                        {% endif %}
+                        {% endcall %}
+                        {{ champ('Tacite reconduction', 'Oui' if contract.auto_renew else 'Non') }}
+                    </div>
                 </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Notre référence</small>
-                    <span class="fw-medium">{{ contract.reference or '-' }}</span>
+
+                <div class="fiche-bloc fiche-bloc--sky">
+                    {{ titre_section('Suivi', 'bi-person-check', 'sky', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {{ champ('Responsable', contract.responsible) }}
+                    </div>
                 </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Référence fournisseur</small>
-                    <span class="fw-medium">{{ contract.supplier_reference or '-' }}</span>
+
+                {# Le marché vit pour lui-même : il couvre autant de logiciels qu'il en
+                   couvre réellement, et en perdre le dernier ne le supprime pas. #}
+                <div class="fiche-bloc fiche-bloc--teal">
+                    {{ titre_section('Logiciels couverts', 'bi-window-stack', 'teal', 'mb-0') }}
+                    <div class="fiche-grille">
+                        <div class="fiche-champ fiche-champ--large">
+                            <div class="fiche-valeur">
+                                {% for sw in contract.software %}
+                                <a href="{{ url_for('software.detail', id=sw.id) }}" class="badge bg-light text-dark border text-decoration-none me-1 mb-1">
+                                    <i class="bi bi-window-stack me-1"></i>{{ sw.name }}</a>
+                                {% else %}
+                                <span class="text-muted">Aucun logiciel rattaché.</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Montant annuel</small>
-                    <span class="fw-medium">{{ ('%.0f' | format(contract.cost_yearly)) ~ ' €' if contract.cost_yearly else '-' }}</span>
-                    {# Le plafond ne contraint pas le montant : c'est l'acte qui fait foi,
-                       pas l'outil. On le montre à côté plutôt que d'en tirer une alerte. #}
-                    {% if contract.cost_max_yearly %}
-                    <small class="d-block text-muted">maximum annuel : {{ '%.0f' | format(contract.cost_max_yearly) }} €</small>
-                    {% endif %}
-                    {% if contract.cost_total %}
-                    <small class="d-block text-muted">total sur la durée : {{ '%.0f' | format(contract.cost_total) }} €</small>
-                    {% endif %}
-                </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Durée</small>
-                    <span class="fw-medium">
-                        {%- if contract.firm_years %}{{ contract.firm_years }} an{{ 's' if contract.firm_years > 1 }} ferme
-                        {%- else %}-{% endif -%}
-                    </span>
-                    {% if contract.renewal_label() %}
-                    <small class="d-block text-muted">{{ contract.renewal_label() }}</small>
-                    {% endif %}
-                </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Début</small>
-                    <span class="fw-medium">{{ contract.start_date.strftime('%d/%m/%Y') if contract.start_date else '-' }}</span>
-                </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Responsable</small>
-                    <span class="fw-medium">{{ contract.responsible or '-' }}</span>
-                </div>
-                {# ── Logiciels couverts ──
-                   Le marché vit pour lui-même : il couvre autant de logiciels
-                   qu'il en couvre réellement, et en perdre le dernier ne le
-                   supprime pas. #}
-                <div class="col-12 mb-3">
-                    <small class="text-muted d-block mb-1">Logiciels couverts</small>
-                    {% for sw in contract.software %}
-                    <a href="{{ url_for('software.detail', id=sw.id) }}" class="badge bg-light text-dark border text-decoration-none me-1 mb-1">
-                        <i class="bi bi-window-stack me-1"></i>{{ sw.name }}</a>
-                    {% else %}
-                    <span class="text-muted">Aucun logiciel rattaché.</span>
-                    {% endfor %}
-                </div>
+
                 {% if contract.equipments %}
-                <div class="col-12 mb-3">
-                    <small class="text-muted d-block mb-1">Équipements couverts</small>
-                    {% for e in contract.equipments %}
-                    <a href="{{ url_for('inventory.detail', id=e.id) }}" class="badge bg-light text-dark border text-decoration-none me-1 mb-1">
-                        <i class="bi bi-hdd-network me-1"></i>{{ e.name }}</a>
-                    {% endfor %}
+                <div class="fiche-bloc fiche-bloc--rose">
+                    {{ titre_section('Équipements couverts', 'bi-hdd-stack', 'rose', 'mb-0') }}
+                    <div class="fiche-grille">
+                        <div class="fiche-champ fiche-champ--large">
+                            <div class="fiche-valeur">
+                                {% for e in contract.equipments %}
+                                <a href="{{ url_for('inventory.detail', id=e.id) }}" class="badge bg-light text-dark border text-decoration-none me-1 mb-1">
+                                    <i class="bi bi-hdd-network me-1"></i>{{ e.name }}</a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if contract.description %}
+                <div class="fiche-bloc fiche-bloc--slate">
+                    {{ titre_section('Notes', 'bi-journal-text', 'slate', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% call champ_bloc('Description') %}{{ contract.description }}{% endcall %}
+                    </div>
                 </div>
                 {% endif %}
             </div>
-            {% if contract.description %}
-            <div class="mt-2 pt-2 border-top">
-                <small class="text-muted d-block">Description</small>
-                <p class="mb-0">{{ contract.description }}</p>
-            </div>
-            {% endif %}
         </div>
 
         {# ═══ Pièces du marché ═══
