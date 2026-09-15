@@ -1,4 +1,8 @@
-from flask import Blueprint, Response, redirect, url_for, request, flash, abort, current_app
+import os
+import shutil
+
+from flask import (Blueprint, Response, redirect, url_for, request, flash, abort,
+                   current_app, send_file)
 from flask_login import login_required, current_user
 from app import csv_io
 from app.decorators import require_admin
@@ -10,11 +14,24 @@ bp = Blueprint('data_io', __name__)
 @login_required
 @require_admin
 def export_full():
-    """Export total de secours (ZIP : base + CSV + page HTML + LISEZMOI)."""
+    """Export total de secours (ZIP : base + CSV + page HTML + LISEZMOI).
+
+    `?sans_documents=1` retire les octets des pieces jointes : quelques
+    centaines de mega-octets tombent a quelques centaines de kilo-octets.
+
+    L'archive est un FICHIER temporaire, envoye en flux puis supprime quand la
+    reponse est close — pas avant : sous Windows, un fichier encore ouvert ne
+    se supprime pas, et l'export echouerait apres avoir tout construit.
+    """
     from app.full_export import build_full_export
-    filename, data = build_full_export(current_app)
-    return Response(data, mimetype='application/zip',
-                    headers={'Content-Disposition': f'attachment; filename="{filename}"'})
+    sans_documents = request.args.get('sans_documents') in ('1', 'true', 'on')
+    filename, chemin = build_full_export(current_app, sans_documents=sans_documents)
+    reponse = send_file(chemin, mimetype='application/zip',
+                        as_attachment=True, download_name=filename,
+                        conditional=False)
+    reponse.call_on_close(
+        lambda: shutil.rmtree(os.path.dirname(chemin), ignore_errors=True))
+    return reponse
 
 
 def _csv_response(content, filename):

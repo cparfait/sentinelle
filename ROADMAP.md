@@ -45,6 +45,12 @@ collectivité) vivent désormais dans Sentinelle, et ses données y ont été re
 - ✅ **Services utilisateurs, flux entre logiciels, dossiers du partage réseau, référentiels administrables**.
 - ✅ **Retrait du connecteur** — plus de synchro, plus de fiches « reflétées », plus d'API `/api/equipment` :
   le catalogue appartient à Sentinelle.
+- ✅ **Export total : sur disque, plus en mémoire** — l'archive de secours s'écrivait dans un `BytesIO` et
+  lisait la base d'un bloc (`serialize()`) : sans conséquence à quelques mégaoctets, un risque
+  d'épuisement mémoire depuis que les pièces jointes la font peser des centaines. Elle passe par un fichier
+  temporaire, la base y entre en flux (566 Mo d'archive pour **0,3 Mo** de pic mémoire), et un second bouton
+  produit une archive **allégée**, sans les octets des pièces jointes (0,1 Mo). Les restes abandonnés sont
+  balayés au passage : la suppression après envoi est du meilleur effort, elle n'arrive pas si le client coupe.
 - ✅ **Reprise des données** — `tools/reprise_softinventory.py` : lit la base PostgreSQL de SoftInventory
   (ou un dump restauré) et la verse ici. Rejouable (`import_map`), avec un mode `--essai` qui compte sans
   rien écrire et nomme ce qui ne se rapproche pas.

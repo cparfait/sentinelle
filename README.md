@@ -61,7 +61,8 @@ applicatives. Le tout avec des **alertes automatiques** (mail + Teams), un **ré
 - **Corbeille** (restauration + suppression définitive), **import/export CSV**, **bilan PDF (COPIL)**.
 - **Référentiels administrables** (technologies, catégories de pièces, types de tâches) et **annuaire des
   services utilisateurs** avec leur référent.
-- **Auto-sauvegarde** de la base + **export total de secours** (clé USB), **logs applicatifs** avec rotation.
+- **Auto-sauvegarde** de la base + **export total de secours** (clé USB, complet ou **allégé** sans les
+  octets des pièces jointes), **logs applicatifs** avec rotation.
 
 ## 🧱 Stack
 

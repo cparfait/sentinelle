@@ -628,10 +628,21 @@
                                 {% if db_backups %}— dernière le {{ db_backups[0].date.strftime('%d/%m/%Y %H:%M') }}{% endif %}
                             </small>
                             <div class="d-flex gap-2">
-                                <a href="{{ url_for('data_io.export_full') }}" class="btn btn-sm btn-outline-success"
-                                   title="Archive ZIP (base + CSV + page HTML) pour cle USB">
-                                    <i class="bi bi-usb-drive me-1"></i> Export complet
-                                </a>
+                                {# Deux boutons : l'archive complete pese ce que
+                                   pesent les pieces jointes, l'allegee quelques
+                                   centaines de kilo-octets. L'allegee ne remplace
+                                   pas la complete, elle s'intercale entre deux. #}
+                                <div class="btn-group">
+                                    <a href="{{ url_for('data_io.export_full') }}" class="btn btn-sm btn-outline-success"
+                                       title="Archive ZIP (base + CSV + page HTML) pour clé USB">
+                                        <i class="bi bi-usb-drive me-1"></i> Export complet
+                                    </a>
+                                    <a href="{{ url_for('data_io.export_full', sans_documents=1) }}"
+                                       class="btn btn-sm btn-outline-secondary"
+                                       title="Même archive, sans les octets des pièces jointes : les fiches restent, leur contenu non">
+                                        allégé
+                                    </a>
+                                </div>
                                 <form method="POST" action="{{ url_for('auth.preferences') }}">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" name="action" value="backup_db" class="btn btn-sm btn-outline-primary">
