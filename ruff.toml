@@ -1,0 +1,21 @@
+# Regles de lint, fixees explicitement.
+#
+# requirements-dev.txt demande « ruff>=0.8 » : la CI installe donc la derniere
+# version publiee, et chaque nouvelle version peut elargir la selection par
+# defaut. C'est arrive : le lint est passe de 0 a 241 erreurs sans qu'une seule
+# ligne de code ne change, simplement parce que le tri des imports (I001) est
+# entre dans les regles par defaut. Une CI qui devient rouge toute seule ne
+# signale plus rien — on finit par ne plus la regarder.
+#
+# La selection ci-dessous reprend donc, telle quelle, celle qui etait effective
+# jusqu'ici : les erreurs de pyflakes (F) et le sous-ensemble de pycodestyle qui
+# attrape de vraies fautes (E4 imports, E7 instructions, E9 syntaxe et E/O).
+# Elle ne bougera plus qu'a la demande.
+#
+# Pour durcir un jour — le tri des imports, par exemple — ajouter "I" ici et
+# passer « ruff check --fix » sur le depot en une fois, dans un commit qui ne
+# fait que cela.
+line-length = 100
+
+[lint]
+select = ["E4", "E7", "E9", "F"]
