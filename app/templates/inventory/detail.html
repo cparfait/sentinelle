@@ -86,7 +86,7 @@
             {% endif %}
 
             <div class="fiche-sections">
-                <div>
+                <div class="fiche-bloc fiche-bloc--indigo">
                     {{ section('bi-info-circle', 'Général', 'indigo') }}
                     <div class="fiche-grille">
                         {{ champ('Type', item.kind_label()) }}
@@ -97,7 +97,7 @@
                         {% if item.porte('usage') %}{{ champ('Usage / données stockées', item.usage) }}{% endif %}
                     </div>
                 </div>
-                <div>
+                <div class="fiche-bloc fiche-bloc--sky">
                     {{ section('bi-cpu', 'Système', 'sky') }}
                     <div class="fiche-grille">
                         {{ champ('OS', ((item.os or '') ~ (' ' ~ item.os_version if item.os_version else '')) | trim) }}
@@ -113,7 +113,7 @@
                     {% endif %}
                 </div>
                 {% if item.porte('reseau') %}
-                <div>
+                <div class="fiche-bloc fiche-bloc--teal">
                     {{ section('bi-diagram-3', 'Réseau', 'teal') }}
                     <div class="fiche-grille">
                         {{ champ('Adresse IP', item.ip_address) }}
@@ -131,7 +131,7 @@
                 </div>
                 {% endif %}
                 {% if item.porte('virtualisation') %}
-                <div>
+                <div class="fiche-bloc fiche-bloc--violet">
                     {{ section('bi-pc-display', 'Hôte & ressources', 'violet') }}
                     <div class="fiche-grille">
                         {{ champ('Serveur hôte', item.host_server) }}
@@ -143,7 +143,7 @@
                 </div>
                 {% endif %}
                 {% if item.porte('materiel') %}
-                <div>
+                <div class="fiche-bloc fiche-bloc--amber">
                     {{ section('bi-tools', 'Matériel & garantie', 'amber') }}
                     <div class="fiche-grille">
                         {{ champ('Constructeur / Modèle', item.manufacturer_model) }}
@@ -156,7 +156,7 @@
                 </div>
                 {% endif %}
                 {% if item.porte('stockage') %}
-                <div>
+                <div class="fiche-bloc fiche-bloc--slate">
                     {{ section('bi-hdd-network', 'Stockage', 'slate') }}
                     <div class="fiche-grille">
                         {{ champ('Protocoles', item.protocols) }}

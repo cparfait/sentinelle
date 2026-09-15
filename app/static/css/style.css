@@ -1571,7 +1571,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    colores la rendrait bruyante la ou un formulaire, lui, a besoin qu'on
    decoupe sa longueur.
    ========================================================================== */
-.data-card h6.fiche-titre { --sec: var(--sec-indigo); }
+.data-card h6.fiche-titre { --sec: var(--sec-indigo); color: rgb(var(--sec)); }
 .data-card h6.fiche-titre::before { background: rgb(var(--sec)); }
 /* !important : les gabarits posent encore des utilitaires Bootstrap
    (text-primary, text-success) sur ces icones. */
@@ -1590,5 +1590,45 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    champs logee dans une demi-colonne laissait l'autre moitie vide, et deux
    sections cote a cote se decalaient des que l'une etait plus longue. En pleine
    largeur, la grille dense y range d'elle-meme autant de colonnes que possible
-   — six champs tiennent souvent sur une seule ligne. */
-.fiche-sections > div + div { margin-top: 4px; }
+   — six champs tiennent souvent sur une seule ligne. (L'ecart entre sections
+   vient de la marge basse des blocs.) */
+
+/* ---- Sections de fiche : le bloc, pas seulement le lisere ----
+   Un simple trait d'accent a gauche du titre ne suffit pas a decouper une
+   fiche de trente champs : l'oeil ne voit qu'une suite d'intitules. La section
+   devient donc un bloc, comme dans les formulaires — bandeau teinte, bordure
+   d'accent — pour qu'on repere « Materiel & garantie » sans lire son titre.
+   ---- */
+.fiche-bloc {
+    --sec: var(--sec-indigo);
+    border: 1px solid var(--border);
+    border-left: 4px solid rgb(var(--sec));
+    border-radius: var(--radius-lg);
+    background: var(--card);
+    overflow: hidden;
+    margin-bottom: 14px;
+}
+/* Le titre redevient un bandeau plein : la barre d'accent qu'il portait tout
+   seul ferait doublon avec la bordure du bloc. */
+.data-card .fiche-bloc > h6.fiche-titre {
+    margin: 0;
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    color: rgb(var(--sec));
+    background: rgba(var(--sec), 0.08);
+    border-bottom: 1px solid rgba(var(--sec), 0.18);
+}
+.data-card .fiche-bloc > h6.fiche-titre::before { display: none; }
+.fiche-bloc > .fiche-grille { padding: 16px; }
+/* Ce qui suit la grille dans un bloc — les temoins de supervision, par
+   exemple — se retrouverait colle au bord sans cela. */
+.fiche-bloc > *:not(h6):not(.fiche-grille) { padding: 0 16px 12px; }
+
+.fiche-bloc--indigo  { --sec: var(--sec-indigo); }
+.fiche-bloc--sky     { --sec: var(--sec-sky); }
+.fiche-bloc--emerald { --sec: var(--sec-emerald); }
+.fiche-bloc--amber   { --sec: var(--sec-amber); }
+.fiche-bloc--rose    { --sec: var(--sec-rose); }
+.fiche-bloc--violet  { --sec: var(--sec-violet); }
+.fiche-bloc--teal    { --sec: var(--sec-teal); }
+.fiche-bloc--slate   { --sec: var(--sec-slate); }

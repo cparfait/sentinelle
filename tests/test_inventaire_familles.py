@@ -191,6 +191,11 @@ def test_la_fiche_porte_les_couleurs_du_formulaire(client):
     formulaire = client.get(f'/inventory/{e.id}/edit').get_data(as_text=True)
     couleurs_fiche = re.findall(r'fiche-titre--(\w+)', fiche)
     assert len(couleurs_fiche) >= 4, couleurs_fiche
+    # La couleur est portee par le BLOC, pas seulement par le titre : un simple
+    # trait d'accent ne decoupe pas une fiche de trente champs, l'oeil n'y voit
+    # qu'une suite d'intitules. Il faut le bandeau et la bordure.
+    blocs = re.findall(r'fiche-bloc fiche-bloc--(\w+)', fiche)
+    assert len(blocs) >= 4, blocs
 
     # Le meme titre porte la meme couleur des deux cotes. On ne compare que les
     # sections qui existent dans les deux ecrans : la fiche en fusionne
