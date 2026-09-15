@@ -60,6 +60,24 @@ if [ "$AVANT_COMMIT" != "$APRES_COMMIT" ] \
 fi
 
 # ── Construction ────────────────────────────────────────────────────────────
+# BuildKit lit le depot pour etiqueter l'image du commit dont elle vient. Git
+# le lui refuse — l'utilisateur qui construit (root) n'est pas proprietaire du
+# depot — et le build se poursuit en avertissant a chaque passage :
+#   « current commit information was not captured by the build »
+#
+# On autorise donc cette LECTURE. La reserve habituelle sur safe.directory vise
+# les ECRITURES : un « git pull » lance par root deposerait des fichiers root
+# dans un depot appartenant a quelqu'un d'autre, et le prochain pull sans sudo
+# echouerait sur des permissions. Ici toutes les commandes git passent par
+# git_depot(), donc par le proprietaire ; seul BuildKit lit.
+#
+# Idempotent : on n'ajoute la ligne que si elle manque, sinon elle s'empilerait
+# a chaque deploiement.
+if ! git config --global --get-all safe.directory 2>/dev/null | grep -qx "$DEPOT"; then
+    git config --global --add safe.directory "$DEPOT"
+    echo "== Git     : lecture du depot autorisee pour $(id -un) (safe.directory)"
+fi
+
 # L'empreinte d'avant sert de temoin : si elle ne bouge pas alors que le commit
 # a change, c'est que le build n'a pas vu le nouveau code.
 AVANT_IMAGE="$(docker image inspect "$TAG" --format '{{.Id}}' 2>/dev/null || echo 'aucune')"
