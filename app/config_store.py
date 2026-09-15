@@ -23,7 +23,8 @@ SECRET_KEYS = {'MAIL_PASSWORD', 'O365_CLIENT_SECRET', 'LDAP_BIND_PASSWORD',
 
 # Typage applique au chargement (le reste = chaine).
 _BOOL = {'LDAP_ENABLED', 'LDAP_USE_SSL', 'LDAP_VALIDATE_CERT', 'CT_MONITORING',
-         'SESAME_API_ENABLED', 'DASHBOARD_CUSTOM', 'DOCUMENTS_ENABLED'}
+         'SESAME_API_ENABLED', 'DASHBOARD_CUSTOM', 'DOCUMENTS_ENABLED',
+         'DOCUMENT_INLINE_VIEW'}
 _INT = {'LDAP_PORT', 'MAIL_PORT', 'DOCUMENT_MAX_MB'}
 _TRIPLET = {'THRESHOLD_EXPIRY', 'THRESHOLD_DOMAIN', 'THRESHOLD_TASK', 'THRESHOLD_CONTRACT'}
 
@@ -51,7 +52,7 @@ MANAGED = _BOOL | _INT | _TRIPLET | _CSV | {
     'CT_MONITORING',    # surveillance Certificate Transparency (crt.sh) : on/off
     'DASHBOARD_CUSTOM', # tableau de bord personnalisable par utilisateur : on/off
     # Pieces jointes stockees en base (actes signes, guides, deliberations).
-    'DOCUMENTS_ENABLED', 'DOCUMENT_MAX_MB',
+    'DOCUMENTS_ENABLED', 'DOCUMENT_MAX_MB', 'DOCUMENT_INLINE_VIEW',
     'SESAME_API_ENABLED', 'SESAME_API_TOKEN',  # integration Sesame (API + cle)
     'UI_PRIMARY_COLOR',  # couleur principale de l'interface (hex, vide = defaut)
 }

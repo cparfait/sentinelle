@@ -469,6 +469,14 @@
                                 déposés sur la fiche qu'ils documentent. Les fichiers vivent <strong>en base</strong> : une
                                 sauvegarde de la base est complète à elle seule, aucun fichier ne peut se retrouver orphelin.
                                 Désactivées, elles disparaissent des écrans ; les fichiers déjà déposés restent en base.</p>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       id="documentInlineView" name="document_inline_view" {% if document_inline_view %}checked{% endif %}>
+                                <label class="form-check-label fw-medium" for="documentInlineView">Aperçu dans le navigateur</label>
+                            </div>
+                            <p class="text-muted small mb-2">Ouvre les <strong>PDF et les images</strong> dans la page,
+                                sans les enregistrer d'abord. Les autres types se téléchargent toujours. Le SVG en est
+                                volontairement exclu : c'est du XML qui peut porter des scripts.</p>
                             <div class="row g-2 align-items-end mb-2" style="max-width:22rem">
                                 <div class="col-7">
                                     <label class="form-label small mb-1" for="documentMaxMb">Taille maximale par fichier</label>

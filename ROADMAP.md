@@ -43,6 +43,12 @@ collectivité) vivent désormais dans Sentinelle, et ses données y ont été re
 - ✅ **Pièces jointes en base** — parent unique, droits hérités de la fiche portante, types en liste positive,
   servies en pièce jointe. Activables depuis les Préférences, avec leur taille maximale.
 - ✅ **Services utilisateurs, flux entre logiciels, dossiers du partage réseau, référentiels administrables**.
+- ✅ **Aperçu des pièces jointes** — les PDF et les images s'ouvrent **dans la page** (433 des 439 pièces
+  reprises), sans avoir à les enregistrer d'abord. Le type est **redéduit de l'extension** côté serveur et
+  jamais repris de ce que le déposant a annoncé ; `nosniff` interdit au navigateur de deviner autre chose ;
+  `X-Frame-Options: SAMEORIGIN` remplace, sur cette seule route, le `DENY` posé partout ailleurs — sans quoi
+  le cadre resterait vide. Le **SVG en est exclu** bien qu'il soit accepté au dépôt : c'est du XML qui peut
+  porter des scripts. Désactivable depuis les Préférences.
 - ✅ **Retrait du connecteur** — plus de synchro, plus de fiches « reflétées », plus d'API `/api/equipment` :
   le catalogue appartient à Sentinelle.
 - ✅ **Export total : sur disque, plus en mémoire** — l'archive de secours s'écrivait dans un `BytesIO` et

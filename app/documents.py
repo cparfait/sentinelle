@@ -16,9 +16,22 @@ des métadonnées de quelques octets, jamais les mégaoctets du contenu.
 Aucun CHEMIN, aucun nom de fichier. Le téléchargement se fait par identifiant ;
 le nom d'origine ne sert qu'à nommer la copie que le navigateur enregistre, et
 il est nettoyé avant d'y servir. Le type MIME annoncé par le navigateur n'est
-pas renvoyé tel quel : un fichier est toujours servi en pièce jointe, jamais
-rendu dans la page — un HTML déposé ici ne doit pas pouvoir s'exécuter sur
-l'origine de Sentinelle.
+jamais renvoyé tel quel : il est REDÉDUIT de l'extension, côté serveur, sur une
+liste qu'on maîtrise.
+
+── Télécharger, ou regarder ──
+
+`/download` rend TOUT, en pièce jointe et en `application/octet-stream` : rien
+de ce qui sort par là ne peut s'exécuter sur l'origine de Sentinelle.
+
+`/view` rend DANS LA PAGE, et seulement ce qu'un navigateur sait afficher sans
+danger : PDF et images matricielles. Ni HTML, ni **SVG** — un SVG est du XML qui
+porte des scripts, et le rendre sur notre origine reviendrait à laisser le
+déposant s'exécuter avec la session de qui l'ouvre. Ce qui n'est pas de cette
+liste n'a pas d'aperçu du tout : le bouton n'apparaît pas, et la route refuse.
+
+L'aperçu s'éteint depuis les Préférences (`DOCUMENT_INLINE_VIEW`), pour une
+collectivité qui préfère que rien ne s'ouvre jamais dans le navigateur.
 
 ── Rien n'est imposé ──
 
@@ -54,6 +67,37 @@ ALLOWED_EXTENSIONS = {
     'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg',
     'zip', '7z', 'eml', 'msg',
 }
+
+
+# Ce qu'un navigateur affiche sans qu'on lui prête notre origine. Le type est
+# REDÉDUIT de l'extension et non repris de ce que le déposant a annoncé : c'est
+# la seule façon d'être sûr de ce qu'on renvoie.
+#
+# Le SVG en est ABSENT volontairement, bien qu'il soit accepté au dépôt : c'est
+# du XML qui peut porter des scripts, et le rendre dans la page l'exécuterait
+# sur l'origine de Sentinelle, avec la session de qui l'ouvre. Il se télécharge,
+# il ne se regarde pas.
+INLINE_TYPES = {
+    'pdf': 'application/pdf',
+    'png': 'image/png',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+}
+
+
+def inline_view_enabled():
+    """L'aperçu dans la page est-il actif ? Défaut : oui — 432 pièces sur 439
+    sont des PDF, et ouvrir un acte pour le lire ne devrait pas demander de
+    l'enregistrer d'abord."""
+    return enabled() and bool(current_app.config.get('DOCUMENT_INLINE_VIEW', True))
+
+
+def viewable(doc):
+    """Cette pièce a-t-elle un aperçu ? Sert au gabarit, pour ne montrer le
+    bouton que quand il mène quelque part."""
+    return inline_view_enabled() and _extension(doc.filename or '') in INLINE_TYPES
 
 
 def enabled():
@@ -180,6 +224,39 @@ def download(id):
     return send_file(io.BytesIO(doc.content.data),
                      mimetype='application/octet-stream',
                      as_attachment=True, download_name=doc.filename)
+
+
+@bp.route('/documents/<int:id>/view')
+@login_required
+def view(id):
+    """Rend la pièce DANS la page, quand son type s'y prête.
+
+    Trois en-têtes portent la garde, et aucun n'est décoratif :
+
+    - le `Content-Type` vient de l'EXTENSION, jamais de ce que le déposant a
+      annoncé ;
+    - `nosniff` interdit au navigateur de deviner autre chose ;
+    - `X-Frame-Options: SAMEORIGIN` et `frame-ancestors 'self'` REMPLACENT le
+      `DENY` et le `'none'` que l'application pose partout ailleurs. Sans cela,
+      le cadre resterait vide : `DENY` refuse l'encadrement même par soi-même,
+      et personne ne comprendrait pourquoi.
+    """
+    if not inline_view_enabled():
+        abort(404)
+    doc = Document.query.get_or_404(id)
+    if not current_user.can_view(doc.permission_category()):
+        abort(403)
+    mime = INLINE_TYPES.get(_extension(doc.filename or ''))
+    if mime is None or doc.content is None:
+        abort(404)
+    reponse = send_file(io.BytesIO(doc.content.data), mimetype=mime,
+                        as_attachment=False, download_name=doc.filename)
+    reponse.headers['X-Content-Type-Options'] = 'nosniff'
+    reponse.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    reponse.headers['Content-Security-Policy'] = (
+        "default-src 'none'; img-src 'self'; object-src 'self'; "
+        "frame-ancestors 'self'")
+    return reponse
 
 
 @bp.route('/documents/<int:id>/delete', methods=['POST'])

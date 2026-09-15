@@ -45,7 +45,7 @@ applicatives. Le tout avec des **alertes automatiques** (mail + Teams), un **ré
   niveau, n° de série, bon de commande, code de révocation. Mêmes alertes que les certificats TLS.
 - **Liaisons** — flux orientés entre logiciels, dossiers du partage réseau.
 - **Pièces jointes** — actes signés, délibérations, guides, stockés **en base** (une sauvegarde de la base
-  suffit à tout restaurer).
+  suffit à tout restaurer), avec **aperçu dans la page** des PDF et des images.
 
 ### Pilotage & alertes
 - **Tableau de bord** : conformité globale (%), compteurs par catégorie, éléments urgents.

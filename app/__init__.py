@@ -244,13 +244,16 @@ def create_app(config_class=Config):
         dizaine de fiches, et faire porter le contexte par chacune n'aurait
         garanti qu'une chose : qu'on l'oublie sur la onzieme."""
         from flask_login import current_user
-        from app.documents import enabled, for_parent, DEFAULT_MAX_MB
+        from app.documents import (enabled, for_parent, viewable,
+                                   inline_view_enabled, DEFAULT_MAX_MB)
         if not current_user.is_authenticated or not enabled():
             return {'documents_enabled': False}
         from app.models import Referential
         return {
             'documents_enabled': True,
             'attached_documents': for_parent,
+            'document_viewable': viewable,
+            'document_inline_view': inline_view_enabled(),
             'doc_categories': Referential.options('doc_category'),
             'document_max_mb': app.config.get('DOCUMENT_MAX_MB') or DEFAULT_MAX_MB,
         }

@@ -414,14 +414,19 @@ def preferences():
                 max_mb = max(1, min(100, int(request.form.get('document_max_mb') or 10)))
             except (TypeError, ValueError):
                 max_mb = 10
+            apercu = request.form.get('document_inline_view') == 'on'
             _persist_config({'DOCUMENTS_ENABLED': 'true' if enabled else 'false',
-                             'DOCUMENT_MAX_MB': str(max_mb)})
+                             'DOCUMENT_MAX_MB': str(max_mb),
+                             'DOCUMENT_INLINE_VIEW': 'true' if apercu else 'false'})
             current_app.config['DOCUMENTS_ENABLED'] = enabled
             current_app.config['DOCUMENT_MAX_MB'] = max_mb
-            audit_record('config pieces jointes', detail=f'actif={enabled}, max={max_mb} Mo',
+            current_app.config['DOCUMENT_INLINE_VIEW'] = apercu
+            audit_record('config pieces jointes',
+                         detail=f'actif={enabled}, max={max_mb} Mo, apercu={apercu}',
                          category='preferences')
             flash('Pièces jointes ' + ('activées' if enabled else 'désactivées')
-                  + f' ({max_mb} Mo maximum).', 'success')
+                  + f' ({max_mb} Mo maximum, aperçu '
+                  + ('activé' if apercu else 'désactivé') + ').', 'success')
 
         elif action == 'save_dashboard_custom':
             enabled = request.form.get('dashboard_custom') == 'on'
@@ -671,6 +676,7 @@ def preferences():
                            dashboard_custom=current_app.config.get('DASHBOARD_CUSTOM', True),
                            documents_enabled=current_app.config.get('DOCUMENTS_ENABLED', True),
                            document_max_mb=current_app.config.get('DOCUMENT_MAX_MB', 10),
+                           document_inline_view=current_app.config.get('DOCUMENT_INLINE_VIEW', True),
                            ui_primary_color=current_app.config.get('UI_PRIMARY_COLOR', ''),
                            db_backups=db_backups, thresholds=thresholds,
                            ldap_config=ldap_config,

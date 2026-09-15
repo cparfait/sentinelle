@@ -83,6 +83,9 @@ class Config:
     # un acte scanne ou un guide, pas une image disque.
     DOCUMENTS_ENABLED = os.getenv('DOCUMENTS_ENABLED', 'true').lower() in ('true', '1', 'yes')
     DOCUMENT_MAX_MB = int(os.getenv('DOCUMENT_MAX_MB', '10'))
+    # Apercu dans la page (PDF et images). A couper pour une collectivite qui
+    # prefere que rien ne s'ouvre jamais dans le navigateur.
+    DOCUMENT_INLINE_VIEW = os.getenv('DOCUMENT_INLINE_VIEW', 'true').lower() in ('true', '1', 'yes')
 
     # Tableau de bord personnalisable (chaque utilisateur choisit et ordonne ses
     # blocs). Desactivable globalement -> disposition par defaut pour tous.
