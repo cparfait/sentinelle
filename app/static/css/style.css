@@ -1571,7 +1571,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    colores la rendrait bruyante la ou un formulaire, lui, a besoin qu'on
    decoupe sa longueur.
    ========================================================================== */
-.data-card h6.fiche-titre { --sec: var(--sec-indigo); color: rgb(var(--sec)); }
+.fiche-titre { --sec: var(--sec-indigo); }
+.data-card h6.fiche-titre { color: rgb(var(--sec)); }
 .data-card h6.fiche-titre::before { background: rgb(var(--sec)); }
 /* !important : les gabarits posent encore des utilitaires Bootstrap
    (text-primary, text-success) sur ces icones. */
@@ -1599,6 +1600,18 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    devient donc un bloc, comme dans les formulaires — bandeau teinte, bordure
    d'accent — pour qu'on repere « Materiel & garantie » sans lire son titre.
    ---- */
+/* Les blocs se rangent en COLONNES, pas en pile.
+   Empiles sur toute la largeur, une section de trois champs laissait les trois
+   quarts de sa ligne vides et la fiche s'etirait sur deux ecrans. Ils se
+   rangent donc deux ou trois de front selon la place, et seuls les blocs qui
+   portent une liste (contrats, services, serveurs) prennent la ligne entiere :
+   une liste de badges coupee a 300 px se replie en escalier. */
+.fiche-sections {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+    align-items: start;
+}
 .fiche-bloc {
     --sec: var(--sec-indigo);
     border: 1px solid var(--border);
@@ -1606,23 +1619,29 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     border-radius: var(--radius-lg);
     background: var(--card);
     overflow: hidden;
-    margin-bottom: 14px;
 }
+.fiche-bloc:has(.fiche-champ--large) { grid-column: 1 / -1; }
 /* Le titre redevient un bandeau plein : la barre d'accent qu'il portait tout
    seul ferait doublon avec la bordure du bloc. */
 .data-card .fiche-bloc > h6.fiche-titre {
     margin: 0;
-    padding: 10px 16px;
-    font-size: 0.9rem;
+    padding: 7px 14px;
+    font-size: 0.82rem;
     color: rgb(var(--sec));
     background: rgba(var(--sec), 0.08);
     border-bottom: 1px solid rgba(var(--sec), 0.18);
 }
 .data-card .fiche-bloc > h6.fiche-titre::before { display: none; }
-.fiche-bloc > .fiche-grille { padding: 16px; }
+/* Dans un bloc, les colonnes se resserrent : le bloc est deja etroit, et un
+   minimum de 200 px n'y laisserait qu'une seule colonne. */
+.fiche-bloc > .fiche-grille {
+    padding: 12px 14px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px 18px;
+}
 /* Ce qui suit la grille dans un bloc — les temoins de supervision, par
    exemple — se retrouverait colle au bord sans cela. */
-.fiche-bloc > *:not(h6):not(.fiche-grille) { padding: 0 16px 12px; }
+.fiche-bloc > *:not(h6):not(.fiche-grille) { padding: 0 14px 10px; }
 
 .fiche-bloc--indigo  { --sec: var(--sec-indigo); }
 .fiche-bloc--sky     { --sec: var(--sec-sky); }
