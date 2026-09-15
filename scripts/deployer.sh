@@ -1,16 +1,24 @@
 #!/usr/bin/env bash
-# Deploiement de Sentinelle sur le serveur.
+# Construction de l'image Sentinelle, en amont d'un redeploiement Portainer.
 #
-# Ce script existe parce que la sequence ne se devine pas, et qu'une erreur y
-# est SILENCIEUSE. Le compose declare « image: sentinelle:local » sans section
-# « build: » : « docker compose up --build » ne construit donc rien et ne s'en
-# plaint pas. Et sans --force-recreate, Compose constate que le conteneur
-# correspond toujours a la definition du service et le laisse tourner sur
-# l'ancienne image. Dans les deux cas l'application repart, en bonne sante,
-# avec le code de la veille — et rien ne le signale.
+# PARTAGE DES ROLES : ce script construit, PORTAINER deploie.
 #
-# D'ou la verification finale : on compare l'empreinte de l'image que porte le
-# conteneur a celle du tag. Si elles divergent, on echoue bruyamment.
+# Portainer detient la pile (projet « sentinelle », sa propre copie du
+# docker-compose.yml dans son volume). Recreer le conteneur en ligne de commande
+# lui passerait devant, et son prochain « redeploy » defairait le travail. Le
+# script s'arrete donc apres le build et vous rend la main.
+#
+# Deux pieges, tous deux SILENCIEUX, que ce script eclaire :
+#
+#   1. L'image « sentinelle:local » est construite ICI et n'existe dans aucun
+#      registre. Dans Portainer, ne cochez JAMAIS « Re-pull image » : le pull
+#      echoue sur « pull access denied », et rien n'est deploye.
+#
+#   2. Portainer travaille sur une COPIE du compose, prise le jour ou la pile a
+#      ete creee. Elle ne suit pas le depot. Si docker-compose.yml change ici,
+#      il faut le recopier dans l'editeur de Portainer — sinon un redeploiement
+#      appliquera une definition perimee (montages, variables d'alors).
+#      Le script previent quand ce fichier a change.
 #
 # Usage :  sudo ./scripts/deployer.sh
 set -euo pipefail
@@ -18,18 +26,7 @@ set -euo pipefail
 DEPOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TAG='sentinelle:local'
 CONTENEUR='sentinelle_web'
-
-# Le nom de projet est FIXE, au lieu d'etre deduit du nom du repertoire.
-#
-# Compose nomme le projet d'apres le repertoire courant — ici « sentinelle_data
-# » — alors que la pile existante s'appelle « sentinelle » (elle a ete deployee
-# par Portainer). Deux noms de projet pour un meme nom de conteneur, et chaque
-# deploiement echouait sur « container name already in use » : Compose ne
-# reconnaissait pas comme sien le conteneur qu'il trouvait en place.
-#
-# En le fixant, le script pilote la pile existante au lieu d'en creer une
-# concurrente. La valeur importe peu, sa STABILITE est tout.
-export COMPOSE_PROJECT_NAME='sentinelle'
+COMPOSE='docker-compose.yml'
 
 cd "$DEPOT"
 
@@ -42,13 +39,6 @@ git_depot() { sudo -u "$PROPRIO" git -C "$DEPOT" "$@"; }
 echo "== Depot   : $DEPOT (proprietaire : $PROPRIO)"
 
 # ── Garde-fous ──────────────────────────────────────────────────────────────
-if [ ! -f "$DEPOT/.env" ]; then
-    echo "ERREUR : .env absent. Il porte SECRET_KEY, qui dechiffre les secrets" >&2
-    echo "         stockes en base (SMTP, LDAP, O365). N'en generez PAS un neuf :" >&2
-    echo "         une clef differente rend ces secrets illisibles." >&2
-    exit 1
-fi
-
 if [ -n "$(git_depot status --porcelain)" ]; then
     echo "ERREUR : modifications locales non validees. Le pull les ecraserait" >&2
     echo "         ou echouerait a mi-chemin :" >&2
@@ -57,10 +47,17 @@ if [ -n "$(git_depot status --porcelain)" ]; then
 fi
 
 # ── Mise a jour du code ─────────────────────────────────────────────────────
-AVANT_COMMIT="$(git_depot rev-parse --short HEAD)"
+AVANT_COMMIT="$(git_depot rev-parse HEAD)"
 git_depot pull --ff-only
-APRES_COMMIT="$(git_depot rev-parse --short HEAD)"
-echo "== Code    : $AVANT_COMMIT -> $APRES_COMMIT"
+APRES_COMMIT="$(git_depot rev-parse HEAD)"
+echo "== Code    : $(git_depot rev-parse --short "$AVANT_COMMIT") -> $(git_depot rev-parse --short "$APRES_COMMIT")"
+
+# Le compose a-t-il bouge ? Portainer n'en saura rien tout seul.
+COMPOSE_MODIFIE='non'
+if [ "$AVANT_COMMIT" != "$APRES_COMMIT" ] \
+   && ! git_depot diff --quiet "$AVANT_COMMIT" "$APRES_COMMIT" -- "$COMPOSE"; then
+    COMPOSE_MODIFIE='oui'
+fi
 
 # ── Construction ────────────────────────────────────────────────────────────
 # L'empreinte d'avant sert de temoin : si elle ne bouge pas alors que le commit
@@ -74,33 +71,37 @@ if [ "$AVANT_COMMIT" != "$APRES_COMMIT" ] && [ "$AVANT_IMAGE" = "$APRES_IMAGE" ]
     echo "         Le build n'a pas pris le nouveau code — .dockerignore ?" >&2
     exit 1
 fi
+echo "== Image   : $APRES_IMAGE"
 
-# ── Redemarrage ─────────────────────────────────────────────────────────────
-docker compose up -d --force-recreate
-
-# ── La verification qui compte ──────────────────────────────────────────────
-IMAGE_CONTENEUR="$(docker inspect "$CONTENEUR" --format '{{.Image}}')"
-if [ "$IMAGE_CONTENEUR" != "$APRES_IMAGE" ]; then
-    echo "ERREUR : le conteneur tourne sur $IMAGE_CONTENEUR," >&2
-    echo "         alors que $TAG vaut $APRES_IMAGE." >&2
-    echo "         Reparer par :  docker rm -f $CONTENEUR && docker compose up -d" >&2
-    exit 1
-fi
-
-# Les montages : la base SQLite, le jeton O365 et l'autorite de certification du
-# LDAP vivent sur l'hote. Un montage perdu ne se voit pas au demarrage — il se
-# voit au premier envoi de mail, ou a la premiere connexion annuaire.
-echo "== Montages :"
-docker inspect "$CONTENEUR" --format '{{range .Mounts}}   {{.Source}} -> {{.Destination}}{{println}}{{end}}'
-
-# ── Demarrage ───────────────────────────────────────────────────────────────
-sleep 5
-if docker logs --tail 50 "$CONTENEUR" 2>&1 | grep -q 'Dechiffrement config echoue'; then
-    echo "ATTENTION : des secrets ne se dechiffrent plus. SECRET_KEY a change ?" >&2
-    echo "            Les mots de passe SMTP / LDAP / O365 sont a ressaisir." >&2
-fi
-docker logs --tail 10 "$CONTENEUR" 2>&1 | sed 's/^/   /'
+# ── Le conteneur tourne-t-il deja dessus ? ──────────────────────────────────
+IMAGE_CONTENEUR="$(docker inspect "$CONTENEUR" --format '{{.Image}}' 2>/dev/null || echo 'aucun')"
 
 echo
-echo "== Deploye : $APRES_COMMIT sur $APRES_IMAGE"
-echo "   Pensez au Ctrl+F5 : le CSS est servi depuis le cache du navigateur."
+if [ "$COMPOSE_MODIFIE" = 'oui' ]; then
+    echo "!! $COMPOSE A CHANGE dans ce pull."
+    echo "   Recopiez-le dans Portainer (Stacks > sentinelle > Editor) AVANT de"
+    echo "   redeployer, sinon la definition perimee de Portainer s'appliquera."
+    echo
+fi
+
+if [ "$IMAGE_CONTENEUR" = "$APRES_IMAGE" ]; then
+    echo "== Rien a faire : $CONTENEUR tourne deja sur cette image."
+    docker inspect "$CONTENEUR" --format '   {{.State.Status}} depuis {{.State.StartedAt}}'
+    exit 0
+fi
+
+cat <<FIN
+== A FAIRE dans Portainer
+
+   Stacks > sentinelle > Update the stack
+   NE COCHEZ PAS « Re-pull image » : l'image est locale, le pull echouerait.
+
+   Le conteneur tourne sur $IMAGE_CONTENEUR
+   L'image fraiche est   $APRES_IMAGE
+
+   Relancez ce script ensuite : il verifiera que le conteneur a bien pris la
+   nouvelle image. Sans cette verification, un redeploiement sans effet laisse
+   l'application en bonne sante sur le code de la veille, sans rien signaler.
+
+   Puis Ctrl+F5 dans le navigateur : le CSS vient du cache.
+FIN
