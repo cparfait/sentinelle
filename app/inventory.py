@@ -2,7 +2,9 @@ from flask import (Blueprint, render_template, redirect, url_for, request, flash
                    jsonify)
 from flask_login import login_required
 from app import db
-from app.models import (Equipment, EQUIPMENT_KIND_LABELS, CRITICALITY_LABELS)
+from app.models import (Equipment, EQUIPMENT_KIND_LABELS, CRITICALITY_LABELS,
+                        EQUIPMENT_FAMILIES, EQUIPMENT_FAMILY_LABELS,
+                        EQUIPMENT_KIND_GROUPS_ATTR, equipment_family)
 from app.forms_util import (parse_date as _pd, parse_int as _pi,
                             parse_float as _pf, status_rank)
 from app.decorators import require_edit, require_delete, view_guard
@@ -10,14 +12,16 @@ from app.audit import record as audit_record
 
 bp = Blueprint('inventory', __name__)
 
-KIND_CHOICES = [('vm', 'VM'), ('physical', 'Serveur physique'), ('nas', 'NAS')]
+# La liste vient des libelles : une nature ajoutee la-bas parait ici sans
+# qu'on y touche.
+KIND_CHOICES = list(EQUIPMENT_KIND_LABELS.items())
 ENV_CHOICES = [('', '—'), ('prod', 'Production'), ('preprod', 'Préproduction'),
                ('dev', 'Développement'), ('decommissioned', 'Décommissionné')]
 # `business_software` n'y figure plus : la saisie libre a cede la place au
 # rattachement logiciel/serveur de l'inventaire, et la colonne ne se remplit
 # plus.
 SEARCH_FIELDS = ['name', 'os', 'os_version', 'ip_address', 'host_server', 'hypervisor',
-                 'role_principal', 'serial_number',
+                 'role_principal', 'serial_number', 'location', 'management_url',
                  'manufacturer_model', 'usage', 'observations']
 
 
@@ -45,8 +49,18 @@ def _txt(f, key):
     return (f.get(key, '') or '').strip() or None
 
 
+def _famille_demandee(item=None):
+    """La famille a laquelle la fiche appartient — celle de l'equipement quand
+    on le modifie, celle d'ou l'on vient quand on en cree un. Sans cela, creer
+    un switch depuis l'ecran Reseau proposerait « VM » par defaut."""
+    if item is not None:
+        return equipment_family(item.kind or 'vm')
+    demandee = request.args.get('famille', '').strip()
+    return demandee if demandee in EQUIPMENT_FAMILIES else 'serveurs'
+
+
 def _apply_form(eq, f):
-    eq.kind = f.get('kind', 'vm') if f.get('kind') in ('vm', 'physical', 'nas') else 'vm'
+    eq.kind = f.get('kind') if f.get('kind') in EQUIPMENT_KIND_LABELS else 'vm'
     eq.name = (f.get('name', '') or '').strip()
     eq.environment = f.get('environment') or None
     eq.criticality = _pi(f.get('criticality'))
@@ -57,6 +71,9 @@ def _apply_form(eq, f):
     eq.supervised = bool(f.get('supervised'))
     eq.cyberwatch = bool(f.get('cyberwatch'))
     eq.ninja_one = bool(f.get('ninja_one'))
+    eq.location = _txt(f, 'location')
+    eq.management_url = _txt(f, 'management_url')
+    eq.ports = _pi(f.get('ports'), minimum=0)
     eq.ip_address = _txt(f, 'ip_address')
     eq.netmask = _txt(f, 'netmask')
     eq.vlan = _txt(f, 'vlan')
@@ -94,15 +111,29 @@ def _render_form(item):
     suppliers = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
     return render_template('inventory/form.html', item=item, kind_choices=KIND_CHOICES,
                            env_choices=ENV_CHOICES, crit_labels=CRITICALITY_LABELS,
+                           groupes=EQUIPMENT_KIND_GROUPS_ATTR,
+                           famille=_famille_demandee(item),
+                           famille_natures=EQUIPMENT_FAMILIES,
                            suppliers=suppliers)
 
 
 @bp.route('/')
 @login_required
 def list():
-    items = Equipment.query.filter_by(is_active=True).order_by(Equipment.name).all()
+    # La famille decide de ce qu'on regarde : les serveurs, ou le reseau. Un
+    # switch n'est pas un serveur, et les melanger obligeait a cinq onglets et a
+    # un titre qui enumere.
+    famille = request.args.get('famille', '').strip()
+    if famille not in EQUIPMENT_FAMILIES:
+        famille = 'serveurs'
+    natures = EQUIPMENT_FAMILIES[famille]
+    items = [e for e in Equipment.query.filter_by(is_active=True)
+                                       .order_by(Equipment.name).all()
+             if equipment_family(e.kind or 'vm') == famille]
     q = request.args.get('q', '').strip()
     kind = request.args.get('kind', '').strip()
+    if kind not in natures:
+        kind = ''
     # Filtre avance
     f = {
         'environment': request.args.get('environment', '').strip(),
@@ -114,7 +145,7 @@ def list():
         'warranty': request.args.get('warranty', '').strip(),         # expiring / expired
         'no_backup': request.args.get('no_backup', '').strip(),       # 1
     }
-    if kind in ('vm', 'physical', 'nas'):
+    if kind:
         items = [e for e in items if e.kind == kind]
     from app.paging import paginate, text_search, resolve_per_page
 
@@ -181,9 +212,11 @@ def list():
     per_page = resolve_per_page()
     items, page, pages, total = paginate(items, per_page)
     counts = {k: Equipment.query.filter_by(is_active=True, kind=k).count()
-              for k in ('vm', 'physical', 'nas')}
+              for k in natures}
     from app.paging import PER_PAGE_CHOICES
     return render_template('inventory/list.html', items=items, q=q, kind=kind, counts=counts,
+                           famille=famille, natures=natures,
+                           famille_labels=EQUIPMENT_FAMILY_LABELS,
                            kind_labels=EQUIPMENT_KIND_LABELS, crit_labels=CRITICALITY_LABELS,
                            filters=f, active_filters=active_filters,
                            env_choices=ENV_CHOICES, crit_labels_dict=CRITICALITY_LABELS,
@@ -202,7 +235,7 @@ def quick_create():
     if not name:
         return jsonify(ok=False, error='Le nom est obligatoire.'), 400
     kind = request.form.get('kind', 'vm')
-    if kind not in ('vm', 'physical', 'nas'):
+    if kind not in EQUIPMENT_KIND_LABELS:
         kind = 'vm'
     eq = Equipment(name=name, kind=kind)
     db.session.add(eq)

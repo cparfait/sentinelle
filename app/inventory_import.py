@@ -87,13 +87,24 @@ def _match_field(h):
 
 
 def _detect_kind(title):
+    """La nature, devinee du titre de l'onglet.
+
+    Les formes les PLUS precises d'abord : « baie de stockage » contient
+    « stockage », et un test plus large gagnerait la course sur un test juste.
+    """
     t = _norm(title)
+    if 'baie' in t or 'san' in t or ('stockage' in t and 'nas' not in t):
+        return 'storage'
+    for mot in ('switch', 'firewall', 'pare-feu', 'pare feu', 'routeur',
+                'router', 'reseau', 'wifi', 'borne'):
+        if mot in t:
+            return 'network'
+    if 'nas' in t:
+        return 'nas'
     if 'vm' in t:
         return 'vm'
     if 'phys' in t:
         return 'physical'
-    if 'nas' in t:
-        return 'nas'
     return None
 
 

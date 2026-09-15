@@ -722,7 +722,75 @@ class Asset(db.Model):
         return ASSET_TYPE_LABELS.get(self.asset_type, self.asset_type)
 
 
-EQUIPMENT_KIND_LABELS = {'vm': 'VM', 'physical': 'Serveur physique', 'nas': 'NAS'}
+EQUIPMENT_KIND_LABELS = {
+    'vm': 'VM',
+    'physical': 'Serveur physique',
+    'nas': 'NAS',
+    'storage': 'Baie de stockage',
+    'network': 'Équipement réseau',   # switch, pare-feu, routeur, borne WiFi
+}
+
+# L'inventaire se lit en deux FAMILLES. Un switch n'est pas un serveur : les
+# melanger dans une seule liste obligeait a cinq onglets et a un titre qui
+# enumere. Chaque famille a son entree de menu et ses propres onglets.
+#
+# La baie de stockage reste avec les serveurs : elle vit dans la meme salle, se
+# garantit et se maintient pareil, et c'est aupres d'eux qu'on la cherche.
+EQUIPMENT_FAMILIES = {
+    'serveurs': ('vm', 'physical', 'nas', 'storage'),
+    'reseau': ('network',),
+}
+EQUIPMENT_FAMILY_LABELS = {'serveurs': 'Serveurs', 'reseau': 'Réseau'}
+
+
+def equipment_family(kind):
+    """La famille d'une nature. Une nature inconnue retombe cote serveurs —
+    c'est la famille ordinaire, et une fiche ne doit pas devenir invisible."""
+    for famille, natures in EQUIPMENT_FAMILIES.items():
+        if kind in natures:
+            return famille
+    return 'serveurs'
+
+
+# Ce que chaque nature porte comme informations. On nomme les GROUPES plutot que
+# de repeter des listes de natures dans les formulaires, les fiches et les
+# routes : sans cela, ajouter une nature demanderait de retrouver dix endroits,
+# et celui qu'on oublierait ne se verrait qu'a l'usage -- un champ qui manque
+# sur une fiche ne se signale pas.
+EQUIPMENT_KIND_GROUPS = {
+    # Materiel, garantie, contrat de maintenance : tout ce qui s'achete et se
+    # remplace. Une VM n'a ni numero de serie ni garantie.
+    'materiel': ('physical', 'nas', 'storage', 'network'),
+    # Volumetrie et protocoles : un NAS et une baie de disques se decrivent
+    # pareil.
+    'stockage': ('nas', 'storage'),
+    # Adresse sur le reseau. Le serveur PHYSIQUE y figure desormais : il en a
+    # une comme les autres, et son absence etait un oubli — la fiche n'avait
+    # simplement pas d'endroit ou la montrer.
+    'reseau': ('vm', 'physical', 'nas', 'storage', 'network'),
+    # Masque et VLAN : ce qui compte quand on configure le port, donc la VM et
+    # l'equipement reseau lui-meme.
+    'vlan': ('vm', 'network'),
+    # Supervision en TEXTE (nom de l'outil) : la VM a ses interrupteurs a elle.
+    'supervision': ('physical', 'nas', 'storage', 'network'),
+    # Ce qui ne concerne que la machine virtuelle : hote, hyperviseur, vCPU.
+    'virtualisation': ('vm',),
+    # Qui s'en sert.
+    'services': ('vm', 'physical'),
+    # Usage principal / donnees stockees.
+    'usage': ('nas', 'storage'),
+    # Plan de reprise : ce dont la perte arrete un service.
+    'pra': ('physical', 'storage'),
+    # Emplacement physique : tout ce qui occupe une baie.
+    'emplacement': ('physical', 'nas', 'storage', 'network'),
+    # Interface d'administration.
+    'administration': ('nas', 'storage', 'network'),
+    # Nombre de ports.
+    'ports': ('network',),
+}
+
+# Les memes groupes, prets a poser dans un attribut `data-kinds` du formulaire.
+EQUIPMENT_KIND_GROUPS_ATTR = {k: ' '.join(v) for k, v in EQUIPMENT_KIND_GROUPS.items()}
 ENVIRONMENT_LABELS = {'prod': 'Production', 'preprod': 'Préproduction',
                       'dev': 'Développement', 'decommissioned': 'Décommissionné'}
 CRITICALITY_LABELS = {1: '1 - Faible', 2: '2 - Modérée', 3: '3 - Élevée', 4: '4 - Vitale'}
@@ -773,6 +841,18 @@ class Equipment(db.Model):
     supplier = db.relationship('Supplier', backref=db.backref('equipments', lazy='dynamic'))
 
     # Stockage (NAS)
+    # Ou la machine se trouve PHYSIQUEMENT : salle, baie, etage. Distinct de
+    # `host_server`, qui designe l'hyperviseur d'une VM. Le champ manquait pour
+    # tout le materiel, pas seulement pour le reseau : devant une panne, savoir
+    # dans quelle baie aller est la premiere question.
+    location = db.Column(db.String(128))
+    # Interface d'administration (https://..., ou une IP). Elle ne se devine pas
+    # depuis l'adresse de service : un switch s'administre souvent sur un VLAN
+    # dedie.
+    management_url = db.Column(db.String(256))
+    # Nombre de ports : ce qui caracterise un switch, et ce qu'on regarde avant
+    # d'en commander un autre.
+    ports = db.Column(db.Integer)
     protocols = db.Column(db.String(128))
     access = db.Column(db.Text)
     capacity_to = db.Column(db.Float)
@@ -799,6 +879,14 @@ class Equipment(db.Model):
 
     def kind_label(self):
         return EQUIPMENT_KIND_LABELS.get(self.kind, self.kind)
+
+    def famille(self):
+        return equipment_family(self.kind or 'vm')
+
+    def porte(self, groupe):
+        """Cette nature d'equipement porte-t-elle ce groupe d'informations ?
+        Les fiches s'en servent pour ne montrer que ce qui a un sens."""
+        return (self.kind or 'vm') in EQUIPMENT_KIND_GROUPS.get(groupe, ())
 
     def env_label(self):
         return ENVIRONMENT_LABELS.get(self.environment, self.environment or '')

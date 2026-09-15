@@ -3,7 +3,8 @@
 
 {% set status_labels = {'danger': 'Critique', 'warning': 'À surveiller', 'info': 'Proche', 'success': 'OK'} %}
 {% set crit_colors = {1: 'secondary', 2: 'info', 3: 'warning', 4: 'danger'} %}
-{% set kind_icons = {'vm': 'bi-pc-display', 'physical': 'bi-server', 'nas': 'bi-hdd-network'} %}
+{% set kind_icons = {'vm': 'bi-pc-display', 'physical': 'bi-server', 'nas': 'bi-hdd-network',
+                     'storage': 'bi-hdd-rack', 'network': 'bi-router'} %}
 
 {# Colonnes configurables : (clé, libellé). Nom / Statut / Actions sont toujours affichés. #}
 {% set columns = [
@@ -13,6 +14,7 @@
     ('vlan', 'VLAN'), ('vcpu', 'vCPU'), ('ram_go', 'RAM (Go)'), ('storage', 'Stockage (Go)'),
     ('manufacturer_model', 'Constructeur / Modèle'), ('serial_number', 'N° série'),
     ('purchase_date', 'Achat'), ('warranty_end', 'Garantie'), ('maintenance_contract', 'Maintenance'),
+    ('location', 'Emplacement'), ('management_url', 'Administration'), ('ports', 'Ports'),
     ('protocols', 'Protocoles'), ('capacity_to', 'Capacité (To)'), ('used_to', 'Utilisé (To)'),
     ('raid', 'RAID'), ('access', 'Accès'), ('role_principal', 'Rôle'),
     ('business_software', 'Logiciels'), ('user_services', 'Services'), ('usage', 'Usage'),
@@ -22,23 +24,31 @@
 {% set default_cols = ['kind', 'environment', 'criticality', 'os', 'ip_address', 'warranty_end'] %}
 
 {% block content %}
-{% with active='material' %}{% include '_inventory_nav.html' %}{% endwith %}
+{% with active=famille %}{% include '_inventory_nav.html' %}{% endwith %}
+{% set reseau = famille == 'reseau' %}
 <div class="mb-3">
-    <h4 class="fw-bold mb-0"><i class="bi bi-hdd-stack me-2"></i>Inventaire</h4>
-    <small class="text-muted">VM, serveurs physiques et NAS — {{ total }} équipement(s)</small>
+    <h4 class="fw-bold mb-0"><i class="bi {{ 'bi-router' if reseau else 'bi-hdd-stack' }} me-2"></i>{{ famille_labels[famille] }}</h4>
+    <small class="text-muted">
+        {%- if reseau %}Switches, pare-feu, routeurs et bornes WiFi
+        {%- else %}VM, serveurs physiques, NAS et baies de stockage{% endif %} — {{ total }} équipement(s)</small>
 </div>
 
 {% set status_choices = [('danger', 'Critique'), ('warning', 'À surveiller'), ('info', 'Proche'), ('success', 'OK')] %}
 <form method="GET">
     <input type="hidden" name="kind" value="{{ kind }}">
+    <input type="hidden" name="famille" value="{{ famille }}">
     <input type="hidden" name="sort" value="{{ sort }}">
     <input type="hidden" name="dir" value="{{ dir }}">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        {# Pas d'onglets quand la famille n'a qu'une nature : ils ne
+           diraient rien que le titre ne dise deja. #}
         <div class="seg-tabs">
-            {% set tabs = [('', 'Tous', total), ('vm', 'VM', counts.vm), ('physical', 'Physiques', counts.physical), ('nas', 'NAS', counts.nas)] %}
-            {% for val, lbl, cnt in tabs %}
-            <a class="seg-tab {% if kind == val %}active{% endif %}" href="{{ url_for('inventory.list', kind=val, q=q) }}">{{ lbl }} <span class="seg-tab-count">{{ cnt }}</span></a>
+            {% if natures | length > 1 %}
+            <a class="seg-tab {% if not kind %}active{% endif %}" href="{{ url_for('inventory.list', famille=famille, q=q) }}">Tous <span class="seg-tab-count">{{ counts.values() | sum }}</span></a>
+            {% for val in natures %}
+            <a class="seg-tab {% if kind == val %}active{% endif %}" href="{{ url_for('inventory.list', famille=famille, kind=val, q=q) }}">{{ kind_labels[val] }} <span class="seg-tab-count">{{ counts[val] }}</span></a>
             {% endfor %}
+            {% endif %}
         </div>
         <div class="flex-grow-1 justify-content-end d-flex flex-wrap align-items-center gap-2">
             <div class="input-group input-group-sm" style="max-width: 240px;">
@@ -49,7 +59,7 @@
             <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#advFilter" title="Filtre avancé" aria-label="Filtre avancé">
                 <i class="bi bi-funnel"></i>{% if active_filters %} <span class="badge bg-primary">{{ active_filters }}</span>{% endif %}
             </button>
-            {% if q or active_filters %}<a href="{{ url_for('inventory.list', kind=kind) }}" class="btn btn-sm btn-outline-secondary" title="Effacer" aria-label="Effacer"><i class="bi bi-x-lg"></i></a>{% endif %}
+            {% if q or active_filters %}<a href="{{ url_for('inventory.list', famille=famille, kind=kind) }}" class="btn btn-sm btn-outline-secondary" title="Effacer" aria-label="Effacer"><i class="bi bi-x-lg"></i></a>{% endif %}
             <select name="per_page" class="form-select form-select-sm inv-perpage" onchange="this.form.submit()" title="Lignes par page">
                 {% for n in per_page_choices %}<option value="{{ n }}" {{ 'selected' if per_page == n }}>{{ n }}/page</option>{% endfor %}
                 <option value="all" {{ 'selected' if per_page is none }}>Tous</option>
@@ -68,7 +78,7 @@
             </div>
             {% if current_user.can_edit('inventory') %}
             <a href="{{ url_for('inventory.import_xlsx') }}" class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-excel me-1"></i> Importer Excel</a>
-            <a href="{{ url_for('inventory.create') }}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i> Ajouter</a>
+            <a href="{{ url_for('inventory.create', famille=famille) }}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i> Ajouter</a>
             {% endif %}
         </div>
     </div>
@@ -173,6 +183,9 @@
                     'purchase_date': e.purchase_date.strftime('%d/%m/%Y') if e.purchase_date else '',
                     'warranty_end': e.warranty_end.strftime('%d/%m/%Y') if e.warranty_end else '',
                     'maintenance_contract': e.maintenance_contract or '',
+                    'location': e.location or '',
+                    'management_url': e.management_url or '',
+                    'ports': e.ports if e.ports is not none else '',
                     'protocols': e.protocols or '',
                     'capacity_to': e.capacity_to if e.capacity_to is not none else '',
                     'used_to': e.used_to if e.used_to is not none else '',
@@ -221,7 +234,7 @@
                 <tr><td colspan="{{ columns|length + 3 }}" class="text-center py-4 text-muted">
                     <i class="bi bi-hdd-stack" style="font-size: 2rem;"></i>
                     <p class="mt-2 mb-0">Aucun équipement.
-                        {% if current_user.can_edit('inventory') %}<a href="{{ url_for('inventory.import_xlsx') }}">Importer votre fichier Excel</a> ou <a href="{{ url_for('inventory.create') }}">en ajouter un</a>.{% endif %}
+                        {% if current_user.can_edit('inventory') %}<a href="{{ url_for('inventory.import_xlsx') }}">Importer votre fichier Excel</a> ou <a href="{{ url_for('inventory.create', famille=famille) }}">en ajouter un</a>.{% endif %}
                     </p>
                 </td></tr>
                 {% endfor %}

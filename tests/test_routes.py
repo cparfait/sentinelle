@@ -150,20 +150,48 @@ def test_fiche_equipement_vue_360(app, client):
 
 
 def test_fiche_equipement_sections_par_type(client):
-    """La fiche affiche les sections propres a chaque type (champs vides compris)
-    et les infos de continuite sous la fiche."""
+    """La fiche affiche les sections propres a chaque nature (champs vides
+    compris) et les infos de continuite sous la fiche.
+
+    On cherche des LIBELLES DE CHAMP et non des titres de section : « Réseau »
+    est aussi un onglet de navigation, et l'assertion passerait pour de
+    mauvaises raisons."""
     from app.models import Equipment
     vm = Equipment(name='VM-T', kind='vm')
     ph = Equipment(name='PHY-T', kind='physical')
     nas = Equipment(name='NAS-T', kind='nas')
-    db.session.add_all([vm, ph, nas])
+    baie = Equipment(name='BAIE-T', kind='storage')
+    sw = Equipment(name='SW-T', kind='network')
+    db.session.add_all([vm, ph, nas, baie, sw])
     db.session.commit()
-    b = client.get(f'/inventory/{vm.id}').get_data(as_text=True)
-    assert 'Hôte &amp; ressources' in b and 'Réseau' in b and 'Continuité' in b
+
+    def fiche(e):
+        return client.get(f'/inventory/{e.id}').get_data(as_text=True)
+
+    b = fiche(vm)
+    assert 'Hyperviseur' in b and 'Adresse IP' in b and 'Continuité' in b
     assert 'Sauvegarde 2' in b
-    b = client.get(f'/inventory/{ph.id}').get_data(as_text=True)
-    assert 'Matériel &amp; garantie' in b and 'PRA / PCA' in b and 'Continuité' in b
-    assert 'Réseau' not in b and 'Stockage NAS' not in b
-    b = client.get(f'/inventory/{nas.id}').get_data(as_text=True)
-    assert 'Stockage NAS' in b and 'Matériel &amp; garantie' in b and 'Réseau' in b
+    assert 'N° de série' not in b        # une VM ne s'achète pas
+    assert 'Protocoles' not in b
+
+    b = fiche(ph)
+    assert 'N° de série' in b and 'PRA / PCA' in b and 'Continuité' in b
+    assert 'Adresse IP' in b             # un serveur physique en a une aussi
+    assert 'Protocoles' not in b and 'Hyperviseur' not in b
+
+    b = fiche(nas)
+    assert 'Protocoles' in b and 'N° de série' in b and 'Adresse IP' in b
     assert 'Usage / données stockées' in b
+
+    # Une baie de stockage se décrit comme un NAS et s'achète comme un serveur.
+    b = fiche(baie)
+    assert 'Protocoles' in b and 'N° de série' in b and 'Adresse IP' in b
+    assert 'PRA / PCA' in b
+    assert 'Hyperviseur' not in b
+
+    # Un équipement réseau : du matériel, une adresse, des ports — pas de
+    # volumétrie ni de services utilisateurs.
+    b = fiche(sw)
+    assert 'N° de série' in b and 'Adresse IP' in b and 'VLAN' in b
+    assert 'Nombre de ports' in b
+    assert 'Protocoles' not in b and 'Hyperviseur' not in b

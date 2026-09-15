@@ -138,10 +138,12 @@
                     </div>
                     <div class="col-md-5">
                         <label class="form-label small">Type</label>
+                        {# La liste vient des libelles du modele : une nature
+                           ajoutee la-bas parait ici sans qu'on y touche. #}
                         <select data-qa-field="kind" class="form-select form-select-sm">
-                            <option value="vm">VM</option>
-                            <option value="physical">Serveur physique</option>
-                            <option value="nas">NAS</option>
+                            {% for v, l in equipment_kinds().items() %}
+                            <option value="{{ v }}">{{ l }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                 </div>

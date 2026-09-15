@@ -64,8 +64,8 @@
                         {{ rowa('Environnement', item.env_label()) }}
                         {{ rowa('Rôle principal', item.role_principal) }}
                         {{ rowa('Logiciels métiers', item.software_list.all()|map(attribute='name')|join(', ')) }}
-                        {% if item.kind in ('vm', 'physical') %}{{ rowa('Services utilisateurs', item.user_services) }}{% endif %}
-                        {% if item.kind == 'nas' %}{{ rowa('Usage / données stockées', item.usage) }}{% endif %}
+                        {% if item.porte('services') %}{{ rowa('Services utilisateurs', item.user_services) }}{% endif %}
+                        {% if item.porte('usage') %}{{ rowa('Usage / données stockées', item.usage) }}{% endif %}
                     </table>
                 </div>
                 <div class="col-md-6">
@@ -73,9 +73,9 @@
                     <table class="table table-borderless table-sm mb-0">
                         {{ rowa('OS', ((item.os or '') ~ (' ' ~ item.os_version if item.os_version else '')) | trim) }}
                         {{ rowa('Dernière MAJ OS', item.os_last_update.strftime('%d/%m/%Y') if item.os_last_update else '') }}
-                        {% if item.kind != 'vm' %}{{ rowa('Supervision', item.supervision) }}{% endif %}
+                        {% if item.porte('supervision') %}{{ rowa('Supervision', item.supervision) }}{% endif %}
                     </table>
-                    {% if item.kind == 'vm' %}
+                    {% if item.porte('virtualisation') %}
                     <div class="d-flex gap-3 flex-wrap small text-muted mt-1">
                         <span><i class="bi bi-{{ 'check-circle-fill text-success' if item.supervised else 'dash-circle' }} me-1"></i>Supervision</span>
                         <span><i class="bi bi-{{ 'check-circle-fill text-success' if item.cyberwatch else 'dash-circle' }} me-1"></i>Cyberwatch</span>
@@ -83,19 +83,23 @@
                     </div>
                     {% endif %}
                 </div>
-                {% if item.kind in ('vm', 'nas') %}
+                {% if item.porte('reseau') %}
                 <div class="col-md-6">
                     {{ section('bi-diagram-3', 'Réseau') }}
                     <table class="table table-borderless table-sm mb-0">
                         {{ rowa('Adresse IP', item.ip_address) }}
-                        {% if item.kind == 'vm' %}
+                        {% if item.porte('vlan') %}
                         {{ rowa('Masque', item.netmask) }}
                         {{ rowa('VLAN', item.vlan) }}
+                        {% endif %}
+                        {% if item.porte('ports') %}{{ rowa('Nombre de ports', item.ports) }}{% endif %}
+                        {% if item.porte('administration') and item.management_url %}
+                        <tr><td class="text-muted">Administration</td><td><a href="{{ item.management_url }}" target="_blank" rel="noopener">{{ item.management_url }}</a></td></tr>
                         {% endif %}
                     </table>
                 </div>
                 {% endif %}
-                {% if item.kind == 'vm' %}
+                {% if item.porte('virtualisation') %}
                 <div class="col-md-6">
                     {{ section('bi-pc-display', 'Hôte & ressources') }}
                     <table class="table table-borderless table-sm mb-0">
@@ -107,23 +111,22 @@
                     </table>
                 </div>
                 {% endif %}
-                {% if item.kind in ('physical', 'nas') %}
+                {% if item.porte('materiel') %}
                 <div class="col-md-6">
                     {{ section('bi-tools', 'Matériel & garantie') }}
                     <table class="table table-borderless table-sm mb-0">
-                        {% if item.kind == 'physical' %}
                         {{ rowa('Constructeur / Modèle', item.manufacturer_model) }}
                         {{ rowa('N° de série', item.serial_number) }}
+                        {{ rowa('Emplacement', item.location) }}
                         {{ rowa('Date achat / MES', item.purchase_date.strftime('%d/%m/%Y') if item.purchase_date else '') }}
-                        {% endif %}
                         {{ rowa('Fin de garantie', item.warranty_end.strftime('%d/%m/%Y') if item.warranty_end else '') }}
                         {{ rowa('Contrat de maintenance', item.maintenance_contract) }}
                     </table>
                 </div>
                 {% endif %}
-                {% if item.kind == 'nas' %}
+                {% if item.porte('stockage') %}
                 <div class="col-md-6">
-                    {{ section('bi-hdd-network', 'Stockage NAS') }}
+                    {{ section('bi-hdd-network', 'Stockage') }}
                     <table class="table table-borderless table-sm mb-0">
                         {{ rowa('Protocoles', item.protocols) }}
                         {{ rowa('Capacité (To)', item.capacity_to) }}
@@ -150,14 +153,14 @@
                 <div class="col-md-6">
                     <table class="table table-borderless table-sm mb-0">
                         {{ rowa('Sauvegarde 1', ((item.backup1 or '') ~ (' (' ~ item.backup1_freq ~ ')' if item.backup1_freq else '')) | trim) }}
-                        {% if item.kind == 'vm' %}
+                        {% if item.porte('virtualisation') %}
                         {{ rowa('Sauvegarde 2', ((item.backup2 or '') ~ (' (' ~ item.backup2_freq ~ ')' if item.backup2_freq else '')) | trim) }}
                         {% endif %}
                     </table>
                 </div>
                 <div class="col-md-6">
                     <table class="table table-borderless table-sm mb-0">
-                        {% if item.kind == 'physical' %}{{ rowa('PRA / PCA', item.pra_pca) }}{% endif %}
+                        {% if item.porte('pra') %}{{ rowa('PRA / PCA', item.pra_pca) }}{% endif %}
                     </table>
                 </div>
             </div>

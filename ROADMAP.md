@@ -70,6 +70,21 @@ collectivité) vivent désormais dans Sentinelle, et ses données y ont été re
   (ou un dump restauré) et la verse ici. Rejouable (`import_map`), avec un mode `--essai` qui compte sans
   rien écrire et nomme ce qui ne se rapproche pas.
 
+## Inventaire du parc
+- ✅ **Baies de stockage et matériel réseau** — deux natures de plus (switch, pare-feu, routeur, borne WiFi),
+  et l'inventaire se lit désormais en **deux familles** : *Serveurs* (VM, physiques, NAS, baies) et *Réseau*.
+  Un switch n'est pas un serveur ; les réunir sous « Matériel » demandait cinq onglets et un titre qui énumère.
+  Même table, même écran — seule la famille change. Créer depuis l'écran Réseau ne propose que du réseau,
+  mais une fiche mal classée peut changer de camp.
+- ✅ **Ce que chaque nature porte** est décrit par des **groupes nommés** (`materiel`, `stockage`, `vlan`,
+  `ports`…) plutôt que par des listes de natures répétées dans les formulaires, les fiches et les routes :
+  ajouter une nature demandait sinon d'en retrouver dix, et celle qu'on oublie ne se voit qu'à l'usage.
+- ✅ **Trois champs qui manquaient** — emplacement physique (salle, baie, étage), interface d'administration
+  et nombre de ports. Le premier valait pour tout le matériel : devant une panne, savoir dans quelle baie
+  aller est la première question.
+- ✅ **Un serveur physique a enfin une section Réseau** — il a une adresse comme les autres ; la fiche n'avait
+  simplement pas d'endroit où la montrer.
+
 ## Modules métier (suite)
 - ✅ **Vue serveur 360°** — liaison optionnelle des certificats, sauvegardes et mises à jour à un équipement de l'inventaire (`equipment_id`). Select dans les formulaires, lien sur les fiches, section « Éléments liés » sur la fiche équipement. Un backup actif lié couvre désormais l'alerte « criticité élevée sans sauvegarde ».
 

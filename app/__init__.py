@@ -259,6 +259,19 @@ def create_app(config_class=Config):
         }
 
     @app.template_global()
+    def equipment_kinds():
+        """Les natures d'equipement, pour les listes deroulantes.
+
+        Une variable GLOBALE et non une variable de contexte : les macros Jinja
+        n'heritent pas du contexte du gabarit qui les appelle, et la fenetre
+        d'ajout rapide en est une. Passer par le contexte obligerait a importer
+        chaque macro « with context », et celui qu'on oublierait ne se verrait
+        qu'a l'ouverture de la fenetre.
+        """
+        from app.models import EQUIPMENT_KIND_LABELS
+        return EQUIPMENT_KIND_LABELS
+
+    @app.template_global()
     def static_v(filename):
         """url_for('static') + version = date de modif du fichier. Force le
         navigateur a recharger un asset des qu'il change (fini le cache CSS/JS

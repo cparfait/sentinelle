@@ -31,6 +31,12 @@ applicatives. Le tout avec des **alertes automatiques** (mail + Teams), un **ré
 - **Revue de droits** — revue périodique des accès aux applications métiers.
 - **Mises à jour** — suivi des versions et du statut (à jour / disponible / critique) + qui a fait la MàJ.
 
+### Inventaire du parc
+- **Serveurs** — VM, serveurs physiques, NAS et **baies de stockage** : OS, IP, virtualisation, matériel,
+  garantie, emplacement, sauvegardes, PRA/PCA.
+- **Réseau** — switches, pare-feu, routeurs et bornes WiFi : modèle, n° de série, VLAN, **nombre de ports**,
+  interface d'administration, emplacement, garantie.
+
 ### Inventaire des logiciels
 - **Fiche logiciel** — éditeur, hébergement (on premise / SaaS / hybride), cycle de vie, technologie,
   mode d'authentification et 2FA, utilisateurs face au **plafond contractuel**, référents métier **et**
