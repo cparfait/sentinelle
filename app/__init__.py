@@ -225,7 +225,7 @@ def create_app(config_class=Config):
         _reprendre_certificat_interrompu()
         db.create_all()
         _auto_migrate_sqlite()
-        _relacher_domaine_certificat()
+        _relacher_colonnes_certificat()
         _migrate_data()
         _seed_roles()
         _seed_referentials()
@@ -449,15 +449,25 @@ def _reprendre_certificat_interrompu():
     db.session.commit()
 
 
-def _relacher_domaine_certificat():
-    """Le domaine d'un certificat cesse d'etre obligatoire.
+# Les colonnes de `certificate` qui ont cesse d'etre obligatoires. Elles sont
+# nommees ICI plutot que deduites du modele : la reconstruction d'une table est
+# une operation trop lourde pour se declencher toute seule au gre d'un
+# changement de modele, et la liste dit exactement ce qu'on a voulu relacher.
+_CERT_A_RELACHER = ('domain', 'expiry_date')
 
-    Un certificat ELECTRONIQUE n'en a pas : sa date vient de l'autorite, pas
-    d'une poignee de main reseau. Le modele le dit desormais nullable, mais
-    SQLite ne sait pas relacher un NOT NULL sur une table existante -- il faut
-    la reconstruire. Sans cela, l'insertion d'un certificat electronique echoue
-    sur une base anterieure, et seulement sur celle-la : le probleme ne se voit
-    pas en test, ou la table nait au bon schema.
+
+def _relacher_colonnes_certificat():
+    """Relache les NOT NULL devenus faux sur `certificate`.
+
+    Le DOMAINE d'abord : un certificat electronique n'en a pas, sa date vient
+    de l'autorite et non d'une poignee de main reseau. L'ECHEANCE ensuite : un
+    certificat en cours de commande, ou dont personne n'a encore releve la
+    date, existe quand meme.
+
+    Le modele les dit nullables, mais SQLite ne sait pas relacher un NOT NULL
+    sur une table existante -- il faut la reconstruire. Sans cela, l'insertion
+    echoue sur une base ANTERIEURE, et seulement sur celle-la : le probleme ne
+    se voit pas en test, ou la table nait au bon schema.
 
     La reconstruction passe par le MODELE plutot que par un CREATE TABLE
     recopie a la main : la table renait exactement comme create_all la ferait,
@@ -473,9 +483,10 @@ def _relacher_domaine_certificat():
     if 'certificate' not in insp.get_table_names():
         return
     colonnes = {c['name']: c for c in insp.get_columns('certificate')}
-    domaine = colonnes.get('domain')
-    if domaine is None or domaine.get('nullable', True):
-        return   # deja relache, ou table neuve
+    a_faire = [n for n in _CERT_A_RELACHER
+               if n in colonnes and not colonnes[n].get('nullable', True)]
+    if not a_faire:
+        return   # deja relachees, ou table neuve
 
     # Les colonnes ajoutees A CHAUD ne remplissent pas les lignes EXISTANTES :
     # un defaut SQLAlchemy s'applique a l'insertion, pas au passe. `kind` et

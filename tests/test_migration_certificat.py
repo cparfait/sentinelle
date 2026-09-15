@@ -68,8 +68,9 @@ def _colonne(chemin, table, nom):
 
 def test_la_table_est_reconstruite_sans_perte(base_ancienne):
     _demarre(base_ancienne)
-    # Le domaine n'est plus obligatoire…
+    # Ni le domaine ni l'échéance ne sont plus obligatoires…
     assert _colonne(base_ancienne, 'certificate', 'domain')['notnull'] == 0
+    assert _colonne(base_ancienne, 'certificate', 'expiry_date')['notnull'] == 0
     # …et rien n'a été perdu.
     c = sqlite3.connect(base_ancienne)
     lignes = dict(c.execute('SELECT id, domain FROM certificate'))
@@ -90,16 +91,20 @@ def test_la_table_est_reconstruite_sans_perte(base_ancienne):
 
 def test_un_certificat_electronique_s_insere_ensuite(base_ancienne):
     """Le but de tout ceci : sur une base ancienne, l'insertion échouait — et
-    seulement là."""
+    seulement là. Sans domaine, et même sans échéance."""
     from datetime import date
     app = _demarre(base_ancienne)
     with app.app_context():
         from app.models import Certificate
         db.session.add(Certificate(kind='signature', service_name='Parapheur',
                                    holder='ARNAUD', expiry_date=date(2030, 1, 1)))
+        db.session.add(Certificate(kind='signature', service_name='En commande',
+                                   holder='MACHINE'))
         db.session.commit()
-        c = Certificate.query.filter_by(kind='signature').one()
+        c = Certificate.query.filter_by(service_name='Parapheur').one()
         assert c.domain is None and c.label() == 'Parapheur - ARNAUD'
+        sans = Certificate.query.filter_by(service_name='En commande').one()
+        assert sans.expiry_date is None and sans.status() == 'warning'
 
 
 def test_un_second_demarrage_ne_refait_rien(base_ancienne):

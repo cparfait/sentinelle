@@ -46,7 +46,8 @@ def search():
             results.append({
                 'type': 'certificate', 'icon': 'bi-award',
                 'label': f'{c.service_name} - {c.domain}',
-                'detail': f'Certificat - expire {c.expiry_date.strftime("%d/%m/%Y")}',
+                'detail': ('Certificat - expire ' + c.expiry_date.strftime('%d/%m/%Y')
+                           if c.expiry_date else 'Certificat - echeance a completer'),
                 'url': f'/certificates/{c.id}',
                 'badge': 'success'
             })

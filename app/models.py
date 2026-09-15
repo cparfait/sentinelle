@@ -262,7 +262,10 @@ class Certificate(db.Model):
     equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'), index=True)
     equipment = db.relationship('Equipment', backref=db.backref('certificates', lazy='dynamic'))
     issued_at = db.Column(db.Date)
-    expiry_date = db.Column(db.Date, nullable=False)
+    # NULLABLE : un certificat en cours de commande, ou dont personne n'a encore
+    # releve la date, existe quand meme. Refuser la fiche perdrait ce qu'on en
+    # sait ; l'orange dira qu'elle est a completer.
+    expiry_date = db.Column(db.Date)
     auto_renew = db.Column(db.Boolean, default=False)
     description = db.Column(db.Text)
     priority = db.Column(db.String(20), default='medium')
@@ -351,16 +354,29 @@ class Certificate(db.Model):
         Un certificat REVOQUE ne l'est plus : il n'est deja plus utilisable, sa
         date ne veut plus rien dire, et le rappeler chaque matin ne ferait
         qu'user l'attention. Un certificat SUSPENDU le redeviendra, et son
-        echeance continue donc de compter."""
-        return self.is_active and self.validity != 'revoque'
+        echeance continue donc de compter.
+
+        SANS DATE, il n'y a rien a surveiller non plus : on ne peut pas alerter
+        sur une echeance qu'on ignore. La fiche le dit en orange, ce qui appelle
+        a la completer -- c'est l'ecran qui reclame, pas le mail du matin."""
+        return self.is_active and self.validity != 'revoque' and self.expiry_date is not None
+
+    def days_left(self):
+        """Jours restants, ou None quand la date manque."""
+        if self.expiry_date is None:
+            return None
+        return (self.expiry_date - datetime.now(timezone.utc).date()).days
 
     def status(self):
+        # Sans echeance, la fiche est A COMPLETER : l'orange le dit, la ou le
+        # vert affirmerait qu'on a verifie.
+        if self.expiry_date is None:
+            return 'warning'
         if self.validity == 'revoque':
             # Revoque : hors surveillance. Le badge de validite, lui, le dit en
             # toutes lettres a cote -- c'est la qu'on lit ce qui a ete decide.
             return 'success'
-        days_left = (self.expiry_date - datetime.now(timezone.utc).date()).days
-        return _status_from_days(days_left, 'THRESHOLD_EXPIRY')
+        return _status_from_days(self.days_left(), 'THRESHOLD_EXPIRY')
 
 
 class CertificateHistory(db.Model):

@@ -84,11 +84,13 @@
                         {%- else %}{{ cert.issuer or '-' }}{% endif -%}
                     </td>
                     <td>{{ cert.issued_at.strftime('%d/%m/%Y') if cert.issued_at else '-' }}</td>
-                    <td>{{ cert.expiry_date.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ cert.expiry_date.strftime('%d/%m/%Y') if cert.expiry_date else '—' }}</td>
                     <td>
                         {# Un certificat révoqué n'est plus utilisable : le
                            décompte de ses jours n'a plus de sens. #}
-                        {% if not cert.monitored() %}
+                        {% if not cert.expiry_date %}
+                        <span class="text-muted" title="Échéance à compléter">à compléter</span>
+                        {% elif not cert.monitored() %}
                         <span class="text-muted">—</span>
                         {% else %}
                         {% set days = (cert.expiry_date - now().date()).days %}

@@ -51,6 +51,15 @@ collectivité) vivent désormais dans Sentinelle, et ses données y ont été re
   temporaire, la base y entre en flux (566 Mo d'archive pour **0,3 Mo** de pic mémoire), et un second bouton
   produit une archive **allégée**, sans les octets des pièces jointes (0,1 Mo). Les restes abandonnés sont
   balayés au passage : la suppression après envoi est du meilleur effort, elle n'arrive pas si le client coupe.
+- ✅ **La reprise ne laisse rien derrière elle** — un serveur que SoftInventory connaissait et que le parc
+  ignore est désormais **repris** (nom, famille d'OS, version, localisation, virtuel ou non, notes) plutôt
+  qu'abandonné : sans quoi l'installation logiciel↔serveur qui s'y rattache serait perdue. L'échéance d'un
+  certificat cesse d'être obligatoire — un certificat en cours de commande existe quand même ; sa fiche passe
+  en **orange « à compléter »** et ne déclenche pas d'alerte, car on ne peut pas alerter sur une échéance
+  qu'on ignore.
+- ✅ **Remise à zéro sans reperdre la configuration** — `tools/remise_a_zero.py` : vide les données métier,
+  garde `app_config` (secrets chiffrés compris, donc toujours valides sur l'instance d'origine), les rôles,
+  les comptes et le parc.
 - ✅ **Reprise des données** — `tools/reprise_softinventory.py` : lit la base PostgreSQL de SoftInventory
   (ou un dump restauré) et la verse ici. Rejouable (`import_map`), avec un mode `--essai` qui compte sans
   rien écrire et nomme ce qui ne se rapproche pas.

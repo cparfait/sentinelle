@@ -188,9 +188,10 @@
                                value="{{ certificate.issued_at.strftime('%Y-%m-%d') if certificate and certificate.issued_at else '' }}">
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-medium">{{ 'Fin de validité *' if signature else "Date d'expiration *" }}</label>
+                        <label class="form-label fw-medium">{{ 'Fin de validité' if signature else "Date d'expiration" }}</label>
                         <input type="date" name="expiry_date" class="form-control"
-                               value="{{ certificate.expiry_date.strftime('%Y-%m-%d') if certificate and certificate.expiry_date else '' }}" required>
+                               value="{{ certificate.expiry_date.strftime('%Y-%m-%d') if certificate and certificate.expiry_date else '' }}">
+                        <div class="form-text">Laissée vide, la fiche passe en orange : à compléter.</div>
                     </div>
                     {% if signature %}
                     <div class="col-md-4 mb-3">

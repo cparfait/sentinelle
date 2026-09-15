@@ -74,7 +74,7 @@ pytest dans `requirements-dev.txt`). Toute évolution de la logique de statut
   purement descriptifs vivent en base (`Referential`, écran *Référentiels*, admin).
 - **Migrations de schéma SQLite** : `_auto_migrate_sqlite()` ajoute colonnes et index, mais
   ne sait NI relâcher un `NOT NULL` NI remplir les lignes existantes. Les deux se font à la
-  main (cf. `_relacher_domaine_certificat()` et les `UPDATE` de `_migrate_data()`), et une
+  main (cf. `_relacher_colonnes_certificat()` et les `UPDATE` de `_migrate_data()`), et une
   base ancienne échoue là où une base neuve passe — le tester sur `instance/`.
 - **Dates** : utiliser `datetime.now(timezone.utc)` (déjà la convention partout).
 - **Langue** : UI et messages en français.

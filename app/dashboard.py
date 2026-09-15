@@ -509,7 +509,9 @@ def index():
                 'status': 'danger', 'url': f'/accounts/{a.id}'
             })
     for c, st in cert_st:
-        if st in ('danger', 'warning'):
+        # Une fiche sans echeance est orange, mais elle n'a pas sa place parmi
+        # les URGENCES : il n'y a pas de compte a rebours a afficher.
+        if st in ('danger', 'warning') and c.expiry_date:
             days = (c.expiry_date - today).days
             urgent_items.append({
                 'type': 'certificate', 'name': f'{c.service_name} - {c.domain}',

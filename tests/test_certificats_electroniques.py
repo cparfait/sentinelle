@@ -217,3 +217,79 @@ def test_csv_transporte_les_deux_natures(client):
     assert sig.kind == 'signature' and sig.holder_label() == 'Mme Claire ARNAUD'
     assert sig.level == 'RGS**'
     assert Certificate.query.filter_by(service_name='Ancien').one().kind == 'tls'
+
+
+# ── Une échéance qu'on ignore ──
+
+def test_un_certificat_sans_echeance_est_accepte(client):
+    """Un certificat en cours de commande, ou dont personne n'a encore relevé la
+    date, existe quand même. Refuser la fiche perdrait ce qu'on en sait — le
+    titulaire, l'autorité, le bon de commande."""
+    r = client.post('/certificates/create', data={
+        'kind': 'signature', 'service_name': 'Site Ludo-Médiathèque',
+        'holder': 'MACHINE'}, follow_redirects=True)
+    assert r.status_code == 200
+    c = Certificate.query.one()
+    assert c.expiry_date is None
+
+
+def test_sans_echeance_la_fiche_est_orange_et_muette(client):
+    """L'orange dit « à compléter », là où le vert affirmerait qu'on a vérifié.
+    Mais on ne peut pas alerter sur une échéance qu'on ignore : c'est l'écran
+    qui réclame, pas le mail du matin."""
+    c = Certificate(kind='signature', service_name='Parapheur', holder='X')
+    db.session.add(c)
+    db.session.commit()
+    assert c.status() == 'warning'
+    assert c.days_left() is None
+    assert c.monitored() is False
+
+
+def test_l_agenda_et_les_urgences_ignorent_une_echeance_inconnue(client):
+    from app.dashboard import _agenda_items
+    from app.models import User
+    db.session.add_all([
+        Certificate(kind='signature', service_name='Sans date', holder='X'),
+        Certificate(kind='signature', service_name='Avec date', holder='Y',
+                    expiry_date=_demain(10)),
+    ])
+    db.session.commit()
+    admin = User.query.filter_by(username='admin').first()
+    _, echeances = _agenda_items(admin)
+    noms = [i['name'] for i in echeances]
+    assert any('Avec date' in n for n in noms)
+    assert not any('Sans date' in n for n in noms)
+    # Le tableau de bord s'ouvre sans trébucher sur la date absente.
+    assert client.get('/').status_code == 200
+
+
+def test_le_planificateur_n_alerte_pas_sans_date(client, app):
+    """`monitored()` garantit la date au planificateur : sans cette garde, le
+    calcul des jours restants lèverait une exception et emporterait l'alerte de
+    TOUS les autres certificats."""
+    from app import scheduler
+    db.session.add_all([
+        Certificate(kind='signature', service_name='Sans date', holder='X'),
+        Certificate(kind='tls', service_name='Site', domain='www.ville.fr',
+                    expiry_date=_demain(1)),
+    ])
+    db.session.commit()
+    envoyes = []
+    scheduler._app = app
+    monkey = getattr(scheduler, 'send_alert', None)
+    assert monkey is not None
+    scheduler.send_alert = lambda *a, **k: envoyes.append(a)
+    try:
+        scheduler.check_certificates()
+    finally:
+        scheduler.send_alert = monkey
+    # Le certificat daté a bien déclenché ; celui sans date, non.
+    assert envoyes and all('Sans date' not in str(a) for a in envoyes)
+
+
+def test_la_liste_et_la_fiche_disent_a_completer(client):
+    c = Certificate(kind='signature', service_name='Parapheur', holder='ARNAUD')
+    db.session.add(c)
+    db.session.commit()
+    assert 'compl' in client.get('/certificates/').get_data(as_text=True)
+    assert 'compl' in client.get(f'/certificates/{c.id}').get_data(as_text=True)

@@ -34,12 +34,15 @@ est derrière nous.
 ── Ce qui ne se rapproche pas ──
 
 Le parc appartient à Sentinelle : les serveurs de SoftInventory se rapprochent
-des équipements d'ici PAR LE NOM, et ceux qui n'y trouvent pas leur jumeau sont
-NOMMÉS dans le rapport plutôt que créés. Un équipement inventé ne porterait ni
-IP, ni VLAN, ni garantie, et polluerait le parc sans rien apprendre.
+des équipements d'ici PAR LE NOM, puis à la ponctuation près. Ceux qui n'y
+trouvent toujours pas leur jumeau sont CRÉÉS, avec ce que SoftInventory en
+sait — nom, famille d'OS, version, localisation, virtuel ou non, notes. Ce
+n'est pas une fiche inventée : c'est une fiche reprise, à compléter (ni IP, ni
+VLAN, ni garantie, que SoftInventory ne tenait pas). Les abandonner reviendrait
+à perdre les installations logiciel↔serveur qui s'y rattachent.
 
-De même, une ligne inexploitable est écartée et nommée : un certificat sans
-date de fin n'a pas d'échéance à surveiller, et c'est tout l'objet de sa fiche.
+`--sans-creer-serveurs` s'en tient au rapprochement et nomme les manquants,
+pour une reprise qui ne doit rien ajouter au parc.
 """
 import argparse
 import os
@@ -83,10 +86,11 @@ def _txt(v, n=None):
 
 
 class Reprise:
-    def __init__(self, cur, db, ecrire=True):
+    def __init__(self, cur, db, ecrire=True, creer_serveurs=True):
         self.cur = cur
         self.db = db
         self.ecrire = ecrire
+        self.creer_serveurs = creer_serveurs
         self.rapport = {}
         self.avertissements = []
         # Les correspondances posées PENDANT ce passage. Elles ne partent en
@@ -284,13 +288,45 @@ class Reprise:
                 sw.user_services.append(sv)
                 self._compte('rattachements à un service')
 
+    # La famille d'OS de SoftInventory, dans les mots de l'inventaire d'ici.
+    _TYPE_OS = {'windows': 'Windows', 'linux': 'Linux'}
+
+    def _creer_equipement(self, serveur):
+        """Fait entrer dans le parc un serveur que SoftInventory connaissait et
+        que Sentinelle ignore. La fiche est PARTIELLE et le reste : ni IP, ni
+        VLAN, ni garantie — SoftInventory ne les tenait pas, et les inventer
+        serait pire que de laisser vide. L'observation le dit, pour que celui
+        qui ouvrira la fiche sache pourquoi elle est maigre."""
+        from app.models import Equipment
+        e = Equipment(
+            name=(serveur['nom'] or '')[:128],
+            # `virtuel` ne distingue pas un NAS d'un serveur physique ; on s'en
+            # tient a ce qu'il dit.
+            kind='vm' if serveur.get('virtuel') else 'physical',
+            os=_txt(self._TYPE_OS.get(serveur.get('type_os')), 128),
+            os_version=_txt(serveur.get('os'), 64),
+            host_server=_txt(serveur.get('localisation'), 128),
+            observations=_txt(serveur.get('notes')))
+        # La version d'OS de SoftInventory est en clair (« Ubuntu 22.04.5 LTS ») :
+        # elle tient lieu d'OS quand la famille n'est pas renseignee.
+        if not e.os and e.os_version:
+            e.os, e.os_version = e.os_version[:128], None
+        note = 'Fiche reprise de SoftInventory, à compléter (IP, VLAN, garantie).'
+        e.observations = f'{e.observations}\n{note}' if e.observations else note
+        if self.ecrire:
+            self.db.session.add(e)
+            self.db.session.flush()
+        self._compte('équipements créés')
+        return e
+
     def logiciels_serveurs(self):
         """Les installations. Le parc appartient à Sentinelle : on rapproche PAR
-        LE NOM, et un serveur sans jumeau ici est nommé plutôt que créé — un
-        équipement inventé ne porterait ni IP, ni VLAN, ni garantie."""
+        LE NOM, puis à la ponctuation près, et ce qui ne se rapproche toujours
+        pas est repris tel quel plutôt qu'abandonné — sans quoi l'installation
+        qui s'y rattache serait perdue."""
         from app.models import Software, Equipment
         logiciels = self._lire_map('software')
-        serveurs = {r['id']: r['nom'] for r in self._rows('serveurs')}
+        serveurs = {r['id']: r for r in self._rows('serveurs')}
         actifs = Equipment.query.filter_by(is_active=True).all()
         parc = {(e.name or '').strip().lower(): e for e in actifs}
         # Second rapprochement, tolérant à la PONCTUATION seule :
@@ -303,12 +339,22 @@ class Reprise:
             cle = ''.join(c for c in (e.name or '').lower() if c.isalnum())
             reduit.setdefault(cle, []).append(e)
         introuvables = set()
+        crees = {}
         for r in self._rows('logiciels_serveurs', 'logiciel_id, serveur_id'):
-            nom = serveurs.get(r['serveur_id'], '')
+            serveur = serveurs.get(r['serveur_id']) or {}
+            nom = serveur.get('nom') or ''
             e = parc.get(nom.strip().lower())
             if e is None:
                 candidats = reduit.get(''.join(c for c in nom.lower() if c.isalnum()), [])
                 e = candidats[0] if len(candidats) == 1 else None
+            if e is None and self.creer_serveurs and nom:
+                # Un seul equipement par serveur, meme s'il porte trois
+                # applications : `crees` evite de le recreer a chaque ligne.
+                e = crees.get(nom)
+                if e is None:
+                    e = self._creer_equipement(serveur)
+                    crees[nom] = e
+                    parc[nom.strip().lower()] = e
             if e is None:
                 introuvables.add(nom)
                 continue
@@ -322,6 +368,10 @@ class Reprise:
             if sw is not None and e not in sw.equipments:
                 sw.equipments.append(e)
                 self._compte('installations posées')
+        if crees:
+            self.avertissements.append(
+                'Serveurs repris de SoftInventory et AJOUTÉS au parc, à compléter '
+                '(IP, VLAN, garantie) : ' + ', '.join(sorted(crees)))
         if introuvables:
             self.avertissements.append(
                 'Serveurs sans équipement correspondant dans le parc, '
@@ -453,10 +503,10 @@ class Reprise:
             if r['id'] in deja:
                 continue
             if r.get('date_fin') is None:
-                # Sans échéance, il n'y a rien à surveiller — et c'est tout
-                # l'objet de la fiche. On le NOMME plutôt que d'inventer une date.
+                # La fiche entre QUAND MEME, sans date : elle passera en orange,
+                # « à compléter ». La refuser perdrait ce qu'on en sait — le
+                # titulaire, l'autorité, le bon de commande et sa pièce jointe.
                 sans_echeance.append(r.get('titulaire') or f"#{r['id']}")
-                continue
             sv_id = services.get(r.get('service_id'))
             # Le nom de la fiche : SoftInventory n'en avait pas, le service du
             # titulaire en tient lieu.
@@ -479,7 +529,7 @@ class Reprise:
                 support=_txt(r.get('support'), 16),
                 level=_txt(r.get('niveau'), 64),
                 serial_number=_txt(r.get('numero_serie'), 128),
-                issued_at=r.get('date_debut'), expiry_date=r['date_fin'],
+                issued_at=r.get('date_debut'), expiry_date=r.get('date_fin'),
                 duration_years=r.get('duree_annees'),
                 amount_ttc=_dec(r.get('montant_ttc')),
                 budget_code=_txt(r.get('imputation'), 32),
@@ -494,7 +544,8 @@ class Reprise:
             self._noter('certificat', r['id'], c.id if self.ecrire else 0)
         if sans_echeance:
             self.avertissements.append(
-                'Certificats sans date de fin, non repris (rien à surveiller) : '
+                'Certificats repris SANS date de fin, à compléter (ils paraissent '
+                'en orange et ne déclenchent pas d\'alerte) : '
                 + ', '.join(sans_echeance))
 
     # ── Liaisons et partages ──
@@ -612,10 +663,15 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--dsn', default=DSN_DEFAUT,
                     help=f'Base PostgreSQL source (défaut : {DSN_DEFAUT})')
+    ap.add_argument('--base',
+                    help="Base Sentinelle à alimenter (défaut : celle du .env)")
     ap.add_argument('--essai', action='store_true',
                     help="Lit et compte sans rien écrire")
     ap.add_argument('--sans-documents', action='store_true',
                     help="Reprend les fiches de pièces jointes sans leur contenu")
+    ap.add_argument('--sans-creer-serveurs', action='store_true',
+                    help="N'ajoute rien au parc : les serveurs sans jumeau sont "
+                         "seulement nommés, et leurs installations non posées")
     args = ap.parse_args()
 
     import psycopg
@@ -624,10 +680,18 @@ def main():
     from config import Config
     from app import create_app, db
 
-    app = create_app(Config)
+    class C(Config):
+        pass
+    if args.base:
+        # Une base VISEE explicitement : on remet a plat une copie rapatriee
+        # d'un serveur sans toucher a celle du poste.
+        C.SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.abspath(args.base)
+
+    app = create_app(C)
     with app.app_context(), psycopg.connect(args.dsn, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
-            r = Reprise(cur, db, ecrire=not args.essai)
+            r = Reprise(cur, db, ecrire=not args.essai,
+                        creer_serveurs=not args.sans_creer_serveurs)
             r.services()
             r.referentiels()
             r.editeurs()
@@ -653,6 +717,7 @@ def main():
     print()
     print('== Reprise SoftInventory ' + ('(ESSAI, rien ecrit) ' if args.essai else '')
           + '=' * 20)
+    print('  Base :', app.config['SQLALCHEMY_DATABASE_URI'])
     for quoi, n in sorted(r.rapport.items()):
         print(f'  {n:>6}  {quoi}')
     if not r.rapport:

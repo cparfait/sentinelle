@@ -142,12 +142,14 @@ def check_domain():
 def _valide(kind, service_name, domain, expiry_date, holder):
     """Ce qu'il faut pour que la fiche veuille dire quelque chose, selon sa
     nature. Un certificat TLS sans domaine ne designe rien ; un certificat
-    electronique sans titulaire ne dit pas qui signe. L'echeance est exigee des
-    deux : c'est elle qu'on surveille, et c'est tout l'objet de la fiche."""
+    electronique sans titulaire ne dit pas qui signe.
+
+    L'echeance, elle, n'est PAS exigee : un certificat en cours de commande, ou
+    dont personne n'a encore releve la date, existe quand meme. La fiche passe
+    en orange -- a completer -- plutot que d'etre refusee, ce qui perdrait ce
+    qu'on en sait deja."""
     if not service_name:
         return 'Le service est obligatoire.'
-    if not expiry_date:
-        return "La date d'expiration est obligatoire."
     if kind == 'signature':
         if not holder:
             return 'Le nom du titulaire est obligatoire.'

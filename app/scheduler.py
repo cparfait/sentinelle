@@ -55,7 +55,7 @@ def check_certificates():
         for cert in certs:
             if is_snoozed('certificate', cert.id):
                 continue
-            days_left = (cert.expiry_date - today).days
+            days_left = (cert.expiry_date - today).days   # monitored() garantit la date
             if should_send_reminder('certificate', cert.id, days_left, thresholds):
                 urgency = 'EXPIRÉ' if days_left < 0 else f'expire dans {days_left} jour(s)'
                 subject = f"Alerte certificat - {cert.label()}"

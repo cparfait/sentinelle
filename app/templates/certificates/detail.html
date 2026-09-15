@@ -69,11 +69,13 @@
                 <div class="col-md-6">
                     <table class="table table-borderless table-sm mb-0">
                         <tr><td class="text-muted">Date emission</td><td class="fw-medium">{{ certificate.issued_at.strftime('%d/%m/%Y') if certificate.issued_at else '-' }}</td></tr>
-                        <tr><td class="text-muted">Expiration</td><td class="fw-medium {% if certificate.status() == 'danger' %}text-danger{% endif %}">{{ certificate.expiry_date.strftime('%d/%m/%Y') }}</td></tr>
+                        <tr><td class="text-muted">Expiration</td><td class="fw-medium {% if certificate.status() == 'danger' %}text-danger{% endif %}">{{ certificate.expiry_date.strftime('%d/%m/%Y') if certificate.expiry_date else 'à compléter' }}</td></tr>
                         <tr><td class="text-muted">Jours restants</td>
                             {# Un certificat révoqué n'est plus utilisable : le
                                décompte de ses jours n'a plus de sens. #}
-                            {% if not certificate.monitored() %}
+                            {% if not certificate.expiry_date %}
+                            <td class="text-muted">échéance non renseignée</td>
+                            {% elif not certificate.monitored() %}
                             <td class="text-muted">hors surveillance ({{ certificate.validity_label()|lower }})</td>
                             {% else %}
                             <td class="fw-bold {% if certificate.status() == 'danger' %}text-danger{% elif certificate.status() == 'warning' %}text-warning{% else %}text-success{% endif %}">
