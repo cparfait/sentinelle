@@ -1586,19 +1586,24 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .fiche-fait-v small { font-weight: 500; font-size: 0.78rem; color: var(--text-muted); }
 .fiche-fait-v .badge, .fiche-fait-v .badge-status { font-size: 0.78rem; vertical-align: 1px; }
 
-/* ---- Le detail : des colonnes qui coulent ----
-   Avec une grille, un groupe de deux lignes voisinait un groupe de six : la
-   ligne prenait la hauteur du plus grand et laissait un trou sous le plus
-   petit. Les colonnes se remplissent d'elles-memes. ---- */
-.fiche-sections { columns: 280px 3; column-gap: 34px; }
+/* ---- Le detail : une grille, pour que les rubriques s'alignent ----
+   Le fondu en colonnes remplissait mieux l'espace, mais chaque rubrique y
+   commencait la ou la precedente s'arretait : les titres tombaient a des
+   hauteurs differentes d'une colonne a l'autre, et l'oeil n'avait plus de
+   ligne d'appui. La grille les remet sur la meme rangee. Elle laisse un peu
+   d'air sous les groupes courts — c'est le prix de l'alignement, et il se paie
+   volontiers depuis que les valeurs se posent en FACE de leur intitule et non
+   plus dessous : les groupes ont perdu la moitie de leur hauteur. ---- */
+.fiche-sections {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 4px 34px;
+    align-items: start;
+}
 .fiche-bloc {
     --sec: var(--sec-indigo);
     min-width: 0;
     margin: 0 0 22px;
-    /* Un groupe ne se coupe jamais entre deux colonnes : son titre resterait en
-       bas de l'une et ses valeurs en haut de l'autre. */
-    break-inside: avoid;
-    -webkit-column-break-inside: avoid;
 }
 
 /* ---- La rubrique : pastille, intitule, filet qui s'efface ---- */
@@ -1719,7 +1724,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 /* Sur un telephone, une seule colonne — et la valeur repasse sous son intitule :
    « Contrat de maintenance » et sa valeur ne tiennent pas de front sur 360 px. */
 @media (max-width: 575.98px) {
-    .fiche-sections { columns: 1; }
+    .fiche-sections { grid-template-columns: 1fr; }
     .fiche-champ { display: block; }
     .fiche-champ .fiche-valeur { text-align: left; margin-top: 2px; }
 }
