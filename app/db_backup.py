@@ -47,6 +47,15 @@ def list_backups(app):
     return infos
 
 
+def db_size_mb(app):
+    """Taille de la base, en mega-octets. Sert a chiffrer ce que coute la
+    retention : « 3 copies de 634 Mo » se decide autrement que « 3 copies »."""
+    chemin = _db_path(app)
+    if not chemin or not os.path.exists(chemin):
+        return 0
+    return round(os.path.getsize(chemin) / (1024 * 1024), 1)
+
+
 def backup_database(app):
     """Cree une sauvegarde horodatee et applique la rotation. Retourne le chemin."""
     if not db.engine.url.get_backend_name().startswith('sqlite'):

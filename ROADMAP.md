@@ -51,6 +51,11 @@ collectivité) vivent désormais dans Sentinelle, et ses données y ont été re
   porter des scripts. Désactivable depuis les Préférences.
 - ✅ **Retrait du connecteur** — plus de synchro, plus de fiches « reflétées », plus d'API `/api/equipment` :
   le catalogue appartient à Sentinelle.
+- ✅ **Rétention des sauvegardes réglable dans l'application** — `BACKUP_DB_KEEP` vivait dans la stack
+  Portainer : changer une politique de rétention demandait un redéploiement. Elle se règle désormais depuis
+  *Préférences › Sauvegarde de la base*, bornée entre 1 et 30, avec l'**encombrement annoncé et recalculé**
+  pendant qu'on choisit — « 14 » ne dit rien, « 14 copies ≈ 8,9 Go » se décide. Repli sur la variable
+  d'environnement.
 - ✅ **Export total : sur disque, plus en mémoire** — l'archive de secours s'écrivait dans un `BytesIO` et
   lisait la base d'un bloc (`serialize()`) : sans conséquence à quelques mégaoctets, un risque
   d'épuisement mémoire depuis que les pièces jointes la font peser des centaines. Elle passe par un fichier

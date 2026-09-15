@@ -25,7 +25,7 @@ SECRET_KEYS = {'MAIL_PASSWORD', 'O365_CLIENT_SECRET', 'LDAP_BIND_PASSWORD',
 _BOOL = {'LDAP_ENABLED', 'LDAP_USE_SSL', 'LDAP_VALIDATE_CERT', 'CT_MONITORING',
          'SESAME_API_ENABLED', 'DASHBOARD_CUSTOM', 'DOCUMENTS_ENABLED',
          'DOCUMENT_INLINE_VIEW'}
-_INT = {'LDAP_PORT', 'MAIL_PORT', 'DOCUMENT_MAX_MB'}
+_INT = {'LDAP_PORT', 'MAIL_PORT', 'DOCUMENT_MAX_MB', 'BACKUP_DB_KEEP'}
 _TRIPLET = {'THRESHOLD_EXPIRY', 'THRESHOLD_DOMAIN', 'THRESHOLD_TASK', 'THRESHOLD_CONTRACT'}
 
 # Destinataires : liste globale + une liste optionnelle par categorie d'entite
@@ -53,6 +53,9 @@ MANAGED = _BOOL | _INT | _TRIPLET | _CSV | {
     'DASHBOARD_CUSTOM', # tableau de bord personnalisable par utilisateur : on/off
     # Pieces jointes stockees en base (actes signes, guides, deliberations).
     'DOCUMENTS_ENABLED', 'DOCUMENT_MAX_MB', 'DOCUMENT_INLINE_VIEW',
+    # Nombre de sauvegardes automatiques conservees. Une politique de retention
+    # ne devrait pas demander un redeploiement pour changer.
+    'BACKUP_DB_KEEP',
     'SESAME_API_ENABLED', 'SESAME_API_TOKEN',  # integration Sesame (API + cle)
     'UI_PRIMARY_COLOR',  # couleur principale de l'interface (hex, vide = defaut)
 }

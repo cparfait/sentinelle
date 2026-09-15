@@ -278,3 +278,45 @@ def test_l_apercu_respecte_les_droits_de_la_fiche(app):
     c = app.test_client()
     c.post('/login', data={'username': 'aveugle', 'password': 'Aveugle-2026!'})
     assert c.get(f'/documents/{doc.id}/view').status_code == 403
+
+
+# ── La rétention des sauvegardes se règle dans l'application ──
+
+def test_la_retention_se_regle_depuis_les_preferences(client, app):
+    """C'est une politique, pas un paramètre de déploiement : la changer ne doit
+    pas demander de redéployer la stack."""
+    client.post('/preferences', data={'action': 'save_backup_keep',
+                                      'backup_db_keep': '3'}, follow_redirects=True)
+    assert app.config['BACKUP_DB_KEEP'] == 3
+    # Elle survit à un rechargement : elle vit en base, pas en mémoire.
+    from app import config_store
+    config_store.load(app)
+    assert app.config['BACKUP_DB_KEEP'] == 3
+
+
+def test_la_retention_est_bornee_des_deux_cotes(client, app):
+    """Zéro effacerait la sauvegarde à peine créée ; un chiffre sans limite
+    remplirait le volume — une copie pèse ce que pèse la base."""
+    for saisi, attendu in (('0', 1), ('999', 30), ('', 14), ('beaucoup', 14)):
+        client.post('/preferences', data={'action': 'save_backup_keep',
+                                          'backup_db_keep': saisi},
+                    follow_redirects=True)
+        assert app.config['BACKUP_DB_KEEP'] == attendu, saisi
+
+
+def test_la_rotation_applique_le_reglage(client, app, tmp_path):
+    """Le réglage doit VRAIMENT piloter la rotation, pas seulement s'afficher."""
+    import os
+    from app.db_backup import list_backups
+    app.config['BACKUP_DB_DIR'] = str(tmp_path)
+    app.config['BACKUP_DB_KEEP'] = 2
+    # Une base en mémoire n'a pas de fichier à copier : on en fabrique une.
+    for i in range(4):
+        chemin = tmp_path / f'sentinelle_2026010{i}_120000.db'
+        chemin.write_bytes(b'x')
+        os.utime(chemin, (1000 + i, 1000 + i))
+    assert len(list_backups(app)) == 4
+
+    from app.db_backup import _rotate
+    _rotate(app, str(tmp_path))
+    assert len(list_backups(app)) == 2

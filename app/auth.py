@@ -472,6 +472,20 @@ def preferences():
             except Exception as e:
                 flash(f'Erreur envoi email: {str(e)}', 'danger')
 
+        elif action == 'save_backup_keep':
+            # Borne des deux cotes : zero effacerait la sauvegarde a peine
+            # creee, et un chiffre sans limite remplirait le volume — une copie
+            # pese ce que pese la base, pieces jointes comprises.
+            try:
+                keep = max(1, min(30, int(request.form.get('backup_db_keep') or 14)))
+            except (TypeError, ValueError):
+                keep = 14
+            _persist_config({'BACKUP_DB_KEEP': str(keep)})
+            current_app.config['BACKUP_DB_KEEP'] = keep
+            audit_record('config retention sauvegardes', detail=f'{keep} copie(s)',
+                         category='preferences')
+            flash(f'Rotation des sauvegardes : {keep} copie(s) conservée(s).', 'success')
+
         elif action == 'backup_db':
             from app.db_backup import backup_database
             try:
@@ -612,6 +626,8 @@ def preferences():
 
     from app.db_backup import list_backups
     db_backups = list_backups(current_app)
+    from app.db_backup import db_size_mb
+    db_taille_mo = db_size_mb(current_app)
 
     from app.models import CONFORMITY_CATEGORIES, CATEGORY_LABELS
 
@@ -679,6 +695,8 @@ def preferences():
                            document_inline_view=current_app.config.get('DOCUMENT_INLINE_VIEW', True),
                            ui_primary_color=current_app.config.get('UI_PRIMARY_COLOR', ''),
                            db_backups=db_backups, thresholds=thresholds,
+                           db_taille_mo=db_taille_mo,
+                           backup_db_keep=current_app.config.get('BACKUP_DB_KEEP', 14),
                            ldap_config=ldap_config,
                            conformity_categories=CONFORMITY_CATEGORIES,
                            conformity_labels=CATEGORY_LABELS,

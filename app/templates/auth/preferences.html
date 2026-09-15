@@ -630,6 +630,34 @@
                 </h2>
                 <div id="secDb" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
                     <div class="accordion-body">
+                        {# La retention se regle ICI et non dans la stack : c'est une
+                           politique, pas un parametre de deploiement, et la changer ne
+                           devrait pas demander de redeployer. L'encombrement est
+                           annonce parce qu'une copie pese ce que pese la base — pieces
+                           jointes comprises. #}
+                        <form method="POST" action="{{ url_for('auth.preferences') }}" class="mb-3">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="save_backup_keep">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-auto">
+                                    <label class="form-label small mb-1" for="backupDbKeep">Sauvegardes conservées</label>
+                                    <input type="number" class="form-control form-control-sm" id="backupDbKeep"
+                                           name="backup_db_keep" min="1" max="30" value="{{ backup_db_keep }}"
+                                           style="width:6rem" data-taille="{{ db_taille_mo }}">
+                                </div>
+                                <div class="col-auto">
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-check-lg me-1"></i> Enregistrer
+                                    </button>
+                                </div>
+                                <div class="col">
+                                    <small class="text-muted" id="backupKeepEstimation"></small>
+                                </div>
+                            </div>
+                            <div class="form-text">La plus ancienne part quand une nouvelle arrive. Une copie pèse
+                                autant que la base ({{ db_taille_mo }} Mo aujourd'hui), pièces jointes comprises.</div>
+                        </form>
+
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <small class="text-muted">
                                 {{ db_backups|length }} sauvegarde(s) conservée(s)
@@ -722,6 +750,27 @@
             if (col) sessionStorage.setItem(KEY, col.id);
         });
     });
+})();
+</script>
+
+<script>
+// L'encombrement se recalcule pendant qu'on choisit : « 14 » ne dit rien, « 14
+// copies = 8,9 Go » se decide.
+(function () {
+    var champ = document.getElementById('backupDbKeep');
+    var sortie = document.getElementById('backupKeepEstimation');
+    if (!champ || !sortie) return;
+    var mo = parseFloat(champ.dataset.taille) || 0;
+    function dire() {
+        var n = parseInt(champ.value, 10);
+        if (!n || n < 1 || !mo) { sortie.textContent = ''; return; }
+        var total = n * mo;
+        sortie.textContent = 'soit environ ' + (total >= 1024
+            ? (total / 1024).toFixed(1).replace('.', ',') + ' Go'
+            : Math.round(total) + ' Mo') + ' dans le volume';
+    }
+    champ.addEventListener('input', dire);
+    dire();
 })();
 </script>
 {% endblock %}
