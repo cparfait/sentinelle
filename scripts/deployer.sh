@@ -19,6 +19,18 @@ DEPOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TAG='sentinelle:local'
 CONTENEUR='sentinelle_web'
 
+# Le nom de projet est FIXE, au lieu d'etre deduit du nom du repertoire.
+#
+# Compose nomme le projet d'apres le repertoire courant — ici « sentinelle_data
+# » — alors que la pile existante s'appelle « sentinelle » (elle a ete deployee
+# par Portainer). Deux noms de projet pour un meme nom de conteneur, et chaque
+# deploiement echouait sur « container name already in use » : Compose ne
+# reconnaissait pas comme sien le conteneur qu'il trouvait en place.
+#
+# En le fixant, le script pilote la pile existante au lieu d'en creer une
+# concurrente. La valeur importe peu, sa STABILITE est tout.
+export COMPOSE_PROJECT_NAME='sentinelle'
+
 cd "$DEPOT"
 
 # Git appartient a l'utilisateur du depot, docker a root. Melanger les deux
