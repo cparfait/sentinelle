@@ -229,17 +229,17 @@ def download(id):
 @bp.route('/documents/<int:id>/view')
 @login_required
 def view(id):
-    """Rend la pièce DANS la page, quand son type s'y prête.
+    """Rend la pièce telle quelle, pour un onglet dédié, quand son type s'y prête.
 
     Trois en-têtes portent la garde, et aucun n'est décoratif :
 
     - le `Content-Type` vient de l'EXTENSION, jamais de ce que le déposant a
       annoncé ;
     - `nosniff` interdit au navigateur de deviner autre chose ;
-    - `X-Frame-Options: SAMEORIGIN` et `frame-ancestors 'self'` REMPLACENT le
-      `DENY` et le `'none'` que l'application pose partout ailleurs. Sans cela,
-      le cadre resterait vide : `DENY` refuse l'encadrement même par soi-même,
-      et personne ne comprendrait pourquoi.
+    - `X-Frame-Options: DENY` et `frame-ancestors 'none'` interdisent tout
+      encadrement. La pièce s'ouvrait autrefois dans un cadre de la fiche, ce
+      qui obligeait à relâcher les deux en `SAMEORIGIN` / `'self'` ; elle
+      s'ouvre maintenant dans un onglet à elle, et la garde se resserre.
     """
     if not inline_view_enabled():
         abort(404)
@@ -252,10 +252,10 @@ def view(id):
     reponse = send_file(io.BytesIO(doc.content.data), mimetype=mime,
                         as_attachment=False, download_name=doc.filename)
     reponse.headers['X-Content-Type-Options'] = 'nosniff'
-    reponse.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    reponse.headers['X-Frame-Options'] = 'DENY'
     reponse.headers['Content-Security-Policy'] = (
         "default-src 'none'; img-src 'self'; object-src 'self'; "
-        "frame-ancestors 'self'")
+        "frame-ancestors 'none'")
     return reponse
 
 

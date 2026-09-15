@@ -59,15 +59,21 @@
                 {% for d in pieces %}
                 <tr>
                     <td>
-                        {# Le nom OUVRE l'aperçu quand le type s'y prête — un acte
+                        {# Le nom OUVRE la pièce quand le type s'y prête — un acte
                            se lit, il ne s'enregistre pas d'abord. Sinon il
                            télécharge, comme avant. Dans les deux cas l'accès se
-                           fait par identifiant : aucun chemin ne vient du client. #}
+                           fait par identifiant : aucun chemin ne vient du client.
+
+                           Dans un NOUVEL ONGLET : la fiche reste ouverte derrière,
+                           et le document dispose de toute la page — un acte scanné
+                           dans une boîte modale se lit à la loupe. Le navigateur y
+                           apporte en prime sa visionneuse complète : zoom,
+                           recherche, impression, pagination. #}
                         {% if document_viewable(d) %}
-                        <a href="{{ url_for('documents.view', id=d.id) }}" class="js-apercu"
-                           data-titre="{{ d.filename }}"
-                           data-telecharger="{{ url_for('documents.download', id=d.id) }}">
-                            <i class="bi bi-file-earmark-text me-1"></i>{{ d.filename }}</a>
+                        <a href="{{ url_for('documents.view', id=d.id) }}"
+                           target="_blank" rel="noopener" title="Ouvrir dans un nouvel onglet">
+                            <i class="bi bi-file-earmark-text me-1"></i>{{ d.filename }}
+                            <i class="bi bi-box-arrow-up-right small text-muted ms-1"></i></a>
                         {% else %}
                         <a href="{{ url_for('documents.download', id=d.id) }}">
                             <i class="bi bi-file-earmark-arrow-down me-1"></i>{{ d.filename }}</a>
@@ -100,49 +106,4 @@
     </div>
 </div>
 
-{% if document_inline_view %}
-{# UN seul cadre par page, rempli au clic : poser un <iframe> par pièce
-   chargerait les 439 documents d'un coup. Il se vide à la fermeture, pour que
-   le fichier ne reste pas en mémoire du navigateur derrière une fiche close. #}
-<div class="modal fade" id="apercuDocument" tabindex="-1" aria-hidden="true" aria-labelledby="apercuTitre">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content" style="height:85vh">
-            <div class="modal-header py-2">
-                <h6 class="modal-title" id="apercuTitre"></h6>
-                <a href="#" class="btn btn-sm btn-outline-secondary ms-auto me-2" id="apercuTelecharger">
-                    <i class="bi bi-download me-1"></i> Télécharger
-                </a>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-            </div>
-            <div class="modal-body p-0">
-                <iframe id="apercuCadre" title="Aperçu du document"
-                        style="width:100%;height:100%;border:0"></iframe>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-(function () {
-    var boite = document.getElementById('apercuDocument');
-    if (!boite || !window.bootstrap) return;
-    var modal = new bootstrap.Modal(boite);
-    var cadre = document.getElementById('apercuCadre');
-    var titre = document.getElementById('apercuTitre');
-    var lien = document.getElementById('apercuTelecharger');
-    document.querySelectorAll('.js-apercu').forEach(function (a) {
-        a.addEventListener('click', function (e) {
-            e.preventDefault();
-            cadre.src = a.getAttribute('href');
-            titre.textContent = a.dataset.titre || '';
-            lien.href = a.dataset.telecharger || '#';
-            modal.show();
-        });
-    });
-    // Vider a la fermeture : sans cela le document reste charge derriere la
-    // fiche, et un PDF de 20 Mo avec lui.
-    boite.addEventListener('hidden.bs.modal', function () { cadre.src = 'about:blank'; });
-})();
-</script>
-{% endif %}
 {% endif %}

@@ -173,7 +173,7 @@ def test_le_reglage_se_change_depuis_les_preferences(client, app):
 
 # ── L'aperçu dans la page ──
 
-def test_un_pdf_s_affiche_dans_la_page(client):
+def test_un_pdf_s_affiche_sans_etre_enregistre(client):
     """Un acte se lit ; l'enregistrer d'abord est un détour."""
     sw = Software(name='GED')
     db.session.add(sw)
@@ -188,10 +188,11 @@ def test_un_pdf_s_affiche_dans_la_page(client):
     assert 'inline' in r.headers['Content-Disposition']
     # Les trois en-têtes de garde.
     assert r.headers['X-Content-Type-Options'] == 'nosniff'
-    # SAMEORIGIN REMPLACE le DENY posé partout ailleurs : sans lui le cadre
-    # resterait vide, DENY refusant l'encadrement même par soi-même.
-    assert r.headers['X-Frame-Options'] == 'SAMEORIGIN'
-    assert "frame-ancestors 'self'" in r.headers['Content-Security-Policy']
+    # La pièce s'ouvre dans un onglet à elle, plus dans un cadre de la fiche :
+    # l'assouplissement en SAMEORIGIN / 'self' qu'exigeait ce cadre n'a plus
+    # lieu d'être, et la garde revient au refus total.
+    assert r.headers['X-Frame-Options'] == 'DENY'
+    assert "frame-ancestors 'none'" in r.headers['Content-Security-Policy']
 
 
 def test_un_svg_se_telecharge_mais_ne_s_affiche_jamais(client):
@@ -217,12 +218,44 @@ def test_un_bureautique_n_a_pas_d_apercu(client):
     doc = Document.query.one()
     assert viewable(doc) is False
     assert client.get(f'/documents/{doc.id}/view').status_code == 404
-    # La fiche propose alors le téléchargement, pas l'aperçu : le lien du
-    # fichier ne porte pas la classe (le script du cadre, lui, la mentionne —
-    # on cherche donc l'attribut, pas le mot).
+    # La fiche propose alors le téléchargement, pas la lecture : son lien vise
+    # /download et ne s'ouvre pas dans un onglet.
     html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
-    assert 'class="js-apercu"' not in html
     assert 'guide.docx' in html
+    assert f'/documents/{doc.id}/view' not in html
+    assert f'/documents/{doc.id}/download' in html
+
+
+def test_une_piece_lisible_s_ouvre_dans_un_onglet(client):
+    """La pièce s'ouvrait dans une boîte modale ; elle prend maintenant un
+    onglet a elle. Deux raisons : un acte scanné dans une fenêtre de 85 % de
+    hauteur se lit à la loupe, et le navigateur apporte gratuitement sa propre
+    visionneuse — zoom, recherche, impression, pagination.
+
+    `rel="noopener"` va avec `target="_blank"` : sans lui, la page ouverte
+    garde une poignée sur celle qui l'a ouverte (window.opener) et pourrait la
+    faire naviguer ailleurs.
+    """
+    sw = Software(name='GED')
+    db.session.add(sw)
+    db.session.commit()
+    _depose(client, 'software', sw.id, 'acte.pdf', b'%PDF-1.4 faux')
+    doc = Document.query.one()
+
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    lien = f'/documents/{doc.id}/view'
+    assert lien in html
+    debut = html.index(lien)
+    balise = html[html.rindex('<a', 0, debut):html.index('>', debut) + 1]
+    assert 'target="_blank"' in balise, balise
+    assert 'rel="noopener"' in balise, balise
+
+    # Et la page servie refuse tout encadrement : l'assouplissement qu'exigeait
+    # le cadre d'autrefois n'a plus lieu d'etre.
+    r = client.get(lien)
+    assert r.status_code == 200
+    assert r.headers['X-Frame-Options'] == 'DENY'
+    assert "frame-ancestors 'none'" in r.headers['Content-Security-Policy']
 
 
 def test_le_type_vient_de_l_extension_pas_du_deposant(client):
