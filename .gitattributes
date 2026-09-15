@@ -1,0 +1,3 @@
+# Les scripts partent sur un serveur Linux : des fins de ligne CRLF y
+# donneraient « bad interpreter » au premier lancement.
+*.sh text eol=lf
