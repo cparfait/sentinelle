@@ -2,12 +2,33 @@
 {% block title %}{{ item.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
 
-{# Une ligne « libellé / valeur » de la fiche. Le tiret vaut « non renseigné » :
-   un blanc se lirait comme un oubli d'affichage. #}
-{% macro champ(label, value, cols='col-sm-6') %}
-<div class="{{ cols }} mb-3">
-    <small class="text-muted d-block">{{ label }}</small>
-    <span class="fw-medium">{{ value or '-' }}</span>
+{# ═══ Disposition ═══
+   La fiche tenait sur deux tiers de largeur, en deux colonnes de champs très
+   espacées : la lecture s'étirait sur deux écrans pendant que le tiers droit
+   restait vide sous les cartes de l'éditeur.
+
+   Elle se lit maintenant en deux temps. EN HAUT, ce qui identifie le logiciel,
+   dans une grille qui se remplit d'elle-même — autant de colonnes que la
+   largeur en permet — avec l'éditeur à droite. EN BAS, ce qui s'y rattache,
+   sur TOUTE la largeur : les cartes se rangent deux par deux, et le vide
+   disparaît. #}
+
+{# Un champ de la grille. Le tiret vaut « non renseigné » : un blanc se lirait
+   comme un oubli d'affichage. `large` donne la ligne entière — un champ qui
+   porte une liste déborderait d'une colonne de 200 px. #}
+{% macro champ(label, value, large=False) %}
+<div class="fiche-champ{{ ' fiche-champ--large' if large }}">
+    <span class="fiche-label">{{ label }}</span>
+    <div class="fiche-valeur">{{ value or '-' }}</div>
+</div>
+{% endmacro %}
+
+{# Même chose, mais le contenu est du balisage : {% call %} plutôt qu'un
+   argument, pour ne pas avoir à marquer la valeur comme sûre. #}
+{% macro bloc(label, large=False) %}
+<div class="fiche-champ{{ ' fiche-champ--large' if large }}">
+    <span class="fiche-label">{{ label }}</span>
+    <div class="fiche-valeur">{{ caller() }}</div>
 </div>
 {% endmacro %}
 
@@ -26,7 +47,7 @@
 {% endmacro %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-3">
     <div>
         <h4 class="fw-bold mb-0"><i class="bi bi-window-stack me-2"></i>{{ item.name }}
             <span class="badge bg-{{ item.lifecycle_color() }}-subtle text-{{ item.lifecycle_color() }} ms-1">{{ item.lifecycle_label() }}</span>
@@ -62,111 +83,142 @@
 </div>
 {% endif %}
 
+{# ═══ En haut : ce qui identifie le logiciel ═══ #}
 <div class="row g-3">
     <div class="{{ 'col-lg-8' if item.supplier else 'col-12' }}">
         <div class="data-card p-4 mb-3">
-            <div class="row">
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Statut MAJ</small>
-                    {{ status_badge(item.computed_status()) }}
-                </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Hébergement</small>
-                    <span class="fw-medium">{{ item.hosting_label() }}{% if item.is_docker %} — conteneur Docker{% endif %}</span>
-                </div>
+            <div class="fiche-grille">
+                {% call bloc('Statut MAJ') %}{{ status_badge(item.computed_status()) }}{% endcall %}
+                {{ champ('Hébergement', item.hosting_label() ~ (' — Docker' if item.is_docker else '')) }}
                 {{ champ('Version', item.version) }}
                 {{ champ('Criticité', item.criticality) }}
                 {{ champ('Technologie', item.technology.label if item.technology else None) }}
                 {{ champ('Type de source', item.source_type_label()) }}
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Authentification</small>
-                    <span class="fw-medium">{{ item.auth_mode_label() or 'Non renseignée' }}</span>
+                {% call bloc('Authentification') %}
+                    {{ item.auth_mode_label() or 'Non renseignée' }}
                     {% if item.auth_strong %}<span class="badge bg-success-subtle text-success ms-1">2FA</span>{% endif %}
-                </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Utilisateurs</small>
-                    <span class="fw-medium">
-                        {%- if item.users_count is none %}Non comptés
-                        {%- else %}{{ item.users_count }}{% if item.users_max %} / {{ item.users_max }}{% endif %}{% endif -%}
-                    </span>
-                </div>
+                {% endcall %}
+                {% call bloc('Utilisateurs') %}
+                    {%- if item.users_count is none %}Non comptés
+                    {%- else %}{{ item.users_count }}{% if item.users_max %} / {{ item.users_max }}{% endif %}{% endif -%}
+                {% endcall %}
                 {{ champ('Mise en service', item.service_date.strftime('%d/%m/%Y') if item.service_date else None) }}
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Contrats / marchés</small>
-                    {% set marches = item.contracts.filter_by(is_active=True).all() %}
-                    {% if marches %}
-                        {% for c in marches %}
-                        <a href="{{ url_for('contracts.detail', id=c.id) }}" class="d-block">{{ c.name }}{% if c.end_date %} <small class="text-muted">— {{ c.end_date.strftime('%d/%m/%Y') }}</small>{% endif %}</a>
-                        {% endfor %}
-                    {% elif item.no_contract_note %}<span class="fw-medium text-muted">{{ item.no_contract_note }}</span>
-                    {% else %}<span class="text-muted">Aucun contrat enregistré</span>{% endif %}
-                </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Référent métier</small>
-                    <span class="fw-medium">{{ item.responsible or '-' }}</span>
+                {% call bloc('Référent métier') %}
+                    {{ item.responsible or '-' }}
                     {% if item.responsible_email %}
                     <a href="mailto:{{ item.responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.responsible_email }}</a>
                     {% endif %}
-                </div>
-                <div class="col-sm-6 mb-3">
-                    <small class="text-muted d-block">Référent technique</small>
-                    <span class="fw-medium">{{ item.tech_responsible or '-' }}</span>
+                {% endcall %}
+                {% call bloc('Référent technique') %}
+                    {{ item.tech_responsible or '-' }}
                     {% if item.tech_responsible_email %}
                     <a href="mailto:{{ item.tech_responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.tech_responsible_email }}</a>
                     {% endif %}
-                </div>
+                {% endcall %}
                 {% if item.url %}
-                <div class="col-12 mb-3">
-                    <small class="text-muted d-block">URL / accès</small>
+                {% call bloc('URL / accès') %}
                     <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.url }}</a>
-                </div>
+                {% endcall %}
                 {% endif %}
-                <div class="col-12 mb-3">
-                    <small class="text-muted d-block mb-1">Services utilisateurs</small>
+
+                {% call bloc('Contrats / marchés', large=True) %}
+                    {% set marches = item.contracts.filter_by(is_active=True).all() %}
+                    {% if marches %}
+                        {% for c in marches %}
+                        <a href="{{ url_for('contracts.detail', id=c.id) }}" class="me-3">{{ c.name }}{% if c.end_date %} <small class="text-muted">— {{ c.end_date.strftime('%d/%m/%Y') }}</small>{% endif %}</a>
+                        {% endfor %}
+                    {% elif item.no_contract_note %}<span class="text-muted">{{ item.no_contract_note }}</span>
+                    {% else %}<span class="text-muted">Aucun contrat enregistré</span>{% endif %}
+                {% endcall %}
+
+                {% call bloc('Services utilisateurs', large=True) %}
                     {% for sv in item.user_services %}
-                    <span class="badge bg-light text-dark border me-1 mb-1"
+                    <span class="badge bg-light text-dark border me-1"
                           title="{{ sv.contact_name or '' }}{% if sv.contact_email %} — {{ sv.contact_email }}{% endif %}">
                         <i class="bi bi-people me-1"></i>{{ sv.name }}</span>
                     {% else %}
                     <span class="text-muted">Aucun service renseigné.</span>
                     {% endfor %}
-                </div>
-                <div class="col-12">
-                    <small class="text-muted d-block mb-1">Serveur(s) d'installation</small>
+                {% endcall %}
+
+                {% call bloc("Serveur(s) d'installation", large=True) %}
                     {% if item.no_server %}
                     <span class="text-muted">Aucun serveur : le logiciel tourne chez l'éditeur ou sur les postes des agents.</span>
                     {% else %}
                         {% for e in item.equipments %}
-                        <a href="{{ url_for('inventory.detail', id=e.id) }}" class="badge bg-light text-dark border text-decoration-none me-1 mb-1">
+                        <a href="{{ url_for('inventory.detail', id=e.id) }}" class="badge bg-light text-dark border text-decoration-none me-1">
                             <i class="bi bi-hdd-network me-1"></i>{{ e.name }}</a>
                         {% else %}
                         <span class="text-muted">Aucun serveur renseigné.</span>
                         {% endfor %}
                     {% endif %}
-                </div>
+                {% endcall %}
+
+                {% if item.description %}
+                {% call bloc('Description', large=True) %}{{ item.description }}{% endcall %}
+                {% endif %}
             </div>
-            {% if item.description %}
-            <div class="mt-2 pt-2 border-top">
-                <small class="text-muted d-block">Description</small>
-                <p class="mb-0">{{ item.description }}</p>
+        </div>
+    </div>
+
+    {# ── Contacts de l'éditeur ──
+       HÉRITÉS, en lecture seule : ils se saisissent une seule fois, sur la fiche
+       de l'éditeur. La question « qui j'appelle ? » se pose devant le logiciel,
+       mais la réponse vaut pour tous les logiciels du même éditeur — la recopier
+       fiche par fiche garantirait des numéros divergents. #}
+    {% if item.supplier %}
+    {% set sup = item.supplier %}
+    <div class="col-lg-4">
+        <div class="fiche-cote">
+            <div class="data-card p-4 mb-3">
+                <h6 class="fw-bold mb-2"><i class="bi bi-building me-2 text-info"></i>Éditeur</h6>
+                <div class="fw-medium mb-2"><a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}">{{ sup.name }}</a></div>
+                <ul class="list-unstyled small mb-0">
+                    {% if sup.customer_ref %}<li class="mb-1"><span class="text-muted">N° client</span> <span class="fw-medium">{{ sup.customer_ref }}</span></li>{% endif %}
+                    {% if sup.support_url %}<li><i class="bi bi-life-preserver me-1"></i><a href="{{ sup.support_url }}" target="_blank" rel="noopener">Portail de tickets</a></li>{% endif %}
+                    {% if sup.support_phone or sup.phone %}<li><i class="bi bi-telephone me-1"></i>{{ sup.support_phone or sup.phone }}</li>{% endif %}
+                    {% if sup.support_email or sup.email %}<li class="text-truncate"><i class="bi bi-envelope me-1"></i><a href="mailto:{{ sup.support_email or sup.email }}">{{ sup.support_email or sup.email }}</a></li>{% endif %}
+                    {% if sup.hours %}<li class="text-muted"><i class="bi bi-clock me-1"></i>{{ sup.hours }}</li>{% endif %}
+                    {% if sup.hours2 %}<li class="text-muted"><i class="bi bi-clock invisible me-1"></i>{{ sup.hours2 }}</li>{% endif %}
+                </ul>
+            </div>
+            {% if sup.has_contacts() %}
+            <div class="data-card p-4 mb-3">
+                <h6 class="fw-bold mb-2"><i class="bi bi-person-lines-fill me-2 text-info"></i>Contacts
+                    <small class="fw-normal text-muted">(de l'éditeur)</small></h6>
+                <ul class="list-unstyled small mb-0">
+                    {{ contact('Commercial', sup.commercial_contact, sup.commercial_phone, sup.commercial_email) }}
+                    {{ contact('Commercial (2)', sup.commercial_contact2, sup.commercial_phone2, sup.commercial_email2) }}
+                    {{ contact('Administratif / facturation', sup.admin_contact, sup.admin_phone, sup.admin_email) }}
+                    {{ contact('DPO', sup.dpo_contact, sup.dpo_phone, sup.dpo_email) }}
+                </ul>
+                <div class="form-text mt-2">Se modifient sur la <a href="{{ url_for('suppliers.edit', id=sup.id) }}">fiche de l'éditeur</a>.</div>
             </div>
             {% endif %}
         </div>
+    </div>
+    {% endif %}
+</div>
 
-        {# ── Volet RGPD ──
-           Affiché même quand le logiciel ne traite pas de données personnelles :
-           « non » est une réponse, et la carte absente se lirait comme un oubli
-           de saisie. #}
-        <div class="data-card p-4 mb-3">
+{# ═══ En bas : ce qui se rattache au logiciel, sur toute la largeur ═══
+   Deux par deux quand la largeur le permet. Les cartes à tableau (consultations,
+   documents) gardent la ligne entière : une colonne de moitié les rendrait
+   illisibles. #}
+<div class="row g-3">
+    {# Le volet RGPD paraît MÊME quand le logiciel ne traite pas de données
+       personnelles : « non » est une réponse, et la carte absente se lirait
+       comme un oubli de saisie. #}
+    <div class="col-xl-6">
+        <div class="data-card p-4 h-100">
             <h6 class="fw-bold mb-3"><i class="bi bi-shield-lock me-2 text-primary"></i>Données personnelles (RGPD)</h6>
             {% if item.gdpr_personal_data %}
-            <div class="row">
-                {{ champ('Catégories de données', item.gdpr_categories, 'col-sm-5') }}
-                {{ champ('Réf. registre des traitements', item.gdpr_registry_ref, 'col-sm-3') }}
-                {{ champ('Localisation des données', item.gdpr_location_label(), 'col-sm-4') }}
+            <div class="fiche-grille">
+                {{ champ('Catégories de données', item.gdpr_categories) }}
+                {{ champ('Réf. registre des traitements', item.gdpr_registry_ref) }}
+                {{ champ('Localisation des données', item.gdpr_location_label()) }}
             </div>
             {% if item.supplier and (item.supplier.dpo_contact or item.supplier.dpo_email) %}
-            <div class="small text-muted">
+            <div class="small text-muted mt-3">
                 DPO de l'éditeur : <span class="fw-medium">{{ item.supplier.dpo_contact or '—' }}</span>
                 {% if item.supplier.dpo_email %}<a href="mailto:{{ item.supplier.dpo_email }}" class="ms-1">{{ item.supplier.dpo_email }}</a>{% endif %}
             </div>
@@ -175,43 +227,10 @@
             <p class="text-muted mb-0">Ce logiciel ne traite pas de données personnelles.</p>
             {% endif %}
         </div>
+    </div>
 
-        {% include 'software/_liaisons.html' %}
-
-        {% if current_user.can_view('contracts') %}
-        {% include 'software/_consultations.html' %}
-        {% endif %}
-
-        {% with doc_parent_kind='software', doc_parent_id=item.id, doc_permission='inventory', doc_title='Documents' %}{% include '_documents.html' %}{% endwith %}
-
-
-        {% if current_user.can_view('tests') %}
-        <div class="data-card mb-3">
-            <div class="card-header-custom">
-                <h6 class="fw-bold mb-0"><i class="bi bi-clipboard-check me-2 text-primary"></i>Tâches récurrentes
-                    <span class="badge bg-secondary ms-1">{{ taches | length }}</span></h6>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead><tr><th>Tâche</th><th>Type</th><th>Prochaine</th><th>Statut</th></tr></thead>
-                    <tbody>
-                        {% for t in taches %}
-                        <tr>
-                            <td><a href="{{ url_for('tests.detail', id=t.id) }}" class="text-decoration-none">{{ t.name }}</a></td>
-                            <td class="small">{{ t.test_type }}</td>
-                            <td class="small text-nowrap">{{ t.next_due.strftime('%d/%m/%Y') if t.next_due else '—' }}</td>
-                            <td>{{ status_badge(t.computed_status(), 'test') }}</td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="4" class="text-center py-3 text-muted">Aucune tâche rattachée</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        {% endif %}
-
-        <div class="data-card">
+    <div class="col-xl-6">
+        <div class="data-card h-100">
             <div class="card-header-custom">
                 <h6 class="fw-bold mb-0"><i class="bi bi-arrow-up-circle me-2 text-primary"></i>Mises à jour liées
                     <span class="badge bg-secondary ms-1">{{ updates|length }}</span></h6>
@@ -236,40 +255,43 @@
         </div>
     </div>
 
-    {# ── Contacts de l'éditeur ──
-       HÉRITÉS, en lecture seule : ils se saisissent une seule fois, sur la fiche
-       de l'éditeur. La question « qui j'appelle ? » se pose devant le logiciel,
-       mais la réponse vaut pour tous les logiciels du même éditeur — la recopier
-       fiche par fiche garantirait des numéros divergents. #}
-    {% if item.supplier %}
-    {% set sup = item.supplier %}
-    <div class="col-lg-4">
-        <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold mb-2"><i class="bi bi-building me-2 text-info"></i>Éditeur</h6>
-            <div class="fw-medium mb-2"><a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}">{{ sup.name }}</a></div>
-            <ul class="list-unstyled small mb-0">
-                {% if sup.customer_ref %}<li class="mb-1"><span class="text-muted">N° client</span> <span class="fw-medium">{{ sup.customer_ref }}</span></li>{% endif %}
-                {% if sup.support_url %}<li><i class="bi bi-life-preserver me-1"></i><a href="{{ sup.support_url }}" target="_blank" rel="noopener">Portail de tickets</a></li>{% endif %}
-                {% if sup.support_phone or sup.phone %}<li><i class="bi bi-telephone me-1"></i>{{ sup.support_phone or sup.phone }}</li>{% endif %}
-                {% if sup.support_email or sup.email %}<li class="text-truncate"><i class="bi bi-envelope me-1"></i><a href="mailto:{{ sup.support_email or sup.email }}">{{ sup.support_email or sup.email }}</a></li>{% endif %}
-                {% if sup.hours %}<li class="text-muted"><i class="bi bi-clock me-1"></i>{{ sup.hours }}</li>{% endif %}
-                {% if sup.hours2 %}<li class="text-muted"><i class="bi bi-clock invisible me-1"></i>{{ sup.hours2 }}</li>{% endif %}
-            </ul>
+    {% if current_user.can_view('tests') %}
+    <div class="col-xl-6">
+        <div class="data-card h-100">
+            <div class="card-header-custom">
+                <h6 class="fw-bold mb-0"><i class="bi bi-clipboard-check me-2 text-primary"></i>Tâches récurrentes
+                    <span class="badge bg-secondary ms-1">{{ taches | length }}</span></h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Tâche</th><th>Type</th><th>Prochaine</th><th>Statut</th></tr></thead>
+                    <tbody>
+                        {% for t in taches %}
+                        <tr>
+                            <td><a href="{{ url_for('tests.detail', id=t.id) }}" class="text-decoration-none">{{ t.name }}</a></td>
+                            <td class="small">{{ t.test_type }}</td>
+                            <td class="small text-nowrap">{{ t.next_due.strftime('%d/%m/%Y') if t.next_due else '—' }}</td>
+                            <td>{{ status_badge(t.computed_status(), 'test') }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center py-3 text-muted">Aucune tâche rattachée</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-        {% if sup.has_contacts() %}
-        <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold mb-2"><i class="bi bi-person-lines-fill me-2 text-info"></i>Contacts
-                <small class="fw-normal text-muted">(de l'éditeur)</small></h6>
-            <ul class="list-unstyled small mb-0">
-                {{ contact('Commercial', sup.commercial_contact, sup.commercial_phone, sup.commercial_email) }}
-                {{ contact('Commercial (2)', sup.commercial_contact2, sup.commercial_phone2, sup.commercial_email2) }}
-                {{ contact('Administratif / facturation', sup.admin_contact, sup.admin_phone, sup.admin_email) }}
-                {{ contact('DPO', sup.dpo_contact, sup.dpo_phone, sup.dpo_email) }}
-            </ul>
-            <div class="form-text mt-2">Se modifient sur la <a href="{{ url_for('suppliers.edit', id=sup.id) }}">fiche de l'éditeur</a>.</div>
-        </div>
-        {% endif %}
     </div>
     {% endif %}
+
+    <div class="col-xl-6">{% include 'software/_flux.html' %}</div>
+    <div class="col-xl-6">{% include 'software/_partages.html' %}</div>
+
+    {% if current_user.can_view('contracts') %}
+    <div class="col-12">{% include 'software/_consultations.html' %}</div>
+    {% endif %}
+
+    <div class="col-12">
+        {% with doc_parent_kind='software', doc_parent_id=item.id, doc_permission='inventory', doc_title='Documents' %}{% include '_documents.html' %}{% endwith %}
+    </div>
 </div>
 {% endblock %}

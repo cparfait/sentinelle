@@ -257,3 +257,58 @@ def test_depassement_de_licence(client):
     assert Software(name='B', users_count=80, users_max=100).over_licence() is False
     assert Software(name='C', users_count=80).over_licence() is None
     assert Software(name='D', users_max=100).over_licence() is None
+
+
+def test_la_fiche_affiche_tout_ce_qu_elle_porte(client):
+    """La fiche a été redessinée : grille dense en haut, cartes liées en bas.
+
+    Le risque d'une refonte de gabarit n'est pas la page blanche — elle se voit
+    — mais le champ qui disparaît en silence parce que son bloc a été déplacé
+    dans une branche qui ne s'ouvre plus. On rend la fiche la plus remplie
+    possible et on vérifie que chaque famille d'information y est encore.
+    """
+    from app.models import Referential, UserService
+    sup = Supplier(name='Éditeur', customer_ref='CLI-42', support_phone='01 02 03',
+                   support_email='support@edi.fr', commercial_contact='Jean Commercial',
+                   dpo_contact='Dee Pio', dpo_email='dpo@edi.fr')
+    ct = Contract(name='Marché 2026')
+    db.session.add_all([sup, ct])
+    db.session.commit()
+    tech = Referential.query.filter_by(kind='technology').first()
+    sw = Software(name='Complet', supplier_id=sup.id, hosting='saas', is_docker=True,
+                  version='2.1', criticality='haute',
+                  technology_id=tech.id if tech else None,
+                  source_type='editeur', auth_mode='ldap', auth_strong=True,
+                  users_count=120, users_max=100,
+                  responsible='Rita Métier', responsible_email='rita@ville.fr',
+                  tech_responsible='Théo Technique', url='https://appli.ville.fr',
+                  gdpr_personal_data=True, gdpr_categories='État civil',
+                  gdpr_registry_ref='REG-12', gdpr_location='ue',
+                  description='Note libre', lifecycle='production')
+    db.session.add(sw)
+    db.session.commit()
+    sw.contracts.append(ct)
+    sw.user_services.append(UserService(name='Ressources humaines'))
+    db.session.commit()
+
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    for attendu in ('Dépassement de licence',   # alerte de tête
+                    '2.1', 'Rita Métier', 'Théo Technique',   # grille dense
+                    '2FA', 'Marché 2026', 'Ressources humaines',
+                    'Éditeur', 'CLI-42', 'Jean Commercial',   # colonne de droite
+                    'État civil', 'REG-12', 'dpo@edi.fr',     # volet RGPD
+                    'Flux avec', 'Dossiers du partage',       # cartes du bas
+                    'Mises à jour liées', 'Tâches récurrentes'):
+        assert attendu in html, f'« {attendu} » a disparu de la fiche'
+
+
+def test_la_fiche_sans_editeur_prend_toute_la_largeur(client):
+    """Sans éditeur, la colonne de droite n'a rien à montrer : elle disparaît
+    au lieu de laisser un tiers d'écran vide — le défaut qui a motivé la refonte.
+    """
+    sw = Software(name='Maison', internal_dev=True)
+    db.session.add(sw)
+    db.session.commit()
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    assert 'col-lg-4' not in html
+    assert 'Ce logiciel ne traite pas de données personnelles' in html

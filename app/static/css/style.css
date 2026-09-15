@@ -1520,3 +1520,40 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .form-section--violet  { --sec: var(--sec-violet); }
 .form-section--teal    { --sec: var(--sec-teal); }
 .form-section--slate   { --sec: var(--sec-slate); }
+
+/* ==========================================================================
+   FICHES : grille dense
+   Une fiche de vingt champs disposes en deux colonnes larges etire la lecture
+   sur deux ecrans et laisse la moitie de la ligne vide. La grille se remplit
+   d'elle-meme : autant de colonnes que la largeur en permet, et l'intitule
+   au-dessus de la valeur plutot qu'a cote — un libelle long ne repousse plus
+   la valeur du champ voisin.
+   ========================================================================== */
+.fiche-grille {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px 24px;
+}
+.fiche-champ { min-width: 0; }
+.fiche-champ .fiche-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 1px;
+}
+.fiche-champ .fiche-valeur {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text);
+    overflow-wrap: anywhere;   /* une URL longue ne deborde pas de sa colonne */
+}
+.fiche-champ .fiche-valeur a { font-weight: 500; }
+/* Un champ qui porte une liste (serveurs, services) prend la ligne entiere :
+   l'enfermer dans une colonne de 200px le ferait deborder sur six lignes. */
+.fiche-champ--large { grid-column: 1 / -1; }
+
+/* La colonne laterale suit la lecture au lieu de disparaitre en haut de page. */
+@media (min-width: 992px) {
+    .fiche-cote { position: sticky; top: 16px; }
+}
