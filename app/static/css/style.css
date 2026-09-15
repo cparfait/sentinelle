@@ -1585,3 +1585,10 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .fiche-titre--violet  { --sec: var(--sec-violet); }
 .fiche-titre--teal    { --sec: var(--sec-teal); }
 .fiche-titre--slate   { --sec: var(--sec-slate); }
+
+/* Les sections d'une fiche se suivent en PLEINE largeur : une section de trois
+   champs logee dans une demi-colonne laissait l'autre moitie vide, et deux
+   sections cote a cote se decalaient des que l'une etait plus longue. En pleine
+   largeur, la grille dense y range d'elle-meme autant de colonnes que possible
+   — six champs tiennent souvent sur une seule ligne. */
+.fiche-sections > div + div { margin-top: 4px; }

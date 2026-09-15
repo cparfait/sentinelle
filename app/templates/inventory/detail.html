@@ -3,14 +3,39 @@
 {% from '_macros.html' import status_badge %}
 {% set crit_colors = {1: 'secondary', 2: 'info', 3: 'warning', 4: 'danger'} %}
 
+{# Variante « seulement si renseigné » : sur la carte du fournisseur, un
+   contact vide ne dit pas qu'il n'y en a pas, il dit qu'on ne le connait pas —
+   une ligne de tirets n'apprendrait rien. #}
 {% macro row(label, value) %}
-{% if value %}<tr><td class="text-muted">{{ label }}</td><td class="fw-medium">{{ value }}</td></tr>{% endif %}
+{% if value %}
+<div class="fiche-champ">
+    <span class="fiche-label">{{ label }}</span>
+    <div class="fiche-valeur">{{ value }}</div>
+</div>
+{% endif %}
 {% endmacro %}
 
 {# Variante « toujours affichée » : la fiche montre tous les champs prévus pour
-   le type d'équipement, avec un tiret quand ils ne sont pas renseignés. #}
-{% macro rowa(label, value) %}
-<tr><td class="text-muted" style="width: 45%">{{ label }}</td><td class="fw-medium">{{ value if value or value == 0 else '-' }}</td></tr>
+   le type d'équipement, avec un tiret quand ils ne sont pas renseignés — un
+   blanc se lirait comme un oubli d'affichage.
+
+   L'intitulé se pose AU-DESSUS de la valeur, et non dans une colonne de 45 %
+   de la largeur : le tableau d'avant tirait plusieurs centimètres de vide entre
+   « Type » et « Serveur physique », et une section d'un seul champ occupait une
+   demi-page. #}
+{% macro champ(label, value) %}
+<div class="fiche-champ">
+    <span class="fiche-label">{{ label }}</span>
+    <div class="fiche-valeur">{{ value if value or value == 0 else '-' }}</div>
+</div>
+{% endmacro %}
+
+{# Même chose quand la valeur est du balisage (un lien). #}
+{% macro champ_bloc(label) %}
+<div class="fiche-champ">
+    <span class="fiche-label">{{ label }}</span>
+    <div class="fiche-valeur">{{ caller() }}</div>
+</div>
 {% endmacro %}
 
 {# Les couleurs sont celles du formulaire d'equipement, section par section :
@@ -60,25 +85,25 @@
             </div>
             {% endif %}
 
-            <div class="row">
-                <div class="col-md-6">
+            <div class="fiche-sections">
+                <div>
                     {{ section('bi-info-circle', 'Général', 'indigo') }}
-                    <table class="table table-borderless table-sm mb-0">
-                        {{ rowa('Type', item.kind_label()) }}
-                        {{ rowa('Environnement', item.env_label()) }}
-                        {{ rowa('Rôle principal', item.role_principal) }}
-                        {{ rowa('Logiciels métiers', item.software_list.all()|map(attribute='name')|join(', ')) }}
-                        {% if item.porte('services') %}{{ rowa('Services utilisateurs', item.user_services) }}{% endif %}
-                        {% if item.porte('usage') %}{{ rowa('Usage / données stockées', item.usage) }}{% endif %}
-                    </table>
+                    <div class="fiche-grille">
+                        {{ champ('Type', item.kind_label()) }}
+                        {{ champ('Environnement', item.env_label()) }}
+                        {{ champ('Rôle principal', item.role_principal) }}
+                        {{ champ('Logiciels métiers', item.software_list.all()|map(attribute='name')|join(', ')) }}
+                        {% if item.porte('services') %}{{ champ('Services utilisateurs', item.user_services) }}{% endif %}
+                        {% if item.porte('usage') %}{{ champ('Usage / données stockées', item.usage) }}{% endif %}
+                    </div>
                 </div>
-                <div class="col-md-6">
+                <div>
                     {{ section('bi-cpu', 'Système', 'sky') }}
-                    <table class="table table-borderless table-sm mb-0">
-                        {{ rowa('OS', ((item.os or '') ~ (' ' ~ item.os_version if item.os_version else '')) | trim) }}
-                        {{ rowa('Dernière MAJ OS', item.os_last_update.strftime('%d/%m/%Y') if item.os_last_update else '') }}
-                        {% if item.porte('supervision') %}{{ rowa('Supervision', item.supervision) }}{% endif %}
-                    </table>
+                    <div class="fiche-grille">
+                        {{ champ('OS', ((item.os or '') ~ (' ' ~ item.os_version if item.os_version else '')) | trim) }}
+                        {{ champ('Dernière MAJ OS', item.os_last_update.strftime('%d/%m/%Y') if item.os_last_update else '') }}
+                        {% if item.porte('supervision') %}{{ champ('Supervision', item.supervision) }}{% endif %}
+                    </div>
                     {% if item.porte('virtualisation') %}
                     <div class="d-flex gap-3 flex-wrap small text-muted mt-1">
                         <span><i class="bi bi-{{ 'check-circle-fill text-success' if item.supervised else 'dash-circle' }} me-1"></i>Supervision</span>
@@ -88,56 +113,58 @@
                     {% endif %}
                 </div>
                 {% if item.porte('reseau') %}
-                <div class="col-md-6">
+                <div>
                     {{ section('bi-diagram-3', 'Réseau', 'teal') }}
-                    <table class="table table-borderless table-sm mb-0">
-                        {{ rowa('Adresse IP', item.ip_address) }}
+                    <div class="fiche-grille">
+                        {{ champ('Adresse IP', item.ip_address) }}
                         {% if item.porte('vlan') %}
-                        {{ rowa('Masque', item.netmask) }}
-                        {{ rowa('VLAN', item.vlan) }}
+                        {{ champ('Masque', item.netmask) }}
+                        {{ champ('VLAN', item.vlan) }}
                         {% endif %}
-                        {% if item.porte('ports') %}{{ rowa('Nombre de ports', item.ports) }}{% endif %}
+                        {% if item.porte('ports') %}{{ champ('Nombre de ports', item.ports) }}{% endif %}
                         {% if item.porte('administration') and item.management_url %}
-                        <tr><td class="text-muted">Administration</td><td><a href="{{ item.management_url }}" target="_blank" rel="noopener">{{ item.management_url }}</a></td></tr>
+                        {% call champ_bloc('Administration') %}
+                        <a href="{{ item.management_url }}" target="_blank" rel="noopener">{{ item.management_url }}</a>
+                        {% endcall %}
                         {% endif %}
-                    </table>
+                    </div>
                 </div>
                 {% endif %}
                 {% if item.porte('virtualisation') %}
-                <div class="col-md-6">
+                <div>
                     {{ section('bi-pc-display', 'Hôte & ressources', 'violet') }}
-                    <table class="table table-borderless table-sm mb-0">
-                        {{ rowa('Serveur hôte', item.host_server) }}
-                        {{ rowa('Hyperviseur', item.hypervisor) }}
-                        {{ rowa('vCPU', item.vcpu) }}
-                        {{ rowa('RAM (Go)', item.ram_go) }}
-                        {{ rowa('Stockage (Go)', [item.hdd1_go, item.hdd2_go, item.hdd3_go]|select|join(' / ')) }}
-                    </table>
+                    <div class="fiche-grille">
+                        {{ champ('Serveur hôte', item.host_server) }}
+                        {{ champ('Hyperviseur', item.hypervisor) }}
+                        {{ champ('vCPU', item.vcpu) }}
+                        {{ champ('RAM (Go)', item.ram_go) }}
+                        {{ champ('Stockage (Go)', [item.hdd1_go, item.hdd2_go, item.hdd3_go]|select|join(' / ')) }}
+                    </div>
                 </div>
                 {% endif %}
                 {% if item.porte('materiel') %}
-                <div class="col-md-6">
+                <div>
                     {{ section('bi-tools', 'Matériel & garantie', 'amber') }}
-                    <table class="table table-borderless table-sm mb-0">
-                        {{ rowa('Constructeur / Modèle', item.manufacturer_model) }}
-                        {{ rowa('N° de série', item.serial_number) }}
-                        {{ rowa('Emplacement', item.location) }}
-                        {{ rowa('Date achat / MES', item.purchase_date.strftime('%d/%m/%Y') if item.purchase_date else '') }}
-                        {{ rowa('Fin de garantie', item.warranty_end.strftime('%d/%m/%Y') if item.warranty_end else '') }}
-                        {{ rowa('Contrat de maintenance', item.maintenance_contract) }}
-                    </table>
+                    <div class="fiche-grille">
+                        {{ champ('Constructeur / Modèle', item.manufacturer_model) }}
+                        {{ champ('N° de série', item.serial_number) }}
+                        {{ champ('Emplacement', item.location) }}
+                        {{ champ('Date achat / MES', item.purchase_date.strftime('%d/%m/%Y') if item.purchase_date else '') }}
+                        {{ champ('Fin de garantie', item.warranty_end.strftime('%d/%m/%Y') if item.warranty_end else '') }}
+                        {{ champ('Contrat de maintenance', item.maintenance_contract) }}
+                    </div>
                 </div>
                 {% endif %}
                 {% if item.porte('stockage') %}
-                <div class="col-md-6">
+                <div>
                     {{ section('bi-hdd-network', 'Stockage', 'slate') }}
-                    <table class="table table-borderless table-sm mb-0">
-                        {{ rowa('Protocoles', item.protocols) }}
-                        {{ rowa('Capacité (To)', item.capacity_to) }}
-                        {{ rowa('Utilisé (To)', item.used_to) }}
-                        {{ rowa('RAID', item.raid) }}
-                        {{ rowa('Accès (utilisateurs / groupes)', item.access) }}
-                    </table>
+                    <div class="fiche-grille">
+                        {{ champ('Protocoles', item.protocols) }}
+                        {{ champ('Capacité (To)', item.capacity_to) }}
+                        {{ champ('Utilisé (To)', item.used_to) }}
+                        {{ champ('RAID', item.raid) }}
+                        {{ champ('Accès (utilisateurs / groupes)', item.access) }}
+                    </div>
                 </div>
                 {% endif %}
             </div>
@@ -153,20 +180,12 @@
 
         <div class="data-card p-4 mt-3">
             {{ titre_section('Continuité', 'bi-shield-check', 'emerald', 'mb-2') }}
-            <div class="row">
-                <div class="col-md-6">
-                    <table class="table table-borderless table-sm mb-0">
-                        {{ rowa('Sauvegarde 1', ((item.backup1 or '') ~ (' (' ~ item.backup1_freq ~ ')' if item.backup1_freq else '')) | trim) }}
-                        {% if item.porte('virtualisation') %}
-                        {{ rowa('Sauvegarde 2', ((item.backup2 or '') ~ (' (' ~ item.backup2_freq ~ ')' if item.backup2_freq else '')) | trim) }}
-                        {% endif %}
-                    </table>
-                </div>
-                <div class="col-md-6">
-                    <table class="table table-borderless table-sm mb-0">
-                        {% if item.porte('pra') %}{{ rowa('PRA / PCA', item.pra_pca) }}{% endif %}
-                    </table>
-                </div>
+            <div class="fiche-grille">
+                {{ champ('Sauvegarde 1', ((item.backup1 or '') ~ (' (' ~ item.backup1_freq ~ ')' if item.backup1_freq else '')) | trim) }}
+                {% if item.porte('virtualisation') %}
+                {{ champ('Sauvegarde 2', ((item.backup2 or '') ~ (' (' ~ item.backup2_freq ~ ')' if item.backup2_freq else '')) | trim) }}
+                {% endif %}
+                {% if item.porte('pra') %}{{ champ('PRA / PCA', item.pra_pca) }}{% endif %}
             </div>
             {% if not item.backup1 and not item.backup2 %}
             <small class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Aucune sauvegarde renseignée.</small>
@@ -180,12 +199,12 @@
             {{ titre_section('Support / fournisseur', 'bi-building', 'rose', 'mb-3') }}
             <div class="fw-medium mb-1">{{ item.supplier.name }}
                 <span class="badge bg-light text-dark border ms-1">{{ item.supplier.kind_label() }}</span></div>
-            <table class="table table-borderless table-sm mb-0">
+            <div class="fiche-grille">
                 {{ row('Hotline', item.supplier.support_phone or item.supplier.phone) }}
                 {{ row('Horaires', item.supplier.hours) }}
                 {{ row('N° client', item.supplier.customer_ref) }}
                 {{ row('Email', item.supplier.email) }}
-            </table>
+            </div>
             {% if item.supplier.support_url %}
             <a href="{{ item.supplier.support_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary mt-2">
                 <i class="bi bi-box-arrow-up-right me-1"></i> Portail support

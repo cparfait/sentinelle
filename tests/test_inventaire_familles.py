@@ -212,3 +212,30 @@ def test_la_fiche_porte_les_couleurs_du_formulaire(client):
         assert des_fiches[titre] == du_formulaire[titre], (
             f'« {titre} » : {des_fiches[titre]} sur la fiche, '
             f'{du_formulaire[titre]} dans le formulaire')
+
+
+def test_la_fiche_ne_delaye_plus_ses_champs(client):
+    """Les champs tenaient dans des tableaux dont l'intitulé prenait 45 % de la
+    largeur : plusieurs centimètres de vide entre « Type » et « Serveur
+    physique », et une section d'un seul champ qui occupait une demi-page.
+
+    Ils sont maintenant dans la grille dense, intitulé au-dessus de la valeur,
+    chaque section sur toute la largeur.
+    """
+    e = Equipment(name='DD3300', kind='physical', ip_address='172.16.1.28',
+                  manufacturer_model='DELL POWERPROTECT DD3300',
+                  serial_number='DE600213144791')
+    db.session.add(e)
+    db.session.commit()
+
+    html = client.get(f'/inventory/{e.id}').get_data(as_text=True)
+    assert 'fiche-grille' in html
+    assert 'table-borderless' not in html, 'un tableau de champs a survecu'
+    # Les valeurs sont toujours la — une refonte de gabarit fait disparaitre en
+    # silence, elle ne casse pas la page.
+    for attendu in ('172.16.1.28', 'DELL POWERPROTECT DD3300', 'DE600213144791',
+                    'Serveur physique'):
+        assert attendu in html, attendu
+    # Les balises se ferment : une grille mal fermee disloque la page sans
+    # lever d'erreur, le gabarit rend et l'ecran est de travers.
+    assert html.count('<div') == html.count('</div>')
