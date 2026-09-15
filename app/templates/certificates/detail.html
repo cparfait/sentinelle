@@ -130,7 +130,7 @@
 
         <div class="data-card">
             <div class="card-header-custom">
-                <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique</h6>
+                <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0"><i class="bi bi-clock-history me-2"></i>Historique</h6>
             </div>
             <div class="p-4">
                 {% if histories %}
@@ -160,7 +160,7 @@
     <div class="col-lg-4">
         {% if current_user.can_edit('certificates') %}
         <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold mb-3"><i class="bi bi-arrow-repeat me-2 text-success"></i>Renouveler</h6>
+            <h6 class="fw-bold fiche-titre fiche-titre--emerald mb-3"><i class="bi bi-arrow-repeat me-2"></i>Renouveler</h6>
             <form method="POST" action="{{ url_for('certificates.renew', id=certificate.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-2">
@@ -178,7 +178,7 @@
             </form>
         </div>
         <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold mb-2"><i class="bi bi-shield-check me-2 text-primary"></i>Vérification TLS</h6>
+            <h6 class="fw-bold fiche-titre fiche-titre--sky mb-2"><i class="bi bi-shield-check me-2"></i>Vérification TLS</h6>
             <p class="text-muted small mb-2">Lit la date d'expiration réelle directement depuis
                 <strong>{{ certificate.domain }}</strong> et met la fiche à jour.</p>
             <form method="POST" action="{{ url_for('certificates.check_tls', id=certificate.id) }}">

@@ -121,7 +121,7 @@
            plus récente à la plus ancienne. #}
         <div class="data-card mb-3">
             <div class="card-header-custom d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold mb-0"><i class="bi bi-paperclip me-2 text-primary"></i>Pièces du marché
+                <h6 class="fw-bold fiche-titre fiche-titre--indigo mb-0"><i class="bi bi-paperclip me-2"></i>Pièces du marché
                     <span class="badge bg-secondary ms-1">{{ items|length }}</span>
                     {% if items %}<small class="fw-normal text-muted ms-2">{{ '%.0f' | format(contract.items_cost()) }} € cumulés</small>{% endif %}</h6>
                 {% if current_user.can_edit('contracts') %}
@@ -196,7 +196,7 @@
 
         <div class="data-card">
             <div class="card-header-custom">
-                <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique</h6>
+                <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0"><i class="bi bi-clock-history me-2"></i>Historique</h6>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
@@ -221,7 +221,7 @@
     <div class="col-lg-4">
         {% if contract.supplier %}
         <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold mb-2"><i class="bi bi-building me-2 text-info"></i>Support fournisseur</h6>
+            <h6 class="fw-bold fiche-titre fiche-titre--rose mb-2"><i class="bi bi-building me-2"></i>Support fournisseur</h6>
             <div class="fw-medium mb-1"><a href="{{ url_for('suppliers.detail', id=contract.supplier_id) }}">{{ contract.supplier.name }}</a></div>
             <ul class="list-unstyled small mb-2">
                 {% if contract.supplier.support_phone or contract.supplier.phone %}
@@ -243,7 +243,7 @@
 
         {% if current_user.can_edit('contracts') %}
         <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold mb-2"><i class="bi bi-arrow-repeat me-2 text-success"></i>Renouvellement</h6>
+            <h6 class="fw-bold fiche-titre fiche-titre--emerald mb-2"><i class="bi bi-arrow-repeat me-2"></i>Renouvellement</h6>
             <form method="POST" action="{{ url_for('contracts.renew', id=contract.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <label class="form-label small" for="newEndDate">Nouvelle échéance</label>

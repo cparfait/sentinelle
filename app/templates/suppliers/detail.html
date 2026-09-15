@@ -94,7 +94,7 @@
            logiciel, mais la réponse vaut pour tous ceux du même éditeur. #}
         {% if supplier.has_contacts() %}
         <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold mb-3"><i class="bi bi-person-lines-fill me-2 text-info"></i>Contacts</h6>
+            <h6 class="fw-bold fiche-titre fiche-titre--rose mb-3"><i class="bi bi-person-lines-fill me-2"></i>Contacts</h6>
             <div class="row">
                 {{ contact('Commercial', supplier.commercial_contact, supplier.commercial_phone, supplier.commercial_email) }}
                 {{ contact('Commercial (second)', supplier.commercial_contact2, supplier.commercial_phone2, supplier.commercial_email2) }}
@@ -109,7 +109,7 @@
         {# ===== Impacts : matériel, logiciels et contrats couverts par ce fournisseur ===== #}
         <div class="data-card mb-3">
             <div class="card-header-custom">
-                <h6 class="fw-bold mb-0"><i class="bi bi-hdd-network me-2 text-primary"></i>Matériel couvert
+                <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0"><i class="bi bi-hdd-network me-2"></i>Matériel couvert
                     <span class="badge bg-secondary ms-1">{{ equipments|length }}</span></h6>
             </div>
             <div class="table-responsive">
@@ -133,7 +133,7 @@
 
         <div class="data-card mb-3">
             <div class="card-header-custom">
-                <h6 class="fw-bold mb-0"><i class="bi bi-window-stack me-2 text-primary"></i>Logiciels
+                <h6 class="fw-bold fiche-titre fiche-titre--violet mb-0"><i class="bi bi-window-stack me-2"></i>Logiciels
                     <span class="badge bg-secondary ms-1">{{ software|length }}</span></h6>
             </div>
             <div class="table-responsive">
@@ -156,7 +156,7 @@
 
         <div class="data-card">
             <div class="card-header-custom">
-                <h6 class="fw-bold mb-0"><i class="bi bi-file-earmark-text me-2 text-primary"></i>Contrats
+                <h6 class="fw-bold fiche-titre fiche-titre--amber mb-0"><i class="bi bi-file-earmark-text me-2"></i>Contrats
                     <span class="badge bg-secondary ms-1">{{ contracts|length }}</span></h6>
             </div>
             <div class="table-responsive">

@@ -172,3 +172,43 @@ def test_les_familles_couvrent_toutes_les_natures(client):
     écrans : le test le dirait avant l'utilisateur."""
     rangees = {k for natures in EQUIPMENT_FAMILIES.values() for k in natures}
     assert rangees == set(EQUIPMENT_KIND_LABELS)
+
+
+def test_la_fiche_porte_les_couleurs_du_formulaire(client):
+    """Une section garde sa couleur qu'on la saisisse ou qu'on la lise.
+
+    Les formulaires portaient deja leurs couleurs ; les fiches gardaient un
+    liseré indigo partout, si bien que la meme information changeait de repere
+    d'un ecran a l'autre. Le materiel est ambre des deux cotes, le reseau
+    turquoise, la continuite verte.
+    """
+    import re
+    e = Equipment(name='ESX-ADMIN', kind='physical')
+    db.session.add(e)
+    db.session.commit()
+
+    fiche = client.get(f'/inventory/{e.id}').get_data(as_text=True)
+    formulaire = client.get(f'/inventory/{e.id}/edit').get_data(as_text=True)
+    couleurs_fiche = re.findall(r'fiche-titre--(\w+)', fiche)
+    assert len(couleurs_fiche) >= 4, couleurs_fiche
+
+    # Le meme titre porte la meme couleur des deux cotes. On ne compare que les
+    # sections qui existent dans les deux ecrans : la fiche en fusionne
+    # certaines, le formulaire en cache d'autres selon la nature.
+    def couleurs(html, motif):
+        # Les legendes du formulaire tiennent sur plusieurs lignes : on compare
+        # les intitules, pas leur mise en page.
+        return {t.strip(): c for c, t in re.findall(motif, html, re.S)}
+
+    des_fiches = couleurs(
+        fiche, r'fiche-titre--(\w+)[^>]*>\s*<i[^>]*></i>([^<]+?)</h6>')
+    du_formulaire = couleurs(
+        formulaire,
+        r'form-section form-section--(\w+)[^>]*>\s*<legend[^>]*>'
+        r'\s*<i[^>]*></i>([^<]+?)</legend>')
+    communes = set(des_fiches) & set(du_formulaire)
+    assert communes, (sorted(des_fiches), sorted(du_formulaire))
+    for titre in communes:
+        assert des_fiches[titre] == du_formulaire[titre], (
+            f'« {titre} » : {des_fiches[titre]} sur la fiche, '
+            f'{du_formulaire[titre]} dans le formulaire')

@@ -1557,3 +1557,31 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 @media (min-width: 992px) {
     .fiche-cote { position: sticky; top: 16px; }
 }
+
+/* ==========================================================================
+   FICHES : une couleur par section, la MEME que dans le formulaire
+   Les formulaires portaient deja leurs couleurs ; les fiches gardaient un
+   liseré indigo partout, si bien que la meme information changeait de repere
+   selon qu'on la saisissait ou qu'on la lisait. Le materiel est ambre des deux
+   cotes, le reseau turquoise, la continuite verte : l'oeil retrouve la section
+   au meme endroit du spectre, quel que soit l'ecran.
+
+   Plus leger qu'un formulaire : la barre d'accent et l'icone se teintent, sans
+   fond ni bordure. Une fiche se parcourt du regard — la remplir de blocs
+   colores la rendrait bruyante la ou un formulaire, lui, a besoin qu'on
+   decoupe sa longueur.
+   ========================================================================== */
+.data-card h6.fiche-titre { --sec: var(--sec-indigo); }
+.data-card h6.fiche-titre::before { background: rgb(var(--sec)); }
+/* !important : les gabarits posent encore des utilitaires Bootstrap
+   (text-primary, text-success) sur ces icones. */
+.data-card h6.fiche-titre > i { color: rgb(var(--sec)) !important; }
+
+.fiche-titre--indigo  { --sec: var(--sec-indigo); }
+.fiche-titre--sky     { --sec: var(--sec-sky); }
+.fiche-titre--emerald { --sec: var(--sec-emerald); }
+.fiche-titre--amber   { --sec: var(--sec-amber); }
+.fiche-titre--rose    { --sec: var(--sec-rose); }
+.fiche-titre--violet  { --sec: var(--sec-violet); }
+.fiche-titre--teal    { --sec: var(--sec-teal); }
+.fiche-titre--slate   { --sec: var(--sec-slate); }

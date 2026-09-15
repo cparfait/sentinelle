@@ -13,8 +13,12 @@
 <tr><td class="text-muted" style="width: 45%">{{ label }}</td><td class="fw-medium">{{ value if value or value == 0 else '-' }}</td></tr>
 {% endmacro %}
 
-{% macro section(icon, title) %}
-<h6 class="fw-bold mb-2 mt-3"><i class="bi {{ icon }} me-2 text-primary"></i>{{ title }}</h6>
+{# Les couleurs sont celles du formulaire d'equipement, section par section :
+   le materiel est ambre des deux cotes, le reseau turquoise, la continuite
+   verte. Voir _fiche_section.html. #}
+{% from '_fiche_section.html' import titre_section %}
+{% macro section(icon, title, couleur='indigo') %}
+{{ titre_section(title, icon, couleur) }}
 {% endmacro %}
 
 {% block content %}
@@ -58,7 +62,7 @@
 
             <div class="row">
                 <div class="col-md-6">
-                    {{ section('bi-info-circle', 'Général') }}
+                    {{ section('bi-info-circle', 'Général', 'indigo') }}
                     <table class="table table-borderless table-sm mb-0">
                         {{ rowa('Type', item.kind_label()) }}
                         {{ rowa('Environnement', item.env_label()) }}
@@ -69,7 +73,7 @@
                     </table>
                 </div>
                 <div class="col-md-6">
-                    {{ section('bi-cpu', 'Système') }}
+                    {{ section('bi-cpu', 'Système', 'sky') }}
                     <table class="table table-borderless table-sm mb-0">
                         {{ rowa('OS', ((item.os or '') ~ (' ' ~ item.os_version if item.os_version else '')) | trim) }}
                         {{ rowa('Dernière MAJ OS', item.os_last_update.strftime('%d/%m/%Y') if item.os_last_update else '') }}
@@ -85,7 +89,7 @@
                 </div>
                 {% if item.porte('reseau') %}
                 <div class="col-md-6">
-                    {{ section('bi-diagram-3', 'Réseau') }}
+                    {{ section('bi-diagram-3', 'Réseau', 'teal') }}
                     <table class="table table-borderless table-sm mb-0">
                         {{ rowa('Adresse IP', item.ip_address) }}
                         {% if item.porte('vlan') %}
@@ -101,7 +105,7 @@
                 {% endif %}
                 {% if item.porte('virtualisation') %}
                 <div class="col-md-6">
-                    {{ section('bi-pc-display', 'Hôte & ressources') }}
+                    {{ section('bi-pc-display', 'Hôte & ressources', 'violet') }}
                     <table class="table table-borderless table-sm mb-0">
                         {{ rowa('Serveur hôte', item.host_server) }}
                         {{ rowa('Hyperviseur', item.hypervisor) }}
@@ -113,7 +117,7 @@
                 {% endif %}
                 {% if item.porte('materiel') %}
                 <div class="col-md-6">
-                    {{ section('bi-tools', 'Matériel & garantie') }}
+                    {{ section('bi-tools', 'Matériel & garantie', 'amber') }}
                     <table class="table table-borderless table-sm mb-0">
                         {{ rowa('Constructeur / Modèle', item.manufacturer_model) }}
                         {{ rowa('N° de série', item.serial_number) }}
@@ -126,7 +130,7 @@
                 {% endif %}
                 {% if item.porte('stockage') %}
                 <div class="col-md-6">
-                    {{ section('bi-hdd-network', 'Stockage') }}
+                    {{ section('bi-hdd-network', 'Stockage', 'slate') }}
                     <table class="table table-borderless table-sm mb-0">
                         {{ rowa('Protocoles', item.protocols) }}
                         {{ rowa('Capacité (To)', item.capacity_to) }}
@@ -148,7 +152,7 @@
         </div>
 
         <div class="data-card p-4 mt-3">
-            <h6 class="fw-bold mb-2"><i class="bi bi-shield-check me-2 text-success"></i>Continuité</h6>
+            {{ titre_section('Continuité', 'bi-shield-check', 'emerald', 'mb-2') }}
             <div class="row">
                 <div class="col-md-6">
                     <table class="table table-borderless table-sm mb-0">
@@ -173,7 +177,7 @@
     <div class="col-lg-4">
         {% if item.supplier %}
         <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold mb-3"><i class="bi bi-building me-2 text-info"></i>Support / fournisseur</h6>
+            {{ titre_section('Support / fournisseur', 'bi-building', 'rose', 'mb-3') }}
             <div class="fw-medium mb-1">{{ item.supplier.name }}
                 <span class="badge bg-light text-dark border ms-1">{{ item.supplier.kind_label() }}</span></div>
             <table class="table table-borderless table-sm mb-0">
@@ -197,7 +201,7 @@
         {% set show_ctrs = current_user.can_view('contracts') and linked['contracts'] %}
         {% if show_certs or show_bkps or show_upds or show_ctrs %}
         <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold mb-3"><i class="bi bi-diagram-3 me-2 text-primary"></i>Éléments liés</h6>
+            {{ titre_section('Éléments liés', 'bi-diagram-3', 'slate', 'mb-3') }}
             {% if show_certs %}
             <small class="text-muted d-block mb-1">Certificats</small>
             <ul class="list-unstyled mb-2">
@@ -252,7 +256,7 @@
         {% set installed = item.software_list.filter_by(is_active=True).all() %}
         {% if installed %}
         <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold mb-3"><i class="bi bi-window-stack me-2 text-primary"></i>Logiciels installés</h6>
+            {{ titre_section('Logiciels installés', 'bi-window-stack', 'violet', 'mb-3') }}
             <ul class="list-unstyled mb-0">
                 {% for s in installed %}
                 <li class="mb-1">

@@ -1,0 +1,16 @@
+{# ═══ Titre de section, sur une FICHE ═══
+   La couleur reprend celle de la section correspondante du formulaire (voir
+   _form_section.html) : la meme information porte le meme repere, qu'on la
+   saisisse ou qu'on la lise.
+
+   Plus discret qu'un formulaire — barre d'accent et icone teintees, sans fond
+   ni bordure. Une fiche se parcourt du regard ; un formulaire, lui, a besoin
+   qu'on decoupe sa longueur.
+
+   Usage :  {% from '_fiche_section.html' import titre_section %}
+            {{ titre_section('Réseau', 'bi-diagram-3', 'teal') }}
+#}
+{% macro titre_section(titre, icone, couleur='indigo', classes='mb-2 mt-3') %}
+<h6 class="fw-bold fiche-titre fiche-titre--{{ couleur }} {{ classes }}">
+    <i class="bi {{ icone }} me-2"></i>{{ titre }}</h6>
+{% endmacro %}

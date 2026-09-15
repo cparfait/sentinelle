@@ -59,7 +59,7 @@
 
         <div class="data-card mb-3">
             <div class="card-header-custom d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold mb-0"><i class="bi bi-shield-lock me-2 text-primary"></i>Certificate Transparency
+                <h6 class="fw-bold fiche-titre fiche-titre--violet mb-0"><i class="bi bi-shield-lock me-2"></i>Certificate Transparency
                     {% if ct_new %}<span class="badge bg-warning text-dark ms-1">{{ ct_new }} nouveau{{ 's' if ct_new > 1 }}</span>{% endif %}
                 </h6>
                 <small class="text-muted">Certificats emis pour ce domaine (crt.sh)</small>
@@ -90,7 +90,7 @@
 
         <div class="data-card">
             <div class="card-header-custom">
-                <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historique</h6>
+                <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0"><i class="bi bi-clock-history me-2"></i>Historique</h6>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
@@ -115,7 +115,7 @@
     <div class="col-lg-4">
         {% if current_user.can_edit('domains') %}
         <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold mb-2"><i class="bi bi-globe me-2 text-primary"></i>Vérification RDAP</h6>
+            <h6 class="fw-bold fiche-titre fiche-titre--sky mb-2"><i class="bi bi-globe me-2"></i>Vérification RDAP</h6>
             <p class="text-muted small mb-2">Interroge le registre et met à jour la date d'expiration et le registrar.</p>
             <form method="POST" action="{{ url_for('domains.check_rdap', id=domain.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
