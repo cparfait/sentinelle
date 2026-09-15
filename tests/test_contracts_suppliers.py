@@ -135,7 +135,8 @@ def test_contacts_editeur_enregistres_et_herites(client):
     assert sup.has_contacts() is True
 
     sw = Software(name='e-Enfance', supplier_id=sup.id, gdpr_personal_data=True)
-    db.session.add(sw); db.session.commit()
+    db.session.add(sw)
+    db.session.commit()
     html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
     assert 'MOREAU' in html and 'factu@bl.fr' in html
     assert 'dpo@bl.fr' in html            # le DPO de l'éditeur, dans le volet RGPD
@@ -146,7 +147,8 @@ def test_sans_contact_la_carte_ne_parait_pas(client):
     """Une carte pleine de tirets ne dit pas qui appeler, elle dit qu'on ne sait
     pas : elle ne s'affiche donc pas."""
     sup = Supplier(name='Sans contact')
-    db.session.add(sup); db.session.commit()
+    db.session.add(sup)
+    db.session.commit()
     assert sup.has_contacts() is False
     html = client.get(f'/suppliers/{sup.id}').get_data(as_text=True)
     assert 'person-lines-fill' not in html
