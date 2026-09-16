@@ -214,7 +214,7 @@ tr.row-warning > td { background: rgba(var(--warning-rgb), 0.05); }
 .sidebar {
     background: var(--sidebar);
     height: 100vh;
-    width: 250px;
+    width: 240px;
     position: fixed;
     top: 0;
     left: 0;
@@ -224,23 +224,36 @@ tr.row-warning > td { background: rgba(var(--warning-rgb), 0.05); }
     border-right: 1px solid var(--sidebar-border);
 }
 
+/* La marque tient sur UNE ligne de 48 px, close par un trait : le menu
+   commence dessous a hauteur fixe, quelle que soit la hauteur du logo
+   televerse. Elle occupait auparavant 60 px de haut sans separation, et le
+   premier lien flottait sans qu'on sache s'il appartenait au titre. */
 .sidebar-header {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 18px 18px 10px;
+    height: 48px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--sidebar-border);
+    flex-shrink: 0;
 }
 
-.sidebar-logo-icon { width: 32px; height: 32px; flex-shrink: 0; }
+.sidebar-logo-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    object-fit: contain;
+}
 
 .sidebar-logo-text {
-    color: var(--sidebar-text-strong);
-    font-size: 1.15rem;
-    font-weight: 700;
-    letter-spacing: 0.3px;
+    color: var(--sidebar-active);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
 }
 
-.sidebar-search { padding-bottom: 8px !important; }
+.sidebar-search { padding: 10px 12px 4px !important; }
 
 .sidebar-search-form { position: relative; display: flex; align-items: center; }
 
@@ -271,35 +284,45 @@ tr.row-warning > td { background: rgba(var(--warning-rgb), 0.05); }
     box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.18);
 }
 
-.sidebar-nav { flex: 1; overflow-y: auto; padding: 4px 0; }
+/* Le menu se resserre : les rembourrages verticaux passent de 9 a 5 px et les
+   liens se posent dans une gouttiere de 12 px plutot que de courir bord a bord.
+   Les vingt entrees tiennent ainsi sur un ecran d'ordinateur portable sans
+   defilement, et chaque section reste visible avec sa tete de rubrique. */
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 8px 12px; }
 .sidebar-nav::-webkit-scrollbar { width: 5px; }
 .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
 .sidebar-nav::-webkit-scrollbar-thumb { background: var(--sidebar-border); border-radius: 3px; }
 
-.sidebar-section { margin-bottom: 4px; }
+.sidebar-section { margin-bottom: 2px; }
 
 .sidebar-section-title {
-    padding: 14px 16px 5px;
+    padding: 10px 12px 2px;
     font-size: 0.64rem;
     font-weight: 700;
+    line-height: 1rem;
     letter-spacing: 0.13em;
     color: var(--sidebar-section);
     text-transform: uppercase;
 }
 
+/* Une pastille arrondie plutot qu'une bande pleine barree d'un trait a gauche :
+   le lien actif se detache par sa COULEUR, et le trait de 3 px qui decalait
+   tous les libelles disparait -- il fallait le reserver en transparent sur les
+   dix-neuf autres liens pour qu'ils ne bougent pas sous la souris. */
 .sidebar-link {
     display: flex;
     align-items: center;
-    gap: 11px;
-    padding: 9px 16px;
+    gap: 12px;
+    padding: 5px 12px;
+    margin-bottom: 2px;
     color: var(--sidebar-text);
     font-size: 0.875rem;
-    font-weight: 450;
-    border-left: 3px solid transparent;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
     position: relative;
 }
 
-.sidebar-link i { width: 18px; text-align: center; font-size: 1.02rem; }
+.sidebar-link i { width: 16px; text-align: center; font-size: 1rem; flex-shrink: 0; }
 
 .sidebar-link:hover {
     background: var(--sidebar-hover);
@@ -309,7 +332,6 @@ tr.row-warning > td { background: rgba(var(--warning-rgb), 0.05); }
 .sidebar-link.active {
     background: var(--sidebar-active-bg);
     color: var(--sidebar-active);
-    border-left-color: var(--sidebar-active);
     font-weight: 600;
 }
 
@@ -418,7 +440,7 @@ tr.row-warning > td { background: rgba(var(--warning-rgb), 0.05); }
 
 /* ============================ CONTENU ============================ */
 .main-content {
-    margin-left: 250px;
+    margin-left: 240px;
     padding: var(--space-5) var(--space-5);
     min-height: 100vh;
 }
