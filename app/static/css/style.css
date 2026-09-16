@@ -780,7 +780,7 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 .inv-perpage:focus { color: var(--text); }
 
 /* Filtre type Excel par colonne */
-.inv-colfilter-btn {
+.colfiltre-btn {
     background: transparent;
     border: 0;
     color: var(--text-light);
@@ -791,9 +791,9 @@ body.dash-editing .stat-toggle { display: inline-flex; }
     font-size: 0.8em;
     line-height: 1;
 }
-.inv-colfilter-btn:hover { opacity: 1; }
-.inv-colfilter-btn.active { opacity: 1; color: var(--warning); }
-.inv-colfilter-panel {
+.colfiltre-btn:hover { opacity: 1; }
+.colfiltre-btn.active { opacity: 1; color: var(--warning); }
+.colfiltre-panel {
     position: absolute;
     z-index: 1080;
     width: 230px;
@@ -803,14 +803,14 @@ body.dash-editing .stat-toggle { display: inline-flex; }
     box-shadow: var(--shadow-md, 0 6px 24px rgba(0,0,0,.18));
     padding: 10px;
 }
-.inv-colfilter-panel .cf-list {
+.colfiltre-panel .cf-list {
     max-height: 220px;
     overflow-y: auto;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 6px;
 }
-.inv-colfilter-panel .cf-item {
+.colfiltre-panel .cf-item {
     font-size: 0.82rem;
     padding: 2px 2px;
     cursor: pointer;
