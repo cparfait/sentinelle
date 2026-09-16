@@ -1684,6 +1684,12 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 }
 .fiche-bloc > *:not(h6):not(.fiche-grille) { padding-left: 0; }
 
+/* Une rubrique dont AUCUN champ n'est renseigne disparait avec eux : depuis que
+   les champs vides se taisent, un titre de section suivi d'un filet et de rien
+   se lisait comme une panne d'affichage. `:has()` evite d'avoir a compter les
+   champs dans chacun des onze gabarits de fiche. */
+.fiche-bloc:not(:has(.fiche-champ)) { display: none; }
+
 /* ---- Les titres des cartes autonomes : la barre d'accent, teintee ---- */
 .fiche-titre { --sec: var(--sec-indigo); }
 .data-card h6.fiche-titre { color: rgb(var(--sec)); }

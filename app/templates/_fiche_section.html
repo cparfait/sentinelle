@@ -21,22 +21,33 @@
    plusieurs centimetres de vide entre « Type » et sa valeur, et une section
    d'un seul champ qui mangeait une demi-page.
 
-   Le tiret vaut « non renseigne » : un blanc se lirait comme un oubli
-   d'affichage. #}
-{% macro champ(label, value) %}
-<div class="fiche-champ">
+   RIEN ne parait quand la valeur est vide. Une fiche affichait jusqu'ici une
+   rangee de tirets pour tout ce qui n'a pas ete saisi : un tiers de la hauteur
+   pour n'apprendre rien, et le renseigne noye dedans. Un « non renseigne » qui
+   COMPTE -- l'authentification d'une application, l'echeance d'un certificat --
+   se dit alors en toutes lettres, la ou il compte.
+
+   `large` donne la ligne entiere, intitule au-dessus : un champ qui porte une
+   liste de badges ou un paragraphe se hacherait, aligne a droite. #}
+{% macro champ(label, value, large=False) %}
+{% if value or value == 0 %}
+<div class="fiche-champ{{ ' fiche-champ--large' if large }}">
     <span class="fiche-label">{{ label }}</span>
-    <span class="fiche-valeur">{{ value if value or value == 0 else '-' }}</span>
+    <span class="fiche-valeur">{{ value }}</span>
 </div>
+{% endif %}
 {% endmacro %}
 
 {# Meme chose quand la valeur est du balisage — un badge, un lien : {% call %}
    plutot qu'un argument, pour n'avoir jamais a marquer une valeur comme sure. #}
-{% macro champ_bloc(label) %}
-<div class="fiche-champ">
+{% macro champ_bloc(label, large=False) %}
+{% set contenu = caller() %}
+{% if contenu | trim %}
+<div class="fiche-champ{{ ' fiche-champ--large' if large }}">
     <span class="fiche-label">{{ label }}</span>
-    <span class="fiche-valeur">{{ caller() }}</span>
+    <span class="fiche-valeur">{{ contenu }}</span>
 </div>
+{% endif %}
 {% endmacro %}
 
 {# ═══ Le bandeau de faits ═══
