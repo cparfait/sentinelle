@@ -175,3 +175,52 @@ def test_migration_du_contrat_unique_vers_le_lien_multiple(client):
     _migrate_data()
     db.session.expire_all()
     assert sw.contracts.count() == 1
+
+
+# ── Un marché signé au nom de la société se rattache depuis la fiche logiciel ──
+
+def test_rattacher_un_marche_depuis_la_fiche_logiciel(client):
+    """Les marchés ont été saisis au nom de la SOCIÉTÉ qui les signe : la fiche
+    logiciel annonçait « Aucun contrat » alors que l'acte existait, rangé sous
+    son éditeur. Le lien se pose donc depuis la fiche où le manque se constate."""
+    ed = Supplier(name='Arpege')
+    db.session.add(ed)
+    db.session.commit()
+    sw = Software(name='Concerto Opus', supplier_id=ed.id)
+    ct = Contract(name='Marché M20-23', supplier_id=ed.id)
+    db.session.add_all([sw, ct])
+    db.session.commit()
+
+    client.post(f'/contracts/software/{sw.id}/attach',
+                data={'contract_id': str(ct.id)}, follow_redirects=True)
+    assert [c.name for c in sw.contracts] == ['Marché M20-23']
+
+    # Détacher retire le LIEN, pas l'acte.
+    client.post(f'/contracts/{ct.id}/software/{sw.id}/detach', follow_redirects=True)
+    assert sw.contracts.count() == 0
+    assert Contract.query.filter_by(name='Marché M20-23').one().is_active is True
+
+
+def test_les_marches_proposes_sont_ceux_de_l_editeur_et_les_orphelins(client):
+    from app.software import _marches_rattachables
+    ed = Supplier(name='Arpege')
+    autre = Supplier(name='Berger-Levrault')
+    db.session.add_all([ed, autre])
+    db.session.commit()
+    sw = Software(name='Concerto Opus', supplier_id=ed.id)
+    voisin = Software(name='Voisin', supplier_id=autre.id)
+    famille = Contract(name='Marché de la famille', supplier_id=ed.id)
+    orphelin = Contract(name='Marché sans logiciel')
+    ailleurs = Contract(name="Marché d'un autre éditeur", supplier_id=autre.id)
+    db.session.add_all([sw, voisin, famille, orphelin, ailleurs])
+    db.session.commit()
+    ailleurs.software = [voisin]        # déjà couvert : il appartient à une autre fiche
+    db.session.commit()
+
+    noms = {c.name for c in _marches_rattachables(sw)}
+    assert noms == {'Marché de la famille', 'Marché sans logiciel'}
+
+    # Une fois rattaché, le marché sort de la liste : on ne le propose plus deux fois.
+    famille.software = [sw]
+    db.session.commit()
+    assert {c.name for c in _marches_rattachables(sw)} == {'Marché sans logiciel'}

@@ -353,3 +353,42 @@ def test_la_rotation_applique_le_reglage(client, app, tmp_path):
     from app.db_backup import _rotate
     _rotate(app, str(tmp_path))
     assert len(list_backups(app)) == 2
+
+
+def test_l_onglet_documents_d_un_logiciel_montre_les_pieces_de_ses_marches(client):
+    """L'onglet restait vide alors que tout l'écrit existait : versé sous le
+    marché ou sous le devis, là où il a été signé."""
+    from app.documents import inherited_for_software
+    from app.models import ContractItem, Consultation, Quote
+
+    sw = Software(name='Concerto Opus')
+    ct = Contract(name='Marché M20-23')
+    db.session.add_all([sw, ct])
+    db.session.commit()
+    ct.software = [sw]
+    poste = ContractItem(contract_id=ct.id, label='50 postes')
+    cons = Consultation(software_id=sw.id, subject='Renouvellement 2027')
+    db.session.add_all([poste, cons])
+    db.session.commit()
+    devis = Quote(consultation_id=cons.id, supplier_name='Arpege')
+    db.session.add(devis)
+    db.session.commit()
+
+    _depose(client, 'contract', ct.id, 'acte-signe.pdf')
+    _depose(client, 'contract_item', poste.id, 'bon-de-commande.pdf')
+    _depose(client, 'quote', devis.id, 'devis-2027.pdf')
+    _depose(client, 'software', sw.id, 'guide.pdf')
+
+    from flask import current_app
+    with current_app.test_request_context():
+        heritees = inherited_for_software(sw)
+    assert {x['piece'].filename for x in heritees} == {
+        'acte-signe.pdf', 'bon-de-commande.pdf', 'devis-2027.pdf'}
+    # La pièce PROPRE à la fiche n'y est pas : elle vit déjà dans sa carte.
+    origines = {x['piece'].filename: x['origine'] for x in heritees}
+    assert origines['bon-de-commande.pdf'] == 'Marché M20-23 › 50 postes'
+    assert origines['devis-2027.pdf'].startswith('Devis Arpege —')
+
+    # Et la fiche les montre : c'est là qu'on vient les chercher.
+    page = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    assert 'bon-de-commande.pdf' in page and 'devis-2027.pdf' in page

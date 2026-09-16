@@ -1,0 +1,151 @@
+{# ═══ Contrats et marchés ═══
+   Les marchés ont été saisis au nom de la SOCIÉTÉ qui les signe, pas de
+   l'application qu'ils couvrent : la fiche logiciel annonçait « Aucun contrat »
+   alors que l'acte existait, rangé sous son éditeur. L'onglet les montre donc
+   en entier — ce qu'ils engagent, jusqu'à quand, et les pièces versées —, et
+   permet de rattacher ceux qui manquent sans les ressaisir.
+
+   Un marché se LIT ici et se MODIFIE sur sa fiche : le même acte couvre souvent
+   plusieurs logiciels, et le corriger depuis l'un d'eux ferait croire qu'il n'y
+   engage que celui-là. #}
+{% from '_macros.html' import status_badge %}
+{% set peut_editer = current_user.can_edit('contracts') %}
+
+<div class="data-card mb-3">
+    <div class="card-header-custom d-flex justify-content-between align-items-center gap-2 flex-wrap">
+        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-0"><i class="bi bi-file-earmark-text me-2"></i>Contrats et marchés
+            <span class="badge bg-secondary ms-1">{{ marches | length }}</span></h6>
+        {% if peut_editer %}
+        <div class="d-flex gap-2">
+            {% if marches_rattachables %}
+            {# Récupérer un marché plutôt que le ressaisir. La liste se tait
+               quand elle n'a rien à proposer : elle ne montre que les marchés
+               de l'éditeur de ce logiciel et ceux qu'aucune fiche ne couvre
+               encore — le reste appartient à d'autres applications. #}
+            <form method="POST" action="{{ url_for('contracts.software_attach', software_id=item.id) }}"
+                  class="d-flex gap-2">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <select name="contract_id" class="form-select form-select-sm" style="max-width:20rem" required
+                        aria-label="Rattacher un marché existant">
+                    <option value="">— Rattacher un marché existant —</option>
+                    {% for c in marches_rattachables %}
+                    <option value="{{ c.id }}">{% if c.reference %}{{ c.reference }} — {% endif %}{{ c.name }}{% if c.supplier %} ({{ c.supplier.name }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">
+                    <i class="bi bi-link-45deg me-1"></i>Rattacher</button>
+            </form>
+            {% endif %}
+            <a href="{{ url_for('contracts.create') }}" class="btn btn-sm btn-outline-secondary text-nowrap">
+                <i class="bi bi-plus-lg me-1"></i>Créer</a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% for c in marches %}
+    <div class="p-3 {{ '' if loop.last else 'border-bottom' }}">
+        {# La ligne de titre : ce qui NOMME le marché — sa référence, son
+           libellé, la société engagée. Les trois mènent à la fiche du marché
+           ou à celle de la société : ce sont des objets de l'inventaire. #}
+        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+            <div class="min-w-0">
+                <span class="fw-semibold">
+                    <a href="{{ url_for('contracts.detail', id=c.id) }}" class="text-decoration-none">
+                        {%- if c.reference %}{{ c.reference }} — {% endif -%}{{ c.name }}</a>
+                </span>
+                {{ status_badge(c.status()) }}
+                {% if c.nature_label() %}<span class="badge bg-light text-dark border">{{ c.nature_label() }}</span>{% endif %}
+                <small class="d-block text-muted">
+                    {{ c.kind_label() }}
+                    {%- if c.supplier %} · <a href="{{ url_for('suppliers.detail', id=c.supplier_id) }}"
+                                              class="text-decoration-none">{{ c.supplier.name }}</a>{% endif %}
+                    {%- if c.supplier_reference %} · réf. fournisseur {{ c.supplier_reference }}{% endif %}
+                </small>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('contracts.detail', id=c.id) }}" class="btn btn-sm btn-outline-secondary"
+                   title="Ouvrir la fiche du marché" aria-label="Ouvrir la fiche du marché"><i class="bi bi-box-arrow-up-right"></i></a>
+                {% if peut_editer %}
+                {# Détacher retire le LIEN, pas l'acte : le marché reste, il ne
+                   couvre simplement plus cette application. #}
+                <form method="POST" action="{{ url_for('contracts.software_detach', id=c.id, software_id=item.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Détacher ce marché de ce logiciel"
+                            aria-label="Détacher ce marché"
+                            data-confirm="Détacher « {{ c.name }} » de ce logiciel ? Le marché n'est pas supprimé."><i class="bi bi-x-lg"></i></button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Ce que l'acte engage : jusqu'à quand, pour combien, et la date avant
+           laquelle il faut avoir décidé. Une case vide ne paraît pas : sur une
+           reprise d'historique, la moitié des marchés n'a pas été dépouillée,
+           et une rangée de tirets ne dit rien qu'un blanc ne dise mieux. #}
+        <div class="fiche-grille mt-2">
+            {% if c.period_label() %}
+            <div class="fiche-champ">
+                <span class="fiche-label">Période</span>
+                <div class="fiche-valeur">{{ c.period_label() | capitalize }}
+                    {%- if c.renewal_label() %}<small class="d-block text-muted">{{ c.renewal_label() }}</small>{% endif %}</div>
+            </div>
+            {% endif %}
+            {% set jours = c.days_left() %}
+            {% if jours is not none %}
+            <div class="fiche-champ">
+                <span class="fiche-label">Agir avant</span>
+                <div class="fiche-valeur">{{ c.action_deadline().strftime('%d/%m/%Y') }}
+                    <small class="text-muted">({{ jours }} j)</small>
+                    {%- if c.auto_renew %}<small class="d-block text-muted">tacite reconduction</small>{% endif %}</div>
+            </div>
+            {% endif %}
+            {% if c.cost_yearly %}
+            <div class="fiche-champ">
+                <span class="fiche-label">Montant annuel</span>
+                <div class="fiche-valeur">{{ '%.0f' | format(c.cost_yearly) }} €
+                    {%- if c.cost_max_yearly %}<small class="d-block text-muted">maximum : {{ '%.0f' | format(c.cost_max_yearly) }} €</small>{% endif %}
+                    {%- if c.cost_total %}<small class="d-block text-muted">total sur la durée : {{ '%.0f' | format(c.cost_total) }} €</small>{% endif %}</div>
+            </div>
+            {% endif %}
+        </div>
+
+        {# Les pièces du marché : les postes qu'il couvre, et l'acte scanné qui
+           atteste chacun. Elles se déposent et se retirent sur la fiche du
+           marché — ici on les lit et on les ouvre. #}
+        {% set postes = c.items.all() %}
+        {% if postes %}
+        <table class="table table-sm mt-2 mb-0">
+            <thead><tr><th>Pièce du marché</th><th>Nature</th><th class="text-end">Coût annuel</th><th>Date</th><th>Fichier</th></tr></thead>
+            <tbody>
+                {% for p in postes %}
+                <tr>
+                    <td>{{ p.label or '—' }}</td>
+                    <td class="small text-muted">{{ p.kind_label() }}</td>
+                    <td class="text-end">{% if p.cost_yearly %}{{ '%.0f' | format(p.cost_yearly) }} €{% else %}—{% endif %}</td>
+                    <td class="small text-nowrap">{{ p.doc_date.strftime('%d/%m/%Y') if p.doc_date else '—' }}</td>
+                    <td class="small">
+                        {%- if documents_enabled -%}
+                        {% for d in attached_documents('contract_item', p.id) %}
+                        <a href="{{ url_for('documents.download', id=d.id) }}" class="d-block text-truncate">
+                            <i class="bi bi-paperclip me-1"></i>{{ d.filename }}</a>
+                        {% else %}<span class="text-muted">—</span>{% endfor %}
+                        {%- else -%}<span class="text-muted">—</span>{%- endif -%}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="p-4 text-center text-muted">
+        {% if item.no_contract_note %}{{ item.no_contract_note }}
+        {% else %}Aucun marché rattaché à ce logiciel.{% endif %}
+        {% if peut_editer and marches_rattachables %}
+        <div class="small mt-1">{{ marches_rattachables | length }} marché{{ 's' if marches_rattachables | length > 1 }}
+            de l'éditeur ou sans logiciel {{ 'attendent' if marches_rattachables | length > 1 else 'attend' }}
+            d'être {{ 'rattachés' if marches_rattachables | length > 1 else 'rattaché' }}, ci-dessus.</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>

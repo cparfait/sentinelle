@@ -247,6 +247,54 @@ def item_delete(item_id):
 
 
 # ===========================================================================
+#  Rattachement d'un marche a un logiciel
+#
+#  Les marches ont ete saisis au nom de la SOCIETE qui les signe : la fiche
+#  logiciel affichait donc « Aucun contrat » alors que l'acte existait, range
+#  sous son editeur. Le lien se pose donc DEPUIS la fiche logiciel, la ou le
+#  manque se constate, et sans ressaisir le marche.
+#
+#  C'est la MEME table que la case a cocher du formulaire du logiciel et que
+#  les logiciels couverts de la fiche du marche : trois portes sur un seul lien.
+# ===========================================================================
+
+@bp.route('/software/<int:software_id>/attach', methods=['POST'])
+@login_required
+@require_edit
+def software_attach(software_id):
+    sw = Software.query.get_or_404(software_id)
+    contrat = Contract.query.get(parse_int(request.form.get('contract_id')) or 0)
+    if contrat is None or not contrat.is_active:
+        flash('Choisissez le marché à rattacher.', 'danger')
+    elif contrat in sw.contracts:
+        flash('Ce marché couvre déjà ce logiciel.', 'warning')
+    else:
+        contrat.software.append(sw)
+        db.session.commit()
+        audit_record('rattachement marche', detail=f'{contrat.name} -> {sw.name}',
+                     category='contrats')
+        flash(f'Marché « {contrat.name} » rattaché', 'success')
+    return redirect(url_for('software.detail', id=software_id))
+
+
+@bp.route('/<int:id>/software/<int:software_id>/detach', methods=['POST'])
+@login_required
+@require_edit
+def software_detach(id, software_id):
+    """Retire le lien, PAS le marche : l'acte reste, il ne couvre simplement
+    plus cette application."""
+    contrat = Contract.query.get_or_404(id)
+    sw = Software.query.get_or_404(software_id)
+    if sw in contrat.software:
+        contrat.software.remove(sw)
+        db.session.commit()
+        audit_record('detachement marche', detail=f'{contrat.name} -> {sw.name}',
+                     category='contrats')
+        flash(f'Marché « {contrat.name} » détaché', 'success')
+    return redirect(url_for('software.detail', id=software_id))
+
+
+# ===========================================================================
 #  Mise en concurrence : consultations et devis
 #
 #  Les devis racontent l'AVANT-contrat. Ils se groupent par consultation -- un

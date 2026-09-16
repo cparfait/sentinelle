@@ -168,11 +168,37 @@ def create():
     return render_template('software/form.html', item=None, **_form_context())
 
 
+def _marches_rattachables(item):
+    """Les marches qu'on peut rattacher a cette fiche.
+
+    Les marches ont ete saisis au nom de la SOCIETE qui les signe, pas de
+    l'application qu'ils couvrent : la fiche logiciel affichait donc « Aucun
+    contrat » alors que l'acte existait, range sous son editeur. La liste
+    propose donc ceux de son editeur -- la famille a laquelle il appartient --
+    et ceux que personne ne couvre encore, qui n'attendent qu'une fiche.
+
+    Un logiciel sans editeur (developpement interne) n'a pas de famille : il ne
+    lui reste que les orphelins.
+    """
+    deja = {c.id for c in item.contracts}
+    candidats = []
+    for c in Contract.query.filter(Contract.is_active.is_(True)).order_by(Contract.name).all():
+        if c.id in deja:
+            continue
+        if (item.supplier_id and c.supplier_id == item.supplier_id) or not c.software:
+            candidats.append(c)
+    return candidats
+
+
 @bp.route('/<int:id>')
 @login_required
 def detail(id):
     item = Software.query.get_or_404(id)
     updates = item.system_updates.filter_by(is_active=True).all()
+    # Les marches se lisent du plus lointain au plus proche : celui qui court
+    # encore est celui qu'on vient verifier, et il vient en tete.
+    marches = sorted(item.contracts.filter_by(is_active=True).all(),
+                     key=lambda c: (c.end_date is not None, c.end_date), reverse=True)
     # Les consultations se lisent de la plus RECENTE a la plus ancienne : c'est
     # celle qui a abouti au marche en cours qu'on vient verifier.
     from app.models import Consultation
@@ -183,8 +209,12 @@ def detail(id):
     autres = (Software.query.filter(Software.is_active.is_(True),
                                     Software.id != item.id)
               .order_by(Software.name).all())
+    from app.documents import enabled as documents_actifs, inherited_for_software
     return render_template('software/detail.html', item=item, updates=updates,
-                           consultations=consultations,
+                           consultations=consultations, marches=marches,
+                           marches_rattachables=_marches_rattachables(item),
+                           pieces_heritees=(inherited_for_software(item)
+                                            if documents_actifs() else []),
                            sortants=item.links_out.all(), entrants=item.links_in.all(),
                            partages=item.shares.order_by(SoftwareShare.label).all(),
                            autres_logiciels=autres,

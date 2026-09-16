@@ -794,6 +794,9 @@ EQUIPMENT_KIND_GROUPS_ATTR = {k: ' '.join(v) for k, v in EQUIPMENT_KIND_GROUPS.i
 ENVIRONMENT_LABELS = {'prod': 'Production', 'preprod': 'Préproduction',
                       'dev': 'Développement', 'decommissioned': 'Décommissionné'}
 CRITICALITY_LABELS = {1: '1 - Faible', 2: '2 - Modérée', 3: '3 - Élevée', 4: '4 - Vitale'}
+# La couleur du niveau, dans les mots de Bootstrap : la meme du materiel au
+# logiciel -- un « 4 » ne change pas de sens d'un ecran a l'autre.
+CRITICALITY_COLORS = {1: 'secondary', 2: 'info', 3: 'warning', 4: 'danger'}
 
 
 class Equipment(db.Model):
@@ -1551,6 +1554,15 @@ class Software(db.Model):
 
     def gdpr_location_label(self):
         return DATA_LOCATION_LABELS.get(self.gdpr_location, self.gdpr_location or '')
+
+    def criticality_label(self):
+        """« 3 - Elevee » plutot que « 3 » : le chiffre seul ne dit pas dans
+        quel sens il se lit, et la fiche est le seul ecran ou on le rencontre
+        hors d'une colonne qui le legende."""
+        return CRITICALITY_LABELS.get(self.criticality, '')
+
+    def criticality_color(self):
+        return CRITICALITY_COLORS.get(self.criticality, 'secondary')
 
     def over_licence(self):
         """Le plafond contractuel d'utilisateurs est-il depasse ? None quand

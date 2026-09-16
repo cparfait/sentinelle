@@ -1,38 +1,25 @@
 {% extends "base.html" %}
 {% block title %}{{ item.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
-{% from '_fiche_section.html' import titre_section, faits, fait, fait_bloc %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
 {% from '_onglets.html' import barre, onglet, volets, volet %}
 
 {# ═══ Disposition ═══
-   La fiche tenait sur deux tiers de largeur, en deux colonnes de champs très
-   espacées : la lecture s'étirait sur deux écrans pendant que le tiers droit
-   restait vide sous les cartes de l'éditeur.
+   La fiche reprend l'organisation de SoftInventory, dont l'inventaire des
+   logiciels vient : un onglet par QUESTION qu'on pose à une application.
 
-   Elle se lit maintenant en deux temps. EN HAUT, ce qui identifie le logiciel,
-   dans une grille qui se remplit d'elle-même — autant de colonnes que la
-   largeur en permet — avec l'éditeur à droite. EN BAS, ce qui s'y rattache,
-   sur TOUTE la largeur : les cartes se rangent deux par deux, et le vide
-   disparaît. #}
+   « Qu'est-ce que c'est » (Synthèse), « avec quoi elle parle » (Liaisons), « ce
+   qui nous engage » (Contrats et marchés), « ce qu'on a comparé avant »
+   (Devis), « ce qui revient » (Suivi), « les papiers » (Documents), « les
+   données personnelles » (RGPD).
 
-{# Un champ de la grille. Le tiret vaut « non renseigné » : un blanc se lirait
-   comme un oubli d'affichage. `large` donne la ligne entière — un champ qui
-   porte une liste déborderait d'une colonne de 200 px. #}
-{% macro champ(label, value, large=False) %}
-<div class="fiche-champ{{ ' fiche-champ--large' if large }}">
-    <span class="fiche-label">{{ label }}</span>
-    <div class="fiche-valeur">{{ value or '-' }}</div>
-</div>
-{% endmacro %}
+   Tout tenait auparavant dans un seul onglet « Fiche » qui descendait sur deux
+   écrans, les marchés réduits à une ligne de liens au milieu. Or c'est
+   justement ce qu'on vient vérifier le plus souvent — jusqu'à quand sommes-nous
+   engagés, et avec qui.
 
-{# Même chose, mais le contenu est du balisage : {% call %} plutôt qu'un
-   argument, pour ne pas avoir à marquer la valeur comme sûre. #}
-{% macro bloc(label, large=False) %}
-<div class="fiche-champ{{ ' fiche-champ--large' if large }}">
-    <span class="fiche-label">{{ label }}</span>
-    <div class="fiche-valeur">{{ caller() }}</div>
-</div>
-{% endmacro %}
+   Le bandeau de faits et les cartes de l'éditeur restent à leur place : ils
+   valent pour la fiche entière, pas pour l'onglet ouvert. #}
 
 {# Un contact de l'éditeur : nom, téléphone, mail. Rien ne s'affiche quand les
    trois sont vides — une carte de contacts à moitié pleine de tirets ne dit pas
@@ -52,11 +39,29 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
         <h4 class="fw-bold mb-0"><i class="bi bi-window-stack me-2"></i>{{ item.name }}
+            {# Ouvrir l'application : accolé au nom, réduit à son icône. C'est
+               l'action qui porte sur le LOGICIEL, pas sur sa fiche. #}
+            {% if item.url %}
+            <a href="{{ item.url }}" target="_blank" rel="noopener" class="text-muted ms-1"
+               title="Ouvrir l'application" aria-label="Ouvrir l'application"><i class="bi bi-box-arrow-up-right"></i></a>
+            {% endif %}
             <span class="badge bg-{{ item.lifecycle_color() }}-subtle text-{{ item.lifecycle_color() }} ms-1">{{ item.lifecycle_label() }}</span>
             {% if item.is_saas %}<span class="badge bg-info-subtle text-info ms-1">{{ item.hosting_label() }}</span>{% endif %}
             {% if item.is_docker %}<span class="badge bg-primary-subtle text-primary ms-1"><i class="icon-docker me-1"></i>Docker</span>{% endif %}
-            {% if item.internal_dev %}<span class="badge bg-secondary-subtle text-secondary ms-1"><i class="bi bi-code-slash me-1"></i>Interne</span>{% endif %}</h4>
-        <small class="text-muted">{% if item.internal_dev %}Développement interne{% elif item.supplier %}{{ item.supplier.name }}{% else %}Éditeur inconnu{% endif %}{% if item.version %} — v{{ item.version }}{% endif %}</small>
+            {% if item.internal_dev %}<span class="badge bg-secondary-subtle text-secondary ms-1"><i class="bi bi-code-slash me-1"></i>Interne</span>{% endif %}
+            {% if item.criticality %}
+            <span class="badge bg-{{ item.criticality_color() }}-subtle text-{{ item.criticality_color() }} ms-1"
+                  title="Criticité">{{ item.criticality_label() }}</span>
+            {% endif %}</h4>
+        {# Le NOM de l'éditeur mène à sa fiche : c'est un objet de l'inventaire,
+           comme le serveur d'une installation. « Édité par » n'est qu'une
+           tournure, et garde le gris du sous-titre. #}
+        <small class="text-muted">
+            {%- if item.internal_dev %}Développement interne
+            {%- elif item.supplier %}Édité par <a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}"
+                                                  class="fw-medium text-decoration-none">{{ item.supplier.name }}</a>
+            {%- else %}Éditeur inconnu{% endif %}
+            {%- if item.version %} — v{{ item.version }}{% endif %}</small>
     </div>
     <div class="d-flex gap-2">
         {% if current_user.can_edit('inventory') %}
@@ -92,7 +97,7 @@
             <span class="badge bg-{{ item.lifecycle_color() }}-subtle text-{{ item.lifecycle_color() }}">{{ item.lifecycle_label() }}</span>
             {% endcall %}
             {{ fait('Version', item.version) }}
-            {{ fait('Criticité', item.criticality) }}
+            {{ fait('Criticité', item.criticality_label()) }}
             {{ fait('Hébergement', item.hosting_label()) }}
             {% call fait_bloc('Utilisateurs') %}
             {%- if item.users_count is none %}<small>Non comptés</small>
@@ -100,20 +105,20 @@
             {% endcall %}
         {% endcall %}
 
-{# ═══ Les onglets ═══
-   Tout tenait sur une seule colonne : le detail, puis les flux, puis les
-   consultations, puis les pieces jointes. Ces dernieres — ce qu'on vient
-   chercher le plus souvent — se trouvaient a deux ecrans du haut, et rien
-   n'annoncait leur existence depuis le premier. #}
 {% set pieces = attached_documents('software', item.id) if documents_enabled else [] %}
 {% call barre('ficheLogiciel') %}
-    {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
-    {% if documents_enabled %}{{ onglet('documents', 'Documents', 'bi-paperclip', compteur=pieces|length) }}{% endif %}
-    {{ onglet('liens', 'Liens', 'bi-diagram-3', compteur=(sortants|length) + (entrants|length) + (partages|length)) }}
-    {{ onglet('suivi', 'Suivi', 'bi-activity', compteur=(updates|length) + (taches|length)) }}
+    {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}
+    {{ onglet('liaisons', 'Liaisons', 'bi-diagram-3', compteur=(sortants|length) + (entrants|length)
+                                                              + (item.equipments|length) + (item.user_services|length)) }}
     {% if current_user.can_view('contracts') %}
-    {{ onglet('achat', 'Mise en concurrence', 'bi-cash-coin', compteur=consultations|length) }}
+    {{ onglet('contrats', 'Contrats et marchés', 'bi-file-earmark-text', compteur=marches|length) }}
+    {{ onglet('devis', 'Devis', 'bi-cash-coin', compteur=consultations|length) }}
     {% endif %}
+    {{ onglet('suivi', 'Suivi', 'bi-activity', compteur=(updates|length) + (taches|length)) }}
+    {% if documents_enabled %}
+    {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=(pieces|length) + (pieces_heritees|length)) }}
+    {% endif %}
+    {{ onglet('rgpd', 'RGPD', 'bi-shield-lock') }}
 {% endcall %}
 
 {% call volets() %}
@@ -125,139 +130,78 @@
                         <div class="fiche-bloc fiche-bloc--indigo">
                             {{ titre_section('Identité', 'bi-window-stack', 'indigo', 'mb-0') }}
                             <div class="fiche-grille">
-                                {% call bloc('Statut MAJ') %}{{ status_badge(item.computed_status()) }}{% endcall %}
-                                {{ champ('Version', item.version) }}
-                                {{ champ('Mise en service', item.service_date.strftime('%d/%m/%Y') if item.service_date else None) }}
-                                {% if item.url %}
-                                {% call bloc('URL / accès') %}
-                                <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.url }}</a>
-                                {% endcall %}
-                                {% endif %}
+                            {% call champ_bloc('Statut MAJ') %}{{ status_badge(item.computed_status()) }}{% endcall %}
+                            {{ champ('Version', item.version) }}
+                            {{ champ('Mise en service', item.service_date.strftime('%d/%m/%Y') if item.service_date else None) }}
+                            {% call champ_bloc('URL / accès') %}
+                            {%- if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.url }}</a>{% endif -%}
+                            {% endcall %}
                             </div>
                         </div>
 
                         <div class="fiche-bloc fiche-bloc--sky">
                             {{ titre_section('Hébergement & nature', 'bi-cloud', 'sky', 'mb-0') }}
                             <div class="fiche-grille">
-                                {{ champ('Hébergement', item.hosting_label() ~ (' — Docker' if item.is_docker else '')) }}
-                                {{ champ('Type de source', item.source_type_label()) }}
+                            {{ champ('Hébergement', item.hosting_label() ~ (' — Docker' if item.is_docker else '')) }}
+                            {{ champ('Type de source', item.source_type_label()) }}
                             </div>
                         </div>
 
                         <div class="fiche-bloc fiche-bloc--violet">
                             {{ titre_section('Qualification', 'bi-sliders', 'violet', 'mb-0') }}
                             <div class="fiche-grille">
-                                {{ champ('Criticité', item.criticality) }}
-                                {{ champ('Technologie', item.technology.label if item.technology else None) }}
+                            {{ champ('Criticité', item.criticality_label()) }}
+                            {{ champ('Technologie', item.technology.label if item.technology else None) }}
                             </div>
                         </div>
 
+                        {# « Non renseignée » se dit ICI en toutes lettres, au
+                           contraire des rubriques qui se taisent : savoir
+                           comment on entre dans une application est une
+                           question de sécurité, et son silence est un trou à
+                           combler, pas un détail absent. #}
                         <div class="fiche-bloc fiche-bloc--teal">
                             {{ titre_section('Authentification & utilisateurs', 'bi-person-lock', 'teal', 'mb-0') }}
                             <div class="fiche-grille">
-                                {% call bloc('Authentification') %}
-                                {{ item.auth_mode_label() or 'Non renseignée' }}
-                                {% if item.auth_strong %}<span class="badge bg-success-subtle text-success ms-1">2FA</span>{% endif %}
-                                {% endcall %}
-                                {% call bloc('Utilisateurs') %}
-                                {%- if item.users_count is none %}Non comptés
-                                {%- else %}{{ item.users_count }}{% if item.users_max %} / {{ item.users_max }}{% endif %}{% endif -%}
-                                {% endcall %}
-                            </div>
-                        </div>
-
-                        <div class="fiche-bloc fiche-bloc--amber">
-                            {{ titre_section('Éditeur & contrat', 'bi-building', 'amber', 'mb-0') }}
-                            <div class="fiche-grille">
-                                {% call bloc('Contrats / marchés', large=True) %}
-                                {% set marches = item.contracts.filter_by(is_active=True).all() %}
-                                {% if marches %}
-                                    {% for c in marches %}
-                                    <a href="{{ url_for('contracts.detail', id=c.id) }}" class="me-3">{{ c.name }}{% if c.end_date %} <small class="text-muted">— {{ c.end_date.strftime('%d/%m/%Y') }}</small>{% endif %}</a>
-                                    {% endfor %}
-                                {% elif item.no_contract_note %}<span class="text-muted">{{ item.no_contract_note }}</span>
-                                {% else %}<span class="text-muted">Aucun contrat enregistré</span>{% endif %}
-                                {% endcall %}
+                            {% call champ_bloc('Authentification') %}
+                            {{ item.auth_mode_label() or 'Non renseignée' }}
+                            {% if item.auth_strong %}<span class="badge bg-success-subtle text-success ms-1">2FA</span>{% endif %}
+                            {% endcall %}
+                            {% call champ_bloc('Utilisateurs') %}
+                            {%- if item.users_count is none %}Non comptés
+                            {%- else %}{{ item.users_count }}{% if item.users_max %} / {{ item.users_max }}{% endif %}{% endif -%}
+                            {% endcall %}
                             </div>
                         </div>
 
                         <div class="fiche-bloc fiche-bloc--emerald">
-                            {{ titre_section("Qui s'en sert", 'bi-people', 'emerald', 'mb-0') }}
+                            {{ titre_section('Référents', 'bi-people', 'emerald', 'mb-0') }}
                             <div class="fiche-grille">
-                                {% call bloc('Référent métier') %}
-                                {{ item.responsible or '-' }}
-                                {% if item.responsible_email %}
-                                <a href="mailto:{{ item.responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.responsible_email }}</a>
-                                {% endif %}
-                                {% endcall %}
-                                {% call bloc('Référent technique') %}
-                                {{ item.tech_responsible or '-' }}
-                                {% if item.tech_responsible_email %}
-                                <a href="mailto:{{ item.tech_responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.tech_responsible_email }}</a>
-                                {% endif %}
-                                {% endcall %}
-                                {% call bloc('Services utilisateurs', large=True) %}
-                                {% for sv in item.user_services %}
-                                <span class="badge bg-light text-dark border me-1"
-                                      title="{{ sv.contact_name or '' }}{% if sv.contact_email %} — {{ sv.contact_email }}{% endif %}">
-                                    <i class="bi bi-people me-1"></i>{{ sv.name }}</span>
-                                {% else %}
-                                <span class="text-muted">Aucun service renseigné.</span>
-                                {% endfor %}
-                                {% endcall %}
+                            {% call champ_bloc('Référent métier') %}
+                            {%- if item.responsible or item.responsible_email -%}
+                            {{ item.responsible or '' }}
+                            {% if item.responsible_email %}
+                            <a href="mailto:{{ item.responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.responsible_email }}</a>
+                            {% endif %}
+                            {%- endif -%}
+                            {% endcall %}
+                            {% call champ_bloc('Référent technique') %}
+                            {%- if item.tech_responsible or item.tech_responsible_email -%}
+                            {{ item.tech_responsible or '' }}
+                            {% if item.tech_responsible_email %}
+                            <a href="mailto:{{ item.tech_responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.tech_responsible_email }}</a>
+                            {% endif %}
+                            {%- endif -%}
+                            {% endcall %}
                             </div>
                         </div>
 
-                        <div class="fiche-bloc fiche-bloc--slate">
-                            {{ titre_section("Serveurs d'installation", 'bi-hdd-stack', 'slate', 'mb-0') }}
-                            <div class="fiche-grille">
-                                {% call bloc("Serveur(s)", large=True) %}
-                                {% if item.no_server %}
-                                <span class="text-muted">Aucun serveur : le logiciel tourne chez l'éditeur ou sur les postes des agents.</span>
-                                {% else %}
-                                    {% for e in item.equipments %}
-                                    <a href="{{ url_for('inventory.detail', id=e.id) }}" class="badge bg-light text-dark border text-decoration-none me-1">
-                                        <i class="bi bi-hdd-network me-1"></i>{{ e.name }}</a>
-                                    {% else %}
-                                    <span class="text-muted">Aucun serveur renseigné.</span>
-                                    {% endfor %}
-                                {% endif %}
-                                {% endcall %}
-                            </div>
-                        </div>
-
-                        {# Le volet RGPD paraît MÊME quand le logiciel ne traite pas de
-                           données personnelles : « non » est une réponse, et la rubrique
-                           absente se lirait comme un oubli de saisie. #}
-                        <div class="fiche-bloc fiche-bloc--violet">
-                            {{ titre_section('Données personnelles (RGPD)', 'bi-shield-lock', 'violet', 'mb-0') }}
-                            <div class="fiche-grille">
-                                {% if item.gdpr_personal_data %}
-                                {{ champ('Catégories', item.gdpr_categories) }}
-                                {{ champ('Réf. registre', item.gdpr_registry_ref) }}
-                                {{ champ('Localisation', item.gdpr_location_label()) }}
-                                {% if item.supplier and (item.supplier.dpo_contact or item.supplier.dpo_email) %}
-                                {% call bloc("DPO de l'éditeur") %}
-                                {{ item.supplier.dpo_contact or '-' }}
-                                {% if item.supplier.dpo_email %}
-                                <a href="mailto:{{ item.supplier.dpo_email }}" class="d-block small text-truncate">{{ item.supplier.dpo_email }}</a>
-                                {% endif %}
-                                {% endcall %}
-                                {% endif %}
-                                {% else %}
-                                {% call bloc('Traitement') %}<span class="text-muted">Aucune donnée personnelle</span>{% endcall %}
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        {% if item.description %}
                         <div class="fiche-bloc fiche-bloc--rose">
                             {{ titre_section('Description', 'bi-journal-text', 'rose', 'mb-0') }}
                             <div class="fiche-grille">
-                                {% call bloc('Notes', large=True) %}{{ item.description }}{% endcall %}
+                            {% call champ_bloc('Notes', large=True) %}{{ item.description or '' }}{% endcall %}
                             </div>
                         </div>
-                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -303,18 +247,62 @@
 
     {% endcall %}
 
-    {% if documents_enabled %}
-    {% call volet('documents') %}
-        {% with doc_parent_kind='software', doc_parent_id=item.id, doc_permission='inventory', doc_title='Documents' %}{% include '_documents.html' %}{% endwith %}
-    {% endcall %}
-    {% endif %}
-
-    {% call volet('liens') %}
+    {# ═══ Liaisons ═══
+       Avec quoi cette application parle : les directions qui s'en servent, les
+       serveurs qui la portent, les flux qu'elle échange. #}
+    {% call volet('liaisons') %}
     <div class="row g-3">
+        <div class="col-xl-6">
+            <div class="data-card p-3 h-100">
+                <div class="fiche-sections">
+                    <div class="fiche-bloc fiche-bloc--emerald">
+                        {{ titre_section("Qui s'en sert", 'bi-people', 'emerald', 'mb-0') }}
+                        <div class="fiche-grille">
+                        {% call champ_bloc('Services utilisateurs', large=True) %}
+                        {% for sv in item.user_services %}
+                        <span class="badge bg-light text-dark border me-1"
+                              title="{{ sv.contact_name or '' }}{% if sv.contact_email %} — {{ sv.contact_email }}{% endif %}">
+                            <i class="bi bi-people me-1"></i>{{ sv.name }}</span>
+                        {% else %}
+                        <span class="text-muted">Aucun service renseigné.</span>
+                        {% endfor %}
+                        {% endcall %}
+                        </div>
+                    </div>
+
+                    <div class="fiche-bloc fiche-bloc--slate">
+                        {{ titre_section("Serveurs d'installation", 'bi-hdd-stack', 'slate', 'mb-0') }}
+                        <div class="fiche-grille">
+                        {% call champ_bloc("Serveur(s)", large=True) %}
+                        {% if item.no_server %}
+                        <span class="text-muted">Aucun serveur : le logiciel tourne chez l'éditeur ou sur les postes des agents.</span>
+                        {% else %}
+                            {% for e in item.equipments %}
+                            <a href="{{ url_for('inventory.detail', id=e.id) }}" class="badge bg-light text-dark border text-decoration-none me-1">
+                                <i class="bi bi-hdd-network me-1"></i>{{ e.name }}</a>
+                            {% else %}
+                            <span class="text-muted">Aucun serveur renseigné.</span>
+                            {% endfor %}
+                        {% endif %}
+                        {% endcall %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="col-xl-6">{% include 'software/_flux.html' %}</div>
-        <div class="col-xl-6">{% include 'software/_partages.html' %}</div>
     </div>
     {% endcall %}
+
+    {% if current_user.can_view('contracts') %}
+    {% call volet('contrats') %}
+        {% include 'software/_contrats.html' %}
+    {% endcall %}
+
+    {% call volet('devis') %}
+        {% include 'software/_consultations.html' %}
+    {% endcall %}
+    {% endif %}
 
     {% call volet('suivi') %}
     <div class="row g-3">
@@ -374,10 +362,48 @@
     </div>
     {% endcall %}
 
-    {% if current_user.can_view('contracts') %}
-    {% call volet('achat') %}
-        {% include 'software/_consultations.html' %}
+    {# ═══ Documents ═══
+       Les pièces de la fiche, PUIS celles que ses marchés et ses devis
+       portent — l'onglet restait vide alors que tout l'écrit existait, rangé
+       sous l'acte qui l'a fait naître. Le partage réseau vient en dernier : il
+       dit où sont les fichiers que la fiche ne porte pas (installeurs, outils),
+       et on les cherche dans cet ordre. #}
+    {% if documents_enabled %}
+    {% call volet('documents') %}
+        {% with doc_parent_kind='software', doc_parent_id=item.id, doc_permission='inventory', doc_title='Documents' %}{% include '_documents.html' %}{% endwith %}
+        {% include 'software/_pieces_heritees.html' %}
+        {% include 'software/_partages.html' %}
     {% endcall %}
     {% endif %}
+
+    {# Le volet RGPD paraît MÊME quand le logiciel ne traite pas de données
+       personnelles : « non » est une réponse, et la rubrique absente se lirait
+       comme un oubli de saisie. #}
+    {% call volet('rgpd') %}
+    <div class="data-card p-3 mb-3">
+        <div class="fiche-sections">
+            <div class="fiche-bloc fiche-bloc--violet">
+                {{ titre_section('Données personnelles (RGPD)', 'bi-shield-lock', 'violet', 'mb-0') }}
+                <div class="fiche-grille">
+                    {% if item.gdpr_personal_data %}
+                    {{ champ('Catégories', item.gdpr_categories) }}
+                    {{ champ('Réf. registre', item.gdpr_registry_ref) }}
+                    {{ champ('Localisation', item.gdpr_location_label()) }}
+                    {% if item.supplier and (item.supplier.dpo_contact or item.supplier.dpo_email) %}
+                    {% call champ_bloc("DPO de l'éditeur") %}
+                    {{ item.supplier.dpo_contact or '' }}
+                    {% if item.supplier.dpo_email %}
+                    <a href="mailto:{{ item.supplier.dpo_email }}" class="d-block small text-truncate">{{ item.supplier.dpo_email }}</a>
+                    {% endif %}
+                    {% endcall %}
+                    {% endif %}
+                    {% else %}
+                    {% call champ_bloc('Traitement') %}<span class="text-muted">Aucune donnée personnelle</span>{% endcall %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endcall %}
 {% endcall %}
 {% endblock %}
