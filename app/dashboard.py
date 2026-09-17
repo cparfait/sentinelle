@@ -5,6 +5,7 @@ from app.models import (Account, Certificate, Backup, BackupCheck, TestTask,
                         AlertLog, Domain, AccessReview, SystemUpdate, Equipment,
                         Contract)
 from app import db
+from app.libelles import delai
 
 bp = Blueprint('dashboard', __name__)
 
@@ -19,7 +20,7 @@ bp = Blueprint('dashboard', __name__)
 DASHBOARD_WIDGETS = [
     {'key': 'conformity',    'label': 'Conformité globale',              'icon': 'bi-speedometer2',       'span': 12},
     {'key': 'stats',         'label': 'Vignettes de synthèse',           'icon': 'bi-grid-3x3-gap',       'span': 12},
-    {'key': 'backups_today', 'label': 'Validation des backups du jour',  'icon': 'bi-cloud-arrow-up',     'span': 12},
+    {'key': 'backups_today', 'label': 'Validation des sauvegardes du jour',  'icon': 'bi-cloud-arrow-up',     'span': 12},
     {'key': 'attention',     'label': 'Éléments requérant votre attention', 'icon': 'bi-exclamation-triangle', 'span': 12},
     {'key': 'upcoming',      'label': 'À venir',                         'icon': 'bi-calendar-event',     'span': 6},
     {'key': 'alerts',        'label': 'Dernières alertes',               'icon': 'bi-bell',               'span': 6},
@@ -40,12 +41,12 @@ STAT_CARDS = [
     {'key': 'accounts',     'cat': 'accounts',     'label': 'Comptes',         'icon': 'bi-key',               'color': '#6366f1', 'endpoint': 'accounts.list'},
     {'key': 'certificates', 'cat': 'certificates', 'label': 'Certificats',     'icon': 'bi-award',             'color': '#10b981', 'endpoint': 'certificates.list'},
     {'key': 'domains',      'cat': 'domains',      'label': 'Domaines',        'icon': 'bi-globe',             'color': '#3b82f6', 'endpoint': 'domains.list'},
-    {'key': 'backups',      'cat': 'backups',      'label': 'Backups',         'icon': 'bi-cloud-arrow-up',    'color': '#06b6d4', 'endpoint': 'backups.list',     'danger_label': 'échoué(s)'},
-    {'key': 'tests',        'cat': 'tests',        'label': 'Tests',           'icon': 'bi-clipboard-check',   'color': '#f59e0b', 'endpoint': 'tests.list',       'danger_label': 'en retard'},
+    {'key': 'backups',      'cat': 'backups',      'label': 'Sauvegardes',     'icon': 'bi-cloud-arrow-up',    'color': '#06b6d4', 'endpoint': 'backups.list'},
+    {'key': 'tests',        'cat': 'tests',        'label': 'Tests',           'icon': 'bi-clipboard-check',   'color': '#f59e0b', 'endpoint': 'tests.list'},
     {'key': 'reviews',      'cat': 'reviews',      'label': 'Revue de droits', 'icon': 'bi-person-check',      'color': '#8b5cf6', 'endpoint': 'reviews.list'},
-    {'key': 'updates',      'cat': 'updates',      'label': 'Mises à jour',    'icon': 'bi-arrow-up-circle',   'color': '#ec4899', 'endpoint': 'updates.list',     'ok_label': 'à jour', 'warning_label': 'dispo'},
-    {'key': 'inventory',    'cat': 'inventory',    'label': 'Inventaire',      'icon': 'bi-hdd-stack',         'color': '#0ea5e9', 'endpoint': 'inventory.list'},
-    {'key': 'contracts',    'cat': 'contracts',    'label': 'Contrats',        'icon': 'bi-file-earmark-text', 'color': '#14b8a6', 'endpoint': 'contracts.list',   'danger_label': 'à traiter'},
+    {'key': 'updates',      'cat': 'updates',      'label': 'Mises à jour',    'icon': 'bi-arrow-up-circle',   'color': '#ec4899', 'endpoint': 'updates.list'},
+    {'key': 'inventory',    'cat': 'inventory',    'label': 'Matériel',        'icon': 'bi-hdd-stack',         'color': '#0ea5e9', 'endpoint': 'inventory.list'},
+    {'key': 'contracts',    'cat': 'contracts',    'label': 'Contrats',        'icon': 'bi-file-earmark-text', 'color': '#14b8a6', 'endpoint': 'contracts.list'},
 ]
 
 
@@ -221,19 +222,19 @@ def trends():
 @bp.route('/etat/<status>')
 @login_required
 def by_status(status):
-    labels = {'danger': 'Critiques', 'warning': 'À surveiller',
-              'info': 'Proches', 'success': 'OK'}
+    from app.libelles import STATUS_LABELS
+    labels = dict(STATUS_LABELS)
     if status not in labels:
         abort(404)
     sources = [
         ('accounts', 'Comptes', Account, lambda o: f'{o.service_name} ({o.username})', 'accounts', lambda o: o.status()),
         ('certificates', 'Certificats', Certificate, lambda o: o.label(), 'certificates', lambda o: o.status()),
         ('domains', 'Domaines', Domain, lambda o: o.name, 'domains', lambda o: o.status()),
-        ('backups', 'Backups', Backup, lambda o: o.service_name, 'backups', lambda o: o.computed_status()),
+        ('backups', 'Sauvegardes', Backup, lambda o: o.service_name, 'backups', lambda o: o.computed_status()),
         ('tests', 'Tests', TestTask, lambda o: o.name, 'tests', lambda o: o.computed_status()),
         ('reviews', 'Revue de droits', AccessReview, lambda o: o.application, 'reviews', lambda o: o.computed_status()),
         ('updates', 'Mises à jour', SystemUpdate, lambda o: o.name, 'updates', lambda o: o.status_color()),
-        ('inventory', 'Inventaire', Equipment, lambda o: o.name, 'inventory', lambda o: o.computed_status()),
+        ('inventory', 'Matériel', Equipment, lambda o: o.name, 'inventory', lambda o: o.computed_status()),
     ]
     items = []
     for cat, label, model, namef, prefix, statusf in sources:
@@ -341,11 +342,11 @@ def _agenda_items(user):
     # support de l'OS), utiles a un DSI bien avant l'echeance.
     if user.can_view('inventory'):
         for e in Equipment.query.filter_by(is_active=True).all():
-            add('Inventaire', 'hdd-stack', f'{e.name} (garantie)', e.warranty_end,
+            add('Matériel', 'hdd-stack', f'{e.name} (garantie)', e.warranty_end,
                 'Fin de garantie matérielle', f'/inventory/{e.id}')
             ei = e.eol_info()
             if ei and ei.get('eol_date'):
-                add('Inventaire', 'hdd-stack', f'{e.name} (fin de support OS)',
+                add('Matériel', 'hdd-stack', f'{e.name} (fin de support OS)',
                     ei['eol_date'], 'Fin de support de l\'OS', f'/inventory/{e.id}')
 
     items.sort(key=lambda x: x['date'])
@@ -499,13 +500,13 @@ def index():
         if st == 'danger':
             if a.next_password_change:
                 days = (a.next_password_change - today).days
-                detail = (f'MDP a changer depuis {abs(days)} jour(s)' if days < 0
-                          else f'MDP a changer dans {days} jour(s)')
+                detail = 'Mot de passe ' + delai(days)
             else:
                 detail = 'Date de rotation non definie'
             urgent_items.append({
                 'type': 'account', 'name': f'{a.service_name} ({a.username})',
-                'detail': detail,
+                'detail': detail, 'days': days if a.next_password_change else None,
+                'action': 'Mot de passe changé', 'ancre': 'mdp-change',
                 'status': 'danger', 'url': f'/accounts/{a.id}'
             })
     for c, st in cert_st:
@@ -515,7 +516,8 @@ def index():
             days = (c.expiry_date - today).days
             urgent_items.append({
                 'type': 'certificate', 'name': c.label(),
-                'detail': f'Expire dans {days} jour(s)' if days >= 0 else f'Expire depuis {abs(days)} jour(s)',
+                'detail': 'Certificat ' + delai(days, passe='expiré depuis', futur='expire dans'),
+                'days': days, 'action': 'Renouvelé', 'ancre': 'renouveler',
                 'status': st, 'url': f'/certificates/{c.id}'
             })
     for d, st in dom_st:
@@ -523,7 +525,8 @@ def index():
             days = (d.expiry_date - today).days
             urgent_items.append({
                 'type': 'domain', 'name': d.name,
-                'detail': f'Expire dans {days} jour(s)' if days >= 0 else f'Expire depuis {abs(days)} jour(s)',
+                'detail': 'Domaine ' + delai(days, passe='expiré depuis', futur='expire dans'),
+                'days': days, 'action': None, 'ancre': None,
                 'status': st, 'url': f'/domains/{d.id}'
             })
     for b, st in bkp_st:
@@ -532,36 +535,38 @@ def index():
             detail = 'Non verifie' if not tc else f'Check: {tc.status}'
             urgent_items.append({
                 'type': 'backup', 'name': b.service_name,
-                'detail': detail,
+                'detail': detail, 'days': None,
+                'action': 'Enregistrer un check', 'ancre': 'check',
                 'status': 'danger', 'url': f'/backups/{b.id}'
             })
     for t, st in tst_st:
         if st == 'danger':
             if t.next_due:
                 days = (t.next_due - today).days
-                detail = (f'Test en retard de {abs(days)} jour(s)' if days < 0
-                          else f'Test a faire dans {days} jour(s)')
+                detail = 'Test ' + delai(days, futur='à faire dans')
             else:
                 detail = 'Echeance non planifiee'
             urgent_items.append({
                 'type': 'test', 'name': t.name,
-                'detail': detail,
+                'detail': detail, 'days': days if t.next_due else None,
+                'action': 'Effectué', 'ancre': 'effectue',
                 'status': 'danger', 'url': f'/tests/{t.id}'
             })
     for r, st in rev_st:
         if st in ('danger', 'warning'):
             days = (r.next_review - today).days if r.next_review else None
-            detail = (f'Revue dans {days} j' if days is not None and days >= 0
-                      else (f'Revue en retard de {abs(days)} j' if days is not None else 'Revue a planifier'))
+            detail = ('Revue ' + delai(days)) if days is not None else 'Revue à planifier'
             urgent_items.append({
                 'type': 'review', 'name': r.application, 'detail': detail,
+                'days': days, 'action': 'Valider la revue', 'ancre': 'valider',
                 'status': st, 'url': f'/reviews/{r.id}'
             })
     for u, st in upd_st:
         if st in ('danger', 'warning'):
             detail = 'Mise a jour critique' if u.status == 'critical' else 'Mise a jour disponible'
             urgent_items.append({
-                'type': 'update', 'name': u.name, 'detail': detail,
+                'type': 'update', 'name': u.name, 'detail': detail, 'days': None,
+                'action': 'À jour', 'ancre': 'a-jour',
                 'status': st, 'url': f'/updates/{u.id}'
             })
 
@@ -569,15 +574,33 @@ def index():
         if st in ('danger', 'warning'):
             deadline = c.action_deadline()
             days = (deadline - today).days if deadline else None
-            detail = (f'Agir avant {days} jour(s)' if days is not None and days >= 0
-                      else (f'Date limite depassee de {abs(days)} jour(s)' if days is not None
-                            else 'Echeance a renseigner'))
+            detail = (delai(days, passe='Préavis dépassé de', futur='Agir dans').capitalize()
+                      if days is not None else 'Échéance à renseigner')
             urgent_items.append({
                 'type': 'contract', 'name': c.name, 'detail': detail,
+                'days': days, 'action': 'Renouvelé', 'ancre': 'renouveler',
                 'status': st, 'url': f'/contracts/{c.id}'
             })
 
-    urgent_items.sort(key=lambda x: {'danger': 0, 'warning': 1, 'info': 2}.get(x['status'], 3))
+    # Le retard d'abord, puis le plus proche ; a delai egal, le rouge avant
+    # l'orange. Chaque urgence porte son horizon (« Dépassé », « Cette
+    # semaine »...) : c'est ainsi que la liste se lit sur le tableau de bord.
+    def _horizon(it):
+        d = it.get('days')
+        if d is None:
+            return 'a-traiter'
+        if d < 0:
+            return 'depasse'
+        if d <= 7:
+            return 'semaine'
+        if d <= 31:
+            return 'mois'
+        return 'plus-tard'
+    for it in urgent_items:
+        it['horizon'] = _horizon(it)
+    _ordre = {'depasse': 0, 'semaine': 1, 'a-traiter': 2, 'mois': 3, 'plus-tard': 4}
+    urgent_items.sort(key=lambda x: (_ordre[x['horizon']], x.get('days') if x.get('days') is not None else 0,
+                                     {'danger': 0, 'warning': 1, 'info': 2}.get(x['status'], 3)))
 
     recent_alerts = AlertLog.query.order_by(AlertLog.sent_at.desc()).limit(10).all()
 
@@ -676,7 +699,11 @@ def index():
     dash_cards = [_card_view(k) for k in card_order]
     dash_hidden_cards = [_card_view(k) for k in card_hidden]
 
+    # Le sous-titre du tableau de bord : ce qu'il reste a faire aujourd'hui.
+    backups_a_valider = sum(1 for b in backups if not backup_checks.get(b.id))
+
     return render_template('dashboard.html', stats=stats, urgent_items=urgent_items,
+                           backups_a_valider=backups_a_valider,
                            recent_alerts=recent_alerts, backups=backups,
                            backup_checks=backup_checks, today=today,
                            totals=totals, conformity=conformity, upcoming=upcoming,

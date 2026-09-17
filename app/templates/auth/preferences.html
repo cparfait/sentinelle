@@ -2,12 +2,18 @@
 {% block title %}Préférences - Sentinelle{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="page-title">Préférences</h1>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Préférences</h1>
+        <p class="page-subtitle">Les réglages de Sentinelle : connexion, messagerie, seuils d'alerte, apparence</p>
+    </div>
 </div>
 
-<div class="row justify-content-center">
-    <div class="col-lg-9">
+{# Un sommaire à gauche (construit par formulaire.js à partir des rubriques) :
+   onze accordéons fermés ne disaient pas où chercher un réglage. #}
+<div class="form-page">
+    <nav class="form-sommaire" id="prefsSommaire" aria-label="Rubriques des préférences"></nav>
+    <div class="form-corps">
         <div class="accordion" id="prefsAccordion">
 
             {# ============================ MESSAGERIE ============================ #}
@@ -772,6 +778,38 @@
     }
     champ.addEventListener('input', dire);
     dire();
+})();
+</script>
+<script>
+(function () {
+    var nav = document.getElementById('prefsSommaire');
+    var acc = document.getElementById('prefsAccordion');
+    if (!nav || !acc) return;
+    var items = Array.prototype.slice.call(acc.querySelectorAll(':scope > .accordion-item'));
+    items.sort(function (a, b) { return (parseInt(a.style.order, 10) || 0) - (parseInt(b.style.order, 10) || 0); });
+    items.forEach(function (item, i) {
+        var btn = item.querySelector('.accordion-button');
+        var pane = item.querySelector('.accordion-collapse');
+        if (!btn || !pane) return;
+        if (!item.id) item.id = 'pref-' + (i + 1);
+        var titre = (btn.childNodes[btn.childNodes.length > 1 ? 1 : 0] || btn).textContent.trim() || btn.textContent.trim();
+        var a = document.createElement('a');
+        a.href = '#' + item.id;
+        a.className = 'form-sommaire-lien';
+        a.innerHTML = '<span class="form-sommaire-n">' + (i + 1) + '</span><span></span>';
+        a.lastChild.textContent = btn.textContent.trim().split('\n')[0].trim();
+        a.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (window.bootstrap && bootstrap.Collapse) bootstrap.Collapse.getOrCreateInstance(pane, { toggle: false }).show();
+            item.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            nav.querySelectorAll('.form-sommaire-lien').forEach(function (l) { l.classList.remove('active'); });
+            a.classList.add('active');
+        });
+        nav.appendChild(a);
+    });
+    // Une rubrique nommee dans l'URL s'ouvre a l'arrivee.
+    var id = (location.hash || '').slice(1);
+    if (id) { var cible = nav.querySelector('a[href="#' + id + '"]'); if (cible) cible.click(); }
 })();
 </script>
 {% endblock %}

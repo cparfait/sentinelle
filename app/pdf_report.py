@@ -11,12 +11,13 @@ from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Table,
 
 from app.models import (Account, Certificate, Domain, Backup, TestTask,
                         AccessReview, SystemUpdate)
+from app.libelles import STATUS_LABELS
 
 _CATS = [
     ('accounts', 'Comptes', Account, lambda o: o.status(), lambda o: f'{o.service_name} ({o.username})'),
     ('certificates', 'Certificats', Certificate, lambda o: o.status(), lambda o: o.label()),
     ('domains', 'Domaines', Domain, lambda o: o.status(), lambda o: o.name),
-    ('backups', 'Backups', Backup, lambda o: o.computed_status(), lambda o: o.service_name),
+    ('backups', 'Sauvegardes', Backup, lambda o: o.computed_status(), lambda o: o.service_name),
     ('tests', 'Tests', TestTask, lambda o: o.computed_status(), lambda o: o.name),
     ('reviews', 'Revue de droits', AccessReview, lambda o: o.computed_status(), lambda o: o.application),
     ('updates', 'Mises à jour', SystemUpdate, lambda o: o.status_color(), lambda o: o.name),
@@ -36,7 +37,8 @@ def build_pdf(user):
              Paragraph('Généré le ' + datetime.now(timezone.utc).strftime('%d/%m/%Y à %H:%M UTC'), small),
              Spacer(1, 0.6 * cm)]
 
-    table = [['Catégorie', 'Total', 'Critique', 'Attention', 'Proche', 'OK']]
+    table = [['Catégorie', 'Total', STATUS_LABELS['danger'], STATUS_LABELS['warning'],
+              STATUS_LABELS['info'], STATUS_LABELS['success']]]
     totals = {'total': 0, 'danger': 0, 'warning': 0, 'info': 0, 'success': 0}
     urgent = []
     for cat, label, model, statusf, namef in _CATS:
@@ -79,7 +81,7 @@ def build_pdf(user):
         urgent.sort(key=lambda x: 0 if x[2] == 'danger' else 1)
         rows = [['Statut', 'Catégorie', 'Élément']]
         for label, name, s in urgent:
-            rows.append(['Critique' if s == 'danger' else 'Attention', label, name])
+            rows.append([STATUS_LABELS.get(s, s), label, name])
         ut = Table(rows, hAlign='LEFT', colWidths=[2.5 * cm, 3.5 * cm, 10 * cm])
         st = [('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e293b')),
               ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
@@ -91,7 +93,7 @@ def build_pdf(user):
         ut.setStyle(TableStyle(st))
         story.append(ut)
     else:
-        story.append(Paragraph('Aucun élément critique ou à surveiller. ✓', styles['Normal']))
+        story.append(Paragraph('Aucun élément critique ni urgent. ✓', styles['Normal']))
 
     buf = io.BytesIO()
     SimpleDocTemplate(buf, pagesize=A4, topMargin=1.5 * cm, bottomMargin=1.5 * cm,

@@ -3,6 +3,7 @@
 {% from '_macros.html' import status_badge %}
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
 {% from '_onglets.html' import barre, onglet, volets, volet %}
+{% from '_fiche.html' import entete, menu_post %}
 
 {# Un contact hors incident. Rien ne s'affiche quand les trois champs sont
    vides : une carte pleine de tirets ne dit pas qui appeler, elle dit qu'on ne
@@ -19,22 +20,15 @@
 {% endmacro %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="page-title">{{ supplier.name }}</h1>
-        <p class="page-subtitle">{{ supplier.kind_label() }}{% if supplier.contact_name %} — {{ supplier.contact_name }}{% endif %}</p>
-    </div>
-    <div class="d-flex gap-2">
-        {% if current_user.can_edit('contracts') %}
-        <a href="{{ url_for('suppliers.edit', id=supplier.id) }}" class="btn btn-outline-secondary">
-            <i class="bi bi-pencil me-1"></i> Modifier
-        </a>
-        {% endif %}
-        <a href="{{ url_for('suppliers.list') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Retour
-        </a>
-    </div>
-</div>
+{% set sous_titre %}{{ supplier.kind_label() }}{% if supplier.contact_name %} · {{ supplier.contact_name }}{% endif %}{% if supplier.website %} · <a href="{{ supplier.website }}" target="_blank" rel="noopener">{{ supplier.website | replace('https://', '') | replace('http://', '') }}</a>{% endif %}{% endset %}
+{% set primaire %}{% if current_user.can_edit('contracts') %}<a href="{{ url_for('contracts.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Nouveau contrat</a>{% endif %}{% endset %}
+{% set menu %}
+    {% if current_user.can_delete('contracts') %}
+    {{ menu_post(url_for('suppliers.delete', id=supplier.id), 'Supprimer', 'bi-trash', confirm='Supprimer ce fournisseur ?', danger=True) }}
+    {% endif %}
+{% endset %}
+{{ entete(supplier.name, sous_titre, primaire=primaire,
+          modifier=url_for('suppliers.edit', id=supplier.id) if current_user.can_edit('contracts') else None, menu=menu) }}
 
 {% call barre('ficheSupplier') %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
@@ -65,9 +59,8 @@
                 {% call fait_bloc('N° client') %}
                 {%- if supplier.customer_ref %}<code>{{ supplier.customer_ref }}</code>{% else %}-{% endif -%}
                 {% endcall %}
-                {{ fait('Contrats', supplier.contracts.count()) }}
-                {{ fait('Logiciels', supplier.software.count() if supplier.software else 0) }}
                 {{ fait('Horaires', supplier.hours) }}
+                {% call fait_bloc("E-mail de l'assistance") %}{% set m = supplier.support_email or supplier.email %}{% if m %}<a href="mailto:{{ m }}">{{ m }}</a>{% else %}<span class="text-muted">—</span>{% endif %}{% endcall %}
             {% endcall %}
 
             <div class="fiche-sections">
@@ -98,7 +91,7 @@
                 </div>
 
                 <div class="fiche-bloc fiche-bloc--indigo">
-                    {{ titre_section('Identité', 'bi-building', 'indigo', 'mb-0') }}
+                    {{ titre_section('Coordonnées', 'bi-building', 'slate', 'mb-0') }}
                     <div class="fiche-grille">
                         {% call champ_bloc('Téléphone standard') %}
                         {{ supplier.phone or '-' }}
@@ -130,27 +123,15 @@
         </div>
         </div>
     <div class="col-lg-4">
-        {% if current_user.can_edit('contracts') %}
-        <div class="data-card p-4 mb-3">
-            <a href="{{ url_for('contracts.create') }}" class="btn btn-outline-primary btn-sm w-100 mb-2">
-                <i class="bi bi-plus-lg me-1"></i> Nouveau contrat
-            </a>
-            <a href="{{ url_for('suppliers.edit', id=supplier.id) }}" class="btn btn-outline-secondary btn-sm w-100">
-                <i class="bi bi-pencil me-1"></i> Modifier ce fournisseur
-            </a>
+        {# Le rail : ce que ce fournisseur couvre chez nous, en un coup d'œil. #}
+        <div class="data-card mb-3">
+            <div class="card-header-custom"><h6 class="fw-bold mb-0"><i class="bi bi-link-45deg me-2"></i>Chez nous</h6></div>
+            <div class="fiche-lies">
+                <button type="button" class="fiche-lie btn text-start" onclick="document.getElementById('ong-contrats')?.click()"><i class="bi bi-file-earmark-text"></i><span class="cell2"><strong>{{ contracts|length }} contrat{{ 's' if contracts|length != 1 }}</strong></span></button>
+                <button type="button" class="fiche-lie btn text-start" onclick="document.getElementById('ong-logiciels')?.click()"><i class="bi bi-window-stack"></i><span class="cell2"><strong>{{ software|length }} logiciel{{ 's' if software|length != 1 }}</strong></span></button>
+                <button type="button" class="fiche-lie btn text-start" onclick="document.getElementById('ong-materiel-couvert')?.click()"><i class="bi bi-hdd-stack"></i><span class="cell2"><strong>{{ equipments|length }} équipement{{ 's' if equipments|length != 1 }}</strong></span></button>
+            </div>
         </div>
-        {% endif %}
-        {% if current_user.can_delete('contracts') %}
-        <div class="data-card p-4">
-            <form method="POST" action="{{ url_for('suppliers.delete', id=supplier.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-danger btn-sm w-100"
-                        data-confirm="Supprimer ce fournisseur ?">
-                    <i class="bi bi-trash me-1"></i> Supprimer
-                </button>
-            </form>
-        </div>
-        {% endif %}
     </div>
     </div>
     {% endcall %}

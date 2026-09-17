@@ -79,12 +79,17 @@ def test_aucune_fiche_ne_delaye_ses_champs(client, jeu):
 
 def test_chaque_fiche_montre_ses_sections(client, jeu):
     """Un lisere seul ne decoupe rien : sur une fiche de trente champs, l'oeil
-    n'y voit qu'une suite d'intitules. Il faut le bandeau et la bordure."""
+    n'y voit qu'une suite d'intitules. Il faut des rubriques en panneaux.
+
+    Depuis la refonte de septembre 2026, les panneaux sont NEUTRES : la couleur
+    ne dit plus que l'urgence (voir app/libelles.py), une rubrique se reconnait
+    a son titre. Les anciens suffixes de teinte (fiche-bloc--amber...) pointent
+    tous sur le meme gris et n'ont plus a etre presents."""
     import re
     for url, _ in _fiches(jeu):
         html = client.get(url).get_data(as_text=True)
-        blocs = re.findall(r'fiche-bloc fiche-bloc--(\w+)', html)
-        assert len(blocs) >= 2, f'{url} : {len(blocs)} bloc(s) colore(s)'
+        blocs = re.findall(r'class="fiche-bloc', html)
+        assert len(blocs) >= 2, f'{url} : {len(blocs)} rubrique(s)'
 
 
 def test_les_balises_se_ferment(client, jeu):
@@ -104,9 +109,19 @@ def test_chaque_fiche_repond_avant_d_etre_lue(client, jeu):
     import re
     for url, _ in _fiches(jeu):
         html = client.get(url).get_data(as_text=True)
-        assert 'fiche-faits' in html, f'{url} : pas de bandeau de faits'
-        cases = len(re.findall(r'class="fiche-fait"', html))
-        assert 3 <= cases <= 6, f'{url} : {cases} case(s) dans le bandeau'
+        # L'en-tete canonique : titre + statut + sous-titre d'identite, et les
+        # actions a droite (action metier, Modifier, menu). Plus de « Retour » :
+        # le fil d'Ariane y pourvoit.
+        assert 'fiche-entete' in html, f'{url} : pas d en-tete de fiche'
+        assert 'Retour</a>' not in html, f'{url} : un bouton Retour a survecu'
+        # Le bandeau : l'echeance (date + delai + frise) pour ce qui expire,
+        # ou trois a six faits pour le reste (sauvegardes, materiel...).
+        if 'fiche-bandeau-ligne' in html:
+            assert 'fiche-bandeau-k' in html, f'{url} : bandeau d echeance sans libelle'
+        else:
+            assert 'fiche-faits' in html, f'{url} : ni bandeau d echeance ni bandeau de faits'
+            cases = len(re.findall(r'class="fiche-fait"', html))
+            assert 3 <= cases <= 6, f'{url} : {cases} case(s) dans le bandeau'
 
 
 def test_la_valeur_se_pose_en_face_de_son_intitule(client, jeu):

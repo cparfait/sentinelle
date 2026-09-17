@@ -4,7 +4,7 @@
    widget_body(key) rend le contenu d'un bloc ; l'enveloppe (barre d'edition,
    grille) est geree dans dashboard.html. #}
 
-{% macro stat_card(url, label, icon, color, s, ok_label='OK', danger_label='crit.', warning_label='alerte', key='') %}
+{% macro stat_card(url, label, icon, color, s, ok_label='OK', danger_label='critiques', warning_label='urgents', key='') %}
 {% set total = s.total or 0 %}
 <a href="{{ url }}" class="stat-card text-decoration-none" style="--cat-color: {{ color }};"{% if key %} data-card="{{ key }}"{% endif %}>
     <span class="stat-toggle" role="button" tabindex="-1" title="Masquer / afficher cette vignette" aria-hidden="true"><i class="bi"></i></span>
@@ -22,9 +22,9 @@
         {% if s.ok %}<span class="seg" style="width: {{ (s.ok / total * 100)|round(1) }}%; background: var(--success);"></span>{% endif %}
     </div>
     <div class="stat-legend mt-1">
-        {% if s.danger %}<span class="text-danger">● {{ s.danger }} {{ danger_label }}</span>{% endif %}
-        {% if s.warning %}<span class="text-warning">● {{ s.warning }} {{ warning_label }}</span>{% endif %}
-        {% if s.ok %}<span class="text-success">● {{ s.ok }} {{ ok_label }}</span>{% endif %}
+        {% if s.danger %}<span class="text-danger">● {{ compte(s.danger, 'danger') }}</span>{% endif %}
+        {% if s.warning %}<span class="text-warning">● {{ compte(s.warning, 'warning') }}</span>{% endif %}
+        {% if s.ok %}<span class="text-success">● {{ compte(s.ok, 'success') }}</span>{% endif %}
     </div>
     {% else %}
     <div class="stat-legend mt-1"><span class="text-muted">Aucun élément</span></div>
@@ -47,8 +47,8 @@
                 </div>
             </div>
             <div class="d-flex gap-2">
-                {% if totals.danger %}<a href="{{ url_for('dashboard.by_status', status='danger') }}" class="badge-status badge-danger text-decoration-none">{{ totals.danger }} critique(s)</a>{% endif %}
-                {% if totals.warning %}<a href="{{ url_for('dashboard.by_status', status='warning') }}" class="badge-status badge-warning text-decoration-none">{{ totals.warning }} à surveiller</a>{% endif %}
+                {% if totals.danger %}<a href="{{ url_for('dashboard.by_status', status='danger') }}" class="badge-status badge-danger text-decoration-none">{{ compte(totals.danger, 'danger') }}</a>{% endif %}
+                {% if totals.warning %}<a href="{{ url_for('dashboard.by_status', status='warning') }}" class="badge-status badge-warning text-decoration-none">{{ compte(totals.warning, 'warning') }}</a>{% endif %}
                 <a href="{{ url_for('dashboard.by_status', status='success') }}" class="badge-status badge-success text-decoration-none">{{ totals.ok }} OK</a>
             </div>
         </div>
@@ -66,8 +66,7 @@
         {% for c in dash_cards %}
         {{ stat_card(c.url, c.label, c.icon, c.color, c.s,
                      ok_label=c.get('ok_label', 'OK'),
-                     danger_label=c.get('danger_label', 'crit.'),
-                     warning_label=c.get('warning_label', 'alerte'),
+                     danger_label='critiques', warning_label='urgents',
                      key=c.key) }}
         {% endfor %}
     </div>
@@ -78,8 +77,7 @@
             {% for c in dash_hidden_cards %}
             {{ stat_card(c.url, c.label, c.icon, c.color, c.s,
                          ok_label=c.get('ok_label', 'OK'),
-                         danger_label=c.get('danger_label', 'crit.'),
-                         warning_label=c.get('warning_label', 'alerte'),
+                         danger_label='critiques', warning_label='urgents',
                          key=c.key) }}
             {% endfor %}
             <div class="stat-tray-empty text-muted small {% if dash_hidden_cards %}d-none{% endif %}">Aucune vignette masquée.</div>
@@ -91,7 +89,7 @@
     {% if backups %}
     <div class="data-card">
         <div class="card-header-custom d-flex justify-content-between align-items-center">
-            <h6 class="fw-bold mb-0"><i class="bi bi-cloud-arrow-up me-2 text-info"></i>Validation backups du {{ today.strftime('%d/%m/%Y') }}</h6>
+            <h6 class="fw-bold mb-0"><i class="bi bi-cloud-arrow-up me-2"></i>Sauvegardes de la nuit <span class="text-muted fw-normal ms-1">{{ today.strftime('%d/%m/%Y') }}</span></h6>
             <a href="{{ url_for('backups.daily') }}" class="btn btn-sm btn-outline-success">
                 <i class="bi bi-check2-square me-1"></i> Check complet
             </a>
@@ -123,11 +121,11 @@
                             {% if tc and tc.status == 'ok' %}
                                 <span class="badge-status badge-success"><i class="bi bi-check-circle me-1"></i>OK</span>
                             {% elif tc and tc.status == 'failed' %}
-                                <span class="badge-status badge-danger"><i class="bi bi-x-circle me-1"></i>Echoue</span>
+                                <span class="badge-status badge-danger"><i class="bi bi-x-circle me-1"></i>Échec</span>
                             {% elif tc and tc.status == 'warning' %}
-                                <span class="badge-status badge-warning"><i class="bi bi-exclamation-triangle me-1"></i>Warning</span>
+                                <span class="badge-status badge-warning"><i class="bi bi-exclamation-triangle me-1"></i>Avertissement</span>
                             {% else %}
-                                <span class="text-muted"><i class="bi bi-dash-circle me-1"></i>Pas encore verifie</span>
+                                <span class="text-muted">pas encore vérifiée</span>
                             {% endif %}
                         </td>
                         {% if current_user.can_edit() %}
@@ -159,7 +157,7 @@
                     {% endif %}
                     {% endfor %}
                     {% if ns.shown == 0 %}
-                    <tr><td colspan="6" class="text-center py-3 text-success"><i class="bi bi-check-circle me-1"></i>Tous les backups du jour sont validés.</td></tr>
+                    <tr><td colspan="6" class="text-center py-3 text-success"><i class="bi bi-check-circle me-1"></i>Toutes les sauvegardes du jour sont validées.</td></tr>
                     {% endif %}
                 </tbody>
             </table>
@@ -168,121 +166,106 @@
     {% endif %}
 
 {% elif key == 'attention' %}
+    {# ═══ À traiter ═══
+       UNE liste, groupée par horizon (dépassé, cette semaine, ce mois-ci),
+       chaque ligne avec son statut, son délai en français et le bouton du
+       geste qui la règle — il ouvre la fiche sur la fenêtre d'action. #}
+    {% from '_macros.html' import status_badge, delai_badge %}
     <div class="data-card">
-        <div class="card-header-custom d-flex justify-content-between align-items-center">
-            <h6 class="fw-bold mb-0"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Elements requirent votre attention</h6>
-        </div>
-        <div class="p-3">
+        <div class="card-header-custom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="fw-bold mb-0"><i class="bi bi-list-check me-2"></i>À traiter <span class="text-muted fw-normal ms-1">{{ urgent_items|length }}</span></h6>
             {% if urgent_items %}
-                {% set cat_labels = {'account': 'Comptes', 'certificate': 'Certificats', 'domain': 'Domaines', 'backup': 'Backups', 'test': 'Tests', 'review': 'Revues', 'update': 'MàJ', 'contract': 'Contrats', 'equipment': 'Inventaire'} %}
-                <div id="urgentFilters" class="d-flex flex-wrap gap-1 mb-2">
-                    <button type="button" class="btn btn-sm btn-primary urgent-filter active" data-cat="">Tous <span class="badge bg-light text-dark ms-1">{{ urgent_items|length }}</span></button>
-                    {% for cat in urgent_items | map(attribute='type') | unique %}
-                    <button type="button" class="btn btn-sm btn-outline-secondary urgent-filter" data-cat="{{ cat }}">{{ cat_labels.get(cat, cat) }}</button>
-                    {% endfor %}
-                </div>
-                <div id="urgentList">
-                {% for item in urgent_items %}
-                <a href="{{ item.url }}" class="text-decoration-none urgent-row" data-cat="{{ item.type }}">
-                    <div class="urgent-item urgent-{{ item.status }}">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <span class="badge-status badge-{% if item.type == 'account' %}info{% elif item.type == 'certificate' %}success{% elif item.type == 'backup' %}warning{% else %}info{% endif %}">
-                                    {% if item.type == 'account' %}<i class="bi bi-key me-1"></i>Compte
-                                    {% elif item.type == 'certificate' %}<i class="bi bi-award me-1"></i>Certificat
-                                    {% elif item.type == 'domain' %}<i class="bi bi-globe me-1"></i>Domaine
-                                    {% elif item.type == 'backup' %}<i class="bi bi-cloud-arrow-up me-1"></i>Backup
-                                    {% elif item.type == 'review' %}<i class="bi bi-person-check me-1"></i>Revue
-                                    {% elif item.type == 'update' %}<i class="bi bi-arrow-up-circle me-1"></i>MàJ
-                                    {% elif item.type == 'contract' %}<i class="bi bi-file-earmark-text me-1"></i>Contrat
-                                    {% else %}<i class="bi bi-clipboard-check me-1"></i>Test{% endif %}
-                                </span>
-                                <strong class="ms-2">{{ item.name }}</strong>
-                            </div>
-                            <small class="text-muted">{{ item.detail }}</small>
-                        </div>
-                    </div>
-                </a>
+            {% set cat_labels = {'account': 'Comptes', 'certificate': 'Certificats', 'domain': 'Domaines', 'backup': 'Sauvegardes', 'test': 'Tests', 'review': 'Revues', 'update': 'Mises à jour', 'contract': 'Contrats', 'equipment': 'Matériel'} %}
+            <div id="urgentFilters" class="d-flex flex-wrap gap-1">
+                <button type="button" class="status-filter status-filter-secondary active urgent-filter" data-cat="">Tous</button>
+                {% for cat in urgent_items | map(attribute='type') | unique %}
+                <button type="button" class="status-filter status-filter-secondary urgent-filter" data-cat="{{ cat }}">{{ cat_labels.get(cat, cat) }}</button>
                 {% endfor %}
-                </div>
-                <div id="urgentEmpty" class="text-center py-3 text-muted d-none">Aucun élément dans cette catégorie.</div>
-                <div id="urgentPager" class="d-flex justify-content-between align-items-center mt-2 d-none">
-                    <small class="text-muted" id="urgentInfo"></small>
-                    <div class="btn-group btn-group-sm" role="group" aria-label="Pagination des éléments">
-                        <button type="button" class="btn btn-outline-secondary" id="urgentPrev"><i class="bi bi-chevron-left me-1"></i>Précédent</button>
-                        <button type="button" class="btn btn-outline-secondary" id="urgentNext">Suivant<i class="bi bi-chevron-right ms-1"></i></button>
-                    </div>
-                </div>
-                <script>
-                (function () {
-                    var rows = Array.prototype.slice.call(document.querySelectorAll('#urgentList .urgent-row'));
-                    var pager = document.getElementById('urgentPager');
-                    if (!rows.length || !pager) return;
-                    var pageSize = 8, page = 0, cat = '';
-                    var info = document.getElementById('urgentInfo');
-                    var prev = document.getElementById('urgentPrev');
-                    var next = document.getElementById('urgentNext');
-                    var empty = document.getElementById('urgentEmpty');
-                    var filters = document.querySelectorAll('.urgent-filter');
-                    function match(el) { return !cat || el.getAttribute('data-cat') === cat; }
-                    function render() {
-                        var fs = rows.filter(match);
-                        var pages = Math.max(1, Math.ceil(fs.length / pageSize));
-                        if (page >= pages) page = pages - 1;
-                        rows.forEach(function (el) { el.style.display = 'none'; });
-                        fs.slice(page * pageSize, (page + 1) * pageSize).forEach(function (el) { el.style.display = ''; });
-                        empty.classList.toggle('d-none', fs.length > 0);
-                        if (fs.length > pageSize) {
-                            pager.classList.remove('d-none');
-                            info.textContent = 'Page ' + (page + 1) + ' / ' + pages + ' — ' + fs.length + ' élément(s)';
-                            prev.disabled = (page === 0);
-                            next.disabled = (page >= pages - 1);
-                        } else {
-                            pager.classList.add('d-none');
-                        }
-                    }
-                    prev.addEventListener('click', function () { if (page > 0) { page--; render(); } });
-                    next.addEventListener('click', function () { page++; render(); });
-                    filters.forEach(function (b) {
-                        b.addEventListener('click', function () {
-                            cat = b.getAttribute('data-cat'); page = 0;
-                            filters.forEach(function (x) {
-                                x.classList.remove('btn-primary', 'active');
-                                x.classList.add('btn-outline-secondary');
-                            });
-                            b.classList.add('btn-primary', 'active');
-                            b.classList.remove('btn-outline-secondary');
-                            render();
-                        });
-                    });
-                    render();
-                })();
-                </script>
-            {% else %}
-                <div class="text-center py-4 text-muted">
-                    <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
-                    <p class="mt-2 mb-0">Tout est en ordre !</p>
-                </div>
+            </div>
             {% endif %}
         </div>
+        {% if urgent_items %}
+        {% set icones = {'account': 'bi-key', 'certificate': 'bi-award', 'domain': 'bi-globe', 'backup': 'bi-cloud-arrow-up', 'test': 'bi-clipboard-check', 'review': 'bi-person-check', 'update': 'bi-arrow-up-circle', 'contract': 'bi-file-earmark-text'} %}
+        {% set horizons = [('depasse', 'Dépassé', 'danger'), ('semaine', 'Cette semaine', 'warning'), ('a-traiter', 'À traiter', 'warning'), ('mois', 'Ce mois-ci', 'info'), ('plus-tard', 'Plus tard', 'info')] %}
+        <div class="table-responsive">
+            <table class="table mb-0 urgent-table" id="urgentList">
+                <tbody>
+                {% for cle, libelle, couleur in horizons %}
+                {% set groupe = urgent_items | selectattr('horizon', 'equalto', cle) | list %}
+                {% if groupe %}
+                <tr class="urgent-groupe" data-groupe="{{ cle }}"><td colspan="5"><span class="text-{{ couleur }}">{{ libelle }}</span> <span class="text-muted">· {{ groupe|length }}</span></td></tr>
+                {% for item in groupe %}
+                <tr class="urgent-row row-{{ item.status }}" data-cat="{{ item.type }}" data-groupe="{{ cle }}">
+                    <td class="urgent-statut">{{ status_badge(item.status) }}</td>
+                    <td class="urgent-icone"><i class="bi {{ icones.get(item.type, 'bi-dot') }} text-muted"></i></td>
+                    <td><a href="{{ item.url }}" class="fw-medium text-decoration-none">{{ item.name }}</a></td>
+                    <td class="urgent-detail">{% if item.days is not none %}{{ delai_badge(item.days, item.status) }}{% else %}<span class="text-muted">{{ item.detail }}</span>{% endif %}</td>
+                    <td class="col-actions">
+                        {% if item.action and current_user.can_edit() %}
+                        <a href="{{ item.url }}#{{ item.ancre }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-check-lg me-1"></i>{{ item.action }}</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% endif %}
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div id="urgentEmpty" class="text-center py-3 text-muted d-none">Aucun élément dans cette catégorie.</div>
+        <script>
+        (function () {
+            var rows = Array.prototype.slice.call(document.querySelectorAll('#urgentList .urgent-row'));
+            var groupes = Array.prototype.slice.call(document.querySelectorAll('#urgentList .urgent-groupe'));
+            var filters = document.querySelectorAll('.urgent-filter');
+            var empty = document.getElementById('urgentEmpty');
+            if (!rows.length) return;
+            function render(cat) {
+                var visibles = 0;
+                rows.forEach(function (el) {
+                    var ok = !cat || el.getAttribute('data-cat') === cat;
+                    el.style.display = ok ? '' : 'none';
+                    if (ok) visibles++;
+                });
+                groupes.forEach(function (g) {
+                    var cle = g.getAttribute('data-groupe');
+                    var n = rows.filter(function (r) { return r.getAttribute('data-groupe') === cle && r.style.display !== 'none'; }).length;
+                    g.style.display = n ? '' : 'none';
+                });
+                empty.classList.toggle('d-none', visibles > 0);
+            }
+            filters.forEach(function (b) {
+                b.addEventListener('click', function () {
+                    filters.forEach(function (x) { x.classList.remove('active'); });
+                    b.classList.add('active');
+                    render(b.getAttribute('data-cat'));
+                });
+            });
+        })();
+        </script>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+            <p class="mt-2 mb-0">Rien à traiter : tout est en ordre.</p>
+        </div>
+        {% endif %}
     </div>
 
 {% elif key == 'upcoming' %}
     <div class="data-card">
         <div class="card-header-custom d-flex justify-content-between align-items-center">
-            <h6 class="fw-bold mb-0"><i class="bi bi-calendar-event me-2 text-primary"></i>À venir</h6>
+            <h6 class="fw-bold mb-0"><i class="bi bi-calendar-event me-2"></i>À venir</h6>
             <a href="{{ url_for('dashboard.agenda') }}" class="btn btn-sm btn-outline-primary">
                 Voir tout <i class="bi bi-arrow-right ms-1"></i>
             </a>
         </div>
         <div class="p-3">
             {% if upcoming %}
+                {% from '_macros.html' import delai_badge %}
                 {% for u in upcoming %}
-                <a href="{{ u.url }}" class="text-decoration-none">
-                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-                        <span class="text-truncate me-2"><i class="bi {{ u.icon }} me-2 text-muted"></i>{{ u.label }}</span>
-                        <span class="badge-status badge-{{ 'danger' if u.days <= 7 else ('warning' if u.days <= 30 else 'info') }} flex-shrink-0">{{ u.days }} j</span>
-                    </div>
+                <a href="{{ u.url }}" class="text-decoration-none d-flex justify-content-between align-items-center gap-2 py-2 border-bottom">
+                    <span class="text-truncate"><i class="bi {{ u.icon }} me-2 text-muted"></i>{{ u.label }}</span>
+                    <span class="flex-shrink-0 small">{{ delai_badge(u.days, 'danger' if u.days <= 7 else ('warning' if u.days <= 15 else 'info')) }}</span>
                 </a>
                 {% endfor %}
             {% else %}
@@ -294,7 +277,7 @@
 {% elif key == 'alerts' %}
     <div class="data-card">
         <div class="card-header-custom d-flex justify-content-between align-items-center">
-            <h6 class="fw-bold mb-0"><i class="bi bi-bell me-2 text-primary"></i>Dernieres alertes</h6>
+            <h6 class="fw-bold mb-0"><i class="bi bi-bell me-2"></i>Dernières alertes envoyées</h6>
             <a href="{{ url_for('alerts.list') }}" class="btn btn-sm btn-outline-primary">
                 Voir tout <i class="bi bi-arrow-right ms-1"></i>
             </a>

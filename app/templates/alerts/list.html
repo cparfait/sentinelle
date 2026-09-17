@@ -4,8 +4,8 @@
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="page-title">Journal des alertes</h1>
-        <p class="page-subtitle">Historique des notifications envoyees</p>
+        <h1 class="page-title">Alertes envoyées</h1>
+        <p class="page-subtitle">Historique des notifications envoyées par mail</p>
     </div>
 </div>
 
@@ -29,9 +29,7 @@
                     <td>{{ alert.alert_type }}</td>
                     <td>
                         {% if alert.entity_type %}
-                        <span class="badge bg-{% if alert.entity_type == 'account' %}primary{% elif alert.entity_type == 'certificate' %}success{% elif alert.entity_type == 'backup' %}warning{% else %}info{% endif %}">
-                            {{ alert.entity_type }}
-                        </span>
+                        <span class="badge bg-light text-dark border">{{ alert.entity_type }}</span>
                         {{ alert.entity_name or '' }}
                         {% else %}
                         -
@@ -41,9 +39,9 @@
                     <td><small>{{ alert.recipients }}</small></td>
                     <td>
                         {% if alert.status == 'sent' %}
-                        <span class="badge-status badge-success"><i class="bi bi-check-circle me-1"></i>Envoyee</span>
+                        <span class="badge-status badge-success"><i class="bi bi-check-circle me-1"></i>Envoyée</span>
                         {% else %}
-                        <span class="badge-status badge-danger"><i class="bi bi-x-circle me-1"></i>Echouee</span>
+                        <span class="badge-status badge-danger"><i class="bi bi-x-circle me-1"></i>Échouée</span>
                         {% endif %}
                     </td>
                 </tr>
@@ -51,7 +49,7 @@
                 <tr>
                     <td colspan="6" class="text-center py-4 text-muted">
                         <i class="bi bi-bell-slash" style="font-size: 2rem;"></i>
-                        <p class="mt-2 mb-0">Aucune alerte envoyee</p>
+                        <p class="mt-2 mb-0">Aucune alerte envoyée</p>
                     </td>
                 </tr>
                 {% endfor %}

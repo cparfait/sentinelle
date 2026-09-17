@@ -1,129 +1,122 @@
 {% extends "base.html" %}
 {% block title %}Certificats - Sentinelle{% endblock %}
-{% from '_macros.html' import status_badge %}
+{% from '_macros.html' import status_badge, delai_badge, priorite %}
+{% from '_liste.html' import barre, actions, cellule, bouton_modifier, vide %}
 
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="page-title">Certificats</h1>
-        <p class="page-subtitle">Expirations TLS et certificats électroniques (RGS / eIDAS) — {{ total }} certificat(s)</p>
+        <h1 class="page-title">Certificats <span class="page-count">{{ total }}</span>
+            <button type="button" class="help-toggle" data-bs-toggle="collapse" data-bs-target="#aideCertificats" aria-expanded="false" aria-controls="aideCertificats" title="Procédure de renouvellement du wildcard">?</button>
+        </h1>
+        <p class="page-subtitle">Expirations TLS et certificats électroniques (RGS / eIDAS)</p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="page-actions">
         {% with csv_key='certificates' %}{% include '_csv_toolbar.html' %}{% endwith %}
         {% if current_user.can_edit('certificates') %}
-        {# Deux natures, deux boutons : la nature décide des champs de la fiche
-           et ne se change plus ensuite — autant la choisir avant de saisir. #}
-        <div class="btn-group">
-            <a href="{{ url_for('certificates.create', kind='tls') }}" class="btn btn-primary">
-                <i class="bi bi-plus-lg me-1"></i> Certificat TLS
-            </a>
-            <a href="{{ url_for('certificates.create', kind='signature') }}" class="btn btn-outline-primary">
-                <i class="bi bi-person-badge me-1"></i> Certificat électronique
-            </a>
+        {# Deux natures, un seul bouton : la nature décide des champs de la
+           fiche et ne se change plus ensuite — on la choisit avant de saisir. #}
+        <div class="dropdown">
+            <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-plus-lg me-1"></i> Nouveau certificat
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="{{ url_for('certificates.create', kind='tls') }}"><i class="bi bi-award me-2"></i>Certificat TLS</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('certificates.create', kind='signature') }}"><i class="bi bi-person-badge me-2"></i>Certificat électronique</a></li>
+            </ul>
         </div>
         {% endif %}
     </div>
 </div>
 
-<div class="alert alert-info d-flex align-items-start mb-3">
-    <i class="bi bi-tools me-2 mt-1"></i>
-    <div>
-        <strong>Renouvellement du wildcard *.collectivite.fr :</strong>
-        l'outil <strong>cert-deploy</strong> automatise toute la campagne
-        (CSR, déploiement Linux/Windows/NPM/NAS, vérification, suivi).
-        Sur le poste d'admin&nbsp;:
-        <code>C:\tmp\CERTIFICATS 2026-2027\cert-deploy\start.bat</code>
-        → <code>http://127.0.0.1:8443</code> (bouton 📖 Manuel intégré).
-        Il est volontairement séparé de Sentinelle&nbsp;: il manipule la clé
-        privée et des comptes administrateurs, et ne tourne qu'à la
-        demande, en local sur le poste.
+{# La procédure du wildcard vivait en bandeau permanent au-dessus de la liste :
+   utile une fois l'an, encombrante le reste du temps. Elle s'ouvre depuis le ?. #}
+<div class="collapse" id="aideCertificats">
+    <div class="alert alert-info d-flex align-items-start mb-3">
+        <i class="bi bi-tools me-2 mt-1"></i>
+        <div>
+            <strong>Renouvellement du wildcard *.collectivite.fr :</strong>
+            l'outil <strong>cert-deploy</strong> automatise toute la campagne
+            (CSR, déploiement Linux/Windows/NPM/NAS, vérification, suivi).
+            Sur le poste d'admin&nbsp;:
+            <code>C:\tmp\CERTIFICATS 2026-2027\cert-deploy\start.bat</code>
+            → <code>http://127.0.0.1:8443</code> (bouton « Manuel » intégré).
+            Il est volontairement séparé de Sentinelle&nbsp;: il manipule la clé
+            privée et des comptes administrateurs, et ne tourne qu'à la
+            demande, en local sur le poste.
+        </div>
     </div>
 </div>
 
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <div class="seg-tabs">
-        <a class="seg-tab {% if not kind %}active{% endif %}" href="{{ url_for('certificates.list', q=q) }}">Tous <span class="seg-tab-count">{{ total_all }}</span></a>
-        {% for value, label in kind_labels.items() %}
-        <a class="seg-tab {% if kind == value %}active{% endif %}" href="{{ url_for('certificates.list', kind=value, q=q) }}">{{ label }} <span class="seg-tab-count">{{ counts[value] }}</span></a>
-        {% endfor %}
-    </div>
-    {% with hidden={'kind': kind} %}{% include '_list_search.html' %}{% endwith %}
+{% set segments %}
+<div class="seg-tabs">
+    <a class="seg-tab {% if not kind %}active{% endif %}" href="{{ url_for('certificates.list', q=q) }}">Tous <span class="seg-tab-count">{{ total_all }}</span></a>
+    {% for value, label in kind_labels.items() %}
+    <a class="seg-tab {% if kind == value %}active{% endif %}" href="{{ url_for('certificates.list', kind=value, q=q) }}">{{ label }} <span class="seg-tab-count">{{ counts[value] }}</span></a>
+    {% endfor %}
 </div>
+{% endset %}
+{{ barre(q, hidden={'kind': kind}, segments=segments) }}
 
 <div class="data-card">
     <div class="table-responsive">
         <table class="table table-hover mb-0 js-filterable">
             <thead>
                 <tr>
+                    <th>Statut</th>
                     <th>Service</th>
-                    <th>Domaine / titulaire</th>
+                    <th>Expiration</th>
                     <th>Émetteur</th>
                     <th>Émission</th>
-                    <th>Expiration</th>
-                    <th>Jours restants</th>
                     <th>Renouvellement</th>
-                    <th>Statut</th>
-                    <th>Actions</th>
+                    <th>Priorité</th>
+                    <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
                 {% for cert in certificates %}
                 <tr class="row-{{ cert.status() }}">
+                    <td>{{ status_badge(cert.status()) }}</td>
                     <td>
-                        <a href="{{ url_for('certificates.detail', id=cert.id) }}" class="fw-medium text-decoration-none">
-                            {{ cert.service_name }}
-                        </a>
+                        <a href="{{ url_for('certificates.detail', id=cert.id) }}" class="fw-medium text-decoration-none">{{ cert.service_name }}</a>
+                        {%- if cert.kind == 'signature' %}
+                        <small class="d-block text-muted">{{ cert.holder_label() or 'certificat électronique' }}{% if cert.holder_role %} · {{ cert.holder_role }}{% endif %}</small>
+                        {%- elif cert.domain %}<small class="d-block text-muted"><code>{{ cert.domain }}</code></small>{% endif -%}
                     </td>
                     <td>
-                        {%- if cert.kind == 'signature' %}{{ cert.holder_label() or '—' }}
-                        {%- if cert.holder_role %}<small class="d-block text-muted">{{ cert.holder_role }}</small>{% endif %}
-                        {%- else %}<code>{{ cert.domain or '—' }}</code>{% endif -%}
-                    </td>
-                    <td>
-                        {%- if cert.kind == 'signature' %}{{ cert.supplier.name if cert.supplier else '-' }}
-                        {%- else %}{{ cert.issuer or '-' }}{% endif -%}
-                    </td>
-                    <td>{{ cert.issued_at.strftime('%d/%m/%Y') if cert.issued_at else '-' }}</td>
-                    <td>{{ cert.expiry_date.strftime('%d/%m/%Y') if cert.expiry_date else '—' }}</td>
-                    <td>
-                        {# Un certificat révoqué n'est plus utilisable : le
-                           décompte de ses jours n'a plus de sens. #}
+                        {# Un certificat révoqué n'est plus utilisable : le décompte de
+                           ses jours n'a plus de sens. #}
                         {% if not cert.expiry_date %}
-                        <span class="text-muted" title="Échéance à compléter">à compléter</span>
+                        <span class="text-muted">à renseigner</span>
                         {% elif not cert.monitored() %}
-                        <span class="text-muted">—</span>
+                        {{ cellule(cert.expiry_date.strftime('%d/%m/%Y'), 'hors surveillance') }}
                         {% else %}
-                        {% set days = (cert.expiry_date - now().date()).days %}
-                        <span class="fw-bold {% if days < 0 %}text-danger{% elif days <= 7 %}text-danger{% elif days <= 15 %}text-warning{% elif days <= 30 %}text-info{% else %}text-success{% endif %}">
-                            {{ days }}j
-                        </span>
+                        {{ cellule(cert.expiry_date.strftime('%d/%m/%Y'), delai_badge(cert.expiry_date, cert.status(), passe='expiré depuis')) }}
                         {% endif %}
                     </td>
                     <td>
+                        {%- if cert.kind == 'signature' %}{{ cert.supplier.name if cert.supplier else '—' }}
+                        {%- else %}{{ cert.issuer or '—' }}{% endif -%}
+                    </td>
+                    <td>{{ cert.issued_at.strftime('%d/%m/%Y') if cert.issued_at else '—' }}</td>
+                    <td>
                         {%- if cert.kind == 'signature' -%}
-                        <span class="badge bg-{{ 'success' if cert.validity == 'valide' else ('danger' if cert.validity == 'revoque' else 'warning') }}-subtle
-                                     text-{{ 'success' if cert.validity == 'valide' else ('danger' if cert.validity == 'revoque' else 'warning') }}">{{ cert.validity_label() }}</span>
+                        {{ cert.validity_label() }}
                         {%- elif cert.auto_renew -%}
-                        <span class="badge bg-success"><i class="bi bi-arrow-repeat me-1"></i>Auto</span>
+                        <i class="bi bi-arrow-repeat me-1 text-muted"></i>Automatique
                         {%- else -%}
-                        <span class="badge bg-secondary">Manuel</span>
+                        Manuel
                         {%- endif -%}
                     </td>
-                    <td>{{ status_badge(cert.status()) }}</td>
-                    <td>
-                        <div class="d-flex gap-1">
-                            <a href="{{ url_for('certificates.detail', id=cert.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
-                            <a href="{{ url_for('certificates.edit', id=cert.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
-                        </div>
+                    <td>{{ priorite(cert.priority) }}</td>
+                    <td class="col-actions">
+                        {% call actions() %}
+                        {% if current_user.can_edit('certificates') %}{{ bouton_modifier(url_for('certificates.edit', id=cert.id)) }}{% endif %}
+                        {% endcall %}
                     </td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="9" class="text-center py-4 text-muted">
-                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-                        <p class="mt-2 mb-0">Aucun certificat. <a href="{{ url_for('certificates.create', kind=kind or 'tls') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a></p>
-                    </td>
-                </tr>
+                {{ vide(8, 'Aucun certificat.', url_for('certificates.create', kind=kind or 'tls') if current_user.can_edit('certificates') else None) }}
                 {% endfor %}
             </tbody>
         </table>

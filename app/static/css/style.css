@@ -247,12 +247,15 @@ button:focus-visible,
     color: #fff;
 }
 
-/* Mise en avant des lignes critiques dans les listes */
-tr.row-danger > td:first-child { box-shadow: inset 4px 0 0 var(--danger); }
-tr.row-warning > td:first-child { box-shadow: inset 4px 0 0 var(--warning); }
-tr.row-info > td:first-child { box-shadow: inset 4px 0 0 var(--info); }
+/* Mise en avant des lignes critiques dans les listes : un lavis leger sur
+   les seules lignes « Critique ». Pas de barre, pas de teinte orange : le
+   badge de statut et le delai portent deja l'information, la ligne ne fait
+   que la laisser trouver du coin de l'oeil. */
 tr.row-danger > td { background: rgba(var(--danger-rgb), 0.05); }
-tr.row-warning > td { background: rgba(var(--warning-rgb), 0.05); }
+
+/* Le delai (« dans 12 j », « en retard de 5 j ») et la priorite en texte. */
+.delai { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.prio { color: var(--text); }
 
 /* ============================ SIDEBAR ============================
    Coque de SoftInventory : marque sur 48 px, sections en micro-capitales,
@@ -322,6 +325,46 @@ tr.row-warning > td { background: rgba(var(--warning-rgb), 0.05); }
 }
 
 .sidebar-search-form input::placeholder { color: var(--faint); }
+
+/* Le raccourci, affiche dans le champ : la seule recherche de l'outil. */
+.sidebar-search-form kbd {
+    position: absolute;
+    right: 8px;
+    font-family: var(--font-sans);
+    font-size: 0.66rem;
+    font-weight: 600;
+    color: var(--faint);
+    background: var(--inset);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0 5px;
+    line-height: 16px;
+    pointer-events: none;
+}
+.sidebar-search-form input:focus ~ kbd { display: none; }
+.sidebar-search-form input { padding-right: 56px; }
+.sidebar-search-form input::-webkit-search-cancel-button { display: none; }
+
+/* Section repliable (Administration) : le titre devient un bouton discret. */
+details.sidebar-section--repliable > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+details.sidebar-section--repliable > summary::-webkit-details-marker { display: none; }
+details.sidebar-section--repliable > summary i { margin-left: auto; font-size: 0.7rem; transition: transform 0.15s ease; }
+details.sidebar-section--repliable[open] > summary i { transform: rotate(90deg); }
+details.sidebar-section--repliable > summary:hover { color: var(--muted); }
+
+/* Fil d'Ariane : le domaine, puis la liste ; le titre de la page suit en H1. */
+.fil-ariane {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: -6px 0 6px;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+.fil-ariane a { color: var(--muted); text-decoration: none; }
+.fil-ariane a:hover { color: var(--primary); text-decoration: underline; }
+.fil-ariane .fil-actuel { color: var(--text); font-weight: 600; }
+.fil-ariane .fil-sep { color: var(--faint); }
 
 .sidebar-search-form input:focus {
     border-color: var(--primary);
@@ -564,6 +607,18 @@ tr.row-warning > td { background: rgba(var(--warning-rgb), 0.05); }
     color: var(--strong);
 }
 .page-title i { display: none; }
+/* Le compteur dans le titre (« Certificats 5 ») et le ? d'aide. */
+.page-count { margin-left: 6px; font-size: 1.05rem; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.help-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; margin-left: 8px; padding: 0;
+    border: 1px solid var(--sub); border-radius: 50%; background: var(--surface);
+    color: var(--muted); font-size: 0.72rem; font-weight: 700; line-height: 1; cursor: pointer;
+    vertical-align: middle;
+}
+.help-toggle:hover, .help-toggle[aria-expanded="true"] { border-color: var(--primary); color: var(--primary); }
+/* Les actions de l'en-tete : a droite, une seule primaire, les autres neutres. */
+.page-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .page-subtitle {
     display: block;
     margin: 2px 0 0;
@@ -573,11 +628,48 @@ tr.row-warning > td { background: rgba(var(--warning-rgb), 0.05); }
 
 /* ---- Tuiles de synthese (KPI) : rail colore, pastille d'icone teintee,
    nombre en chasse fixe. ---- */
+/* Refonte de septembre 2026 : les neuf tuiles deviennent des LIGNES d'une
+   meme carte (« Par domaine ») : le nombre, la barre, les compteurs sur une
+   ligne chacune, lisibles d'un coup d'oeil au lieu d'une grille a parcourir.
+   Le balisage et le JS de personnalisation (ordre, masquage) ne changent pas. */
 .stat-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
 }
+.stat-grid > .stat-card {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 16px;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    box-shadow: none;
+}
+.stat-grid > .stat-card:last-child { border-bottom: 0; }
+a:hover .stat-grid > .stat-card, .stat-grid > .stat-card:hover { transform: none; box-shadow: none; background: var(--inset); }
+.stat-grid > .stat-card > .d-flex { flex: 0 0 240px; min-width: 0; }
+.stat-grid > .stat-card .stat-icon { width: 32px; height: 32px; font-size: 16px; }
+.stat-grid > .stat-card .stat-number { font-size: 1.15rem; }
+.stat-grid > .stat-card .mini-bar { flex: 1 1 160px; margin-top: 0 !important; }
+.stat-grid > .stat-card .stat-legend { flex: 0 0 260px; margin-top: 0 !important; justify-content: flex-end; }
+@media (max-width: 767.98px) {
+    .stat-grid > .stat-card { flex-wrap: wrap; gap: 8px 16px; }
+    .stat-grid > .stat-card .stat-legend { flex-basis: 100%; justify-content: flex-start; }
+}
+
+/* La liste « A traiter » : des groupes par horizon, un statut, un delai, un geste. */
+.urgent-table td { vertical-align: middle; }
+.urgent-table .urgent-groupe td { padding: 6px 16px; background: var(--inset); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.urgent-table .urgent-statut { width: 110px; }
+.urgent-table .urgent-icone { width: 32px; padding-right: 0; }
+.urgent-table .urgent-detail { width: 220px; }
+.urgent-table .col-actions .btn { white-space: nowrap; }
 
 .stat-card {
     position: relative;
@@ -591,15 +683,9 @@ tr.row-warning > td { background: rgba(var(--warning-rgb), 0.05); }
     color: inherit;
     overflow: hidden;
 }
-.stat-card::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: var(--cat-color, var(--primary));
-}
+/* Plus de rail colore a gauche : la couleur est reservee aux statuts, et la
+   mini-barre rouge / orange / vert sous le nombre dit deja tout. */
+.stat-card::before { display: none; }
 
 a:hover .stat-card,
 .stat-card:hover {
@@ -617,8 +703,8 @@ a:hover .stat-card,
     justify-content: center;
     font-size: 20px;
     flex-shrink: 0;
-    color: var(--cat-color, var(--primary));
-    background: color-mix(in srgb, var(--cat-color, var(--primary)) 10%, transparent);
+    color: var(--muted);
+    background: var(--inset);
 }
 
 .stat-card .stat-number {
@@ -1849,31 +1935,98 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    Les teintes vivent en variables pour que le theme sombre les eclaircisse
    d'un bloc : les memes valeurs y seraient trop saturees sur fond fonce.
    ========================================================================== */
+/* Refonte de septembre 2026 : LA COULEUR NE DIT QUE L'URGENCE.
+   Huit teintes de rubrique (violet, vert, orange, bleu, rose...) se
+   disputaient l'oeil avec le rouge / orange / vert des statuts, et le rouge
+   d'un « Critique » se noyait dans le rose d'une rubrique « Description ».
+   Les huit noms restent (les gabarits les posent encore), mais ils pointent
+   tous sur le meme gris ardoise : une rubrique se reconnait a son titre, pas
+   a sa couleur. Retirer les arguments de couleur des gabarits est un
+   nettoyage, pas un prerequis. */
 :root {
-    --sec-indigo: 79, 70, 229;     /* indigo-600  */
-    --sec-sky: 2, 132, 199;        /* sky-600     */
-    --sec-emerald: 5, 150, 105;    /* emerald-600 */
-    --sec-amber: 217, 119, 6;      /* amber-600   */
-    --sec-rose: 225, 29, 72;       /* rose-600    */
-    --sec-violet: 124, 58, 237;    /* violet-600  */
-    --sec-teal: 13, 148, 136;      /* teal-600    */
-    --sec-slate: 71, 85, 105;      /* slate-600   */
+    --sec-slate: 71, 85, 105;      /* slate-600 */
+    --sec-indigo: var(--sec-slate);
+    --sec-sky: var(--sec-slate);
+    --sec-emerald: var(--sec-slate);
+    --sec-amber: var(--sec-slate);
+    --sec-rose: var(--sec-slate);
+    --sec-violet: var(--sec-slate);
+    --sec-teal: var(--sec-slate);
 }
 [data-theme="dark"] {
-    --sec-indigo: 129, 140, 248;
-    --sec-sky: 56, 189, 248;
-    --sec-emerald: 52, 211, 153;
-    --sec-amber: 251, 191, 36;
-    --sec-rose: 251, 113, 133;
-    --sec-violet: 167, 139, 250;
-    --sec-teal: 45, 212, 191;
     --sec-slate: 148, 163, 184;
 }
+
+/* ==========================================================================
+   LE GABARIT DE FORMULAIRE (septembre 2026, voir _formulaire.html)
+   Sommaire numerote a gauche, rubriques numerotees, Enregistrer en haut et en
+   barre fixe en bas, aide repliee derriere un ?, puces pour les choix multiples.
+   ========================================================================== */
+.form-page { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; align-items: start; max-width: 1180px; }
+.form-corps { min-width: 0; }
+.form-sommaire { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 2px; }
+.form-sommaire:empty { display: none; }
+.form-sommaire-lien {
+    display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: var(--radius-sm);
+    color: var(--muted); font-size: 0.875rem; font-weight: 500; text-decoration: none;
+}
+.form-sommaire-lien:hover { background: var(--inset); color: var(--strong); text-decoration: none; }
+.form-sommaire-lien.active { background: var(--primary-dim); color: var(--primary); font-weight: 600; }
+.form-sommaire-n {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--inset); color: var(--muted);
+    font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+}
+.form-sommaire-lien.active .form-sommaire-n { background: var(--primary); color: #fff; }
+@media (max-width: 991.98px) {
+    .form-page { grid-template-columns: 1fr; }
+    .form-sommaire { display: none; }
+}
+
+/* Les rubriques se numerotent toutes seules : une rubrique = un numero, le
+   meme que dans le sommaire. */
+.formulaire { counter-reset: rubrique; }
+.formulaire .form-section > .form-section-titre { counter-increment: rubrique; display: flex; align-items: center; gap: 10px; }
+.formulaire .form-section > .form-section-titre::before {
+    content: counter(rubrique);
+    width: 22px; height: 22px; border-radius: 50%; background: var(--inset); color: var(--muted);
+    font-size: 0.72rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+}
+.formulaire .form-section > .form-section-titre i { display: none; }
+
+/* La barre fixe du bas : Annuler et Enregistrer suivent le defilement. */
+.form-pied {
+    position: sticky; bottom: 0; z-index: 5;
+    display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+    margin: 8px -24px -24px; padding: 12px 24px;
+    background: var(--surface); border-top: 1px solid var(--line);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+.form-pied-note { margin-right: auto; }
+
+/* L'aide repliee : masquee, revelee par le ? de l'intitule. */
+.formulaire .form-text--repliee { display: none; }
+.formulaire .form-text--repliee.est-ouverte { display: block; }
+.formulaire .form-label .help-toggle { margin-left: 6px; vertical-align: -2px; }
+
+/* Les puces : le select natif reste (c'est lui qui est envoye), mais cache. */
+.puces-source { position: absolute !important; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.puces { position: relative; border: 1px solid var(--sub); border-radius: var(--radius-sm); background: var(--input-bg); padding: 5px 8px; display: flex; flex-direction: column; gap: 6px; }
+.puces:focus-within { border-color: var(--primary); box-shadow: var(--ring); }
+.puces-liste { display: flex; flex-wrap: wrap; gap: 6px; }
+.puce { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 4px 0 10px; border-radius: 6px; background: var(--inset); font-size: 0.82rem; font-weight: 500; }
+.puce button { border: 0; background: none; color: var(--muted); font-size: 1rem; line-height: 1; padding: 0 4px; cursor: pointer; border-radius: 4px; }
+.puce button:hover { color: var(--danger); background: var(--danger-dim); }
+.puces-vide { font-size: 0.82rem; color: var(--faint); padding: 3px 2px; }
+.puces-champ { border: 0; background: none; outline: none; font-size: 0.875rem; color: var(--strong); padding: 2px; width: 100%; }
+.puces-champ::placeholder { color: var(--faint); }
+.puces-menu { position: absolute; left: -1px; right: -1px; top: 100%; z-index: 20; max-height: 240px; overflow-y: auto; background: var(--surface); border: 1px solid var(--sub); border-radius: 0 0 var(--radius-sm) var(--radius-sm); box-shadow: var(--shadow-md); }
+.puces-option { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 7px 12px; font-size: 0.875rem; color: var(--text); cursor: pointer; }
+.puces-option:hover, .puces-option.est-cible { background: var(--primary-dim); color: var(--primary); }
+.puces-rien { padding: 8px 12px; font-size: 0.82rem; color: var(--faint); }
 
 .form-section {
     --sec: var(--sec-indigo);
     border: 1px solid var(--border);
-    border-left: 4px solid rgb(var(--sec));
     border-radius: var(--radius-lg);
     margin: 0 0 18px;
     padding: 0;
@@ -2136,6 +2289,64 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 
 @media (min-width: 992px) { .fiche-cote { position: sticky; top: 16px; } }
 
+/* ==========================================================================
+   LE GABARIT DE FICHE (septembre 2026, voir _fiche.html)
+   L'en-tete porte l'identite et le statut, le bandeau porte l'echeance, les
+   rubriques portent le detail. Rien n'est ecrit deux fois.
+   ========================================================================== */
+.fiche-entete { margin-bottom: 12px; }
+.fiche-entete .page-title { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.fiche-entete .page-title .badge-status { font-size: 0.78rem; vertical-align: middle; }
+.fiche-entete .page-subtitle code { font-size: 0.85em; }
+
+/* Le bandeau : une ligne, la date en grand, le delai a cote, le complement a
+   droite ; puis la frise entre le debut et l'echeance. Un liseret de la
+   couleur du statut sur le haut du bandeau -- c'est le seul endroit ou la
+   fiche porte sa couleur en dehors des badges. */
+.fiche-bandeau {
+    padding: 14px 18px 12px;
+    margin-bottom: 16px;
+    border-top: 3px solid var(--sub);
+}
+.fiche-bandeau--danger  { border-top-color: var(--danger); }
+.fiche-bandeau--warning { border-top-color: var(--warning); }
+.fiche-bandeau--info    { border-top-color: var(--info); }
+.fiche-bandeau--success { border-top-color: var(--success); }
+.fiche-bandeau .fiche-faits { margin-bottom: 0; }
+.fiche-bandeau .fiche-fait { border: 0; padding: 4px 18px 4px 0; background: none; border-left: 0; border-radius: 0; flex: 0 1 auto; }
+.fiche-bandeau .fiche-fait + .fiche-fait { border-left: 1px solid var(--line); padding-left: 18px; }
+.fiche-bandeau-ligne { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.fiche-bandeau-k {
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted);
+}
+.fiche-bandeau-date { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.fiche-bandeau .delai { font-size: 0.95rem; }
+.fiche-bandeau-c { margin-left: auto; font-size: 0.82rem; color: var(--muted); }
+.fiche-frise { position: relative; height: 8px; margin-top: 10px; border-radius: 4px; background: var(--inset); overflow: hidden; }
+.fiche-frise-fait { display: block; height: 100%; border-radius: 4px; background: var(--sub); }
+.fiche-bandeau--danger  .fiche-frise-fait { background: var(--danger); }
+.fiche-bandeau--warning .fiche-frise-fait { background: var(--warning); }
+.fiche-bandeau--info    .fiche-frise-fait { background: var(--info); }
+.fiche-bandeau--success .fiche-frise-fait { background: var(--success); }
+.fiche-frise-legende { display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.72rem; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+/* Le rail droit : « Lie a », activite, alertes. */
+.fiche-lies { display: flex; flex-direction: column; padding: 6px 0; }
+.fiche-lie { display: flex; align-items: center; gap: 10px; padding: 7px 16px; color: inherit; text-decoration: none; }
+.fiche-lie:hover { background: var(--inset); color: inherit; }
+.fiche-lie > i { color: var(--muted); font-size: 1rem; flex: 0 0 auto; }
+.fiche-lie strong { font-weight: 600; color: var(--primary); }
+.fiche-activite { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; font-size: 0.85rem; }
+.fiche-alertes { padding: 10px 14px; font-size: 0.85rem; }
+.fiche-alertes summary { list-style: none; cursor: pointer; }
+.fiche-alertes summary::-webkit-details-marker { display: none; }
+.fiche-alertes .cell2 small { font-size: 0.75rem; }
+.card-header-custom .btn-ghost.btn-sm { margin-left: auto; font-size: 0.78rem; }
+
+/* Un champ « large » vide se tait comme les autres. */
+.fiche-champ--large .fiche-valeur:empty { display: none; }
+
 /* Sur un telephone, une seule colonne — et la valeur repasse sous son intitule :
    « Contrat de maintenance » et sa valeur ne tiennent pas de front sur 360 px. */
 @media (max-width: 575.98px) {
@@ -2226,14 +2437,32 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .pagination-nav .btn.disabled { opacity: 0.4; }
 
 /* ==========================================================================
-   BARRE DE LISTE : recherche a icone (224 px), filtres au fil, export a droite
+   BARRE DE LISTE : recherche a icone (224 px), segments de type, pastilles
+   d'etat, et a droite filtres / colonnes -- sur UNE ligne, la meme partout
+   (voir _liste.html).
    ========================================================================== */
 .list-toolbar {
     display: flex;
-    align-items: flex-start;
-    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
     margin-bottom: 12px;
 }
+.list-toolbar-pills { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.list-toolbar-pills > .status-filter-bar { margin: 0 !important; }
+.list-toolbar-right { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+
+/* Actions de ligne : revelees au survol (ou au clavier), la colonne reste
+   etroite. Sur un ecran tactile, pas de survol : elles restent visibles. */
+.table .col-actions { width: 1%; white-space: nowrap; text-align: right; }
+.row-actions { display: inline-flex; gap: 4px; opacity: 0; transition: opacity 0.12s ease; }
+tr:hover .row-actions, tr:focus-within .row-actions { opacity: 1; }
+@media (hover: none) { .row-actions { opacity: 1; } }
+
+/* Une cellule sur deux lignes : la valeur, puis le complement en petit. */
+.cell2 { display: flex; flex-direction: column; gap: 1px; line-height: 1.3; }
+.cell2 small { font-size: 0.78rem; color: var(--muted); }
+.cell2 .delai { font-size: 0.78rem; }
 .list-toolbar-filters {
     display: flex;
     flex-wrap: wrap;

@@ -1,35 +1,38 @@
 {% extends "base.html" %}
 {% block title %}{{ contract.name }} - Sentinelle{% endblock %}
-{% from '_macros.html' import status_badge %}
-{% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
+{% from '_fiche.html' import entete, bandeau_echeance, modal_action, bouton_modal, menu_post, menu_sep, lie, lien, carte_fournisseur, historique, activite %}
 {% from '_onglets.html' import barre, onglet, volets, volet %}
+{% set peut_editer = current_user.can_edit('contracts') %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="page-title">{{ contract.name }}</h1>
-        <p class="page-subtitle">{{ contract.kind_label() }}{% if contract.nature_label() %} · {{ contract.nature_label() }}{% endif %}{% if contract.supplier %} — {{ contract.supplier.name }}{% endif %}
-            {%- if contract.period_label() %} · {{ contract.period_label() }}{% endif %}</p>
-    </div>
-    <div class="d-flex gap-2">
-        {% if current_user.can_edit('contracts') %}
-        <a href="{{ url_for('contracts.edit', id=contract.id) }}" class="btn btn-outline-secondary">
-            <i class="bi bi-pencil me-1"></i> Modifier
-        </a>
-        {% endif %}
-        <a href="{{ url_for('contracts.list') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Retour
-        </a>
-    </div>
-</div>
+{% set sous_titre %}{{ contract.kind_label() }}{% if contract.nature_label() %} · {{ contract.nature_label() }}{% endif %}{% if contract.supplier %} · {{ contract.supplier.name }}{% endif %}{% if contract.reference %} · réf. <code>{{ contract.reference }}</code>{% endif %}{% endset %}
+{% set primaire %}{% if peut_editer %}{{ bouton_modal('renouveler', 'Marquer renouvelé', 'bi-arrow-repeat') }}{% endif %}{% endset %}
+{% set menu %}
+    {% if peut_editer %}
+    {{ menu_post(url_for('contracts.delete', id=contract.id), 'Supprimer', 'bi-trash', confirm='Supprimer ce contrat ?', danger=True) }}
+    {% endif %}
+{% endset %}
+{{ entete(contract.name, sous_titre, statut=contract.status(), primaire=primaire,
+          modifier=url_for('contracts.edit', id=contract.id) if peut_editer else None, menu=menu) }}
+
+{# La date qui compte pour AGIR n'est pas l'échéance mais l'échéance moins le
+   préavis : au-delà, on subit la tacite reconduction ou la coupure. #}
+{% set complement %}
+    {%- if contract.end_date %}échéance le {{ contract.end_date.strftime('%d/%m/%Y') }}{% endif -%}
+    {%- if contract.notice_days %} · préavis de {{ contract.notice_days }} j{% endif -%}
+    {%- if contract.auto_renew %} · reconduction tacite{% endif -%}
+{% endset %}
+{{ bandeau_echeance('Agir avant', contract.action_deadline(), contract.status(), passe='préavis dépassé de',
+                    debut=contract.start_date, complement=complement, sans_date='échéance à renseigner') }}
 
 {% call barre('ficheContract') %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
-    {{ onglet('pieces-du', 'Pièces du marché', 'bi-paperclip') }}
+    {{ onglet('pieces-du', 'Pièces du marché', 'bi-receipt', compteur=items|length) }}
     {% if documents_enabled %}
-    {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=attached_documents('contract', contract.id)|length if documents_enabled else 0) }}
+    {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=attached_documents('contract', contract.id)|length) }}
     {% endif %}
-    {{ onglet('historique', 'Historique', 'bi-clock-history') }}
+    {{ onglet('historique', 'Historique', 'bi-clock-history', compteur=histories|length) }}
 {% endcall %}
 
 {% call volets() %}
@@ -37,191 +40,76 @@
     <div class="row g-3">
         <div class="col-lg-8">
         <div class="data-card p-3 mb-3">
-            {% call faits() %}
-                {% call fait_bloc('Statut') %}{{ status_badge(contract.status()) }}{% endcall %}
-                {{ fait('Échéance', contract.end_date.strftime('%d/%m/%Y') if contract.end_date else None) }}
-                {# La date qui compte pour AGIR n'est pas l'echeance mais
-                   l'echeance moins le preavis : au-dela, on subit la tacite
-                   reconduction ou la coupure. #}
-                {% call fait_bloc('Agir avant') %}
-                {% set days = contract.days_left() %}
-                {%- if days is not none -%}
-                {{ contract.action_deadline().strftime('%d/%m/%Y') }}
-                <small>({{ days }} j)</small>
-                {%- else -%}-{%- endif -%}
-                {% endcall %}
-                {% call fait_bloc('Montant annuel') %}
-                {{ ('%.0f' | format(contract.cost_yearly)) ~ ' €' if contract.cost_yearly else '-' }}
-                {% endcall %}
-                {% if contract.supplier %}
-                {% call fait_bloc('Fournisseur') %}
-                <a href="{{ url_for('suppliers.detail', id=contract.supplier_id) }}">{{ contract.supplier.name }}</a>
-                {% endcall %}
-                {% endif %}
-                {{ fait('Reconduction', 'Tacite' if contract.auto_renew else 'Non') }}
-            {% endcall %}
-
             <div class="fiche-sections">
-                <div class="fiche-bloc fiche-bloc--indigo">
-                    {{ titre_section("Nature de l'acte", 'bi-file-earmark-text', 'indigo', 'mb-0') }}
+                <div class="fiche-bloc">
+                    {{ titre_section("L'acte", 'bi-file-earmark-text', 'slate', 'mb-0') }}
                     <div class="fiche-grille">
-                        {% call champ_bloc('Statut') %}{{ status_badge(contract.status()) }}{% endcall %}
-                        {{ champ('Type', contract.kind) }}
-                    </div>
-                </div>
-
-                <div class="fiche-bloc fiche-bloc--violet">
-                    {{ titre_section('Fournisseur & références', 'bi-building', 'violet', 'mb-0') }}
-                    <div class="fiche-grille">
+                        {{ champ('Type', contract.kind_label()) }}
+                        {{ champ('Nature', contract.nature_label()) }}
                         {{ champ('Notre référence', contract.reference) }}
                         {{ champ('Référence fournisseur', contract.supplier_reference) }}
                     </div>
                 </div>
 
-                <div class="fiche-bloc fiche-bloc--amber">
-                    {{ titre_section('Montants', 'bi-cash-coin', 'amber', 'mb-0') }}
+                <div class="fiche-bloc">
+                    {{ titre_section('Montants', 'bi-cash-coin', 'slate', 'mb-0') }}
                     <div class="fiche-grille">
                         {# Le plafond ne contraint pas le montant : c'est l'acte qui fait
-                           foi, pas l'outil. On le montre a cote plutot que d'en tirer
+                           foi, pas l'outil. On le montre à côté plutôt que d'en tirer
                            une alerte. #}
                         {% call champ_bloc('Montant annuel') %}
-                        {{ ('%.0f' | format(contract.cost_yearly)) ~ ' EUR' if contract.cost_yearly else '-' }}
-                        {% if contract.cost_max_yearly %}
-                        <small class="d-block text-muted">maximum annuel : {{ '%.0f' | format(contract.cost_max_yearly) }} EUR</small>
-                        {% endif %}
-                        {% if contract.cost_total %}
-                        <small class="d-block text-muted">total sur la durée : {{ '%.0f' | format(contract.cost_total) }} EUR</small>
-                        {% endif %}
+                        {%- if contract.cost_yearly %}{{ '%.0f' | format(contract.cost_yearly) }} €{% endif -%}
+                        {% if contract.cost_max_yearly %}<small class="d-block text-muted">maximum annuel : {{ '%.0f' | format(contract.cost_max_yearly) }} €</small>{% endif %}
+                        {% if contract.cost_total %}<small class="d-block text-muted">total sur la durée : {{ '%.0f' | format(contract.cost_total) }} €</small>{% endif %}
                         {% endcall %}
                         {{ champ('Imputation budgétaire', contract.budget_code) }}
                     </div>
                 </div>
 
-                <div class="fiche-bloc fiche-bloc--emerald">
-                    {{ titre_section('Échéance & durée', 'bi-calendar-event', 'emerald', 'mb-0') }}
+                <div class="fiche-bloc">
+                    {{ titre_section('Durée', 'bi-calendar-range', 'slate', 'mb-0') }}
                     <div class="fiche-grille">
                         {{ champ('Début', contract.start_date.strftime('%d/%m/%Y') if contract.start_date else None) }}
-                        {{ champ('Échéance', contract.end_date.strftime('%d/%m/%Y') if contract.end_date else 'Non renseignée') }}
-                        {% call champ_bloc('Agir avant (échéance moins préavis)') %}
-                        {% set days = contract.days_left() %}
-                        {% if days is not none %}
-                        <span class="fw-bold">{{ contract.action_deadline().strftime('%d/%m/%Y') }}
-                            ({{ days }} j restant{{ 's' if days > 1 }})</span>
-                        {% else %}<span class="text-muted">-</span>{% endif %}
-                        <small class="d-block text-muted">préavis de {{ contract.notice_days or 0 }} jours</small>
+                        {{ champ('Échéance', contract.end_date.strftime('%d/%m/%Y') if contract.end_date else None) }}
+                        {{ champ('Préavis de résiliation', ('%d jours' % contract.notice_days) if contract.notice_days else None) }}
+                        {% call champ_bloc('Durée ferme') %}
+                        {%- if contract.firm_years %}{{ contract.firm_years }} an{{ 's' if contract.firm_years > 1 }}{% endif -%}
+                        {% if contract.renewal_label() %}<small class="d-block text-muted">{{ contract.renewal_label() }}</small>{% endif %}
                         {% endcall %}
-                        {% call champ_bloc('Durée') %}
-                        {%- if contract.firm_years %}{{ contract.firm_years }} an{{ 's' if contract.firm_years > 1 }} ferme{% else %}-{% endif %}
-                        {% if contract.renewal_label() %}
-                        <small class="d-block text-muted">{{ contract.renewal_label() }}</small>
-                        {% endif %}
-                        {% endcall %}
-                        {{ champ('Tacite reconduction', 'Oui' if contract.auto_renew else 'Non') }}
+                        {{ champ('Reconduction', 'Tacite' if contract.auto_renew else 'Non') }}
                     </div>
                 </div>
 
-                <div class="fiche-bloc fiche-bloc--sky">
-                    {{ titre_section('Suivi', 'bi-person-check', 'sky', 'mb-0') }}
+                <div class="fiche-bloc">
+                    {{ titre_section('Suivi', 'bi-person-check', 'slate', 'mb-0') }}
                     <div class="fiche-grille">
                         {{ champ('Service demandeur', contract.service.name if contract.service else None) }}
                         {{ champ('Responsable', contract.responsible) }}
                         {{ champ('Bon de commande signé le', contract.order_signed_on.strftime('%d/%m/%Y') if contract.order_signed_on else None) }}
+                        {{ champ('Priorité', priority_label(contract.priority)) }}
                     </div>
                 </div>
 
-                {# Le marché vit pour lui-même : il couvre autant de logiciels qu'il en
-                   couvre réellement, et en perdre le dernier ne le supprime pas. #}
-                <div class="fiche-bloc fiche-bloc--teal">
-                    {{ titre_section('Logiciels couverts', 'bi-window-stack', 'teal', 'mb-0') }}
-                    <div class="fiche-grille">
-                        <div class="fiche-champ fiche-champ--large">
-                            <div class="fiche-valeur">
-                                {% for sw in contract.software %}
-                                <a href="{{ url_for('software.detail', id=sw.id) }}" class="badge bg-light text-dark border text-decoration-none me-1 mb-1">
-                                    <i class="bi bi-window-stack me-1"></i>{{ sw.name }}</a>
-                                {% else %}
-                                <span class="text-muted">Aucun logiciel rattaché.</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {% if contract.equipments %}
-                <div class="fiche-bloc fiche-bloc--rose">
-                    {{ titre_section('Équipements couverts', 'bi-hdd-stack', 'rose', 'mb-0') }}
-                    <div class="fiche-grille">
-                        <div class="fiche-champ fiche-champ--large">
-                            <div class="fiche-valeur">
-                                {% for e in contract.equipments %}
-                                <a href="{{ url_for('inventory.detail', id=e.id) }}" class="badge bg-light text-dark border text-decoration-none me-1 mb-1">
-                                    <i class="bi bi-hdd-network me-1"></i>{{ e.name }}</a>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-
-                {% if contract.description %}
-                <div class="fiche-bloc fiche-bloc--slate">
+                <div class="fiche-bloc">
                     {{ titre_section('Notes', 'bi-journal-text', 'slate', 'mb-0') }}
                     <div class="fiche-grille">
-                        {% call champ_bloc('Description') %}{{ contract.description }}{% endcall %}
+                        {% call champ_bloc('Description', large=True) %}{{ contract.description or '' }}{% endcall %}
                     </div>
                 </div>
-                {% endif %}
             </div>
         </div>
         </div>
-    <div class="col-lg-4">
-        {% if contract.supplier %}
-        <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold fiche-titre fiche-titre--rose mb-2"><i class="bi bi-building me-2"></i>Support fournisseur</h6>
-            <div class="fw-medium mb-1"><a href="{{ url_for('suppliers.detail', id=contract.supplier_id) }}">{{ contract.supplier.name }}</a></div>
-            <ul class="list-unstyled small mb-2">
-                {% if contract.supplier.support_phone or contract.supplier.phone %}
-                <li><i class="bi bi-telephone me-1"></i>
-                    <a href="tel:{{ (contract.supplier.support_phone or contract.supplier.phone) | replace(' ', '') }}">
-                        {{ contract.supplier.support_phone or contract.supplier.phone }}</a>
-                    {% if contract.supplier.hours %}<span class="text-muted">({{ contract.supplier.hours }})</span>{% endif %}</li>
-                {% endif %}
-                {% if contract.supplier.email %}<li><i class="bi bi-envelope me-1"></i><a href="mailto:{{ contract.supplier.email }}">{{ contract.supplier.email }}</a></li>{% endif %}
-                {% if contract.supplier.customer_ref %}<li><i class="bi bi-person-badge me-1"></i>N° client : <code>{{ contract.supplier.customer_ref }}</code></li>{% endif %}
-            </ul>
-            {% if contract.supplier.support_url %}
-            <a href="{{ contract.supplier.support_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-box-arrow-up-right me-1"></i> Portail support
-            </a>
-            {% endif %}
+        <div class="col-lg-4">
+            {{ carte_fournisseur(contract.supplier) }}
+            {# Le marché vit pour lui-même : il couvre autant de logiciels qu'il en
+               couvre réellement, et en perdre le dernier ne le supprime pas. #}
+            {% call lie('Couvre') %}
+                {% for sw in contract.software %}{{ lien(url_for('software.detail', id=sw.id), 'bi-window-stack', sw.name, 'Logiciel' ~ (' · v' ~ sw.version if sw.version else '')) }}{% endfor %}
+                {% for e in contract.equipments %}{{ lien(url_for('inventory.detail', id=e.id), 'bi-hdd-stack', e.name, 'Équipement · ' ~ e.kind_label()) }}{% endfor %}
+            {% endcall %}
+            {{ activite(histories) }}
+            {% with entity_type='contract', entity_id=contract.id %}{% include '_snooze_card.html' %}{% endwith %}
         </div>
-        {% endif %}
-
-        {% if current_user.can_edit('contracts') %}
-        <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold fiche-titre fiche-titre--emerald mb-2"><i class="bi bi-arrow-repeat me-2"></i>Renouvellement</h6>
-            <form method="POST" action="{{ url_for('contracts.renew', id=contract.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <label class="form-label small" for="newEndDate">Nouvelle échéance</label>
-                <input type="date" name="new_end_date" id="newEndDate" class="form-control form-control-sm mb-2" required>
-                <input type="text" name="comment" class="form-control form-control-sm mb-2" placeholder="Commentaire (optionnel)">
-                <button type="submit" class="btn btn-outline-success btn-sm w-100">
-                    <i class="bi bi-check-lg me-1"></i> Marquer renouvelé
-                </button>
-            </form>
-        </div>
-        {% with entity_type='contract', entity_id=contract.id %}{% include '_snooze_card.html' %}{% endwith %}
-        <div class="data-card p-4">
-            <form method="POST" action="{{ url_for('contracts.delete', id=contract.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-danger btn-sm w-100"
-                        data-confirm="Supprimer ce contrat ?">
-                    <i class="bi bi-trash me-1"></i> Supprimer
-                </button>
-            </form>
-        </div>
-        {% endif %}
-    </div>
     </div>
     {% endcall %}
 
@@ -232,16 +120,16 @@
        et c'est sa date de fin qu'on surveille. Les pièces se lisent de la
        plus récente à la plus ancienne. #}
     <div class="data-card mb-3">
-        <div class="card-header-custom d-flex justify-content-between align-items-center">
-            <h6 class="fw-bold fiche-titre fiche-titre--indigo mb-0"><i class="bi bi-paperclip me-2"></i>Pièces du marché
-                <span class="badge bg-secondary ms-1">{{ items|length }}</span>
+        <div class="card-header-custom">
+            <h6 class="fw-bold mb-0"><i class="bi bi-receipt me-2"></i>Pièces du marché
+                <span class="text-muted fw-normal ms-1">{{ items|length }}</span>
                 {% if items %}<small class="fw-normal text-muted ms-2">{{ '%.0f' | format(contract.items_cost()) }} € cumulés</small>{% endif %}</h6>
-            {% if current_user.can_edit('contracts') %}
+            {% if peut_editer %}
             <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
                     data-bs-target="#nouvellePiece"><i class="bi bi-plus-lg me-1"></i> Pièce</button>
             {% endif %}
         </div>
-        {% if current_user.can_edit('contracts') %}
+        {% if peut_editer %}
         <div class="collapse" id="nouvellePiece">
             <form method="POST" action="{{ url_for('contracts.item_add', id=contract.id) }}"
                   class="p-3 border-bottom bg-body-tertiary">
@@ -278,7 +166,7 @@
         {% endif %}
         <div class="table-responsive">
             <table class="table table-hover mb-0">
-                <thead><tr><th>Poste</th><th>Nature</th><th class="text-end">Coût / an</th><th>Date du document</th><th></th></tr></thead>
+                <thead><tr><th>Poste</th><th>Nature</th><th class="text-end">Coût / an</th><th>Date du document</th><th class="col-actions"></th></tr></thead>
                 <tbody>
                     {% for it in items %}
                     <tr>
@@ -286,11 +174,11 @@
                         <td class="small">{{ it.kind_label() }}</td>
                         <td class="text-end">{% if it.cost_yearly is not none %}{{ '%.2f' | format(it.cost_yearly) }} €{% else %}—{% endif %}</td>
                         <td class="small text-nowrap">{{ it.doc_date.strftime('%d/%m/%Y') if it.doc_date else '—' }}</td>
-                        <td class="text-end">
+                        <td class="col-actions">
                             {% if current_user.can_delete('contracts') %}
-                            <form method="POST" action="{{ url_for('contracts.item_delete', item_id=it.id) }}">
+                            <form method="POST" action="{{ url_for('contracts.item_delete', item_id=it.id) }}" class="row-actions">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer la pièce"
+                                <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="Supprimer la pièce"
                                         aria-label="Supprimer la pièce" data-confirm="Supprimer cette pièce ?"><i class="bi bi-trash"></i></button>
                             </form>
                             {% endif %}
@@ -305,33 +193,26 @@
     </div>
     {% endcall %}
 
+    {% if documents_enabled %}
     {% call volet('documents') %}
     {% with doc_parent_kind='contract', doc_parent_id=contract.id, doc_permission='contracts' %}{% include '_documents.html' %}{% endwith %}
     {% endcall %}
+    {% endif %}
 
-    {% call volet('historique') %}
-    <div class="data-card">
-        <div class="card-header-custom">
-            <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0"><i class="bi bi-clock-history me-2"></i>Historique</h6>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead><tr><th>Date</th><th>Action</th><th>Commentaire</th><th>Par</th></tr></thead>
-                <tbody>
-                    {% for h in histories %}
-                    <tr>
-                        <td class="text-nowrap">{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</td>
-                        <td>{{ h.action }}</td>
-                        <td>{{ h.comment or '-' }}</td>
-                        <td class="text-nowrap">{{ h.performed_by or '-' }}</td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="4" class="text-center py-3 text-muted">Aucun historique</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% endcall %}
+    {% call volet('historique') %}{{ historique(histories) }}{% endcall %}
 {% endcall %}
+
+{% if peut_editer %}
+{% call modal_action('renouveler', 'Marquer le contrat renouvelé', url_for('contracts.renew', id=contract.id), bouton='Marquer renouvelé', icone='bi-arrow-repeat',
+                     aide='Enregistre la nouvelle échéance ; la précédente reste dans l\'historique.') %}
+    <div class="mb-3">
+        <label class="form-label" for="new_end_date">Nouvelle échéance <span class="text-danger">*</span></label>
+        <input type="date" name="new_end_date" id="new_end_date" class="form-control" required>
+    </div>
+    <div>
+        <label class="form-label" for="renew_comment">Commentaire <span class="text-muted">(optionnel)</span></label>
+        <input type="text" name="comment" id="renew_comment" class="form-control" placeholder="ex : avenant n° 2 signé">
+    </div>
+{% endcall %}
+{% endif %}
 {% endblock %}

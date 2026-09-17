@@ -109,6 +109,15 @@ def create_app(config_class=Config):
                               if current_user.can_edit(cat))
         return {'nav_counts': counts, 'all_roles': Role.query.order_by(Role.name).all()}
 
+    @app.context_processor
+    def inject_navigation():
+        """Menu et fil d'Ariane (app/navigation.py)."""
+        from flask_login import current_user
+        if not current_user.is_authenticated:
+            return {}
+        from app import navigation
+        return navigation.contexte()
+
     @app.after_request
     def _security_headers(resp):
         # Durcissement HTTP. Tous les assets sont servis en local (static/vendor),
@@ -257,6 +266,20 @@ def create_app(config_class=Config):
             'doc_categories': Referential.options('doc_category'),
             'document_max_mb': app.config.get('DOCUMENT_MAX_MB') or DEFAULT_MAX_MB,
         }
+
+    # Vocabulaire unique des statuts et des délais (voir app/libelles.py) :
+    # tout gabarit qui affiche une couleur ou un nombre de jours passe par là.
+    from app import libelles
+    app.jinja_env.filters['delai'] = libelles.delai
+    app.jinja_env.filters['date_longue'] = libelles.date_longue
+    app.jinja_env.globals.update(
+        status_label=libelles.status_label,
+        status_label_plural=libelles.status_label_plural,
+        priority_label=libelles.priority_label,
+        compte=libelles.compte,
+        jours=libelles.jours,
+        STATUS_LABELS=libelles.STATUS_LABELS,
+    )
 
     @app.template_global()
     def equipment_kinds():

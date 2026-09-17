@@ -16,7 +16,7 @@ SPECS = {
     'domain': {'model': Domain, 'cat': 'domains', 'hist': DomainHistory,
                'fk': 'domain_id', 'label': 'Domaines', 'name': lambda o: o.name},
     'backup': {'model': Backup, 'cat': 'backups', 'hist': BackupHistory,
-               'fk': 'backup_id', 'label': 'Backups', 'name': lambda o: o.service_name},
+               'fk': 'backup_id', 'label': 'Sauvegardes', 'name': lambda o: o.service_name},
     'test': {'model': TestTask, 'cat': 'tests', 'hist': TestHistory,
              'fk': 'test_id', 'label': 'Tests', 'name': lambda o: o.name},
     'review': {'model': AccessReview, 'cat': 'reviews', 'hist': ReviewHistory,
@@ -26,7 +26,7 @@ SPECS = {
     # Pas de modèle d'historique dédié pour l'inventaire : la restauration est
     # tracée via le journal d'audit (ActionLog) par la route appelante.
     'equipment': {'model': Equipment, 'cat': 'inventory', 'hist': None,
-                  'fk': None, 'label': 'Inventaire', 'name': lambda o: o.name},
+                  'fk': None, 'label': 'Matériel', 'name': lambda o: o.name},
     'contract': {'model': Contract, 'cat': 'contracts', 'hist': ContractHistory,
                  'fk': 'contract_id', 'label': 'Contrats', 'name': lambda o: o.name},
     'supplier': {'model': Supplier, 'cat': 'contracts', 'hist': None,

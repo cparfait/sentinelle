@@ -180,7 +180,7 @@ function buildCharts() {
         trendCharts.push(new Chart(distEl, {
             type: 'doughnut',
             data: {
-                labels: ['Critique', 'Attention', 'À surveiller', 'OK'],
+                labels: ['Critique', 'Urgent', 'À prévoir', 'OK'],
                 datasets: [{
                     data: [{{ dist.danger }}, {{ dist.warning }}, {{ dist.info }}, {{ dist.success }}],
                     backgroundColor: [STATUS.danger, STATUS.warning, STATUS.info, STATUS.success],

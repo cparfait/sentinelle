@@ -1,34 +1,40 @@
 {% extends "base.html" %}
 {% block title %}{{ domain.name }} - Sentinelle{% endblock %}
-{% from '_macros.html' import status_badge %}
-{% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
+{% from '_fiche.html' import entete, bandeau_echeance, menu_lien, menu_post, menu_sep, historique, activite %}
 {% from '_onglets.html' import barre, onglet, volets, volet %}
+{% set peut_editer = current_user.can_edit('domains') %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="page-title">{{ domain.name }}</h1>
-        <p class="page-subtitle">{{ domain.registrar or 'Registrar inconnu' }}</p>
-    </div>
-    <div class="d-flex gap-2">
-        {% if current_user.can_edit('domains') %}
-        <a href="{{ url_for('domains.edit', id=domain.id) }}" class="btn btn-outline-secondary">
-            <i class="bi bi-pencil me-1"></i> Modifier
-        </a>
-        {% endif %}
-        <a href="{{ url_for('pdf_export.domain_pdf', id=domain.id) }}" class="btn btn-outline-secondary" title="Exporter en PDF">
-            <i class="bi bi-file-earmark-pdf me-1"></i> PDF
-        </a>
-        <a href="{{ url_for('domains.list') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Retour
-        </a>
-    </div>
-</div>
+{% set sous_titre %}Nom de domaine{% if domain.registrar %} · registrar {{ domain.registrar }}{% endif %} · renouvellement {{ 'automatique' if domain.auto_renew else 'manuel' }}{% endset %}
+{% set primaire %}
+    {% if peut_editer %}
+    <form method="POST" action="{{ url_for('domains.check_rdap', id=domain.id) }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-primary" title="Interroge le registre (RDAP) et met à jour la date d'expiration et le registrar"><i class="bi bi-arrow-repeat me-1"></i> Vérifier au registre</button>
+    </form>
+    {% endif %}
+{% endset %}
+{% set menu %}
+    {{ menu_lien(url_for('pdf_export.domain_pdf', id=domain.id), 'Exporter en PDF', 'bi-file-earmark-pdf') }}
+    {% if peut_editer %}
+    {{ menu_post(url_for('domains.scan_ct', id=domain.id), 'Scanner les journaux CT (crt.sh)', 'bi-search') }}
+    {% if ct_new %}{{ menu_post(url_for('domains.ct_ack', id=domain.id), 'Marquer les ' ~ ct_new ~ ' nouveaux certificats comme vérifiés', 'bi-check2-all') }}{% endif %}
+    {{ menu_sep() }}
+    {{ menu_post(url_for('domains.delete', id=domain.id), 'Supprimer', 'bi-trash', confirm='Supprimer ce domaine ?', danger=True) }}
+    {% endif %}
+{% endset %}
+{{ entete(domain.name, sous_titre, statut=domain.status(), primaire=primaire,
+          modifier=url_for('domains.edit', id=domain.id) if peut_editer else None, menu=menu) }}
+
+{{ bandeau_echeance('Expiration', domain.expiry_date, domain.status(), passe='expiré depuis',
+                    complement=('renouvellement automatique chez ' ~ domain.registrar) if (domain.auto_renew and domain.registrar) else ('renouvellement automatique' if domain.auto_renew else 'renouvellement manuel'),
+                    sans_date='date d\'expiration à renseigner (ou lancez la vérification au registre)') }}
 
 {% call barre('ficheDomain') %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
-    {{ onglet('certificate-transparency', 'Certificate Transparency', 'bi-search') }}
-    {{ onglet('historique', 'Historique', 'bi-clock-history') }}
+    {{ onglet('certificate-transparency', 'Certificate Transparency', 'bi-search', compteur=ct_entries|length) }}
+    {{ onglet('historique', 'Historique', 'bi-clock-history', compteur=histories|length) }}
 {% endcall %}
 
 {% call volets() %}
@@ -36,119 +42,62 @@
     <div class="row g-3">
         <div class="col-lg-8">
         <div class="data-card p-3 mb-3">
-            {% call faits() %}
-                {% call fait_bloc('Statut') %}{{ status_badge(domain.status()) }}{% endcall %}
-                {{ fait('Expiration', domain.expiry_date.strftime('%d/%m/%Y') if domain.expiry_date else None) }}
-                {% call fait_bloc('Jours restants') %}
-                {%- if domain.expiry_date -%}{{ (domain.expiry_date - now().date()).days }} <small>jour(s)</small>
-                {%- else -%}-{%- endif -%}
-                {% endcall %}
-                {{ fait('Registrar', domain.registrar) }}
-                {{ fait('Auto-renouvellement', 'Oui' if domain.auto_renew else 'Non') }}
-            {% endcall %}
-
             <div class="fiche-sections">
-                <div class="fiche-bloc fiche-bloc--indigo">
-                    {{ titre_section('Identité', 'bi-globe', 'indigo', 'mb-0') }}
+                <div class="fiche-bloc">
+                    {{ titre_section('Le domaine', 'bi-globe', 'slate', 'mb-0') }}
                     <div class="fiche-grille">
-                        {% call champ_bloc('Statut') %}{{ status_badge(domain.status()) }}{% endcall %}
                         {{ champ('Registrar', domain.registrar) }}
+                        {{ champ('Renouvellement', 'Automatique' if domain.auto_renew else 'Manuel') }}
                     </div>
                 </div>
-
-                <div class="fiche-bloc fiche-bloc--emerald">
-                    {{ titre_section('Échéance', 'bi-calendar-event', 'emerald', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% call champ_bloc('Expiration') %}
-                        {{ domain.expiry_date.strftime('%d/%m/%Y') if domain.expiry_date else 'Non renseignée' }}
-                        {% if domain.expiry_date %}({{ (domain.expiry_date - now().date()).days }} j){% endif %}
-                        {% endcall %}
-                        {{ champ('Auto-renouvellement', 'Oui' if domain.auto_renew else 'Non') }}
-                    </div>
-                </div>
-
-                {% if domain.description %}
-                <div class="fiche-bloc fiche-bloc--slate">
+                <div class="fiche-bloc">
                     {{ titre_section('Notes', 'bi-journal-text', 'slate', 'mb-0') }}
                     <div class="fiche-grille">
-                        {% call champ_bloc('Description') %}{{ domain.description }}{% endcall %}
+                        {% call champ_bloc('Description', large=True) %}{{ domain.description or '' }}{% endcall %}
                     </div>
                 </div>
-                {% endif %}
             </div>
-        </div>
-        </div>
-    <div class="col-lg-4">
-        {% if current_user.can_edit('domains') %}
-        <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold fiche-titre fiche-titre--sky mb-2"><i class="bi bi-globe me-2"></i>Vérification RDAP</h6>
-            <p class="text-muted small mb-2">Interroge le registre et met à jour la date d'expiration et le registrar.</p>
-            <form method="POST" action="{{ url_for('domains.check_rdap', id=domain.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-primary btn-sm w-100">
-                    <i class="bi bi-arrow-repeat me-1"></i> Vérifier maintenant
-                </button>
-            </form>
-        </div>
-        <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold mb-2"><i class="bi bi-shield-lock me-2 text-primary"></i>Certificate Transparency</h6>
-            <p class="text-muted small mb-2">Recherche dans les journaux CT (crt.sh) les certificats émis pour ce domaine, y compris ceux inconnus de la DSI.</p>
-            <form method="POST" action="{{ url_for('domains.scan_ct', id=domain.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-primary btn-sm w-100">
-                    <i class="bi bi-search me-1"></i> Scanner maintenant
-                </button>
-            </form>
             {% if ct_new %}
-            <form method="POST" action="{{ url_for('domains.ct_ack', id=domain.id) }}" class="mt-2">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-success btn-sm w-100">
-                    <i class="bi bi-check2-all me-1"></i> Marquer les {{ ct_new }} nouveau{{ 's' if ct_new > 1 }} comme vérifié{{ 's' if ct_new > 1 }}
-                </button>
-            </form>
+            <div class="alert alert-warning py-2 small mt-3 mb-0">
+                <i class="bi bi-shield-exclamation me-1"></i>
+                <strong>{{ ct_new }} nouveau{{ 'x' if ct_new > 1 }} certificat{{ 's' if ct_new > 1 }}</strong> observé{{ 's' if ct_new > 1 }} dans les journaux Certificate Transparency :
+                à vérifier dans l'onglet dédié.
+            </div>
             {% endif %}
         </div>
-        {% with entity_type='domain', entity_id=domain.id %}{% include '_snooze_card.html' %}{% endwith %}
-        <div class="data-card p-4">
-            <form method="POST" action="{{ url_for('domains.delete', id=domain.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-danger btn-sm w-100"
-                        data-confirm="Supprimer ce domaine ?">
-                    <i class="bi bi-trash me-1"></i> Supprimer
-                </button>
-            </form>
         </div>
-        {% endif %}
-    </div>
+        <div class="col-lg-4">
+            {{ activite(histories) }}
+            {% with entity_type='domain', entity_id=domain.id %}{% include '_snooze_card.html' %}{% endwith %}
+        </div>
     </div>
     {% endcall %}
 
     {% call volet('certificate-transparency') %}
     <div class="data-card mb-3">
-        <div class="card-header-custom d-flex justify-content-between align-items-center">
-            <h6 class="fw-bold fiche-titre fiche-titre--violet mb-0"><i class="bi bi-shield-lock me-2"></i>Certificate Transparency
-                {% if ct_new %}<span class="badge bg-warning text-dark ms-1">{{ ct_new }} nouveau{{ 's' if ct_new > 1 }}</span>{% endif %}
-            </h6>
-            <small class="text-muted">Certificats emis pour ce domaine (crt.sh)</small>
+        <div class="card-header-custom">
+            <h6 class="fw-bold mb-0"><i class="bi bi-shield-lock me-2"></i>Certificate Transparency
+                {% if ct_new %}<span class="badge-status badge-warning ms-1">{{ ct_new }} nouveau{{ 'x' if ct_new > 1 }}</span>{% endif %}</h6>
+            <small class="text-muted">Certificats émis pour ce domaine, d'après crt.sh — y compris ceux inconnus de la DSI</small>
         </div>
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">
-                <thead><tr><th>Nom(s)</th><th>Émetteur</th><th class="text-nowrap">Émis le</th><th>Statut</th></tr></thead>
+                <thead><tr><th>Statut</th><th>Nom(s)</th><th>Émetteur</th><th class="text-nowrap">Émis le</th></tr></thead>
                 <tbody>
                     {% for e in ct_entries %}
-                    <tr{% if e.status == 'new' %} class="table-warning"{% endif %}>
-                        <td class="small">{{ e.sans()[:3] | join(', ') }}{% if e.sans()|length > 3 %} <span class="text-muted">(+{{ e.sans()|length - 3 }})</span>{% endif %}</td>
-                        <td class="small">{{ e.issuer_name or '-' }}</td>
-                        <td class="text-nowrap small">{{ e.not_before.strftime('%d/%m/%Y') if e.not_before else '-' }}</td>
+                    <tr{% if e.status == 'new' %} class="row-warning"{% endif %}>
                         <td>
-                            {% if e.status == 'new' %}<span class="badge bg-warning text-dark">Nouveau</span>
-                            {% elif e.status == 'acknowledged' %}<span class="badge bg-success-subtle text-success">Vérifié</span>
-                            {% elif e.status == 'baseline' %}<span class="badge bg-secondary-subtle text-secondary">Base</span>
-                            {% else %}<span class="badge bg-light text-muted">{{ e.status }}</span>{% endif %}
+                            {% if e.status == 'new' %}<span class="badge-status badge-warning">Nouveau</span>
+                            {% elif e.status == 'acknowledged' %}<span class="badge-status badge-success">Vérifié</span>
+                            {% elif e.status == 'baseline' %}<span class="badge-status badge-muted">Base</span>
+                            {% else %}<span class="badge-status badge-muted">{{ e.status }}</span>{% endif %}
                         </td>
+                        <td class="small">{{ e.sans()[:3] | join(', ') }}{% if e.sans()|length > 3 %} <span class="text-muted">(+{{ e.sans()|length - 3 }})</span>{% endif %}</td>
+                        <td class="small">{{ e.issuer_name or '—' }}</td>
+                        <td class="text-nowrap small">{{ e.not_before.strftime('%d/%m/%Y') if e.not_before else '—' }}</td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="4" class="text-center py-3 text-muted">Aucun certificat observé. Lancez un scan pour établir la ligne de base.</td></tr>
+                    <tr><td colspan="4" class="text-center py-3 text-muted">Aucun certificat observé. Lancez un scan (menu ⋯) pour établir la ligne de base.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -156,29 +105,6 @@
     </div>
     {% endcall %}
 
-    {% call volet('historique') %}
-    <div class="data-card">
-        <div class="card-header-custom">
-            <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0"><i class="bi bi-clock-history me-2"></i>Historique</h6>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead><tr><th>Date</th><th>Action</th><th>Commentaire</th><th>Par</th></tr></thead>
-                <tbody>
-                    {% for h in histories %}
-                    <tr>
-                        <td class="text-nowrap">{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</td>
-                        <td>{{ h.action }}</td>
-                        <td>{{ h.comment or '-' }}</td>
-                        <td class="text-nowrap">{{ h.performed_by or '-' }}</td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="4" class="text-center py-3 text-muted">Aucun historique</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% endcall %}
+    {% call volet('historique') %}{{ historique(histories) }}{% endcall %}
 {% endcall %}
 {% endblock %}

@@ -6,15 +6,15 @@
 {% macro val(attr) %}{{ item[attr] if item and item[attr] is not none else '' }}{% endmacro %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="page-title">{{ 'Modifier' if item else 'Ajouter' }} un équipement</h1>
-    <a href="{{ url_for('inventory.list') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Retour</a>
-</div>
+{% from '_formulaire.html' import entete_form, pied_form %}
+{% set titre_form %}{{ 'Modifier' if item else 'Ajouter' }} un équipement{% endset %}
+{{ entete_form(titre_form, url_for('inventory.list')) }}
 
-<div class="row justify-content-center">
-    <div class="col-lg-10">
+<div class="form-page">
+    <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
+    <div class="form-corps">
         <div class="data-card p-4">
-            <form method="POST">
+            <form method="POST" id="form-principal" class="formulaire">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 {% call section('Identification', 'bi-tag', 'indigo') %}
@@ -169,10 +169,7 @@
 
                 {% endcall %}
 
-                <div class="d-flex gap-2 mt-3">
-                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if item else 'Ajouter' }}</button>
-                    <a href="{{ url_for('inventory.list') }}" class="btn btn-warn">Annuler</a>
-                </div>
+                {{ pied_form(url_for('inventory.list'), 'Enregistrer' if item else 'Ajouter') }}
             </form>
         </div>
     </div>

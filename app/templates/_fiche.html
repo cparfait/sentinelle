@@ -1,0 +1,205 @@
+{# ═══ Le gabarit de fiche ═══
+   Toutes les fiches se lisent de la même façon :
+
+     fil d'Ariane (base.html)
+     TITRE + badge de statut · sous-titre d'identité      [Action métier] [Modifier] [⋯]
+     ┌ bandeau : la prochaine échéance, son délai, sa frise ────────────────┐
+     onglets
+     rubriques (sans rien répéter de l'en-tête ni du bandeau) │ Lié à · Activité · Alertes
+
+   - Une info, une place : l'identité dans l'en-tête, l'échéance dans le
+     bandeau, le détail dans les rubriques. Les champs vides ne s'affichent pas.
+   - L'action métier (marquer renouvelé, enregistrer un check...) s'ouvre en
+     fenêtre depuis le bouton principal ; le rail droit ne porte plus de
+     formulaire.
+   - Le menu ⋯ regroupe ce qu'on fait rarement : PDF, vérifications, suppression.
+
+   Usage :
+     {% from '_fiche.html' import entete, bandeau_echeance, modal_action, bouton_modal,
+                               menu_lien, menu_post, menu_sep, lie, lien %}
+#}
+{% from '_macros.html' import status_badge, delai_badge %}
+
+{# ---- L'en-tête ----
+   `primaire` et `menu` sont des blocs capturés ({% set x %}...{% endset %}).
+   `modifier` : l'URL du formulaire (None = pas de bouton). #}
+{% macro entete(titre, sous_titre='', statut=None, primaire='', modifier=None, menu='', badges='') %}
+<div class="page-header fiche-entete">
+    <div class="fiche-entete-titre">
+        <h1 class="page-title">{{ titre }}{% if statut %} {{ status_badge(statut) }}{% endif %}{{ badges }}</h1>
+        {% if sous_titre %}<p class="page-subtitle">{{ sous_titre }}</p>{% endif %}
+    </div>
+    <div class="page-actions">
+        {{ primaire }}
+        {% if modifier %}<a href="{{ modifier }}" class="btn btn-outline-secondary"><i class="bi bi-pencil me-1"></i> Modifier</a>{% endif %}
+        {% if menu | trim %}
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Autres actions" aria-label="Autres actions"><i class="bi bi-three-dots"></i></button>
+            <ul class="dropdown-menu dropdown-menu-end">{{ menu }}</ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{# Un élément du menu ⋯ : lien simple, ou action POST (avec jeton CSRF et
+   confirmation facultative). `danger` : rouge, pour supprimer. #}
+{% macro menu_lien(url, libelle, icone, cible=None) %}
+<li><a class="dropdown-item" href="{{ url }}"{% if cible %} target="{{ cible }}" rel="noopener"{% endif %}><i class="bi {{ icone }} me-2"></i>{{ libelle }}</a></li>
+{% endmacro %}
+
+{% macro menu_post(url, libelle, icone, confirm=None, danger=False) %}
+<li>
+    <form method="POST" action="{{ url }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="dropdown-item{{ ' text-danger' if danger }}"{% if confirm %} data-confirm="{{ confirm }}"{% endif %}><i class="bi {{ icone }} me-2"></i>{{ libelle }}</button>
+    </form>
+</li>
+{% endmacro %}
+
+{% macro menu_sep() %}<li><hr class="dropdown-divider"></li>{% endmacro %}
+
+{# ---- Le bouton principal, qui ouvre la fenêtre d'action ---- #}
+{% macro bouton_modal(id, libelle, icone='bi-check-lg', classe='btn-primary') %}
+<button type="button" class="btn {{ classe }}" data-bs-toggle="modal" data-bs-target="#{{ id }}"><i class="bi {{ icone }} me-1"></i> {{ libelle }}</button>
+{% endmacro %}
+
+{# ---- La fenêtre d'action : un formulaire POST, ses champs en `caller` ----
+   `aide` : une phrase sous le titre, pour dire ce que le geste fait. #}
+{% macro modal_action(id, titre, action, bouton='Enregistrer', aide=None, icone='bi-check-lg') %}
+<div class="modal fade" id="{{ id }}" tabindex="-1" aria-labelledby="{{ id }}-titre" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ action }}" class="modal-content">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-header">
+                <h5 class="modal-title" id="{{ id }}-titre">{{ titre }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                {% if aide %}<p class="text-muted small mb-3">{{ aide }}</p>{% endif %}
+                {{ caller() }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="submit" class="btn btn-primary"><i class="bi {{ icone }} me-1"></i> {{ bouton }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endmacro %}
+
+{# ---- Le bandeau d'échéance ----
+   Ce qu'on vient vérifier neuf fois sur dix : LA date, en grand, son délai en
+   français, et une frise qui montre où l'on en est entre le début (émission,
+   dernier changement, dernière exécution) et l'échéance.
+   `complement` : ce qui explique la date (« rotation tous les 90 j »,
+   « renouvellement automatique »). `sans_date` : la phrase quand il n'y a pas
+   d'échéance (« à renseigner », « hors surveillance »). #}
+{% macro bandeau_echeance(libelle, date, statut, passe='en retard de', debut=None, complement='', sans_date='à renseigner', seuil_libelle=None) %}
+<div class="data-card fiche-bandeau fiche-bandeau--{{ statut or 'muted' }}">
+    <div class="fiche-bandeau-ligne">
+        <span class="fiche-bandeau-k">{{ libelle }}</span>
+        {% if date %}
+        <strong class="fiche-bandeau-date">{{ date.strftime('%d/%m/%Y') }}</strong>
+        {{ delai_badge(date, statut, passe=passe) }}
+        {% else %}
+        <span class="text-muted">{{ sans_date }}</span>
+        {% endif %}
+        {% if complement %}<span class="fiche-bandeau-c">{{ complement }}</span>{% endif %}
+    </div>
+    {% if date and debut and debut < date %}
+    {% set restant = jours(date) %}
+    {% set total = (date - debut).days %}
+    {% set ecoule = total - restant %}
+    {% set pct = (100 if ecoule >= total else (0 if ecoule <= 0 else (ecoule * 100 / total))) | round(1) %}
+    <div class="fiche-frise" role="img" aria-label="{{ pct }} % de la période écoulée">
+        <span class="fiche-frise-fait" style="width: {{ pct }}%;"></span>
+    </div>
+    <div class="fiche-frise-legende">
+        <span>{{ debut.strftime('%d/%m/%Y') }}</span>
+        {% if seuil_libelle %}<span>{{ seuil_libelle }}</span>{% endif %}
+        <span>{{ date.strftime('%d/%m/%Y') }}</span>
+    </div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# ---- Le rail droit : « Lié à » ---- #}
+{% macro lie(titre='Lié à') %}
+{% set contenu = caller() %}
+{% if contenu | trim %}
+<div class="data-card mb-3">
+    <div class="card-header-custom"><h6 class="fw-bold mb-0"><i class="bi bi-link-45deg me-2"></i>{{ titre }}</h6></div>
+    <div class="fiche-lies">{{ contenu }}</div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro lien(url, icone, nom, sous='', cible=None) %}
+<a href="{{ url }}" class="fiche-lie"{% if cible %} target="{{ cible }}" rel="noopener"{% endif %}>
+    <i class="bi {{ icone }}"></i>
+    <span class="cell2"><strong>{{ nom }}</strong>{% if sous %}<small>{{ sous }}</small>{% endif %}</span>
+</a>
+{% endmacro %}
+
+{# Un fournisseur dans le rail : nom, hotline, n° client, portail. La question
+   « qui j'appelle ? » se pose devant la fiche, la réponse vit chez le fournisseur. #}
+{% macro carte_fournisseur(sup, titre='Fournisseur') %}
+{% if sup %}
+<div class="data-card mb-3">
+    <div class="card-header-custom"><h6 class="fw-bold mb-0"><i class="bi bi-building me-2"></i>{{ titre }}</h6></div>
+    <div class="p-3">
+        <div class="fw-medium mb-1"><a href="{{ url_for('suppliers.detail', id=sup.id) }}">{{ sup.name }}</a>
+            {% if sup.customer_ref %}<span class="text-muted small ms-1">n° client <code>{{ sup.customer_ref }}</code></span>{% endif %}</div>
+        <ul class="list-unstyled small mb-0">
+            {% if sup.support_phone or sup.phone %}
+            <li><i class="bi bi-telephone me-1 text-muted"></i><a href="tel:{{ (sup.support_phone or sup.phone) | replace(' ', '') }}">{{ sup.support_phone or sup.phone }}</a>
+                {% if sup.hours %}<span class="text-muted"> · {{ sup.hours }}</span>{% endif %}</li>
+            {% endif %}
+            {% if sup.support_email or sup.email %}<li><i class="bi bi-envelope me-1 text-muted"></i><a href="mailto:{{ sup.support_email or sup.email }}">{{ sup.support_email or sup.email }}</a></li>{% endif %}
+            {% if sup.support_url %}<li><i class="bi bi-box-arrow-up-right me-1 text-muted"></i><a href="{{ sup.support_url }}" target="_blank" rel="noopener">Portail support</a></li>{% endif %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{# ---- L'historique, en volet ---- #}
+{% macro historique(histories, titre='Historique') %}
+<div class="data-card">
+    <div class="card-header-custom"><h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>{{ titre }}</h6></div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>Date</th><th>Action</th><th>Commentaire</th><th>Par</th></tr></thead>
+            <tbody>
+                {% for h in histories %}
+                <tr>
+                    <td class="text-nowrap">{{ h.performed_at.strftime('%d/%m/%Y %H:%M') if h.performed_at else '—' }}</td>
+                    <td>{{ h.action }}</td>
+                    <td>{% if h.result is defined and h.result %}{{ h.result }}<br>{% endif %}{{ h.comment or '—' }}</td>
+                    <td class="text-nowrap">{{ h.performed_by or '—' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center py-3 text-muted">Aucun historique</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endmacro %}
+
+{# ---- Les trois dernières lignes d'activité, dans le rail ---- #}
+{% macro activite(histories, cible='historique') %}
+{% if histories %}
+<div class="data-card mb-3">
+    <div class="card-header-custom"><h6 class="fw-bold mb-0"><i class="bi bi-activity me-2"></i>Activité</h6>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('ong-{{ cible }}')?.click()">Tout l'historique</button></div>
+    <div class="fiche-activite">
+        {% for h in histories[:3] %}
+        <div class="cell2"><span>{{ h.action }}{% if h.comment %} <span class="text-muted">· {{ h.comment }}</span>{% endif %}</span>
+            <small>{{ h.performed_at.strftime('%d/%m/%Y %H:%M') if h.performed_at else '' }}{% if h.performed_by %} · {{ h.performed_by }}{% endif %}</small></div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endmacro %}

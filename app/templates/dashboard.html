@@ -6,7 +6,12 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1 class="page-title">Tableau de bord</h1>
-        <p class="page-subtitle">Vue d'ensemble de votre infrastructure</p>
+        <p class="page-subtitle">{{ today | date_longue | capitalize }}
+            {%- if urgent_items or backups_a_valider %} ·
+            {%- if urgent_items %} {{ urgent_items|length }} échéance{{ 's' if urgent_items|length > 1 }} à traiter{% endif %}
+            {%- if urgent_items and backups_a_valider %},{% endif %}
+            {%- if backups_a_valider %} {{ backups_a_valider }} sauvegarde{{ 's' if backups_a_valider > 1 }} à valider{% endif %}
+            {%- else %} · rien à traiter{% endif %}</p>
     </div>
     <div class="d-flex gap-2 align-items-center">
         {% if dashboard_custom %}
@@ -25,10 +30,6 @@
         <a href="{{ url_for('dashboard.report_pdf') }}" class="btn btn-sm btn-outline-danger" title="Bilan PDF (COPIL)">
             <i class="bi bi-file-earmark-pdf me-1"></i> Bilan PDF
         </a>
-        <form method="GET" action="{{ url_for('search.search') }}" class="d-flex gap-2" style="width: 320px;">
-            <input type="text" name="q" class="form-control form-control-sm" placeholder="Rechercher partout...">
-            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search"></i></button>
-        </form>
     </div>
 </div>
 

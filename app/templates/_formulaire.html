@@ -1,0 +1,49 @@
+{# ═══ Le gabarit de formulaire ═══
+   Un formulaire reprend les rubriques de la fiche, dans le même ordre, et se
+   lit de la même façon partout :
+
+     fil d'Ariane (base.html)
+     TITRE                                             [Annuler] [Enregistrer]
+     sommaire numéroté (à gauche, suit le défilement) │ rubriques numérotées
+                                                       │ ...
+                                                       └ barre fixe : [Annuler] [Enregistrer]
+
+   - Enregistrer est accessible sans remonter ni descendre : en haut (bouton
+     rattaché au formulaire par `form=`) et dans la barre fixe du bas.
+   - Le sommaire et la numérotation viennent de formulaire.js et du CSS : les
+     gabarits n'ont rien à déclarer, une rubrique = une entrée.
+   - L'aide sous les champs se replie derrière un « ? » à côté de l'intitulé
+     (formulaire.js) : un formulaire de trente champs ne se lit pas avec trente
+     paragraphes gris.
+   - Les listes à Ctrl + clic deviennent des puces avec recherche (formulaire.js).
+
+   Usage :
+     {% from '_formulaire.html' import entete_form, pied_form %}
+     {{ entete_form(titre, url_for('x.list')) }}
+     <div class="form-page"><nav class="form-sommaire"></nav><div class="form-corps">
+       <div class="data-card p-4"><form method="POST" id="form-principal" class="formulaire">
+         ... {% call section(...) %} ... {% endcall %} ...
+         {{ pied_form(url_for('x.list'), 'Enregistrer') }}
+       </form></div></div></div>
+#}
+
+{% macro entete_form(titre, retour, sous_titre='', libelle='Enregistrer') %}
+<div class="page-header form-entete">
+    <div>
+        <h1 class="page-title">{{ titre }}</h1>
+        {% if sous_titre | trim %}<p class="page-subtitle">{{ sous_titre }}</p>{% endif %}
+    </div>
+    <div class="page-actions">
+        <a href="{{ retour }}" class="btn btn-outline-secondary">Annuler</a>
+        <button type="submit" form="form-principal" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> {{ libelle }}</button>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro pied_form(retour, libelle='Enregistrer') %}
+<div class="form-pied">
+    <span class="form-pied-note text-muted small"><span class="text-danger">*</span> champ obligatoire</span>
+    <a href="{{ retour }}" class="btn btn-outline-secondary">Annuler</a>
+    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> {{ libelle }}</button>
+</div>
+{% endmacro %}

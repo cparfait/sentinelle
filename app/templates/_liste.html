@@ -1,0 +1,73 @@
+{# ═══ Le gabarit de liste ═══
+   Toutes les listes partagent la même barre d'outils, sur UNE ligne :
+
+     [recherche] [segments de type] [pastilles d'état] ............ [droite]
+
+   - la recherche soumet en GET (Entrée suffit) et préserve les paramètres
+     passés dans `hidden` (onglet courant, tri...) ;
+   - `segments` : les onglets de type (Tous / TLS / Électroniques), passés
+     comme bloc capturé : {% set segments %}...{% endset %} ;
+   - les pastilles d'état (Critique / Urgent / À prévoir / OK) sont posées
+     par theme.js dans le conteneur [data-pills], à partir des lignes ;
+   - `droite` : filtres, colonnes, pagination... alignés à droite.
+
+   Et la même table : le statut en PREMIÈRE colonne, l'échéance avec son
+   délai en dessous, les actions révélées au survol de la ligne (le nom est
+   déjà un lien vers la fiche, l'œil ne servait à rien).
+
+   Usage :
+     {% from '_liste.html' import barre, actions %}
+     {{ barre(q, hidden={'kind': kind}, segments=segments) }}
+     ...
+     <td class="col-actions">{% call actions() %} ...boutons... {% endcall %}</td>
+#}
+
+{% macro barre(q='', hidden={}, segments='', droite='', placeholder='Rechercher…') %}
+{% set keep = {} %}
+{% for k, v in (hidden or {}).items() %}{% if v %}{% set _ = keep.update({k: v}) %}{% endif %}{% endfor %}
+<div class="list-toolbar">
+    <form method="GET" class="list-search" role="search">
+        {% for k, v in keep.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+        <i class="bi bi-search"></i>
+        <input type="search" name="q" value="{{ q or '' }}" class="form-control"
+               placeholder="{{ placeholder }}" aria-label="Rechercher dans la liste">
+    </form>
+    {% if q %}<a href="{{ url_for(request.endpoint, **keep) }}" class="btn btn-ghost btn-icon" title="Effacer la recherche"><i class="bi bi-x-lg me-1"></i>Effacer</a>{% endif %}
+    {{ segments }}
+    <div class="list-toolbar-pills" data-pills></div>
+    {% if droite %}<div class="list-toolbar-right">{{ droite }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro actions() %}
+<div class="row-actions">{{ caller() }}</div>
+{% endmacro %}
+
+{# Une cellule à deux lignes : la valeur, puis un complément en petit. #}
+{% macro cellule(principal, secondaire='') %}
+<div class="cell2"><span>{{ principal }}</span>{% if secondaire %}<small>{{ secondaire }}</small>{% endif %}</div>
+{% endmacro %}
+
+{# Le bouton « Modifier » d'une ligne, et le bouton « Supprimer » (POST + CSRF). #}
+{% macro bouton_modifier(url) %}
+<a href="{{ url }}" class="btn btn-sm btn-outline-secondary btn-icon" title="Modifier" aria-label="Modifier"><i class="bi bi-pencil"></i></a>
+{% endmacro %}
+
+{% macro bouton_supprimer(url, message='Supprimer cet élément ?') %}
+<form method="POST" action="{{ url }}" class="d-inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="Supprimer" aria-label="Supprimer" data-confirm="{{ message }}"><i class="bi bi-trash"></i></button>
+</form>
+{% endmacro %}
+
+{# La ligne « vide » d'une table : une icône, une phrase, le bouton d'ajout. #}
+{% macro vide(colonnes, message, url_ajout=None, icone='bi-inbox') %}
+<tr>
+    <td colspan="{{ colonnes }}" class="text-center py-4 text-muted">
+        <i class="bi {{ icone }}" style="font-size: 2rem;"></i>
+        <p class="mt-2 mb-0">{{ message }}
+            {% if url_ajout %}<a href="{{ url_ajout }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a>{% endif %}
+        </p>
+    </td>
+</tr>
+{% endmacro %}

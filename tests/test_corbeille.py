@@ -18,7 +18,7 @@ def test_equipement_supprime_visible_dans_la_corbeille(app, client):
     r = client.get('/trash')
     assert r.status_code == 200
     body = r.data.decode('utf-8')
-    assert 'Inventaire' in body
+    assert 'Matériel' in body
     assert e.name in body
 
 

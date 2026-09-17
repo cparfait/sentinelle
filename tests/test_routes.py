@@ -112,7 +112,7 @@ def test_corbeille_equipement_restaurer_et_purger(app):
     assert groupes['equipment']['items'][0]['name'] == 'SRV-OBSOLETE'
 
     # restauration (pas de modele d'historique : ne doit pas planter)
-    assert restore(admin, 'equipment', str(eid), 'admin') == ('Inventaire', 'SRV-OBSOLETE')
+    assert restore(admin, 'equipment', str(eid), 'admin') == ('Matériel', 'SRV-OBSOLETE')
     assert db.session.get(Equipment, eid).is_active is True
 
     # purge : l'equipment_id du certificat lie est remis a NULL
@@ -124,7 +124,7 @@ def test_corbeille_equipement_restaurer_et_purger(app):
                        equipment_id=e2.id)
     db.session.add(cert)
     db.session.commit()
-    assert purge_one(admin, 'equipment', str(e2.id)) == ('Inventaire', 'SRV-A-PURGER')
+    assert purge_one(admin, 'equipment', str(e2.id)) == ('Matériel', 'SRV-A-PURGER')
     assert cert.equipment_id is None
     assert db.session.get(Equipment, e2.id) is None
 

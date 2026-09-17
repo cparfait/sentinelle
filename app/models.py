@@ -51,8 +51,8 @@ PERMISSION_CATEGORIES = ['accounts', 'certificates', 'domains', 'backups', 'test
                          'reviews', 'updates', 'inventory', 'contracts', 'alerts']
 CATEGORY_LABELS = {
     'accounts': 'Comptes', 'certificates': 'Certificats', 'domains': 'Domaines',
-    'backups': 'Backups', 'tests': 'Tests', 'reviews': 'Revue de droits',
-    'updates': 'Mises à jour', 'inventory': 'Inventaire',
+    'backups': 'Sauvegardes', 'tests': 'Tests', 'reviews': 'Revues de droits',
+    'updates': 'Mises à jour', 'inventory': 'Matériel & logiciels',
     'contracts': 'Contrats & fournisseurs', 'alerts': 'Alertes',
 }
 # Niveaux : 0 aucun, 1 lecture, 2 ecriture, 3 suppression (cumulatifs)

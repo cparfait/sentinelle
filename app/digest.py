@@ -5,15 +5,14 @@ from html import escape
 from app.models import (Account, Certificate, Backup, TestTask, Domain,
                         AccessReview, SystemUpdate, Contract)
 from app.snooze import active_snooze_keys
+from app.libelles import STATUS_LABELS as _LABELS
 
 _COLORS = {'danger': '#ef4444', 'warning': '#f59e0b', 'info': '#3b82f6',
            'success': '#10b981'}
-_LABELS = {'danger': 'Critique', 'warning': 'Attention', 'info': 'A surveiller',
-           'success': 'OK'}
 # Page de liste de chaque domaine, pour rendre les pastilles « a traiter »
 # cliquables dans le mail de recap.
 _LIST_PATHS = {'Comptes': '/accounts/', 'Certificats': '/certificates/',
-               'Domaines': '/domains/', 'Backups': '/backups/', 'Tests': '/tests/',
+               'Domaines': '/domains/', 'Sauvegardes': '/backups/', 'Tests': '/tests/',
                'Revue de droits': '/reviews/', 'Mises a jour': '/updates/',
                'Contrats': '/contracts/'}
 
@@ -89,7 +88,7 @@ def _collect():
                 detail = (f'Dernier OK il y a {days} j ({b.frequency_label().lower()})')
             items.append({'name': b.service_name, 'detail': detail,
                           'status': s, 'path': f'/backups/{b.id}'})
-    domains.append({'key': 'Backups', 'total': len(backups), 'items': items})
+    domains.append({'key': 'Sauvegardes', 'total': len(backups), 'items': items})
 
     # Tests
     tests = TestTask.query.filter_by(is_active=True).all()
@@ -163,16 +162,16 @@ def build_daily_digest(base_url=''):
 
     # --- Sujet ---
     if n_danger:
-        subject = f"Meteo DSI du {today} - {n_danger} critique(s), {n_warning} a surveiller"
+        subject = f"Meteo DSI du {today} - {n_danger} critique(s), {n_warning} urgent(s)"
     elif n_warning:
-        subject = f"Meteo DSI du {today} - {n_warning} a surveiller"
+        subject = f"Meteo DSI du {today} - {n_warning} urgent(s)"
     else:
         subject = f"Meteo DSI du {today} - tout est au vert"
 
     # --- Texte brut ---
     lines = [f"Meteo DSI du {today}", ""]
     if not has_urgent:
-        lines.append("Tout est au vert : aucun element critique ni a surveiller.")
+        lines.append("Tout est au vert : aucun element critique ni urgent.")
     else:
         for d in domains:
             if d['items']:
@@ -206,7 +205,7 @@ def build_daily_digest(base_url=''):
     if not has_urgent:
         blocks = ('<div style="padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;'
                   'border-radius:8px;color:#065f46;">Tout est au vert : aucun element critique '
-                  'ni a surveiller aujourd\'hui.</div>')
+                  'ni urgent aujourd\'hui.</div>')
     else:
         for d in domains:
             if not d['items']:

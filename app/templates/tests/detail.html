@@ -1,35 +1,35 @@
 {% extends "base.html" %}
 {% block title %}{{ test.name }} - Sentinelle{% endblock %}
-{% from '_macros.html' import status_badge %}
-{% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
+{% from '_fiche.html' import entete, bandeau_echeance, modal_action, bouton_modal, menu_lien, menu_post, menu_sep, historique, activite %}
 {% from '_onglets.html' import barre, onglet, volets, volet %}
+{% set peut_editer = current_user.can_edit('tests') %}
+{% set type_label = namespace(v=test.test_type) %}
+{% for value, label in test_types %}{% if test.test_type == value %}{% set type_label.v = label %}{% endif %}{% endfor %}
+{% set type_label = type_label.v %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="page-title">{{ test.name }}</h1>
-        <p class="page-subtitle">
-            {% for value, label in test_types %}
-                {% if test.test_type == value %}{{ label }}{% endif %}
-            {% endfor %}
-        </p>
-    </div>
-    <div class="d-flex gap-2">
-        <a href="{{ url_for('tests.edit', id=test.id) }}" class="btn btn-outline-primary">
-            <i class="bi bi-pencil me-1"></i> Modifier
-        </a>
-        <a href="{{ url_for('pdf_export.test_pdf', id=test.id) }}" class="btn btn-outline-secondary" title="Exporter en PDF">
-            <i class="bi bi-file-earmark-pdf me-1"></i> PDF
-        </a>
-        <a href="{{ url_for('tests.list') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Retour
-        </a>
-    </div>
-</div>
+{% set sous_titre %}Test récurrent{% if type_label %} · {{ type_label }}{% endif %}{% if test.frequency_days %} · tous les {{ test.frequency_days }} j{% endif %}{% if test.priority %} · priorité {{ priority_label(test.priority) | lower }}{% endif %}{% endset %}
+{% set primaire %}{% if peut_editer %}{{ bouton_modal('effectue', 'Marquer effectué', 'bi-check-lg') }}{% endif %}{% endset %}
+{% set menu %}
+    {{ menu_lien(url_for('pdf_export.test_pdf', id=test.id), 'Exporter en PDF', 'bi-file-earmark-pdf') }}
+    {{ menu_lien(url_for('tests.kanban'), 'Voir le kanban des tests', 'bi-kanban') }}
+    {% if peut_editer %}
+    {{ menu_sep() }}
+    {{ menu_post(url_for('tests.delete', id=test.id), 'Supprimer', 'bi-trash', confirm='Supprimer ce test ?', danger=True) }}
+    {% endif %}
+{% endset %}
+{{ entete(test.name, sous_titre, statut=test.computed_status(), primaire=primaire,
+          modifier=url_for('tests.edit', id=test.id) if peut_editer else None, menu=menu) }}
+
+{{ bandeau_echeance('Prochaine échéance', test.next_due, test.computed_status(), passe='en retard de',
+                    debut=test.last_performed,
+                    complement=('dernière exécution le ' ~ test.last_performed.strftime('%d/%m/%Y')) if test.last_performed else 'jamais exécuté',
+                    sans_date='à planifier') }}
 
 {% call barre('ficheTest') %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
-    {{ onglet('historique', 'Historique', 'bi-clock-history') }}
+    {{ onglet('historique', 'Historique', 'bi-clock-history', compteur=histories|length) }}
 {% endcall %}
 
 {% call volets() %}
@@ -37,136 +37,53 @@
     <div class="row g-3">
         <div class="col-lg-8">
         <div class="data-card p-3 mb-3">
-            {% call faits() %}
-                {% call fait_bloc('Statut') %}{{ status_badge(test.computed_status(), kind='test', fallback=test.status) }}{% endcall %}
-                {{ fait('Prochaine échéance', test.next_due.strftime('%d/%m/%Y') if test.next_due else None) }}
-                {% call fait_bloc('Jours restants') %}
-                {%- if test.next_due -%}
-                <span class="{% if test.computed_status() == 'danger' %}text-danger{% elif test.computed_status() == 'warning' %}text-warning{% else %}text-success{% endif %}">
-                    {{ (test.next_due - now().date()).days }}</span> <small>jour(s)</small>
-                {%- else -%}-{%- endif -%}
-                {% endcall %}
-                {{ fait('Fréquence', '%d j' % test.frequency_days if test.frequency_days else None) }}
-                {{ fait('Dernière exécution', test.last_performed.strftime('%d/%m/%Y') if test.last_performed else None) }}
-            {% endcall %}
-
             <div class="fiche-sections">
-                <div class="fiche-bloc fiche-bloc--indigo">
-                    {{ titre_section('Identité', 'bi-clipboard-check', 'indigo', 'mb-0') }}
+                <div class="fiche-bloc">
+                    {{ titre_section('Le test', 'bi-clipboard-check', 'slate', 'mb-0') }}
                     <div class="fiche-grille">
-                        {{ champ('Nom', test.name) }}
-                        {% call champ_bloc('Type') %}
-                        {%- for value, label in test_types %}{% if test.test_type == value %}{{ label }}{% endif %}{% endfor -%}
-                        {% endcall %}
-                        {% call champ_bloc('Priorité') %}
-                        <span class="badge bg-{% if test.priority == 'high' %}danger{% elif test.priority == 'medium' %}warning{% else %}secondary{% endif %}">
-                            {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(test.priority, test.priority) }}</span>
-                        {% endcall %}
+                        {{ champ('Type', type_label) }}
+                        {{ champ('Fréquence', 'Tous les %d jours' % test.frequency_days if test.frequency_days else None) }}
+                        {{ champ('Priorité', priority_label(test.priority)) }}
                         {{ champ('Résultat du dernier', test.result) }}
                     </div>
                 </div>
-
-                <div class="fiche-bloc fiche-bloc--emerald">
-                    {{ titre_section('Cadence', 'bi-calendar-check', 'emerald', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {{ champ('Fréquence', 'Tous les %d jours' % test.frequency_days if test.frequency_days else None) }}
-                        {{ champ('Dernière exécution', test.last_performed.strftime('%d/%m/%Y') if test.last_performed else None) }}
-                        {% call champ_bloc('Prochaine échéance') %}
-                        <span class="{% if test.computed_status() == 'danger' %}text-danger{% endif %}">
-                            {{ test.next_due.strftime('%d/%m/%Y') if test.next_due else '-' }}</span>
-                        {% endcall %}
-                        {% call champ_bloc('Jours restants') %}
-                        <span class="fw-bold {% if test.computed_status() == 'danger' %}text-danger{% elif test.computed_status() == 'warning' %}text-warning{% else %}text-success{% endif %}">
-                            {%- if test.next_due %}{{ (test.next_due - now().date()).days }} jour(s){% else %}-{% endif -%}</span>
-                        {% endcall %}
-                    </div>
-                </div>
-
-                {% if test.description %}
-                <div class="fiche-bloc fiche-bloc--slate">
+                <div class="fiche-bloc">
                     {{ titre_section('Procédure', 'bi-journal-text', 'slate', 'mb-0') }}
                     <div class="fiche-grille">
-                        {% call champ_bloc('Comment le test se fait') %}
-                        <span style="white-space: pre-line">{{ test.description }}</span>
-                        {% endcall %}
+                        {% call champ_bloc('Comment le test se fait', large=True) %}{% if test.description %}<span style="white-space: pre-line">{{ test.description }}</span>{% endif %}{% endcall %}
                     </div>
                 </div>
-                {% endif %}
             </div>
         </div>
         </div>
-    <div class="col-lg-4">
-        {% if current_user.can_edit('tests') %}
-        <div class="data-card p-4 mb-3">
-            <h6 class="fw-bold fiche-titre fiche-titre--emerald mb-3"><i class="bi bi-check-circle me-2"></i>Marquer comme effectue</h6>
-            <form method="POST" action="{{ url_for('tests.complete', id=test.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="mb-2">
-                    <label class="form-label small">Resultat</label>
-                    <select name="outcome" class="form-select form-select-sm">
-                        <option value="completed">Reussi</option>
-                        <option value="failed">Echoue</option>
-                    </select>
-                </div>
-                <div class="mb-2">
-                    <label class="form-label small">Details du resultat</label>
-                    <textarea name="result" class="form-control form-control-sm" rows="2"
-                              placeholder="Resultats du test..."></textarea>
-                </div>
-                <div class="mb-2">
-                    <label class="form-label small">Commentaire</label>
-                    <input type="text" name="comment" class="form-control form-control-sm"
-                           placeholder="Commentaire...">
-                </div>
-                <button type="submit" class="btn btn-success btn-sm w-100">
-                    <i class="bi bi-check-lg me-1"></i> Marquer effectue
-                </button>
-            </form>
+        <div class="col-lg-4">
+            {{ activite(histories) }}
+            {% with entity_type='test', entity_id=test.id %}{% include '_snooze_card.html' %}{% endwith %}
         </div>
-        {% with entity_type='test', entity_id=test.id %}{% include '_snooze_card.html' %}{% endwith %}
-        <div class="data-card p-4">
-            <form method="POST" action="{{ url_for('tests.delete', id=test.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-danger btn-sm w-100"
-                        data-confirm="Supprimer ce test ?">
-                    <i class="bi bi-trash me-1"></i> Supprimer
-                </button>
-            </form>
-        </div>
-        {% endif %}
-    </div>
     </div>
     {% endcall %}
 
-    {% call volet('historique') %}
-    <div class="data-card">
-        <div class="card-header-custom">
-            <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0"><i class="bi bi-clock-history me-2"></i>Historique</h6>
-        </div>
-        <div class="p-4">
-            {% if histories %}
-            <div class="timeline">
-                {% for h in histories %}
-                <div class="timeline-item">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <span class="fw-medium">{{ h.action }}</span>
-                            {% if h.result %}<br><small class="text-muted">{{ h.result }}</small>{% endif %}
-                            {% if h.comment %}<br><small class="text-muted">{{ h.comment }}</small>{% endif %}
-                        </div>
-                        <div class="text-end">
-                            <small class="timeline-date">{{ h.performed_at.strftime('%d/%m/%Y %H:%M') }}</small>
-                            <br><small class="text-muted">{{ h.performed_by }}</small>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p class="text-muted text-center mb-0">Aucun historique</p>
-            {% endif %}
-        </div>
-    </div>
-    {% endcall %}
+    {% call volet('historique') %}{{ historique(histories) }}{% endcall %}
 {% endcall %}
+
+{% if peut_editer %}
+{% call modal_action('effectue', 'Marquer le test effectué', url_for('tests.complete', id=test.id), bouton='Marquer effectué',
+                     aide='Date l\'exécution à aujourd\'hui et recalcule la prochaine échéance selon la fréquence.') %}
+    <div class="mb-3">
+        <label class="form-label" for="outcome">Résultat</label>
+        <select name="outcome" id="outcome" class="form-select">
+            <option value="completed">Réussi</option>
+            <option value="failed">Échoué</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label" for="result">Détails du résultat</label>
+        <textarea name="result" id="result" class="form-control" rows="3" placeholder="Ce qui a été vérifié, ce qui a été constaté…"></textarea>
+    </div>
+    <div>
+        <label class="form-label" for="test_comment">Commentaire <span class="text-muted">(optionnel)</span></label>
+        <input type="text" name="comment" id="test_comment" class="form-control">
+    </div>
+{% endcall %}
+{% endif %}
 {% endblock %}

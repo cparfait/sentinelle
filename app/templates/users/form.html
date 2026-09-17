@@ -3,19 +3,15 @@
 {% from '_form_section.html' import section %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="page-title">{{ 'Modifier' if user else 'Nouvel' }} utilisateur</h1>
-    </div>
-    <a href="{{ url_for('users.list') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i> Retour
-    </a>
-</div>
+{% from '_formulaire.html' import entete_form, pied_form %}
+{% set titre_form %}{{ 'Modifier' if user else 'Nouvel' }} utilisateur{% endset %}
+{{ entete_form(titre_form, url_for('users.list')) }}
 
-<div class="row justify-content-center">
-    <div class="col-lg-6">
+<div class="form-page">
+    <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
+    <div class="form-corps">
         <div class="data-card p-4">
-            <form method="POST">
+            <form method="POST" id="form-principal" class="formulaire">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 {% call section('Identité', 'bi-person', 'indigo') %}
                 <div class="mb-3">
@@ -74,12 +70,7 @@
                 </div>
                 {% endcall %}
 
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if user else 'Creer' }}
-                    </button>
-                    <a href="{{ url_for('users.list') }}" class="btn btn-warn">Annuler</a>
-                </div>
+                {{ pied_form(url_for('users.list'), 'Enregistrer' if user else 'Creer') }}
             </form>
         </div>
     </div>

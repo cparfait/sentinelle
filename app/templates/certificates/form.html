@@ -14,11 +14,10 @@
 {% endmacro %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="page-title">{{ 'Modifier' if certificate else 'Ajouter' }}
-            {{ 'un certificat électronique' if signature else 'un certificat TLS' }}</h1>
-        {% if not certificate %}
+{% from '_formulaire.html' import entete_form, pied_form %}
+{% set titre_form %}{{ 'Modifier' if certificate else 'Ajouter' }}
+            {{ 'un certificat électronique' if signature else 'un certificat TLS' }}{% endset %}
+{% set sous_titre_form %}{% if not certificate %}
         {# La nature se choisit à la création et ne change plus ensuite : elle
            décide des champs que la fiche porte, et basculer de l'une à l'autre
            laisserait un titulaire sur un certificat TLS. #}
@@ -31,17 +30,14 @@
             <a href="{{ url_for('certificates.create', kind='signature') }}">c'est un certificat électronique ?</a>
             {% endif %}
         </small>
-        {% endif %}
-    </div>
-    <a href="{{ url_for('certificates.list') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i> Retour
-    </a>
-</div>
+        {% endif %}{% endset %}
+{{ entete_form(titre_form, url_for('certificates.list'), sous_titre_form) }}
 
-<div class="row justify-content-center">
-    <div class="col-lg-9">
+<div class="form-page">
+    <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
+    <div class="form-corps">
         <div class="data-card p-4">
-            <form method="POST">
+            <form method="POST" id="form-principal" class="formulaire">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="kind" value="{{ kind }}">
 
@@ -270,12 +266,7 @@
                 </div>
                 {% endcall %}
 
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if certificate else 'Ajouter' }}
-                    </button>
-                    <a href="{{ url_for('certificates.list') }}" class="btn btn-warn">Annuler</a>
-                </div>
+                {{ pied_form(url_for('certificates.list'), 'Enregistrer' if certificate else 'Ajouter') }}
             </form>
         </div>
     </div>

@@ -1,86 +1,65 @@
 {% extends "base.html" %}
 {% block title %}Tests - Sentinelle{% endblock %}
-{% from '_macros.html' import status_badge %}
+{% from '_macros.html' import status_badge, delai_badge, priorite %}
+{% from '_liste.html' import barre, actions, cellule, bouton_modifier, vide %}
 
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="page-title">Tests a effectuer</h1>
-        <p class="page-subtitle">Restaurations, sauvegardes sur cle, verification d'integrite</p>
+        <h1 class="page-title">Tests <span class="page-count">{{ total }}</span></h1>
+        <p class="page-subtitle">Restaurations, sauvegardes sur clé, vérifications d'intégrité : les tests à refaire régulièrement</p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="page-actions">
         <a href="{{ url_for('tests.kanban') }}" class="btn btn-outline-secondary">
             <i class="bi bi-kanban me-1"></i> Kanban
         </a>
         {% with csv_key='tests' %}{% include '_csv_toolbar.html' %}{% endwith %}
         {% if current_user.can_edit('tests') %}
         <a href="{{ url_for('tests.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Ajouter un test
+            <i class="bi bi-plus-lg me-1"></i> Nouveau test
         </a>
         {% endif %}
     </div>
 </div>
 
-{% include '_list_search.html' %}
+{{ barre(q) }}
 
 <div class="data-card">
     <div class="table-responsive">
         <table class="table table-hover mb-0 js-filterable">
             <thead>
                 <tr>
-                    <th>Nom</th>
-                    <th>Type</th>
-                    <th>Derniere execution</th>
-                    <th>Prochaine echeance</th>
-                    <th>Jours restants</th>
-                    <th>Priorite</th>
                     <th>Statut</th>
-                    <th>Actions</th>
+                    <th>Test</th>
+                    <th>Prochaine échéance</th>
+                    <th>Dernière exécution</th>
+                    <th>Priorité</th>
+                    <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
                 {% for test in tests %}
                 <tr class="row-{{ test.computed_status() }}">
+                    <td>{{ status_badge(test.computed_status()) }}</td>
                     <td>
-                        <a href="{{ url_for('tests.detail', id=test.id) }}" class="fw-medium text-decoration-none">
-                            {{ test.name }}
-                        </a>
+                        <a href="{{ url_for('tests.detail', id=test.id) }}" class="fw-medium text-decoration-none">{{ test.name }}</a>
+                        {% for value, label in test_types %}{% if test.test_type == value %}<small class="d-block text-muted">{{ label }}</small>{% endif %}{% endfor %}
                     </td>
-                    <td>
-                        {% for value, label in test_types %}
-                            {% if test.test_type == value %}{{ label }}{% endif %}
-                        {% endfor %}
-                    </td>
-                    <td>{{ test.last_performed.strftime('%d/%m/%Y') if test.last_performed else '-' }}</td>
-                    <td>{{ test.next_due.strftime('%d/%m/%Y') if test.next_due else '-' }}</td>
                     <td>
                         {% if test.next_due %}
-                            {% set days = (test.next_due - now().date()).days %}
-                            <span class="fw-bold {% if days < 0 %}text-danger{% elif days <= 7 %}text-danger{% elif days <= 15 %}text-warning{% elif days <= 30 %}text-info{% else %}text-success{% endif %}">
-                                {{ days }}j
-                            </span>
-                        {% else %}-{% endif %}
+                        {{ cellule(test.next_due.strftime('%d/%m/%Y'), delai_badge(test.next_due, test.computed_status())) }}
+                        {% else %}<span class="text-muted">à planifier</span>{% endif %}
                     </td>
-                    <td>
-                        <span class="badge bg-{% if test.priority == 'high' %}danger{% elif test.priority == 'medium' %}warning{% else %}secondary{% endif %}">
-                            {{ {'high': 'Haute', 'medium': 'Moyenne', 'low': 'Basse'}.get(test.priority, test.priority) }}
-                        </span>
-                    </td>
-                    <td>{{ status_badge(test.computed_status(), kind='test', fallback=test.status) }}</td>
-                    <td>
-                        <div class="d-flex gap-1">
-                            <a href="{{ url_for('tests.detail', id=test.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
-                            <a href="{{ url_for('tests.edit', id=test.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
-                        </div>
+                    <td>{{ test.last_performed.strftime('%d/%m/%Y') if test.last_performed else '—' }}</td>
+                    <td>{{ priorite(test.priority) }}</td>
+                    <td class="col-actions">
+                        {% call actions() %}
+                        {% if current_user.can_edit('tests') %}{{ bouton_modifier(url_for('tests.edit', id=test.id)) }}{% endif %}
+                        {% endcall %}
                     </td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="8" class="text-center py-4 text-muted">
-                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-                        <p class="mt-2 mb-0">Aucun test. <a href="{{ url_for('tests.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a></p>
-                    </td>
-                </tr>
+                {{ vide(6, 'Aucun test.', url_for('tests.create') if current_user.can_edit('tests') else None) }}
                 {% endfor %}
             </tbody>
         </table>

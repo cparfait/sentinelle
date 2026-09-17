@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Inventaire - Sentinelle{% endblock %}
+{% block title %}Matériel - Sentinelle{% endblock %}
 
-{% set status_labels = {'danger': 'Critique', 'warning': 'À surveiller', 'info': 'Proche', 'success': 'OK'} %}
+{% set status_labels = STATUS_LABELS %}
 {% set crit_colors = {1: 'secondary', 2: 'info', 3: 'warning', 4: 'danger'} %}
 {% set kind_icons = {'vm': 'bi-pc-display', 'physical': 'bi-server', 'nas': 'bi-hdd-network',
                      'storage': 'bi-hdd-rack', 'network': 'bi-router'} %}
@@ -23,29 +23,31 @@
 ] %}
 {% set default_cols = ['kind', 'environment', 'criticality', 'os', 'ip_address', 'warranty_end'] %}
 
+{% from '_liste.html' import actions, bouton_modifier, bouton_supprimer %}
 {% block content %}
-{% with active=famille %}{% include '_inventory_nav.html' %}{% endwith %}
 {% set reseau = famille == 'reseau' %}
 <div class="page-header">
     <div>
-        <h1 class="page-title">{{ famille_labels[famille] }}</h1>
+        <h1 class="page-title">{{ famille_labels[famille] }} <span class="page-count">{{ total }}</span></h1>
         <p class="page-subtitle">
             {%- if reseau %}Switches, pare-feu, routeurs et bornes WiFi
-            {%- else %}VM, serveurs physiques, NAS et baies de stockage{% endif %} — {{ total }} équipement(s)</p>
+            {%- else %}VM, serveurs physiques, NAS et baies de stockage{% endif %}</p>
     </div>
     {% if current_user.can_edit('inventory') %}
-    <div class="d-flex gap-2">
+    <div class="page-actions">
         <a href="{{ url_for('inventory.import_xlsx') }}" class="btn btn-outline-secondary">
             <i class="bi bi-file-earmark-excel me-1"></i> Importer Excel
         </a>
         <a href="{{ url_for('inventory.create', famille=famille) }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Ajouter un équipement
+            <i class="bi bi-plus-lg me-1"></i> Nouvel équipement
         </a>
     </div>
     {% endif %}
 </div>
 
-{% set status_choices = [('danger', 'Critique'), ('warning', 'À surveiller'), ('info', 'Proche'), ('success', 'OK')] %}
+{% with active=famille %}{% include '_inventory_nav.html' %}{% endwith %}
+
+{% set status_choices = STATUS_LABELS.items() | list %}
 <form method="GET">
     <input type="hidden" name="kind" value="{{ kind }}">
     <input type="hidden" name="famille" value="{{ famille }}">
@@ -167,7 +169,7 @@
                     <th>{{ sorth('name', 'Nom') }}</th>
                     {% for key, label in columns %}<th data-col="{{ key }}">{{ sorth(key, label) }}</th>{% endfor %}
                     <th>{{ sorth('status', 'Statut') }}</th>
-                    <th>Actions</th>
+                    <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -223,19 +225,11 @@
                     {% set reasons = e.status_reasons() %}
                     <td><span class="badge-status badge-{{ e.computed_status() }}" data-bs-toggle="tooltip"
                               title="{{ reasons | join(' · ') if reasons else 'Aucun point d’attention — équipement OK' }}">{{ status_labels.get(e.computed_status(), e.computed_status()) }}</span></td>
-                    <td>
-                        <div class="d-flex gap-1">
-                            <a href="{{ url_for('inventory.detail', id=e.id) }}" class="btn btn-sm btn-outline-primary" title="Voir" aria-label="Voir"><i class="bi bi-eye"></i></a>
-                            {% if current_user.can_edit('inventory') %}
-                            <a href="{{ url_for('inventory.edit', id=e.id) }}" class="btn btn-sm btn-outline-secondary" title="Modifier" aria-label="Modifier"><i class="bi bi-pencil"></i></a>
-                            {% endif %}
-                            {% if current_user.can_delete('inventory') %}
-                            <form method="POST" action="{{ url_for('inventory.delete', id=e.id) }}">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer" aria-label="Supprimer" data-confirm="Supprimer « {{ e.name }} » ?"><i class="bi bi-trash"></i></button>
-                            </form>
-                            {% endif %}
-                        </div>
+                    <td class="col-actions">
+                        {% call actions() %}
+                        {% if current_user.can_edit('inventory') %}{{ bouton_modifier(url_for('inventory.edit', id=e.id)) }}{% endif %}
+                        {% if current_user.can_delete('inventory') %}{{ bouton_supprimer(url_for('inventory.delete', id=e.id), 'Supprimer « ' ~ e.name ~ ' » ?') }}{% endif %}
+                        {% endcall %}
                     </td>
                 </tr>
                 {% else %}

@@ -1,20 +1,33 @@
 {# Macros partagées.
 
-   status_badge(status, kind='date', fallback=None)
-   Affiche le badge de statut coloré avec son libellé français.
-   - kind='date'      : comptes, certificats, domaines, revues
-   - kind='backup'    : backups (computed_status)
-   - kind='test'      : tests récurrents (inclut le statut 'pending')
-   - kind='inventory' : équipements
-   `fallback` : libellé affiché si le statut n'est pas dans le dictionnaire
-   (par défaut, le statut brut est affiché).
+   status_badge(status)
+   Le badge de statut : UNE couleur, UN mot, partout (voir app/libelles.py).
+   Critique / Urgent / À prévoir / OK, et « Non suivi » pour tout le reste.
+   `kind` et `fallback` sont conservés pour les anciens appels : `kind` est
+   ignoré (il n'y a plus de dictionnaire par module), `fallback` remplace
+   « Non suivi » pour une valeur hors palette.
 #}
-{% macro status_badge(status, kind='date', fallback=None) -%}
-{%- set labels = {
-    'date': {'danger': 'Critique', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK'},
-    'backup': {'danger': 'Non verifie', 'warning': 'Attention', 'info': 'Nouveau', 'success': 'OK'},
-    'test': {'danger': 'En retard', 'warning': 'Attention', 'info': 'Proche', 'success': 'OK', 'pending': 'A faire'},
-    'inventory': {'danger': 'Critique', 'warning': 'À surveiller', 'info': 'Proche', 'success': 'OK'},
-} -%}
-<span class="badge-status badge-{{ status }}">{{ labels[kind].get(status, fallback if fallback is not none else status) }}</span>
+{% macro status_badge(status, kind=None, fallback=None) -%}
+{%- set cls = status if status in STATUS_LABELS else 'muted' -%}
+<span class="badge-status badge-{{ cls }}">{{ status_label(status, fallback) }}</span>
+{%- endmacro %}
+
+{# delai_badge(days, status=None, passe='en retard de')
+   Le délai en français, dans la couleur du statut : « dans 12 j », « en
+   retard de 5 j », « aujourd'hui ». `days` : entier, date, ou None (rien).
+   Sans `status`, la couleur se déduit du signe : retard en rouge, le reste
+   neutre. `passe` s'adapte à l'objet (« expiré depuis », « préavis dépassé de »).
+#}
+{% macro delai_badge(days, status=None, passe='en retard de') -%}
+{%- set d = jours(days) -%}
+{%- if d is not none -%}
+{%- set couleur = {'danger': 'text-danger', 'warning': 'text-warning', 'info': 'text-info', 'success': 'text-success'}.get(status, 'text-danger' if d < 0 else 'text-muted') -%}
+<span class="delai {{ couleur }}">{{ d|delai(passe=passe) }}</span>
+{%- endif -%}
+{%- endmacro %}
+
+{# priorite(value) : la priorité en texte simple. Elle n'est pas un statut :
+   elle ne prend pas de couleur, la couleur ne dit que l'urgence. #}
+{% macro priorite(value) -%}
+{%- if value %}<span class="prio">{{ priority_label(value) }}</span>{% endif -%}
 {%- endmacro %}

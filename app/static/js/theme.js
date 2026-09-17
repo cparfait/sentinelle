@@ -41,9 +41,30 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('resize', function() {
         if (window.innerWidth > 991) closeSidebar();
     });
-    // Permettre Échap pour fermer le menu
+    // Permettre Échap pour fermer le menu ; Ctrl K (ou Cmd K) : la recherche.
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeSidebar();
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+            const champ = document.getElementById('recherche-globale');
+            if (champ) {
+                e.preventDefault();
+                if (window.innerWidth <= 991) openSidebar();
+                champ.focus();
+                champ.select();
+            }
+        }
+    });
+
+    // Sections repliables du menu (Administration) : l'etat se memorise, sauf
+    // quand la page courante est dedans (alors la section est forcee ouverte).
+    document.querySelectorAll('details.sidebar-section--repliable').forEach(function(d) {
+        const cle = 'nav-open-' + (d.dataset.section || 'x');
+        if (!d.hasAttribute('data-forced-open')) {
+            try { if (localStorage.getItem(cle) === '1') d.open = true; } catch (e) {}
+        }
+        d.addEventListener('toggle', function() {
+            try { localStorage.setItem(cle, d.open ? '1' : '0'); } catch (e) {}
+        });
     });
 
     // Auto-fermeture des messages flash de succès/info après 6 s
@@ -60,6 +81,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     initStatusFilters();
+
+    // Un lien « #renouveler » (depuis le tableau de bord) ouvre directement la
+    // fenetre d'action de la fiche, sans avoir a retrouver le bouton.
+    (function () {
+        var id = (location.hash || '').slice(1);
+        if (!id || !window.bootstrap || !bootstrap.Modal) return;
+        var modal = document.getElementById(id);
+        if (modal && modal.classList.contains('modal')) {
+            bootstrap.Modal.getOrCreateInstance(modal).show();
+            history.replaceState(null, '', location.pathname + location.search);
+        }
+    })();
 
     // Menu utilisateur (pied de la barre laterale) : se replie quand on clique ailleurs
     document.addEventListener('click', function(e) {
@@ -96,9 +129,10 @@ document.addEventListener('DOMContentLoaded', function() {
 function initStatusFilters() {
     const FILTERS = [
         {key: 'all', label: 'Tous', cls: 'secondary'},
+        // Memes mots que app/libelles.py : un vocabulaire, pas un par ecran.
         {key: 'danger', label: 'Critique', cls: 'danger'},
-        {key: 'warning', label: 'Attention', cls: 'warning'},
-        {key: 'info', label: 'À surveiller', cls: 'info'},
+        {key: 'warning', label: 'Urgent', cls: 'warning'},
+        {key: 'info', label: 'À prévoir', cls: 'info'},
         {key: 'success', label: 'OK', cls: 'success'},
     ];
     document.querySelectorAll('table.js-filterable').forEach(function(table) {
@@ -134,8 +168,14 @@ function initStatusFilters() {
         });
         // « Tous » actif par defaut (toutes les lignes visibles).
         if (allBtn) allBtn.classList.add('active');
-        // insere la barre juste avant la carte contenant le tableau
-        const card = table.closest('.data-card') || table;
-        card.parentNode.insertBefore(bar, card);
+        // Dans la barre d'outils de la liste quand elle existe (_liste.html),
+        // sinon juste avant la carte contenant le tableau.
+        const slot = document.querySelector('.list-toolbar [data-pills]');
+        if (slot) {
+            slot.appendChild(bar);
+        } else {
+            const card = table.closest('.data-card') || table;
+            card.parentNode.insertBefore(bar, card);
+        }
     });
 }

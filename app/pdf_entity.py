@@ -8,6 +8,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
+from app.libelles import STATUS_LABELS as _STATUS_LABEL
+
 _BLUE = colors.HexColor('#3056a0')
 _LIGHT = colors.HexColor('#f5f6f8')
 _STATUS_COLOR = {
@@ -16,7 +18,6 @@ _STATUS_COLOR = {
     'info': colors.HexColor('#2563eb'),
     'success': colors.HexColor('#16a34a'),
 }
-_STATUS_LABEL = {'danger': 'Critique', 'warning': 'Attention', 'info': 'À surveiller', 'success': 'OK'}
 
 
 def _base_styles():

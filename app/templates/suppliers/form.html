@@ -24,17 +24,15 @@
 {% endmacro %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="page-title">{{ 'Modifier le fournisseur' if supplier else 'Ajouter un fournisseur' }}</h1>
-    <a href="{{ url_for('suppliers.list') }}" class="btn btn-sm btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i> Retour
-    </a>
-</div>
+{% from '_formulaire.html' import entete_form, pied_form %}
+{% set titre_form %}{{ 'Modifier le fournisseur' if supplier else 'Ajouter un fournisseur' }}{% endset %}
+{{ entete_form(titre_form, url_for('suppliers.list')) }}
 
-<div class="row justify-content-center">
-    <div class="col-lg-9">
+<div class="form-page">
+    <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
+    <div class="form-corps">
         <div class="data-card p-4">
-            <form method="POST">
+            <form method="POST" id="form-principal" class="formulaire">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 {% call section('Identité', 'bi-building', 'indigo') %}
                 <div class="row g-3">
@@ -158,12 +156,7 @@
                     <textarea name="notes" class="form-control" rows="3"
                               placeholder="Procédure d'ouverture de ticket, escalade, infos contrat...">{{ supplier.notes or '' if supplier else '' }}</textarea>
                 {% endcall %}
-                <div class="d-flex justify-content-end gap-2">
-                    <a href="{{ url_for('suppliers.list') }}" class="btn btn-warn">Annuler</a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if supplier else 'Ajouter' }}
-                    </button>
-                </div>
+                {{ pied_form(url_for('suppliers.list'), 'Enregistrer' if supplier else 'Ajouter') }}
             </form>
         </div>
     </div>

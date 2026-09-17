@@ -34,9 +34,9 @@ ALERT_CATEGORIES = ('account', 'certificate', 'domain', 'backup', 'test',
                     'review', 'update', 'equipment', 'contract')
 ALERT_CATEGORY_LABELS = {
     'account': 'Comptes / mots de passe', 'certificate': 'Certificats',
-    'domain': 'Domaines', 'backup': 'Backups', 'test': 'Tests récurrents',
+    'domain': 'Domaines', 'backup': 'Sauvegardes', 'test': 'Tests récurrents',
     'review': 'Revues de droits', 'update': 'Mises à jour',
-    'equipment': 'Inventaire', 'contract': 'Contrats & licences',
+    'equipment': 'Matériel', 'contract': 'Contrats & licences',
 }
 _CSV = {'ALERT_RECIPIENTS', 'REPORT_RECIPIENTS'} | {
     f'ALERT_RECIPIENTS_{c.upper()}' for c in ALERT_CATEGORIES}

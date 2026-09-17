@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}À venir - Sentinelle{% endblock %}
 
+{% from '_macros.html' import delai_badge %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -106,8 +107,7 @@
                         <span class="fw-medium">{{ i.date.strftime('%d/%m/%Y') }}</span>
                     </td>
                     <td style="width: 110px;">
-                        {% if i.days < 0 %}<span class="text-danger fw-bold">{{ i.days }}j</span>
-                        {% else %}<span class="fw-bold {% if i.days <= 7 %}text-danger{% elif i.days <= 31 %}text-warning{% else %}text-info{% endif %}">{{ i.days }}j</span>{% endif %}
+                        {{ delai_badge(i.days, color) }}
                     </td>
                     <td>
                         <i class="bi bi-{{ i.icon }} me-1 text-muted"></i>

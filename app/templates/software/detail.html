@@ -3,6 +3,7 @@
 {% from '_macros.html' import status_badge %}
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
 {% from '_onglets.html' import barre, onglet, volets, volet %}
+{% from '_fiche.html' import entete, menu_lien, menu_post, menu_sep %}
 
 {# ═══ Disposition ═══
    La fiche reprend l'organisation de SoftInventory, dont l'inventaire des
@@ -36,51 +37,28 @@
 {% endmacro %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h1 class="page-title">{{ item.name }}
-            {# Ouvrir l'application : accolé au nom, réduit à son icône. C'est
-               l'action qui porte sur le LOGICIEL, pas sur sa fiche. #}
-            {% if item.url %}
-            <a href="{{ item.url }}" target="_blank" rel="noopener" class="text-muted ms-1"
-               title="Ouvrir l'application" aria-label="Ouvrir l'application"><i class="bi bi-box-arrow-up-right"></i></a>
-            {% endif %}
-            <span class="badge bg-{{ item.lifecycle_color() }}-subtle text-{{ item.lifecycle_color() }} ms-1">{{ item.lifecycle_label() }}</span>
-            {% if item.is_saas %}<span class="badge bg-info-subtle text-info ms-1">{{ item.hosting_label() }}</span>{% endif %}
-            {% if item.is_docker %}<span class="badge bg-primary-subtle text-primary ms-1"><i class="icon-docker me-1"></i>Docker</span>{% endif %}
-            {% if item.internal_dev %}<span class="badge bg-secondary-subtle text-secondary ms-1"><i class="bi bi-code-slash me-1"></i>Interne</span>{% endif %}
-            {% if item.criticality %}
-            <span class="badge bg-{{ item.criticality_color() }}-subtle text-{{ item.criticality_color() }} ms-1"
-                  title="Criticité">{{ item.criticality_label() }}</span>
-            {% endif %}</h1>
-        {# Le NOM de l'éditeur mène à sa fiche : c'est un objet de l'inventaire,
-           comme le serveur d'une installation. « Édité par » n'est qu'une
-           tournure, et garde le gris du sous-titre. #}
-        <small class="text-muted">
-            {%- if item.internal_dev %}Développement interne
-            {%- elif item.supplier %}Édité par <a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}"
-                                                  class="fw-medium text-decoration-none">{{ item.supplier.name }}</a>
-            {%- else %}Éditeur inconnu{% endif %}
-            {%- if item.version %} — v{{ item.version }}{% endif %}</small>
-    </div>
-    <div class="d-flex gap-2">
-        {% if current_user.can_edit('inventory') %}
-        <a href="{{ url_for('software.edit', id=item.id) }}" class="btn btn-outline-secondary">
-            <i class="bi bi-pencil me-1"></i> Modifier
-        </a>
-        {% endif %}
-        <a href="{{ url_for('software.list') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Retour
-        </a>
-        {% if current_user.can_delete('inventory') %}
-        <form method="POST" action="{{ url_for('software.delete', id=item.id) }}" class="d-inline">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-outline-danger" data-confirm="Supprimer ce logiciel ?"
-                    title="Supprimer ce logiciel"><i class="bi bi-trash me-1"></i> Supprimer</button>
-        </form>
-        {% endif %}
-    </div>
-</div>
+{# Le NOM de l'éditeur mène à sa fiche : c'est un objet de l'inventaire,
+   comme le serveur d'une installation. Le cycle de vie et la criticité se
+   lisent dans le sous-titre, en mots ; le seul badge de couleur est le
+   statut des mises à jour. #}
+{% set sous_titre %}
+    {%- if item.internal_dev %}Développement interne
+    {%- elif item.supplier %}Édité par <a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}" class="fw-medium text-decoration-none">{{ item.supplier.name }}</a>
+    {%- else %}Éditeur inconnu{% endif %}
+    {%- if item.version %} · v{{ item.version }}{% endif %}
+    · {{ item.lifecycle_label() | lower }} · {{ item.hosting_label() | lower }}{% if item.is_docker %} (Docker){% endif %}
+    {%- if item.criticality %} · criticité {{ item.criticality_label() | lower }}{% endif -%}
+{% endset %}
+{% set primaire %}
+    {% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right me-1"></i> Ouvrir l'application</a>{% endif %}
+{% endset %}
+{% set menu %}
+    {% if current_user.can_delete('inventory') %}
+    {{ menu_post(url_for('software.delete', id=item.id), 'Supprimer', 'bi-trash', confirm='Supprimer ce logiciel ?', danger=True) }}
+    {% endif %}
+{% endset %}
+{{ entete(item.name, sous_titre, statut=item.computed_status(), primaire=primaire,
+          modifier=url_for('software.edit', id=item.id) if current_user.can_edit('inventory') else None, menu=menu) }}
 
 {% if item.over_licence() %}
 <div class="alert alert-warning py-2 px-3 small">
@@ -92,13 +70,9 @@
 
 {# ═══ En haut : ce qui identifie le logiciel ═══ #}
         {% call faits() %}
-            {% call fait_bloc('Statut MAJ') %}{{ status_badge(item.computed_status()) }}{% endcall %}
-            {% call fait_bloc('Cycle de vie') %}
-            <span class="badge bg-{{ item.lifecycle_color() }}-subtle text-{{ item.lifecycle_color() }}">{{ item.lifecycle_label() }}</span>
-            {% endcall %}
-            {{ fait('Version', item.version) }}
-            {{ fait('Criticité', item.criticality_label()) }}
-            {{ fait('Hébergement', item.hosting_label()) }}
+            {% if item.service_date %}{{ fait('Mise en service', item.service_date.strftime('%d/%m/%Y')) }}{% endif %}
+            {% call fait_bloc('Authentification') %}{{ item.auth_mode_label() or 'non renseignée' }}{% if item.auth_strong %} <small>· 2FA</small>{% endif %}{% endcall %}
+            {{ fait('Serveurs', ('aucun' if item.no_server else item.equipments|length)) }}
             {% call fait_bloc('Utilisateurs') %}
             {%- if item.users_count is none %}<small>Non comptés</small>
             {%- else %}{{ item.users_count }}{% if item.users_max %} <small>/ {{ item.users_max }}</small>{% endif %}{% endif -%}
@@ -130,9 +104,7 @@
                         <div class="fiche-bloc fiche-bloc--indigo">
                             {{ titre_section('Identité', 'bi-window-stack', 'indigo', 'mb-0') }}
                             <div class="fiche-grille">
-                            {% call champ_bloc('Statut MAJ') %}{{ status_badge(item.computed_status()) }}{% endcall %}
                             {{ champ('Version', item.version) }}
-                            {{ champ('Mise en service', item.service_date.strftime('%d/%m/%Y') if item.service_date else None) }}
                             {% call champ_bloc('URL / accès') %}
                             {%- if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.url }}</a>{% endif -%}
                             {% endcall %}

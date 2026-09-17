@@ -1,4 +1,5 @@
-{# Onglets de l'inventaire. Attend `active` = 'serveurs' | 'reseau' | 'software'.
+{# Onglets du materiel. Attend `active` = 'serveurs' | 'reseau'. Les logiciels
+   ont leur propre entree de menu (Parc > Logiciels).
 
    Le matériel se lit en DEUX familles : un switch n'est pas un serveur, et les
    réunir sous « Matériel » obligeait à cinq onglets et à un titre qui énumère.
@@ -6,5 +7,4 @@
 <div class="seg-tabs mb-3">
     <a class="seg-tab {% if active == 'serveurs' %}active{% endif %}" href="{{ url_for('inventory.list') }}"><i class="bi bi-hdd-stack me-1"></i>Serveurs</a>
     <a class="seg-tab {% if active == 'reseau' %}active{% endif %}" href="{{ url_for('inventory.list', famille='reseau') }}"><i class="bi bi-router me-1"></i>Réseau</a>
-    <a class="seg-tab {% if active == 'software' %}active{% endif %}" href="{{ url_for('software.list') }}"><i class="bi bi-window-stack me-1"></i>Logiciels métiers</a>
 </div>

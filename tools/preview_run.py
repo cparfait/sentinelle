@@ -53,4 +53,7 @@ def _preview_auto_login():
 if __name__ == '__main__':
     assert 'ui_preview' in app.config['SQLALCHEMY_DATABASE_URI'], \
         'Garde-fou : la preview doit pointer sur ui_preview.db'
-    app.run(host='127.0.0.1', port=5099, debug=False, use_reloader=False)
+    # PORT : pose par l'apercu du bureau quand 5099 est deja pris par une
+    # autre session ; 5099 reste le defaut en ligne de commande.
+    app.run(host='127.0.0.1', port=int(os.environ.get('PORT') or 5099),
+            debug=False, use_reloader=False)

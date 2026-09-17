@@ -43,30 +43,20 @@
    verte. Voir _fiche_section.html. #}
 {% from '_fiche_section.html' import titre_section, faits, fait, fait_bloc %}
 {% from '_onglets.html' import barre, onglet, volets, volet %}
+{% from '_fiche.html' import entete, menu_post, carte_fournisseur %}
 {% macro section(icon, title, couleur='indigo') %}
 {{ titre_section(title, icon, couleur) }}
 {% endmacro %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="page-title">{{ item.name }}</h1>
-        <p class="page-subtitle">{{ item.kind_label() }}{% if item.environment %} · {{ item.env_label() }}{% endif %}</p>
-    </div>
-    <div class="d-flex gap-2">
-        {% if current_user.can_edit('inventory') %}
-        <a href="{{ url_for('inventory.edit', id=item.id) }}" class="btn btn-outline-primary"><i class="bi bi-pencil me-1"></i> Modifier</a>
-        {% endif %}
-        <a href="{{ url_for('inventory.list') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Retour</a>
-        {% if current_user.can_delete('inventory') %}
-        <form method="POST" action="{{ url_for('inventory.delete', id=item.id) }}" class="d-inline">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-outline-danger" data-confirm="Supprimer cet équipement ?"
-                    title="Supprimer cet équipement"><i class="bi bi-trash me-1"></i> Supprimer</button>
-        </form>
-        {% endif %}
-    </div>
-</div>
+{% set sous_titre %}{{ item.kind_label() }}{% if item.environment %} · {{ item.env_label() }}{% endif %}{% if item.criticality %} · criticité {{ item.criticality }}{% endif %}{% if item.ip_address %} · <code>{{ item.ip_address }}</code>{% endif %}{% endset %}
+{% set menu %}
+    {% if current_user.can_delete('inventory') %}
+    {{ menu_post(url_for('inventory.delete', id=item.id), 'Supprimer', 'bi-trash', confirm='Supprimer cet équipement ?', danger=True) }}
+    {% endif %}
+{% endset %}
+{{ entete(item.name, sous_titre, statut=item.computed_status(),
+          modifier=url_for('inventory.edit', id=item.id) if current_user.can_edit('inventory') else None, menu=menu) }}
 
 {% call barre('ficheItem') %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
@@ -89,9 +79,6 @@
             {% endif %}
 
             {% call faits() %}
-                {% call fait_bloc('Statut') %}{{ status_badge(item.computed_status(), kind='inventory') }}{% endcall %}
-                {{ fait('Criticité', item.criticality) }}
-                {{ fait('Type', item.kind_label()) }}
                 {{ fait('OS', ((item.os or '') ~ (' ' ~ item.os_version if item.os_version else '')) | trim) }}
                 {% if item.porte('reseau') %}{{ fait('Adresse IP', item.ip_address) }}{% endif %}
                 {% call fait_bloc('Sauvegarde') %}
@@ -213,24 +200,7 @@
 
         </div>
         <div class="col-lg-4">
-        {% if item.supplier %}
-        <div class="data-card p-4 mb-3">
-            {{ titre_section('Support / fournisseur', 'bi-building', 'rose', 'mb-3') }}
-            <div class="fw-medium mb-1">{{ item.supplier.name }}
-                <span class="badge bg-light text-dark border ms-1">{{ item.supplier.kind_label() }}</span></div>
-            <div class="fiche-grille">
-                {{ row('Hotline', item.supplier.support_phone or item.supplier.phone) }}
-                {{ row('Horaires', item.supplier.hours) }}
-                {{ row('N° client', item.supplier.customer_ref) }}
-                {{ row('Email', item.supplier.email) }}
-            </div>
-            {% if item.supplier.support_url %}
-            <a href="{{ item.supplier.support_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary mt-2">
-                <i class="bi bi-box-arrow-up-right me-1"></i> Portail support
-            </a>
-            {% endif %}
-        </div>
-        {% endif %}
+        {{ carte_fournisseur(item.supplier, 'Support / fournisseur') }}
         </div>
     </div>
     {% endcall %}

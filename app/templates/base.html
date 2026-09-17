@@ -40,141 +40,52 @@
         </a>
 
         <div class="sidebar-search px-3 pb-2">
-            <form method="GET" action="{{ url_for('search.search') }}" class="sidebar-search-form">
+            <form method="GET" action="{{ url_for('search.search') }}" class="sidebar-search-form" role="search">
                 <i class="bi bi-search"></i>
-                <input type="text" name="q" placeholder="Rechercher..." autocomplete="off">
+                <input type="search" name="q" id="recherche-globale" placeholder="Rechercher partout" autocomplete="off" aria-label="Rechercher partout (Ctrl K)">
+                <kbd aria-hidden="true">Ctrl K</kbd>
             </form>
         </div>
 
+        {# Le menu : quatre domaines, chacun repond a une question (voir
+           app/navigation.py). L'administration est repliee : on y va rarement. #}
         <nav class="sidebar-nav">
+            {% for dom in nav_domaines %}
             <div class="sidebar-section">
-                <div class="sidebar-section-title">SURVEILLANCE</div>
-                <a href="{{ url_for('dashboard.index') }}" class="sidebar-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
-                    <i class="bi bi-grid-1x2"></i>
-                    <span>Tableau de bord</span>
+                <div class="sidebar-section-title">{{ dom.label }}</div>
+                {% for e in dom.entries %}
+                {% if not e.perm or current_user.can_view(e.perm) %}
+                <a href="{{ url_for(e.endpoint) }}" class="sidebar-link {% if e.endpoint == nav_endpoint_actif %}active{% endif %}">
+                    <i class="bi {{ e.icon }}"></i>
+                    <span>{{ e.label }}</span>
+                    {% if e.count and nav_counts and nav_counts[e.count] %}<span class="badge bg-danger rounded-pill ms-auto" title="{{ compte(nav_counts[e.count], 'danger') }}">{{ nav_counts[e.count] }}</span>{% endif %}
                 </a>
-                <a href="{{ url_for('dashboard.agenda') }}" class="sidebar-link {% if request.endpoint == 'dashboard.agenda' %}active{% endif %}">
-                    <i class="bi bi-calendar-event"></i>
-                    <span>À venir</span>
-                </a>
-                <a href="{{ url_for('dashboard.trends') }}" class="sidebar-link {% if request.endpoint == 'dashboard.trends' %}active{% endif %}">
-                    <i class="bi bi-graph-up"></i>
-                    <span>Tendances</span>
-                </a>
-                {% if current_user.can_edit() and nav_counts and nav_counts.trash %}
-                <a href="{{ url_for('dashboard.trash') }}" class="sidebar-link {% if 'trash' in request.endpoint %}active{% endif %}">
+                {% endif %}
+                {% endfor %}
+                {% if dom.key == 'aujourdhui' and current_user.can_edit() and nav_counts and nav_counts.trash %}
+                <a href="{{ url_for('dashboard.trash') }}" class="sidebar-link {% if request.endpoint == 'dashboard.trash' %}active{% endif %}">
                     <i class="bi bi-trash3"></i>
                     <span>Corbeille</span>
                     <span class="badge bg-secondary rounded-pill ms-auto">{{ nav_counts.trash }}</span>
                 </a>
                 {% endif %}
             </div>
+            {% endfor %}
 
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">GESTION</div>
-                {% if current_user.can_view('accounts') %}
-                <a href="{{ url_for('accounts.list') }}" class="sidebar-link {% if 'accounts' in request.endpoint %}active{% endif %}">
-                    <i class="bi bi-key"></i>
-                    <span>Comptes</span>
-                    {% if nav_counts and nav_counts.accounts %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.accounts }}</span>{% endif %}
+            {% set admin_visible = current_user.is_admin or current_user.can_view('alerts') %}
+            {% if admin_visible %}
+            <details class="sidebar-section sidebar-section--repliable" data-section="administration"
+                     {% if nav_domaine_actif == 'administration' %}open data-forced-open{% endif %}>
+                <summary class="sidebar-section-title">{{ nav_administration.label }}<i class="bi bi-chevron-right"></i></summary>
+                {% for e in nav_administration.entries %}
+                {% if (e.admin and current_user.is_admin) or (not e.admin and e.perm and current_user.can_view(e.perm)) %}
+                <a href="{{ url_for(e.endpoint) }}" class="sidebar-link {% if e.endpoint == nav_endpoint_actif %}active{% endif %}">
+                    <i class="bi {{ e.icon }}"></i>
+                    <span>{{ e.label }}</span>
                 </a>
                 {% endif %}
-                {% if current_user.can_view('certificates') %}
-                <a href="{{ url_for('certificates.list') }}" class="sidebar-link {% if 'certificates' in request.endpoint %}active{% endif %}">
-                    <i class="bi bi-award"></i>
-                    <span>Certificats</span>
-                    {% if nav_counts and nav_counts.certificates %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.certificates }}</span>{% endif %}
-                </a>
-                {% endif %}
-                {% if current_user.can_view('domains') %}
-                <a href="{{ url_for('domains.list') }}" class="sidebar-link {% if 'domains' in request.endpoint %}active{% endif %}">
-                    <i class="bi bi-globe"></i>
-                    <span>Domaines</span>
-                    {% if nav_counts and nav_counts.domains %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.domains }}</span>{% endif %}
-                </a>
-                {% endif %}
-                {% if current_user.can_view('backups') %}
-                <a href="{{ url_for('backups.list') }}" class="sidebar-link {% if 'backups' in request.endpoint %}active{% endif %}">
-                    <i class="bi bi-cloud-arrow-up"></i>
-                    <span>Backups</span>
-                    {% if nav_counts and nav_counts.backups %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.backups }}</span>{% endif %}
-                </a>
-                {% endif %}
-                {% if current_user.can_view('tests') %}
-                <a href="{{ url_for('tests.list') }}" class="sidebar-link {% if 'tests' in request.endpoint %}active{% endif %}">
-                    <i class="bi bi-clipboard-check"></i>
-                    <span>Tests</span>
-                    {% if nav_counts and nav_counts.tests %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.tests }}</span>{% endif %}
-                </a>
-                {% endif %}
-                {% if current_user.can_view('reviews') %}
-                <a href="{{ url_for('reviews.list') }}" class="sidebar-link {% if 'reviews' in request.endpoint %}active{% endif %}">
-                    <i class="bi bi-person-check"></i>
-                    <span>Revue de droits</span>
-                    {% if nav_counts and nav_counts.reviews %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.reviews }}</span>{% endif %}
-                </a>
-                {% endif %}
-                {% if current_user.can_view('updates') %}
-                <a href="{{ url_for('updates.list') }}" class="sidebar-link {% if 'updates' in request.endpoint %}active{% endif %}">
-                    <i class="bi bi-arrow-up-circle"></i>
-                    <span>Mises à jour</span>
-                    {% if nav_counts and nav_counts.updates %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.updates }}</span>{% endif %}
-                </a>
-                {% endif %}
-                {% if current_user.can_view('inventory') %}
-                <a href="{{ url_for('inventory.list') }}" class="sidebar-link {% if 'inventory' in request.endpoint %}active{% endif %}">
-                    <i class="bi bi-hdd-stack"></i>
-                    <span>Inventaire</span>
-                    {% if nav_counts and nav_counts.inventory %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.inventory }}</span>{% endif %}
-                </a>
-                {% endif %}
-                {% if current_user.can_view('contracts') %}
-                <a href="{{ url_for('contracts.list') }}" class="sidebar-link {% if 'contracts' in request.endpoint %}active{% endif %}">
-                    <i class="bi bi-file-earmark-text"></i>
-                    <span>Contrats</span>
-                    {% if nav_counts and nav_counts.contracts %}<span class="badge bg-danger rounded-pill ms-auto">{{ nav_counts.contracts }}</span>{% endif %}
-                </a>
-                <a href="{{ url_for('suppliers.list') }}" class="sidebar-link {% if 'suppliers' in request.endpoint %}active{% endif %}">
-                    <i class="bi bi-building"></i>
-                    <span>Fournisseurs</span>
-                </a>
-                {% endif %}
-                {% if current_user.can_view('alerts') %}
-                <a href="{{ url_for('alerts.list') }}" class="sidebar-link {% if 'alerts' in request.endpoint %}active{% endif %}">
-                    <i class="bi bi-bell"></i>
-                    <span>Alertes</span>
-                </a>
-                {% endif %}
-            </div>
-
-            {% if current_user.is_admin %}
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">ADMINISTRATION</div>
-                <a href="{{ url_for('users.list') }}" class="sidebar-link {% if request.endpoint == 'users.list' or request.endpoint == 'users.create' or request.endpoint == 'users.edit' %}active{% endif %}">
-                    <i class="bi bi-people"></i>
-                    <span>Utilisateurs</span>
-                </a>
-                <a href="{{ url_for('users.roles') }}" class="sidebar-link {% if 'roles' in request.endpoint %}active{% endif %}">
-                    <i class="bi bi-shield-lock"></i>
-                    <span>Rôles & permissions</span>
-                </a>
-                <a href="{{ url_for('users.audit') }}" class="sidebar-link {% if request.endpoint == 'users.audit' %}active{% endif %}">
-                    <i class="bi bi-journal-text"></i>
-                    <span>Journal d'audit</span>
-                </a>
-                <a href="{{ url_for('users.scheduler_status') }}" class="sidebar-link {% if request.endpoint == 'users.scheduler_status' %}active{% endif %}">
-                    <i class="bi bi-clock"></i>
-                    <span>Tâches planifiées</span>
-                </a>
-                <a href="{{ url_for('connectors.index') }}" class="sidebar-link {% if request.blueprint == 'connectors' %}active{% endif %}">
-                    <i class="bi bi-plugin"></i>
-                    <span>Connecteurs</span>
-                </a>
-                <a href="{{ url_for('auth.preferences') }}" class="sidebar-link {% if request.endpoint == 'auth.preferences' %}active{% endif %}">
-                    <i class="bi bi-sliders"></i>
-                    <span>Préférences</span>
-                </a>
-            </div>
+                {% endfor %}
+            </details>
             {% endif %}
         </nav>
 
@@ -217,6 +128,15 @@
         {% endif %}
         {% endwith %}
 
+        {% if fil_ariane %}
+        <nav class="fil-ariane" aria-label="Fil d'Ariane">
+            {% for label, url in fil_ariane %}
+            {% if not loop.first %}<span class="fil-sep" aria-hidden="true">›</span>{% endif %}
+            {% if url %}<a href="{{ url }}">{{ label }}</a>{% else %}<span{% if loop.last %} class="fil-actuel"{% endif %}>{{ label }}</span>{% endif %}
+            {% endfor %}
+        </nav>
+        {% endif %}
+
         {% block content %}{% endblock %}
     </main>
     {% else %}
@@ -231,6 +151,7 @@
     <script src="{{ static_v('js/onglets.js') }}"></script>
     <script src="{{ static_v('js/directory-autocomplete.js') }}"></script>
     <script src="{{ static_v('js/filtres-colonnes.js') }}"></script>
+    <script src="{{ static_v('js/formulaire.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

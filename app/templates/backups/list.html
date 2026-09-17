@@ -1,26 +1,27 @@
 {% extends "base.html" %}
-{% block title %}Backups - Sentinelle{% endblock %}
+{% block title %}Sauvegardes - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
+{% from '_liste.html' import barre, actions, cellule, bouton_modifier, vide %}
 
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="page-title">Backups</h1>
-        <p class="page-subtitle">Configuration des sauvegardes a surveiller</p>
+        <h1 class="page-title">Sauvegardes <span class="page-count">{{ total }}</span></h1>
+        <p class="page-subtitle">Les sauvegardes à vérifier chaque jour, et leur taux de réussite</p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="page-actions">
         {% if current_user.can_edit('backups') %}
-        <a href="{{ url_for('backups.daily') }}" class="btn btn-outline-success">
+        <a href="{{ url_for('backups.daily') }}" class="btn btn-outline-secondary">
             <i class="bi bi-check2-square me-1"></i> Check quotidien
         </a>
         {% endif %}
-        <a href="{{ url_for('backups.stats') }}" class="btn btn-outline-info">
+        <a href="{{ url_for('backups.stats') }}" class="btn btn-outline-secondary">
             <i class="bi bi-bar-chart me-1"></i> Statistiques
         </a>
         {% if config.BACKUP_INBOX_DIR and current_user.can_edit('backups') %}
         <form method="POST" action="{{ url_for('backups.scan_inbox_now') }}" class="d-inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-outline-secondary" title="Lire les mails de backup du repertoire">
+            <button type="submit" class="btn btn-outline-secondary" title="Lire les mails de sauvegarde du répertoire">
                 <i class="bi bi-envelope-arrow-down me-1"></i> Scanner la boîte
             </button>
         </form>
@@ -28,77 +29,62 @@
         {% with csv_key='backups' %}{% include '_csv_toolbar.html' %}{% endwith %}
         {% if current_user.can_edit('backups') %}
         <a href="{{ url_for('backups.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Ajouter un backup
+            <i class="bi bi-plus-lg me-1"></i> Nouvelle sauvegarde
         </a>
         {% endif %}
     </div>
 </div>
 
-{% include '_list_search.html' %}
+{{ barre(q) }}
 
 <div class="data-card">
     <div class="table-responsive">
         <table class="table table-hover mb-0 js-filterable">
             <thead>
                 <tr>
-                    <th>Service</th>
-                    <th>Type</th>
-                    <th>Emplacement</th>
-                    <th>Frequence</th>
-                    <th>Heure prevue</th>
-                    <th>Aujourd'hui</th>
-                    <th>Taux reussite 30j</th>
                     <th>Statut</th>
-                    <th>Actions</th>
+                    <th>Service</th>
+                    <th>Aujourd'hui</th>
+                    <th>Planification</th>
+                    <th>Réussite 30 j</th>
+                    <th>Emplacement</th>
+                    <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
                 {% for backup in backups %}
                 <tr class="row-{{ backup.computed_status() }}">
+                    <td>{{ status_badge(backup.computed_status()) }}</td>
                     <td>
-                        <a href="{{ url_for('backups.detail', id=backup.id) }}" class="fw-medium text-decoration-none">
-                            {{ backup.service_name }}
-                        </a>
+                        <a href="{{ url_for('backups.detail', id=backup.id) }}" class="fw-medium text-decoration-none">{{ backup.service_name }}</a>
+                        <small class="d-block text-muted">{{ {'full': 'Complet', 'incremental': 'Incrémental', 'differential': 'Différentiel', 'snapshot': 'Snapshot'}.get(backup.backup_type, backup.backup_type or '') }}</small>
                     </td>
-                    <td>{{ {'full': 'Complet', 'incremental': 'Incremental', 'differential': 'Differentiel', 'snapshot': 'Snapshot'}.get(backup.backup_type, backup.backup_type or '-') }}</td>
-                    <td><small>{{ backup.location or '-' }}</small></td>
-                    <td>{{ {'daily': 'Quotidien', 'weekly': 'Hebdomadaire', 'monthly': 'Mensuel'}.get(backup.frequency, backup.frequency or '-') }}</td>
-                    <td>{{ backup.expected_time or '-' }}</td>
                     <td>
                         {% set tc = today_checks.get(backup.id) %}
                         {% if tc %}
-                            {% if tc.status == 'ok' %}<span class="badge-status badge-success"><i class="bi bi-check-circle me-1"></i>OK</span>
-                            {% elif tc.status == 'failed' %}<span class="badge-status badge-danger"><i class="bi bi-x-circle me-1"></i>Echoue</span>
-                            {% else %}<span class="badge-status badge-warning"><i class="bi bi-exclamation-triangle me-1"></i>Warning</span>{% endif %}
+                            {% if tc.status == 'ok' %}<span class="text-success"><i class="bi bi-check-circle me-1"></i>OK</span>
+                            {% elif tc.status == 'failed' %}<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Échec</span>
+                            {% else %}<span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Avertissement</span>{% endif %}
                         {% else %}
-                            <span class="text-muted"><i class="bi bi-dash-circle"></i> Non verifie</span>
+                            <span class="text-muted">non vérifiée</span>
                         {% endif %}
                     </td>
+                    <td>{{ cellule({'daily': 'Quotidienne', 'weekly': 'Hebdomadaire', 'monthly': 'Mensuelle'}.get(backup.frequency, backup.frequency or '—'), ('à ' ~ backup.expected_time) if backup.expected_time else '') }}</td>
                     <td>
                         {% set rate = backup.success_rate(30) %}
                         {% if rate is not none %}
-                            <span class="fw-bold {% if rate >= 95 %}text-success{% elif rate >= 80 %}text-warning{% else %}text-danger{% endif %}">
-                                {{ rate }}%
-                            </span>
-                        {% else %}
-                            <span class="text-muted">-</span>
-                        {% endif %}
+                        <span class="fw-bold {% if rate >= 95 %}text-success{% elif rate >= 80 %}text-warning{% else %}text-danger{% endif %}">{{ rate }} %</span>
+                        {% else %}<span class="text-muted">—</span>{% endif %}
                     </td>
-                    <td>{{ status_badge(backup.computed_status(), kind='backup', fallback='A verifier') }}</td>
-                    <td>
-                        <div class="d-flex gap-1">
-                            <a href="{{ url_for('backups.detail', id=backup.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
-                            <a href="{{ url_for('backups.edit', id=backup.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
-                        </div>
+                    <td><small>{{ backup.location or '—' }}</small></td>
+                    <td class="col-actions">
+                        {% call actions() %}
+                        {% if current_user.can_edit('backups') %}{{ bouton_modifier(url_for('backups.edit', id=backup.id)) }}{% endif %}
+                        {% endcall %}
                     </td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="9" class="text-center py-4 text-muted">
-                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-                        <p class="mt-2 mb-0">Aucun backup. <a href="{{ url_for('backups.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a></p>
-                    </td>
-                </tr>
+                {{ vide(7, 'Aucune sauvegarde.', url_for('backups.create') if current_user.can_edit('backups') else None) }}
                 {% endfor %}
             </tbody>
         </table>
