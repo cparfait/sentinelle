@@ -37,7 +37,7 @@
     --page: #f8fafc;
     --surface: #ffffff;
     --inset: #f1f5f9;
-    --zebra: #eef2f7;   /* une ligne sur deux, nettement plus foncee que le blanc */
+    --zebra: #e4e9f1;   /* une ligne sur deux, franchement grisee */
     --line: #e2e8f0;
     --sub: #cbd5e1;
     --strong: #0f172a;
@@ -123,7 +123,7 @@
     --page: #0b1120;
     --surface: #1e293b;
     --inset: #233247;
-    --zebra: #263449;
+    --zebra: #2c3b52;
     --line: #2b3a4f;
     --sub: #3a4a61;
     --strong: #f8fafc;
