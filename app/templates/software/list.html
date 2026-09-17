@@ -5,8 +5,8 @@
 {% with active='software' %}{% include '_inventory_nav.html' %}{% endwith %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h4 class="fw-bold mb-0"><i class="bi bi-window-stack me-2"></i>Logiciels métiers</h4>
-        <small class="text-muted">Applications métiers, hébergement, éditeur et mises à jour — {{ total }} logiciel(s)</small>
+        <h1 class="page-title">Logiciels métiers</h1>
+        <p class="page-subtitle">Applications métiers, hébergement, éditeur et mises à jour — {{ total }} logiciel(s)</p>
     </div>
     {% if current_user.can_edit('inventory') %}
     <a href="{{ url_for('software.create') }}" class="btn btn-primary">

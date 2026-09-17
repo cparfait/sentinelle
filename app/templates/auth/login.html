@@ -3,37 +3,34 @@
 
 {% block login_content %}
 <div class="login-container">
-    <div class="login-card">
-        <div class="text-center mb-4">
-            <img src="{{ url_for('auth.logo') }}" alt="Sentinelle" class="login-logo mb-2">
-            <h3 class="fw-bold">Sentinelle</h3>
-            <p class="text-muted">Connectez-vous pour accéder au tableau de bord</p>
+    <div class="login-wrap">
+        <div class="login-brand">
+            <img src="{{ url_for('auth.logo') }}" alt="" class="login-logo">
+            <div>
+                <div class="login-brand-name">Sentinelle</div>
+                <div class="login-brand-tagline">Supervision et inventaire de la DSI</div>
+            </div>
         </div>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category }} py-2 small mb-3">{{ message }}</div>
-            {% endfor %}
-        {% endwith %}
-        <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="mb-3">
-                <label class="form-label fw-medium">Nom d'utilisateur</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-person"></i></span>
-                    <input type="text" name="username" class="form-control" required autofocus autocomplete="off">
+        <div class="login-card">
+            <h1>Connexion</h1>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'info' }}">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+            <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label class="form-label" for="login-username">Nom d'utilisateur</label>
+                    <input type="text" id="login-username" name="username" class="form-control" required autofocus autocomplete="username">
                 </div>
-            </div>
-            <div class="mb-4">
-                <label class="form-label fw-medium">Mot de passe</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                    <input type="password" name="password" class="form-control" required autocomplete="off">
+                <div class="mb-4">
+                    <label class="form-label" for="login-password">Mot de passe</label>
+                    <input type="password" id="login-password" name="password" class="form-control" required autocomplete="current-password">
                 </div>
-            </div>
-            <button type="submit" class="btn btn-primary w-100 py-2">
-                <i class="bi bi-box-arrow-in-right me-1"></i> Se connecter
-            </button>
-        </form>
+                <button type="submit" class="btn btn-primary w-100">Se connecter</button>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}

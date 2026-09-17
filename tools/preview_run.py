@@ -34,6 +34,22 @@ class PreviewConfig(Config):
 app = create_app(PreviewConfig)
 app.jinja_env.auto_reload = True
 
+
+# Connexion automatique en admin : la base est jetable, on vient regarder l'UI,
+# pas taper un mot de passe a chaque redemarrage.
+@app.before_request
+def _preview_auto_login():
+    from flask_login import current_user, login_user
+    from app.models import User
+    from flask import request
+    # La page de connexion reste visible telle quelle (pour la regarder).
+    if request.path == '/login':
+        return
+    if not current_user.is_authenticated:
+        admin = next((u for u in User.query.all() if u.is_admin), None)
+        if admin:
+            login_user(admin)
+
 if __name__ == '__main__':
     assert 'ui_preview' in app.config['SQLALCHEMY_DATABASE_URI'], \
         'Garde-fou : la preview doit pointer sur ui_preview.db'

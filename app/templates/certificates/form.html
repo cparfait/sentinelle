@@ -16,8 +16,8 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="fw-bold mb-0"><i class="bi bi-award me-2"></i>{{ 'Modifier' if certificate else 'Ajouter' }}
-            {{ 'un certificat électronique' if signature else 'un certificat TLS' }}</h4>
+        <h1 class="page-title">{{ 'Modifier' if certificate else 'Ajouter' }}
+            {{ 'un certificat électronique' if signature else 'un certificat TLS' }}</h1>
         {% if not certificate %}
         {# La nature se choisit à la création et ne change plus ensuite : elle
            décide des champs que la fiche porte, et basculer de l'une à l'autre
@@ -274,7 +274,7 @@
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if certificate else 'Ajouter' }}
                     </button>
-                    <a href="{{ url_for('certificates.list') }}" class="btn btn-outline-secondary">Annuler</a>
+                    <a href="{{ url_for('certificates.list') }}" class="btn btn-warn">Annuler</a>
                 </div>
             </form>
         </div>

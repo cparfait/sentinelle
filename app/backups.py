@@ -161,7 +161,9 @@ def stats():
     recent = defaultdict(dict)
     for c in BackupCheck.query.filter(BackupCheck.check_date >= window_start).all():
         recent[c.backup_id][c.check_date] = c
-    all_by_backup = defaultdict(list)
+    # `list` est ici la VUE du module (def list), pas le type : defaultdict
+    # l'appelait et obtenait une page HTML en guise de liste.
+    all_by_backup = defaultdict(lambda: [])
     for c in BackupCheck.query.all():
         all_by_backup[c.backup_id].append(c)
 

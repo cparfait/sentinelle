@@ -27,10 +27,10 @@
 {% with active=famille %}{% include '_inventory_nav.html' %}{% endwith %}
 {% set reseau = famille == 'reseau' %}
 <div class="mb-3">
-    <h4 class="fw-bold mb-0"><i class="bi {{ 'bi-router' if reseau else 'bi-hdd-stack' }} me-2"></i>{{ famille_labels[famille] }}</h4>
-    <small class="text-muted">
+    <h1 class="page-title">{{ famille_labels[famille] }}</h1>
+    <p class="page-subtitle">
         {%- if reseau %}Switches, pare-feu, routeurs et bornes WiFi
-        {%- else %}VM, serveurs physiques, NAS et baies de stockage{% endif %} — {{ total }} équipement(s)</small>
+        {%- else %}VM, serveurs physiques, NAS et baies de stockage{% endif %} — {{ total }} équipement(s)</p>
 </div>
 
 {% set status_choices = [('danger', 'Critique'), ('warning', 'À surveiller'), ('info', 'Proche'), ('success', 'OK')] %}

@@ -27,7 +27,9 @@ function toggleSidebar() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    const saved = (function() { try { return localStorage.getItem('theme'); } catch (e) { return null; } })() || 'light';
+    // ?theme=dark|light : theme force pour une capture ou un essai, sans etre memorise
+    const forced = new URLSearchParams(location.search).get('theme');
+    const saved = forced || (function() { try { return localStorage.getItem('theme'); } catch (e) { return null; } })() || 'light';
     document.documentElement.setAttribute('data-theme', saved);
     applyThemeIcons(saved);
 
@@ -58,6 +60,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     initStatusFilters();
+
+    // Menu utilisateur (pied de la barre laterale) : se replie quand on clique ailleurs
+    document.addEventListener('click', function(e) {
+        document.querySelectorAll('details.sidebar-user[open]').forEach(function(d) {
+            if (!d.contains(e.target)) d.removeAttribute('open');
+        });
+    });
 
     // Filtres persistants
     (function () {

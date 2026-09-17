@@ -5,7 +5,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="fw-bold mb-0"><i class="bi bi-cloud-arrow-up me-2"></i>{{ 'Modifier' if backup else 'Ajouter' }} un backup</h4>
+        <h1 class="page-title">{{ 'Modifier' if backup else 'Ajouter' }} un backup</h1>
     </div>
     <a href="{{ url_for('backups.list') }}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i> Retour
@@ -95,7 +95,7 @@
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if backup else 'Ajouter' }}
                     </button>
-                    <a href="{{ url_for('backups.list') }}" class="btn btn-outline-secondary">Annuler</a>
+                    <a href="{{ url_for('backups.list') }}" class="btn btn-warn">Annuler</a>
                 </div>
             </form>
         </div>

@@ -8,8 +8,8 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="fw-bold mb-0"><i class="bi bi-arrow-up-circle me-2"></i>{{ update.name }}</h4>
-        <small class="text-muted">{{ type_labels.get(update.system_type, update.system_type) }}</small>
+        <h1 class="page-title">{{ update.name }}</h1>
+        <p class="page-subtitle">{{ type_labels.get(update.system_type, update.system_type) }}</p>
     </div>
     <a href="{{ url_for('updates.list') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Retour</a>
 </div>

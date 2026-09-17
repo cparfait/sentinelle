@@ -4,11 +4,9 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="fw-bold mb-0">
-            <span class="badge-status badge-{{ status }} me-2">{{ label }}</span>
-            {{ items|length }} élément(s)
-        </h4>
-        <small class="text-muted">Vue transversale par statut</small>
+        <h1 class="page-title"><span class="badge-status badge-{{ status }} me-2">{{ label }}</span>
+            {{ items|length }} élément(s)</h1>
+        <p class="page-subtitle">Vue transversale par statut</p>
     </div>
     <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
         <i class="bi bi-grid-1x2 me-1"></i> Tableau de bord

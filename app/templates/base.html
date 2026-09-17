@@ -7,7 +7,7 @@
     <title>{% block title %}Admin Dashboard{% endblock %}</title>
     {# Anti-FOUC : applique le thème et la couleur de fond avant le premier rendu,
        pour éviter le flash noir sur OS dark-mode quand le CSS n'est pas encore chargé. #}
-    <script>(function(){try{var t=localStorage.getItem('theme')||'light';var h=document.documentElement;h.setAttribute('data-theme',t);h.style.backgroundColor=t==='dark'?'#0b1120':'#f5f6f8';}catch(e){}})();</script>
+    <script>(function(){try{var t=new URLSearchParams(location.search).get('theme')||localStorage.getItem('theme')||'light';var h=document.documentElement;h.setAttribute('data-theme',t);h.style.backgroundColor=t==='dark'?'#0b1120':'#f5f6f8';}catch(e){}})();</script>
     <link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='vendor/bootstrap-icons.css') }}" rel="stylesheet">
     {# Polices de la refonte — 100% hors-ligne. Les .woff2 sont servis localement
@@ -34,10 +34,10 @@
     <div class="sidebar-backdrop" onclick="closeSidebar()"></div>
 
     <div class="sidebar">
-        <div class="sidebar-header">
+        <a href="{{ url_for('dashboard.index') }}" class="sidebar-header">
             <img src="{{ url_for('auth.logo') }}" alt="" class="sidebar-logo-icon">
             <span class="sidebar-logo-text">Sentinelle</span>
-        </div>
+        </a>
 
         <div class="sidebar-search px-3 pb-2">
             <form method="GET" action="{{ url_for('search.search') }}" class="sidebar-search-form">
@@ -179,28 +179,26 @@
         </nav>
 
         <div class="sidebar-footer">
-            <div class="sidebar-footer-user">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="sidebar-avatar">
-                        <i class="bi bi-person-fill"></i>
-                    </div>
-                    <div>
-                        <div class="sidebar-username">{{ current_user.username }}</div>
-                        <div class="sidebar-role">{{ 'Administrateur' if current_user.is_admin else 'Utilisateur' }}</div>
-                    </div>
+            <details class="sidebar-user">
+                <summary class="sidebar-user-row">
+                    <span class="sidebar-avatar" aria-hidden="true">{{ current_user.username[:2]|upper }}</span>
+                    <span class="sidebar-user-text">
+                        <span class="sidebar-username"><span>{{ current_user.username }}</span><i class="bi bi-chevron-down"></i></span>
+                        <span class="sidebar-role">{{ 'Administrateur' if current_user.is_admin else 'Utilisateur' }}</span>
+                    </span>
+                </summary>
+                <div class="sidebar-user-menu">
+                    <a href="{{ url_for('auth.profile') }}" class="sidebar-user-item"><i class="bi bi-gear"></i> Mon profil</a>
                 </div>
-                <span class="theme-toggle" onclick="toggleTheme()" title="Changer le theme" aria-label="Changer le theme" role="button" tabindex="0">
+            </details>
+            <span class="sidebar-footer-icons">
+                <span class="theme-toggle" onclick="toggleTheme()" title="Changer le thème" aria-label="Changer le thème" role="button" tabindex="0">
                     <i id="theme-icon" class="bi bi-moon js-theme-icon"></i>
                 </span>
-            </div>
-            <div class="sidebar-footer-actions">
-                <a href="{{ url_for('auth.profile') }}" class="sidebar-footer-link">
-                    <i class="bi bi-gear"></i> Mon profil
+                <a href="{{ url_for('auth.logout') }}" class="sidebar-icon-btn sidebar-icon-btn-danger" title="Déconnexion" aria-label="Déconnexion">
+                    <i class="bi bi-box-arrow-right"></i>
                 </a>
-                <a href="{{ url_for('auth.logout') }}" class="sidebar-footer-link sidebar-footer-link-danger">
-                    <i class="bi bi-box-arrow-right"></i> Déconnexion
-                </a>
-            </div>
+            </span>
         </div>
     </div>
 

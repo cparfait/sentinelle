@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0"><i class="bi bi-globe me-2"></i>{{ 'Modifier' if domain else 'Ajouter' }} un domaine</h4>
+    <h1 class="page-title">{{ 'Modifier' if domain else 'Ajouter' }} un domaine</h1>
     <a href="{{ url_for('domains.list') }}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i> Retour
     </a>
@@ -76,7 +76,7 @@
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if domain else 'Ajouter' }}
                     </button>
-                    <a href="{{ url_for('domains.list') }}" class="btn btn-outline-secondary">Annuler</a>
+                    <a href="{{ url_for('domains.list') }}" class="btn btn-warn">Annuler</a>
                 </div>
             </form>
         </div>

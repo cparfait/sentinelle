@@ -1,21 +1,30 @@
-{# Contrôles de pagination. Variables : page, pages. Préserve les filtres (ex. q). #}
+{# Contrôles de pagination. Variables : page, pages, et si la vue les fournit
+   total (nombre d'éléments) et per_page. Préserve les filtres (ex. q). #}
 {% if pages and pages > 1 %}
 {% set base_args = request.args.to_dict() %}
-<div class="d-flex justify-content-between align-items-center mt-3">
-    <small class="text-muted">Page {{ page }} / {{ pages }}</small>
-    <div class="btn-group">
+<nav class="pagination-bar" aria-label="Pagination">
+    <span class="pagination-info">
+        {%- if total is defined and total and per_page is defined and per_page -%}
+            {{ (page - 1) * per_page + 1 }}–{{ [page * per_page, total]|min }} sur {{ total }}
+        {%- elif total is defined and total -%}
+            {{ total }} élément{{ 's' if total > 1 }}
+        {%- endif -%}
+    </span>
+    <span class="pagination-nav">
         {% if page > 1 %}
         {% set _ = base_args.update({'page': page - 1}) %}
-        <a href="{{ url_for(request.endpoint, **base_args) }}" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-chevron-left"></i> Précédent
-        </a>
+        <a href="{{ url_for(request.endpoint, **base_args) }}" class="btn btn-outline-secondary btn-icon" title="Page précédente" aria-label="Page précédente"><i class="bi bi-chevron-left"></i></a>
+        {% else %}
+        <span class="btn btn-outline-secondary btn-icon disabled" aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
         {% endif %}
+        <span class="pagination-info">{{ page }} / {{ pages }}</span>
         {% if page < pages %}
         {% set _ = base_args.update({'page': page + 1}) %}
-        <a href="{{ url_for(request.endpoint, **base_args) }}" class="btn btn-sm btn-outline-secondary">
-            Suivant <i class="bi bi-chevron-right"></i>
-        </a>
+        <a href="{{ url_for(request.endpoint, **base_args) }}" class="btn btn-outline-secondary btn-icon" title="Page suivante" aria-label="Page suivante"><i class="bi bi-chevron-right"></i></a>
+        {% else %}
+        <span class="btn btn-outline-secondary btn-icon disabled" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
         {% endif %}
-    </div>
-</div>
+    </span>
+    <span></span>
+</nav>
 {% endif %}

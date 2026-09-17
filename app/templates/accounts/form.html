@@ -5,9 +5,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="fw-bold mb-0">
-            <i class="bi bi-key me-2"></i>{{ 'Modifier' if account else 'Ajouter' }} un compte
-        </h4>
+        <h1 class="page-title">{{ 'Modifier' if account else 'Ajouter' }} un compte</h1>
     </div>
     <a href="{{ url_for('accounts.list') }}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i> Retour
@@ -68,18 +66,18 @@
                 {% endcall %}
 
                 {% call section('Notes', 'bi-journal-text', 'slate') %}
-                {% endcall %}
-
-                <div class="mb-3">
-                    <label class="form-label fw-medium">Description / Notes</label>
+                <div>
+                    <label class="form-label">Description / Notes</label>
                     <textarea name="description" class="form-control" rows="3"
                               placeholder="Informations complementaires...">{{ account.description if account and account.description else '' }}</textarea>
                 </div>
+                {% endcall %}
+
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if account else 'Ajouter' }}
                     </button>
-                    <a href="{{ url_for('accounts.list') }}" class="btn btn-outline-secondary">Annuler</a>
+                    <a href="{{ url_for('accounts.list') }}" class="btn btn-warn">Annuler</a>
                 </div>
             </form>
         </div>
