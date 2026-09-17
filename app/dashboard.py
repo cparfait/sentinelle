@@ -514,7 +514,7 @@ def index():
         if st in ('danger', 'warning') and c.expiry_date:
             days = (c.expiry_date - today).days
             urgent_items.append({
-                'type': 'certificate', 'name': f'{c.service_name} - {c.domain}',
+                'type': 'certificate', 'name': c.label(),
                 'detail': f'Expire dans {days} jour(s)' if days >= 0 else f'Expire depuis {abs(days)} jour(s)',
                 'status': st, 'url': f'/certificates/{c.id}'
             })
@@ -590,10 +590,15 @@ def index():
             if 0 <= dleft <= 60:
                 upcoming.append({'days': dleft, 'label': label, 'icon': icon, 'url': url})
 
+    # Les memes noms que dans l'Agenda et les urgences : une echeance se
+    # reconnait a ce qu'elle nomme. « Elus » ne dit pas de QUI le certificat
+    # expire, la ou « Elus - Mme Elodie DORFIAC » se lit sans ouvrir la fiche ;
+    # et deux comptes du meme service ne se distinguent que par leur identifiant.
     for a in accounts:
-        _add_up(a.next_password_change, a.service_name, 'bi-key', f'/accounts/{a.id}')
+        _add_up(a.next_password_change, f'{a.service_name} ({a.username})',
+                'bi-key', f'/accounts/{a.id}')
     for c in certificates:
-        _add_up(c.expiry_date, c.service_name, 'bi-award', f'/certificates/{c.id}')
+        _add_up(c.expiry_date, c.label(), 'bi-award', f'/certificates/{c.id}')
     for d in domains:
         _add_up(d.expiry_date, d.name, 'bi-globe', f'/domains/{d.id}')
     for t in tests:

@@ -2,7 +2,7 @@
 from datetime import datetime, timezone, timedelta
 
 from app import db
-from app.models import Certificate, SchedulerRun, Equipment, Contract
+from app.models import Account, Certificate, SchedulerRun, Equipment, Contract
 
 
 def test_dashboard_se_charge_pour_un_admin(app, client):
@@ -195,3 +195,23 @@ def test_fiche_equipement_sections_par_type(client):
     assert 'N° de série' in b and 'Adresse IP' in b and 'VLAN' in b
     assert 'Nombre de ports' in b
     assert 'Protocoles' not in b and 'Hyperviseur' not in b
+
+
+def test_dashboard_nomme_les_echeances_comme_l_agenda(app, client):
+    """Le bloc « À venir » et les urgences donnent le NOM complet de la fiche.
+
+    Un certificat électronique ne porte pas de domaine : le tableau de bord
+    affichait « Élus » tout court dans « À venir » — impossible de savoir de
+    qui le certificat expire — et « Élus - None » parmi les urgences."""
+    today = datetime.now(timezone.utc).date()
+    db.session.add(Certificate(kind='signature', service_name='Élus',
+                               civility='mme', first_name='Elodie', holder='DORFIAC',
+                               expiry_date=today + timedelta(days=20)))
+    db.session.add(Account(service_name='Active Directory', username='svc-backup',
+                           next_password_change=today + timedelta(days=15)))
+    db.session.commit()
+    body = client.get('/').data.decode('utf-8')
+    assert 'Élus - Mme Elodie DORFIAC' in body
+    assert 'Élus - None' not in body
+    # Un compte se distingue de son homonyme par son identifiant.
+    assert 'Active Directory (svc-backup)' in body
