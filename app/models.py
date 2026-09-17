@@ -1151,6 +1151,20 @@ class Contract(db.Model):
     items = db.relationship('ContractItem', backref='contract', lazy='dynamic',
                             cascade='all, delete-orphan',
                             order_by='ContractItem.doc_date.desc()')
+    # Imputation budgetaire (« 6156 », « 65818 ») : la ligne du budget sur
+    # laquelle la depense tombe. Meme champ que sur un certificat, ou il rend
+    # deja le meme service -- la comptabilite pose la question pour les deux.
+    budget_code = db.Column(db.String(32))
+    # Le bon de commande signe et envoye. L'acte notifie n'engage la prestation
+    # qu'une fois ce bon parti ; c'est l'etape qu'on oublie, et la seule dont la
+    # date se retient.
+    order_signed_on = db.Column(db.Date)
+    # Le service pour qui l'acte est passe. Un contrat couvre le plus souvent des
+    # logiciels, qui portent deja leurs services -- mais une cotisation, une
+    # liaison fibre ou un abonnement n'en couvre aucun, et le service se perdait.
+    service_id = db.Column(db.Integer, db.ForeignKey('user_service.id'), index=True)
+    service = db.relationship('UserService', foreign_keys=[service_id],
+                              backref=db.backref('contracts', lazy='dynamic'))
     responsible = db.Column(db.String(128))
     description = db.Column(db.Text)
     priority = db.Column(db.String(20), default='medium')

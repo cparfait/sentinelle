@@ -8,7 +8,7 @@ from flask import (Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
 from app.models import (Contract, ContractHistory, ContractItem, Consultation,
-                        Quote, Supplier, Equipment, Software,
+                        Quote, Supplier, Equipment, Software, UserService,
                         CONTRACT_KIND_LABELS, CONTRACT_NATURE_LABELS,
                         CONTRACT_ITEM_KIND_LABELS)
 from app.forms_util import parse_date, parse_int, parse_float, status_rank
@@ -56,6 +56,9 @@ def _fill(c, f):
     c.software = (Software.query.filter(Software.id.in_(sids),
                                         Software.is_active.is_(True)).all()
                   if sids else [])
+    c.budget_code = (f.get('budget_code', '') or '').strip() or None
+    c.order_signed_on = parse_date(f.get('order_signed_on'))
+    c.service_id = parse_int(f.get('service_id')) or None
     c.responsible = (f.get('responsible', '') or '').strip() or None
     c.description = f.get('description') or None
     c.priority = f.get('priority', 'medium')
@@ -69,6 +72,7 @@ def _form_context():
         'equipments': Equipment.query.filter_by(is_active=True).order_by(Equipment.name).all(),
         'software_list': Software.query.filter_by(is_active=True)
                                        .order_by(Software.name).all(),
+        'services': UserService.options(),
     }
 
 

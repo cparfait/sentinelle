@@ -93,6 +93,7 @@
                         <small class="d-block text-muted">total sur la durée : {{ '%.0f' | format(contract.cost_total) }} EUR</small>
                         {% endif %}
                         {% endcall %}
+                        {{ champ('Imputation budgétaire', contract.budget_code) }}
                     </div>
                 </div>
 
@@ -122,7 +123,9 @@
                 <div class="fiche-bloc fiche-bloc--sky">
                     {{ titre_section('Suivi', 'bi-person-check', 'sky', 'mb-0') }}
                     <div class="fiche-grille">
+                        {{ champ('Service demandeur', contract.service.name if contract.service else None) }}
                         {{ champ('Responsable', contract.responsible) }}
+                        {{ champ('Bon de commande signé le', contract.order_signed_on.strftime('%d/%m/%Y') if contract.order_signed_on else None) }}
                     </div>
                 </div>
 

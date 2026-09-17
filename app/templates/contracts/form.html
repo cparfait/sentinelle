@@ -97,6 +97,12 @@
                                value="{{ contract.cost_total if contract and contract.cost_total is not none else '' }}">
                         <div class="form-text">N'entre pas dans le coût du parc, qui se compte à l'année.</div>
                     </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-medium">Imputation budgétaire</label>
+                        <input type="text" name="budget_code" class="form-control"
+                               value="{{ contract.budget_code or '' if contract else '' }}" placeholder="6156, 65818…">
+                        <div class="form-text">La ligne du budget sur laquelle la dépense tombe.</div>
+                    </div>
                 </div>
                 {% endcall %}
 
@@ -162,6 +168,23 @@
                             <option value="{{ value }}" {{ 'selected' if (contract.priority if contract else 'medium') == value }}>{{ label }}</option>
                             {% endfor %}
                         </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-medium">Service demandeur</label>
+                        <select name="service_id" class="form-select">
+                            <option value="">—</option>
+                            {% for sv in services %}
+                            <option value="{{ sv.id }}" {{ 'selected' if contract and contract.service_id == sv.id }}>{{ sv.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Pour qui l'acte est passé. Utile quand il ne couvre
+                            aucun logiciel — cotisation, liaison, abonnement.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-medium">Bon de commande signé le</label>
+                        <input type="date" name="order_signed_on" class="form-control"
+                               value="{{ contract.order_signed_on.strftime('%Y-%m-%d') if contract and contract.order_signed_on else '' }}">
+                        <div class="form-text">L'acte notifié n'engage la prestation qu'une fois ce bon parti.</div>
                     </div>
                 </div>
                 {% endcall %}
