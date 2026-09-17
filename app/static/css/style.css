@@ -247,11 +247,10 @@ button:focus-visible,
     color: #fff;
 }
 
-/* Mise en avant des lignes critiques dans les listes : un lavis leger sur
-   les seules lignes « Critique ». Pas de barre, pas de teinte orange : le
-   badge de statut et le delai portent deja l'information, la ligne ne fait
-   que la laisser trouver du coin de l'oeil. */
-tr.row-danger > td { background: rgba(var(--danger-rgb), 0.05); }
+/* Les lignes ne se colorent pas selon leur statut : le badge « Critique » et
+   le delai en rouge le disent deja, et un lavis rouge une ligne sur deux
+   (avec la zebrure) se lisait comme un damier sans logique. Les classes
+   row-<statut> restent posees : elles servent aux pastilles de filtre. */
 
 /* Le delai (« dans 12 j », « en retard de 5 j ») et la priorite en texte. */
 .delai { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
