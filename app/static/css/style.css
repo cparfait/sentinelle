@@ -628,39 +628,13 @@ details.sidebar-section--repliable > summary:hover { color: var(--muted); }
 
 /* ---- Tuiles de synthese (KPI) : rail colore, pastille d'icone teintee,
    nombre en chasse fixe. ---- */
-/* Refonte de septembre 2026 : les neuf tuiles deviennent des LIGNES d'une
-   meme carte (« Par domaine ») : le nombre, la barre, les compteurs sur une
-   ligne chacune, lisibles d'un coup d'oeil au lieu d'une grille a parcourir.
-   Le balisage et le JS de personnalisation (ordre, masquage) ne changent pas. */
+/* Les vignettes de synthese restent des CARTES en grille : on les lit d'un
+   coup d'oeil, une par domaine. Sans rail colore (la couleur ne dit que
+   l'urgence, la mini-barre s'en charge). */
 .stat-grid {
-    display: flex;
-    flex-direction: column;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
-}
-.stat-grid > .stat-card {
-    flex-direction: row;
-    align-items: center;
-    gap: 16px;
-    padding: 8px 16px;
-    border: 0;
-    border-bottom: 1px solid var(--line);
-    border-radius: 0;
-    box-shadow: none;
-}
-.stat-grid > .stat-card:last-child { border-bottom: 0; }
-a:hover .stat-grid > .stat-card, .stat-grid > .stat-card:hover { transform: none; box-shadow: none; background: var(--inset); }
-.stat-grid > .stat-card > .d-flex { flex: 0 0 240px; min-width: 0; }
-.stat-grid > .stat-card .stat-icon { width: 32px; height: 32px; font-size: 16px; }
-.stat-grid > .stat-card .stat-number { font-size: 1.15rem; }
-.stat-grid > .stat-card .mini-bar { flex: 1 1 160px; margin-top: 0 !important; }
-.stat-grid > .stat-card .stat-legend { flex: 0 0 260px; margin-top: 0 !important; justify-content: flex-end; }
-@media (max-width: 767.98px) {
-    .stat-grid > .stat-card { flex-wrap: wrap; gap: 8px 16px; }
-    .stat-grid > .stat-card .stat-legend { flex-basis: 100%; justify-content: flex-start; }
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-4);
 }
 
 /* La liste « A traiter » : des groupes par horizon, un statut, un delai, un geste. */
