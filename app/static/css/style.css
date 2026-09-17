@@ -842,9 +842,10 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 }
 
 .card-header-custom {
+    --sec: var(--sec-indigo);
     position: relative;
-    background: transparent;
-    border-bottom: 1px solid var(--line);
+    background: rgba(var(--sec), 0.07);
+    border-bottom: 1px solid rgba(var(--sec), 0.16);
     min-height: 2.65rem;
     padding: 8px 20px 8px 28px;
     display: flex;
@@ -861,7 +862,30 @@ body.dash-editing .stat-toggle { display: inline-flex; }
     width: 4px;
     height: 1.1em;
     border-radius: 999px;
-    background: var(--primary);
+    background: rgb(var(--sec));
+}
+
+/* La teinte est portee par le TITRE (fiche-titre--amber), le fond par le
+   bandeau qui l'entoure : `:has()` fait remonter l'une jusqu'a l'autre, ce que
+   la cascade des variables ne sait pas faire -- elle ne descend que. */
+.card-header-custom:has(.fiche-titre--indigo)  { --sec: var(--sec-indigo); }
+.card-header-custom:has(.fiche-titre--sky)     { --sec: var(--sec-sky); }
+.card-header-custom:has(.fiche-titre--emerald) { --sec: var(--sec-emerald); }
+.card-header-custom:has(.fiche-titre--amber)   { --sec: var(--sec-amber); }
+.card-header-custom:has(.fiche-titre--rose)    { --sec: var(--sec-rose); }
+.card-header-custom:has(.fiche-titre--violet)  { --sec: var(--sec-violet); }
+.card-header-custom:has(.fiche-titre--teal)    { --sec: var(--sec-teal); }
+.card-header-custom:has(.fiche-titre--slate)   { --sec: var(--sec-slate); }
+.card-header-custom h6.fiche-titre { color: rgb(var(--sec)); }
+
+/* En theme sombre, 7 % d'une teinte deja eclaircie ne se voit plus sur le fond
+   d'ardoise des cartes : la teinte monte, le filet aussi. */
+[data-theme="dark"] .card-header-custom {
+    background: rgba(var(--sec), 0.12);
+    border-bottom-color: rgba(var(--sec), 0.22);
+}
+[data-theme="dark"] .data-card h6.fw-bold:not(.card-header-custom h6):not(.fiche-bloc > h6) {
+    background: rgba(var(--sec, var(--sec-indigo)), 0.12);
 }
 .card-header-custom h6,
 .card-header-custom .h6 {
@@ -894,7 +918,21 @@ body.dash-editing .stat-toggle { display: inline-flex; }
     width: 4px;
     height: 1.1em;
     border-radius: 999px;
-    background: var(--primary);
+    background: rgb(var(--sec, var(--sec-indigo)));
+}
+
+/* Le meme titre, pose dans le corps d'une carte plutot que dans un bandeau :
+   il porte sa teinte en fond lui aussi, en retrait des bords de la carte.
+
+   Le titre d'une RUBRIQUE (.fiche-bloc) en est exclu : son panneau porte deja
+   la teinte, et deux lavis l'un sur l'autre font une bande foncee, pas un
+   titre. */
+.data-card h6.fw-bold:not(.card-header-custom h6):not(.fiche-bloc > h6) {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px 6px 14px;
+    border-radius: var(--radius-sm);
+    background: rgba(var(--sec, var(--sec-indigo)), 0.07);
 }
 
 /* Etat vide : cadre pointille, texte estompe, rien d'autre. */
