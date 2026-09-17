@@ -3,7 +3,7 @@
 {% from '_macros.html' import status_badge %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-header">
     <div>
         <h1 class="page-title">Backups</h1>
         <p class="page-subtitle">Configuration des sauvegardes a surveiller</p>
@@ -28,7 +28,7 @@
         {% with csv_key='backups' %}{% include '_csv_toolbar.html' %}{% endwith %}
         {% if current_user.can_edit('backups') %}
         <a href="{{ url_for('backups.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Ajouter
+            <i class="bi bi-plus-lg me-1"></i> Ajouter un backup
         </a>
         {% endif %}
     </div>

@@ -4,7 +4,7 @@
 {% set type_labels = dict(type_choices) %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-header">
     <div>
         <h1 class="page-title">Mises à jour</h1>
         <p class="page-subtitle">Suivi des mises à jour des applications et systèmes</p>
@@ -13,7 +13,7 @@
         {% with csv_key='updates' %}{% include '_csv_toolbar.html' %}{% endwith %}
         {% if current_user.can_edit('updates') %}
         <a href="{{ url_for('updates.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Ajouter
+            <i class="bi bi-plus-lg me-1"></i> Ajouter une mise à jour
         </a>
         {% endif %}
     </div>

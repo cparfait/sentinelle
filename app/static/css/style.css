@@ -1013,8 +1013,9 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 /* Selecteur « lignes par page » : compact, aligne sur les boutons btn-sm */
 .inv-perpage {
     width: auto;
-    font-size: 0.78rem;
-    padding: 3px 26px 3px 9px;
+    font-size: 0.8rem;
+    padding: 4px 28px 4px 10px;
+    line-height: 20px;
     color: var(--text-light);
     background-color: transparent;
     border-color: var(--border-strong);

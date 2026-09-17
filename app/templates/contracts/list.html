@@ -3,14 +3,13 @@
 {% from '_macros.html' import status_badge %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-header">
     <div>
         <h1 class="page-title">Contrats &amp; licences</h1>
         <p class="page-subtitle">Échéances, préavis de résiliation et coûts
             {% if total_cost %}— {{ '%.0f' | format(total_cost) }} € / an au total{% endif %}</p>
     </div>
     <div class="d-flex gap-2">
-        {% with csv_key='contracts' %}{% include '_csv_toolbar.html' %}{% endwith %}
         {% if current_user.can_edit('contracts') %}
         <a href="{{ url_for('contracts.create') }}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-1"></i> Ajouter un contrat

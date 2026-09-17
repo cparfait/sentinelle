@@ -26,11 +26,23 @@
 {% block content %}
 {% with active=famille %}{% include '_inventory_nav.html' %}{% endwith %}
 {% set reseau = famille == 'reseau' %}
-<div class="mb-3">
-    <h1 class="page-title">{{ famille_labels[famille] }}</h1>
-    <p class="page-subtitle">
-        {%- if reseau %}Switches, pare-feu, routeurs et bornes WiFi
-        {%- else %}VM, serveurs physiques, NAS et baies de stockage{% endif %} — {{ total }} équipement(s)</p>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ famille_labels[famille] }}</h1>
+        <p class="page-subtitle">
+            {%- if reseau %}Switches, pare-feu, routeurs et bornes WiFi
+            {%- else %}VM, serveurs physiques, NAS et baies de stockage{% endif %} — {{ total }} équipement(s)</p>
+    </div>
+    {% if current_user.can_edit('inventory') %}
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('inventory.import_xlsx') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-file-earmark-excel me-1"></i> Importer Excel
+        </a>
+        <a href="{{ url_for('inventory.create', famille=famille) }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Ajouter un équipement
+        </a>
+    </div>
+    {% endif %}
 </div>
 
 {% set status_choices = [('danger', 'Critique'), ('warning', 'À surveiller'), ('info', 'Proche'), ('success', 'OK')] %}
@@ -51,21 +63,21 @@
             {% endif %}
         </div>
         <div class="flex-grow-1 justify-content-end d-flex flex-wrap align-items-center gap-2">
-            <div class="input-group input-group-sm" style="max-width: 240px;">
-                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Rechercher...">
-                <button class="btn btn-primary" type="submit">OK</button>
+            <div class="list-search">
+                <i class="bi bi-search"></i>
+                <input type="search" name="q" value="{{ q }}" class="form-control"
+                       placeholder="Rechercher…" aria-label="Rechercher dans la liste">
             </div>
-            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#advFilter" title="Filtre avancé" aria-label="Filtre avancé">
+            <button class="btn btn-outline-secondary btn-icon" type="button" data-bs-toggle="collapse" data-bs-target="#advFilter" title="Filtre avancé" aria-label="Filtre avancé">
                 <i class="bi bi-funnel"></i>{% if active_filters %} <span class="badge bg-primary">{{ active_filters }}</span>{% endif %}
             </button>
-            {% if q or active_filters %}<a href="{{ url_for('inventory.list', famille=famille, kind=kind) }}" class="btn btn-sm btn-outline-secondary" title="Effacer" aria-label="Effacer"><i class="bi bi-x-lg"></i></a>{% endif %}
-            <select name="per_page" class="form-select form-select-sm inv-perpage" onchange="this.form.submit()" title="Lignes par page">
+            {% if q or active_filters %}<a href="{{ url_for('inventory.list', famille=famille, kind=kind) }}" class="btn btn-ghost" title="Effacer la recherche"><i class="bi bi-x-lg me-1"></i>Effacer</a>{% endif %}
+            <select name="per_page" class="form-select inv-perpage" onchange="this.form.submit()" title="Lignes par page">
                 {% for n in per_page_choices %}<option value="{{ n }}" {{ 'selected' if per_page == n }}>{{ n }}/page</option>{% endfor %}
                 <option value="all" {{ 'selected' if per_page is none }}>Tous</option>
             </select>
             <div class="dropdown">
-                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
                     <i class="bi bi-layout-three-columns me-1"></i> Colonnes
                 </button>
                 <div class="dropdown-menu dropdown-menu-end p-2" style="max-height: 320px; overflow-y: auto;">
@@ -76,10 +88,6 @@
                     {% endfor %}
                 </div>
             </div>
-            {% if current_user.can_edit('inventory') %}
-            <a href="{{ url_for('inventory.import_xlsx') }}" class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-excel me-1"></i> Importer Excel</a>
-            <a href="{{ url_for('inventory.create', famille=famille) }}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i> Ajouter</a>
-            {% endif %}
         </div>
     </div>
 
