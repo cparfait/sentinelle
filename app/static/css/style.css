@@ -37,7 +37,7 @@
     --page: #f8fafc;
     --surface: #ffffff;
     --inset: #f1f5f9;
-    --zebra: #f8fafc;
+    --zebra: #eef2f7;   /* une ligne sur deux, nettement plus foncee que le blanc */
     --line: #e2e8f0;
     --sub: #cbd5e1;
     --strong: #0f172a;
@@ -123,7 +123,7 @@
     --page: #0b1120;
     --surface: #1e293b;
     --inset: #233247;
-    --zebra: #212e41;
+    --zebra: #263449;
     --line: #2b3a4f;
     --sub: #3a4a61;
     --strong: #f8fafc;
@@ -1009,7 +1009,7 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 .table {
     color: var(--text);
     --bs-table-bg: transparent;
-    --bs-table-hover-bg: var(--inset);
+    --bs-table-hover-bg: rgba(var(--primary-rgb), 0.07);
     --bs-table-hover-color: var(--text);
     --bs-table-striped-bg: var(--zebra);
     --bs-table-border-color: var(--line);
@@ -1019,7 +1019,7 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 
 [data-theme="dark"] .table {
     --bs-table-bg: transparent;
-    --bs-table-hover-bg: var(--inset);
+    --bs-table-hover-bg: rgba(var(--primary-rgb), 0.07);
     --bs-table-hover-color: var(--text);
     --bs-table-striped-bg: var(--zebra);
     color: var(--text);
@@ -1137,7 +1137,7 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 
 .table tbody tr:last-child td { border-bottom: none; }
 .table-hover tbody tr { transition: background-color 0.12s ease; }
-.table-hover tbody tr:hover { background-color: var(--table-hover); }
+.table-hover tbody tr:hover { background-color: rgba(var(--primary-rgb), 0.07); }
 
 /* ---- Badges de statut : pilule pastel (fond -dim, texte -text), jamais un
    aplat sature ---- */
