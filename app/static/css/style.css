@@ -1955,13 +1955,30 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .fiche-sections {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 4px 34px;
+    gap: 12px;
     align-items: start;
 }
+
+/* La rubrique est un PANNEAU teinte, pas seulement un titre suivi de lignes.
+   Quatre rubriques cote a cote et sans fond, les colonnes se melangeaient a la
+   lecture : « Criticite 3 - Elevee » et « Authentification Comptes locaux » se
+   lisaient comme une meme rangee. Le lavis dit ou commence et ou finit un
+   groupe, sans qu'on ait a suivre un filet des yeux.
+
+   Il reste UN LAVIS et non un aplat : 5 % de la teinte, un filet a 16 %. Huit
+   couleurs pleines feraient le damier que cette fiche a deja connu. */
 .fiche-bloc {
     --sec: var(--sec-indigo);
     min-width: 0;
-    margin: 0 0 22px;
+    margin: 0;
+    padding: 11px 14px 12px;
+    border: 1px solid rgba(var(--sec), 0.16);
+    border-radius: var(--radius);
+    background: rgba(var(--sec), 0.05);
+}
+[data-theme="dark"] .fiche-bloc {
+    border-color: rgba(var(--sec), 0.22);
+    background: rgba(var(--sec), 0.1);
 }
 
 /* ---- La rubrique : pastille, intitule, filet qui s'efface ---- */
@@ -1994,12 +2011,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 }
 /* Le filet prolonge l'intitule jusqu'au bord de la colonne et s'y dissout :
    il dit ou commence la rubrique sans tracer de cadre autour d'elle. */
-.data-card .fiche-bloc > h6.fiche-titre::after {
-    content: "";
-    flex: 1 1 auto;
-    height: 1px;
-    background: linear-gradient(to right, rgba(var(--sec), 0.45), rgba(var(--sec), 0));
-}
+.data-card .fiche-bloc > h6.fiche-titre::after { display: none; }
 
 /* ---- La ligne : intitule a gauche, valeur a droite ----
    C'est la correction qui compte le plus : l'intitule pose au-dessus de sa
@@ -2016,8 +2028,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     padding: 5px 8px;
     border-radius: 7px;
 }
-.fiche-champ + .fiche-champ { box-shadow: inset 0 1px 0 var(--border); }
-.fiche-champ:hover { background: rgba(var(--sec), 0.06); }
+.fiche-champ + .fiche-champ { box-shadow: inset 0 1px 0 rgba(var(--sec), 0.18); }
+.fiche-champ:hover { background: rgba(var(--sec), 0.14); }
 .fiche-champ .fiche-label {
     flex: 0 1 auto;
     font-size: 0.815rem;
