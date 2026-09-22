@@ -217,7 +217,7 @@
                     </td>
                     {% for key, label in columns %}
                     <td data-col="{{ key }}">
-                        {% if key == 'kind' %}<span class="text-nowrap"><i class="bi {{ kind_icons.get(e.kind, 'bi-box') }} me-1 text-muted"></i>{{ vals.kind }}</span>
+                        {% if key == 'kind' %}<span class="text-nowrap"><i class="bi {{ kind_icons.get(e.kind, 'bi-box') }} me-1 kind-icon kind-icon--{{ e.kind }}"></i>{{ vals.kind }}</span>
                         {% elif key == 'criticality' %}{% if e.criticality %}<span class="badge bg-{{ crit_colors.get(e.criticality, 'secondary') }}">{{ e.criticality }}</span>{% else %}-{% endif %}
                         {% else %}<small>{{ vals[key] or '-' }}</small>{% endif %}
                     </td>

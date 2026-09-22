@@ -1085,6 +1085,20 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 .table thead th a.th-sort .th-sort-idle { opacity: 0.35; font-size: 0.85em; }
 
 /* Materiel decommissionne : ligne grisee/attenuee dans l'inventaire */
+/* Nature d'un equipement (colonne Type de l'inventaire) : une couleur par
+   nature, meme trait epaissi que les icones du menu. */
+.kind-icon { -webkit-text-stroke: 0.4px currentColor; }
+.kind-icon--vm       { color: #0284c7; } /* sky-600 */
+.kind-icon--physical { color: #4f46e5; } /* indigo-600 */
+.kind-icon--nas      { color: #059669; } /* emerald-600 */
+.kind-icon--storage  { color: #d97706; } /* amber-600 */
+.kind-icon--network  { color: #7c3aed; } /* violet-600 */
+[data-theme="dark"] .kind-icon--vm       { color: #38bdf8; }
+[data-theme="dark"] .kind-icon--physical { color: #818cf8; }
+[data-theme="dark"] .kind-icon--nas      { color: #34d399; }
+[data-theme="dark"] .kind-icon--storage  { color: #fbbf24; }
+[data-theme="dark"] .kind-icon--network  { color: #a78bfa; }
+
 #invTable tbody tr.inv-decommissioned td {
     color: var(--text-light);
     opacity: 0.6;
