@@ -51,7 +51,7 @@
            app/navigation.py). L'administration est repliee : on y va rarement. #}
         <nav class="sidebar-nav">
             {% for dom in nav_domaines %}
-            <div class="sidebar-section">
+            <div class="sidebar-section dom-{{ dom.key }}">
                 <div class="sidebar-section-title">{{ dom.label }}</div>
                 {% for e in dom.entries %}
                 {% if not e.perm or current_user.can_view(e.perm) %}
@@ -74,7 +74,7 @@
 
             {% set admin_visible = current_user.is_admin or current_user.can_view('alerts') %}
             {% if admin_visible %}
-            <details class="sidebar-section sidebar-section--repliable" data-section="administration"
+            <details class="sidebar-section sidebar-section--repliable dom-administration" data-section="administration"
                      {% if nav_domaine_actif == 'administration' %}open data-forced-open{% endif %}>
                 <summary class="sidebar-section-title">{{ nav_administration.label }}<i class="bi bi-chevron-right"></i></summary>
                 {% for e in nav_administration.entries %}

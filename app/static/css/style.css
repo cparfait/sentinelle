@@ -37,7 +37,8 @@
     --page: #f8fafc;
     --surface: #ffffff;
     --inset: #f1f5f9;
-    --zebra: #e4e9f1;   /* une ligne sur deux, franchement grisee */
+    --zebra: #f1f4f9;   /* une ligne sur deux, legerement grisee */
+    --thead: #e4e9f1;   /* en-tete de tableau : un ton plus fonce que la zebrure */
     --line: #e2e8f0;
     --sub: #cbd5e1;
     --strong: #0f172a;
@@ -124,6 +125,7 @@
     --surface: #1e293b;
     --inset: #233247;
     --zebra: #2c3b52;
+    --thead: #34445c;
     --line: #2b3a4f;
     --sub: #3a4a61;
     --strong: #f8fafc;
@@ -393,7 +395,7 @@ details.sidebar-section--repliable > summary:hover { color: var(--muted); }
     gap: 12px;
     padding: 4px 12px;
     margin-bottom: 2px;
-    color: var(--muted);
+    color: var(--text);
     font-size: 0.875rem;
     font-weight: 500;
     line-height: 20px;
@@ -401,19 +403,36 @@ details.sidebar-section--repliable > summary:hover { color: var(--muted); }
     position: relative;
 }
 
-.sidebar-link i { width: 16px; text-align: center; font-size: 1rem; flex-shrink: 0; }
+/* Une couleur par domaine du menu (voir app/navigation.py), partagee par les
+   icones du menu et celles des vignettes du tableau de bord. Les icones restent
+   monochromes : la teinte dit a quel domaine on appartient. */
+.dom-aujourdhui     { --nav-icon: #4f46e5; } /* indigo-600 */
+.dom-echeances      { --nav-icon: #f97316; } /* orange-500 */
+.dom-exploitation   { --nav-icon: var(--success); }
+.dom-parc           { --nav-icon: #facc15; } /* yellow-400 */
+.dom-administration { --nav-icon: #7c3aed; } /* violet-600 */
+[data-theme="dark"] .dom-aujourdhui     { --nav-icon: #818cf8; }
+[data-theme="dark"] .dom-echeances      { --nav-icon: #fb923c; }
+[data-theme="dark"] .dom-parc           { --nav-icon: #fde047; }
+[data-theme="dark"] .dom-administration { --nav-icon: #a78bfa; }
+
+.sidebar-link i { width: 16px; text-align: center; font-size: 1rem; flex-shrink: 0; color: var(--nav-icon, currentColor); }
+/* Icones de domaine en gras : une police d'icones ignore font-weight, on
+   epaissit donc le trait par un contour de la meme couleur. */
+[class*="dom-"] .sidebar-link i { -webkit-text-stroke: 0.4px currentColor; }
 
 .sidebar-link:hover {
     background: var(--inset);
     color: var(--strong);
 }
 
+/* L'entree selectionnee ne change que de fond : le texte garde sa couleur et
+   l'icone celle de son domaine, sinon le menu perdait son code couleur la ou
+   l'on se trouve. */
 .sidebar-link.active {
     background: var(--primary-dim);
-    color: var(--primary);
+    color: var(--text);
 }
-
-.sidebar-link.active i { color: var(--primary); }
 
 /* Compteur d'alertes : pastille rouge pastel, pas un aplat. */
 .sidebar-link .badge {
@@ -676,8 +695,12 @@ a:hover .stat-card,
     justify-content: center;
     font-size: 20px;
     flex-shrink: 0;
-    color: var(--muted);
+    color: var(--nav-icon, var(--muted));
     background: var(--inset);
+}
+.stat-card .stat-icon[class*="dom-"] {
+    background: color-mix(in srgb, var(--nav-icon) 12%, transparent);
+    -webkit-text-stroke: 0.5px currentColor;
 }
 
 .stat-card .stat-number {
@@ -903,7 +926,8 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 .card-header-custom {
     --sec: var(--sec-indigo);
     position: relative;
-    background: rgba(var(--sec), 0.07);
+    /* Meme gris que les en-tetes de tableau. */
+    background: var(--thead);
     border-bottom: 1px solid rgba(var(--sec), 0.16);
     min-height: 2.65rem;
     padding: 8px 20px 8px 28px;
@@ -940,7 +964,7 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 /* En theme sombre, 7 % d'une teinte deja eclaircie ne se voit plus sur le fond
    d'ardoise des cartes : la teinte monte, le filet aussi. */
 [data-theme="dark"] .card-header-custom {
-    background: rgba(var(--sec), 0.12);
+    background: var(--thead);
     border-bottom-color: rgba(var(--sec), 0.22);
 }
 [data-theme="dark"] .data-card h6.fw-bold:not(.card-header-custom h6):not(.fiche-bloc > h6) {
@@ -1032,10 +1056,10 @@ body.dash-editing .stat-toggle { display: inline-flex; }
     text-transform: uppercase;
     font-size: 0.75rem;
     letter-spacing: 0.04em;
-    color: var(--faint);
+    color: var(--text);
     padding: 12px 12px 6px;
     white-space: nowrap;
-    background: transparent;
+    background: var(--thead);
 }
 .table tbody td {
     padding: 5px 12px;
@@ -1050,13 +1074,13 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 .table tbody tr:nth-child(even) { background-color: var(--zebra); }
 
 [data-theme="dark"] .table thead th {
-    background: transparent;
-    color: var(--faint);
+    background: var(--thead);
+    color: var(--text);
 }
 /* En-tetes a code couleur (ex. seuils Critique/Attention/Proche) : teintes
    claires lisibles sur le fond indigo plein, tout en gardant la semantique. */
 /* En-tetes triables : lien blanc, fleche d'inactivite estompee. */
-.table thead th a.th-sort { color: var(--text-light); text-decoration: none; white-space: nowrap; }
+.table thead th a.th-sort { color: var(--text); text-decoration: none; white-space: nowrap; }
 .table thead th a.th-sort:hover { text-decoration: underline; }
 .table thead th a.th-sort .th-sort-idle { opacity: 0.35; font-size: 0.85em; }
 
@@ -2084,7 +2108,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     border-left: 3px solid rgb(var(--sec));
     border-radius: 4px 10px 10px 4px;
     background:
-        linear-gradient(105deg, rgba(var(--sec), 0.07), rgba(var(--sec), 0) 62%),
+        linear-gradient(105deg, var(--primary-dim), transparent 62%),
         var(--card);
 }
 .fiche-fait-k {
@@ -2139,11 +2163,12 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     padding: 11px 14px 12px;
     border: 1px solid rgba(var(--sec), 0.16);
     border-radius: var(--radius);
-    background: rgba(var(--sec), 0.05);
+    /* Le fond de la page : la rubrique se creuse dans la carte blanche, et
+       c'est le filet et le titre qui la delimitent. */
+    background: var(--page);
 }
 [data-theme="dark"] .fiche-bloc {
     border-color: rgba(var(--sec), 0.22);
-    background: rgba(var(--sec), 0.1);
 }
 
 /* ---- La rubrique : pastille, intitule, filet qui s'efface ---- */
@@ -2354,7 +2379,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     border-bottom: 2px solid transparent;
     border-radius: 8px 8px 0 0;
     background: none;
-    color: var(--muted);
+    color: var(--text);
     font-size: 0.875rem;
     font-weight: 500;
     /* Le trait du bas deborde d'un pixel sur celui du conteneur : sans cela
@@ -2362,12 +2387,41 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     margin-bottom: -1px;
 }
 .fiche-onglets .nav-link:hover { color: var(--text); background: var(--hover-bg, rgba(0, 0, 0, 0.03)); }
+/* L'onglet ouvert ne se distingue que par son trait : le texte garde sa
+   couleur et l'icone la sienne. */
 .fiche-onglets .nav-link.active {
-    color: var(--primary);
+    color: var(--text);
     border-bottom-color: var(--primary);
     background: none;
 }
-.fiche-onglets .nav-link i { font-size: 0.95rem; }
+.fiche-onglets .nav-link i { font-size: 0.95rem; color: var(--ong-icon, currentColor); -webkit-text-stroke: 0.4px currentColor; }
+
+/* Une couleur par onglet, la meme d'une fiche a l'autre : les documents sont
+   bleus partout, les contrats orange partout (comme dans le menu). */
+#ong-detail     { --ong-icon: #4f46e5; } /* indigo-600 */
+#ong-liaisons,
+#ong-elements   { --ong-icon: #7c3aed; } /* violet-600 */
+#ong-contrats   { --ong-icon: #f97316; } /* orange-500 */
+#ong-devis      { --ong-icon: #059669; } /* emerald-600 */
+#ong-suivi      { --ong-icon: #eab308; } /* yellow-500 */
+#ong-documents,
+#ong-docs       { --ong-icon: #0284c7; } /* sky-600 */
+#ong-rgpd       { --ong-icon: #e11d48; } /* rose-600 */
+#ong-historique { --ong-icon: #d97706; } /* amber-600 */
+#ong-logiciels  { --ong-icon: #eab308; } /* yellow-500 */
+#ong-contacts   { --ong-icon: #db2777; } /* pink-600 */
+[data-theme="dark"] #ong-detail     { --ong-icon: #818cf8; }
+[data-theme="dark"] #ong-liaisons,
+[data-theme="dark"] #ong-elements   { --ong-icon: #a78bfa; }
+[data-theme="dark"] #ong-contrats   { --ong-icon: #fb923c; }
+[data-theme="dark"] #ong-devis      { --ong-icon: #34d399; }
+[data-theme="dark"] #ong-suivi      { --ong-icon: #facc15; }
+[data-theme="dark"] #ong-documents,
+[data-theme="dark"] #ong-docs       { --ong-icon: #38bdf8; }
+[data-theme="dark"] #ong-rgpd       { --ong-icon: #fb7185; }
+[data-theme="dark"] #ong-historique { --ong-icon: #fbbf24; }
+[data-theme="dark"] #ong-logiciels  { --ong-icon: #facc15; }
+[data-theme="dark"] #ong-contacts   { --ong-icon: #f472b6; }
 
 /* La pastille de comptage : zero se dit, il ne se tait pas. Une pastille grise
    a zero signifie « on a regarde, il n'y en a pas » ; pas de pastille du tout

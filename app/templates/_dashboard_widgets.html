@@ -6,10 +6,13 @@
 
 {% macro stat_card(url, label, icon, color, s, ok_label='OK', danger_label='critiques', warning_label='urgents', key='') %}
 {% set total = s.total or 0 %}
+{# Domaine du menu dont releve la vignette : son icone en prend la couleur. #}
+{% set dom = namespace(key='') %}
+{% for d in nav_domaines %}{% for e in d.entries %}{% if e.blueprint == key %}{% set dom.key = d.key %}{% endif %}{% endfor %}{% endfor %}
 <a href="{{ url }}" class="stat-card text-decoration-none" style="--cat-color: {{ color }};"{% if key %} data-card="{{ key }}"{% endif %}>
     <span class="stat-toggle" role="button" tabindex="-1" title="Masquer / afficher cette vignette" aria-hidden="true"><i class="bi"></i></span>
     <div class="d-flex align-items-center gap-2">
-        <div class="stat-icon"><i class="bi {{ icon }}"></i></div>
+        <div class="stat-icon{% if dom.key %} dom-{{ dom.key }}{% endif %}"><i class="bi {{ icon }}"></i></div>
         <div class="flex-grow-1 min-w-0">
             <div class="stat-number">{{ total }}</div>
             <span class="stat-label">{{ label }}</span>
