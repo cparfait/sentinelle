@@ -31,7 +31,7 @@
             {% endif %}
         </small>
         {% endif %}{% endset %}
-{{ entete_form(titre_form, url_for('certificates.list'), sous_titre_form) }}
+{{ entete_form(titre_form, (url_for('certificates.detail', id=certificate.id) if certificate else url_for('certificates.list')), sous_titre_form) }}
 
 <div class="form-page">
     <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
@@ -266,7 +266,7 @@
                 </div>
                 {% endcall %}
 
-                {{ pied_form(url_for('certificates.list'), 'Enregistrer' if certificate else 'Ajouter') }}
+                {{ pied_form((url_for('certificates.detail', id=certificate.id) if certificate else url_for('certificates.list')), 'Enregistrer' if certificate else 'Ajouter') }}
             </form>
         </div>
     </div>

@@ -6,7 +6,7 @@
 {% block content %}
 {% from '_formulaire.html' import entete_form, pied_form %}
 {% set titre_form %}{{ 'Modifier' if review else 'Ajouter' }} une revue de droits{% endset %}
-{{ entete_form(titre_form, url_for('reviews.list')) }}
+{{ entete_form(titre_form, (url_for('reviews.detail', id=review.id) if review else url_for('reviews.list'))) }}
 
 <div class="form-page">
     <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
@@ -85,7 +85,7 @@
                         </select>
                     </div>
                 </div>
-                {{ pied_form(url_for('reviews.list'), 'Enregistrer' if review else 'Ajouter') }}
+                {{ pied_form((url_for('reviews.detail', id=review.id) if review else url_for('reviews.list')), 'Enregistrer' if review else 'Ajouter') }}
             </form>
         </div>
     </div>

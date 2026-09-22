@@ -6,7 +6,7 @@
 {% block content %}
 {% from '_formulaire.html' import entete_form, pied_form %}
 {% set titre_form %}{{ 'Modifier le contrat' if contract else 'Ajouter un contrat' }}{% endset %}
-{{ entete_form(titre_form, url_for('contracts.list')) }}
+{{ entete_form(titre_form, (url_for('contracts.detail', id=contract.id) if contract else url_for('contracts.list'))) }}
 
 <div class="form-page">
     <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
@@ -224,7 +224,7 @@
                     <textarea name="description" class="form-control" rows="3"
                               placeholder="Périmètre couvert, conditions, procédure de renouvellement...">{{ contract.description or '' if contract else '' }}</textarea>
                 </div>
-                {{ pied_form(url_for('contracts.list'), 'Enregistrer' if contract else 'Ajouter') }}
+                {{ pied_form((url_for('contracts.detail', id=contract.id) if contract else url_for('contracts.list')), 'Enregistrer' if contract else 'Ajouter') }}
             </form>
         </div>
     </div>

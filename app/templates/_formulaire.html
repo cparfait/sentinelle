@@ -27,6 +27,8 @@
        </form></div></div></div>
 #}
 
+{# `retour` : la fiche quand on la modifie, la liste quand on cree. Le lien
+   porte js-retour : onglets.js lui rend l'onglet d'ou l'on vient. #}
 {% macro entete_form(titre, retour, sous_titre='', libelle='Enregistrer') %}
 <div class="page-header form-entete">
     <div>
@@ -34,7 +36,7 @@
         {% if sous_titre | trim %}<p class="page-subtitle">{{ sous_titre }}</p>{% endif %}
     </div>
     <div class="page-actions">
-        <a href="{{ retour }}" class="btn btn-outline-secondary">Annuler</a>
+        <a href="{{ retour }}" class="btn btn-outline-secondary js-retour">Annuler</a>
         <button type="submit" form="form-principal" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> {{ libelle }}</button>
     </div>
 </div>
@@ -43,7 +45,7 @@
 {% macro pied_form(retour, libelle='Enregistrer') %}
 <div class="form-pied">
     <span class="form-pied-note text-muted small"><span class="text-danger">*</span> champ obligatoire</span>
-    <a href="{{ retour }}" class="btn btn-outline-secondary">Annuler</a>
+    <a href="{{ retour }}" class="btn btn-outline-secondary js-retour">Annuler</a>
     <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> {{ libelle }}</button>
 </div>
 {% endmacro %}

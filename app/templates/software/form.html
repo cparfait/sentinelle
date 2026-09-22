@@ -15,7 +15,7 @@
 {% block content %}
 {% from '_formulaire.html' import entete_form, pied_form %}
 {% set titre_form %}{{ 'Modifier le logiciel' if item else 'Ajouter un logiciel' }}{% endset %}
-{{ entete_form(titre_form, url_for('software.list')) }}
+{{ entete_form(titre_form, (url_for('software.detail', id=item.id) if item else url_for('software.list'))) }}
 
 <div class="form-page">
     <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
@@ -297,7 +297,7 @@
                 </div>
                 {% endcall %}
 
-                {{ pied_form(url_for('software.list'), 'Enregistrer' if item else 'Ajouter') }}
+                {{ pied_form((url_for('software.detail', id=item.id) if item else url_for('software.list')), 'Enregistrer' if item else 'Ajouter') }}
             </form>
         </div>
     </div>

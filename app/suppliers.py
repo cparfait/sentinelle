@@ -134,7 +134,7 @@ def edit(id):
         db.session.commit()
         audit_record('modification fournisseur', detail=supplier.name, category='contrats')
         flash('Fournisseur modifié', 'success')
-        return redirect(url_for('suppliers.list'))
+        return redirect(url_for('suppliers.detail', id=id))
     return render_template('suppliers/form.html', supplier=supplier,
                            kind_labels=SUPPLIER_KIND_LABELS)
 

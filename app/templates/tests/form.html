@@ -5,7 +5,7 @@
 {% block content %}
 {% from '_formulaire.html' import entete_form, pied_form %}
 {% set titre_form %}{{ 'Modifier' if test else 'Ajouter' }} un test{% endset %}
-{{ entete_form(titre_form, url_for('tests.list')) }}
+{{ entete_form(titre_form, (url_for('tests.detail', id=test.id) if test else url_for('tests.list'))) }}
 
 <div class="form-page">
     <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
@@ -83,7 +83,7 @@
                     <textarea name="description" class="form-control" rows="4"
                               placeholder="Decrivez la procedure de test...">{{ test.description if test and test.description else '' }}</textarea>
                 </div>
-                {{ pied_form(url_for('tests.list'), 'Enregistrer' if test else 'Ajouter') }}
+                {{ pied_form((url_for('tests.detail', id=test.id) if test else url_for('tests.list')), 'Enregistrer' if test else 'Ajouter') }}
             </form>
         </div>
     </div>

@@ -5,7 +5,7 @@
 {% block content %}
 {% from '_formulaire.html' import entete_form, pied_form %}
 {% set titre_form %}{{ 'Modifier' if account else 'Ajouter' }} un compte{% endset %}
-{{ entete_form(titre_form, url_for('accounts.list')) }}
+{{ entete_form(titre_form, (url_for('accounts.detail', id=account.id) if account else url_for('accounts.list'))) }}
 
 <div class="form-page">
     <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
@@ -69,7 +69,7 @@
                 </div>
                 {% endcall %}
 
-                {{ pied_form(url_for('accounts.list'), 'Enregistrer' if account else 'Ajouter') }}
+                {{ pied_form((url_for('accounts.detail', id=account.id) if account else url_for('accounts.list')), 'Enregistrer' if account else 'Ajouter') }}
             </form>
         </div>
     </div>

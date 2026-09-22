@@ -5,7 +5,7 @@
 {% block content %}
 {% from '_formulaire.html' import entete_form, pied_form %}
 {% set titre_form %}{{ 'Modifier' if update else 'Ajouter' }} — Mises à jour{% endset %}
-{{ entete_form(titre_form, url_for('updates.list')) }}
+{{ entete_form(titre_form, (url_for('updates.detail', id=update.id) if update else url_for('updates.list'))) }}
 
 <div class="form-page">
     <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
@@ -113,7 +113,7 @@
                     <textarea name="description" class="form-control" rows="3"
                               placeholder="Notes de version, criticité, dépendances...">{{ update.description if update and update.description else '' }}</textarea>
                 </div>
-                {{ pied_form(url_for('updates.list'), 'Enregistrer' if update else 'Ajouter') }}
+                {{ pied_form((url_for('updates.detail', id=update.id) if update else url_for('updates.list')), 'Enregistrer' if update else 'Ajouter') }}
             </form>
         </div>
     </div>

@@ -31,7 +31,7 @@
     </div>
     <div class="page-actions">
         {{ primaire }}
-        {% if modifier %}<a href="{{ modifier }}" class="btn btn-outline-secondary"><i class="bi bi-pencil me-1"></i> Modifier</a>{% endif %}
+        {% if modifier %}<a href="{{ modifier }}" class="btn btn-outline-secondary js-modifier"><i class="bi bi-pencil me-1"></i> Modifier</a>{% endif %}
         {% if menu | trim %}
         <div class="dropdown">
             <button class="btn btn-outline-secondary btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Autres actions" aria-label="Autres actions"><i class="bi bi-three-dots"></i></button>

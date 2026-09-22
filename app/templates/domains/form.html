@@ -5,7 +5,7 @@
 {% block content %}
 {% from '_formulaire.html' import entete_form, pied_form %}
 {% set titre_form %}{{ 'Modifier' if domain else 'Ajouter' }} un domaine{% endset %}
-{{ entete_form(titre_form, url_for('domains.list')) }}
+{{ entete_form(titre_form, (url_for('domains.detail', id=domain.id) if domain else url_for('domains.list'))) }}
 
 <div class="form-page">
     <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
@@ -70,7 +70,7 @@
                     <textarea name="description" class="form-control" rows="3"
                               placeholder="Usage, contacts...">{{ domain.description if domain and domain.description else '' }}</textarea>
                 </div>
-                {{ pied_form(url_for('domains.list'), 'Enregistrer' if domain else 'Ajouter') }}
+                {{ pied_form((url_for('domains.detail', id=domain.id) if domain else url_for('domains.list')), 'Enregistrer' if domain else 'Ajouter') }}
             </form>
         </div>
     </div>
