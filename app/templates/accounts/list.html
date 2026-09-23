@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Comptes - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge, delai_badge, priorite %}
-{% from '_liste.html' import barre, actions, cellule, bouton_modifier, vide %}
+{% from '_liste.html' import barre, cellule, vide %}
 
 {% block content %}
 <div class="page-header">
@@ -42,7 +42,6 @@
                     <th>Rotation</th>
                     <th>Priorité</th>
                     <th>Statut</th>
-                    <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -62,14 +61,9 @@
                     <td>{{ 'tous les %d j' % account.rotation_days if account.rotation_days else '—' }}</td>
                     <td>{{ priorite(account.priority) }}</td>
                     <td>{{ status_badge(account.status()) }}</td>
-                    <td class="col-actions">
-                        {% call actions() %}
-                        {% if current_user.can_edit('accounts') %}{{ bouton_modifier(url_for('accounts.edit', id=account.id)) }}{% endif %}
-                        {% endcall %}
-                    </td>
                 </tr>
                 {% else %}
-                {{ vide(8, 'Aucun compte enregistré.', url_for('accounts.create') if current_user.can_edit('accounts') else None) }}
+                {{ vide(7, 'Aucun compte enregistré.', url_for('accounts.create') if current_user.can_edit('accounts') else None) }}
                 {% endfor %}
             </tbody>
         </table>
