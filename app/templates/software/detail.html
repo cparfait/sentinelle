@@ -83,17 +83,17 @@
 {% set pieces = attached_documents('software', item.id) if documents_enabled else [] %}
 {% call barre('ficheLogiciel') %}
     {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}
-    {{ onglet('liaisons', 'Liaisons', 'bi-diagram-3', compteur=(sortants|length) + (entrants|length)
+    {{ onglet('liaisons', 'Liaisons', 'bi-diagram-3', compteur=((sortants|length) + (entrants|length) if features.links else 0)
                                                               + (item.equipments|length) + (item.user_services|length)) }}
     {% if current_user.can_view('contracts') %}
     {{ onglet('contrats', 'Contrats et marchés', 'bi-file-earmark-text', compteur=marches|length) }}
-    {{ onglet('devis', 'Devis', 'bi-cash-coin', compteur=consultations|length) }}
+    {% if features.quotes %}{{ onglet('devis', 'Devis', 'bi-cash-coin', compteur=consultations|length) }}{% endif %}
     {% endif %}
     {{ onglet('suivi', 'Suivi', 'bi-activity', compteur=(updates|length) + (taches|length)) }}
     {% if documents_enabled %}
     {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=(pieces|length) + (pieces_heritees|length)) }}
     {% endif %}
-    {{ onglet('rgpd', 'RGPD', 'bi-shield-lock') }}
+    {% if features.gdpr %}{{ onglet('rgpd', 'RGPD', 'bi-shield-lock') }}{% endif %}
 {% endcall %}
 
 {% call volets() %}
@@ -264,7 +264,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-6">{% include 'software/_flux.html' %}</div>
+        {% if features.links %}<div class="col-xl-6">{% include 'software/_flux.html' %}</div>{% endif %}
     </div>
     {% endcall %}
 
@@ -273,9 +273,11 @@
         {% include 'software/_contrats.html' %}
     {% endcall %}
 
+    {% if features.quotes %}
     {% call volet('devis') %}
         {% include 'software/_consultations.html' %}
     {% endcall %}
+    {% endif %}
     {% endif %}
 
     {% call volet('suivi') %}
@@ -353,6 +355,7 @@
     {# Le volet RGPD paraît MÊME quand le logiciel ne traite pas de données
        personnelles : « non » est une réponse, et la rubrique absente se lirait
        comme un oubli de saisie. #}
+    {% if features.gdpr %}
     {% call volet('rgpd') %}
     <div class="data-card p-3 mb-3">
         <div class="fiche-sections">
@@ -379,5 +382,6 @@
         </div>
     </div>
     {% endcall %}
+    {% endif %}
 {% endcall %}
 {% endblock %}

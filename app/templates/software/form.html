@@ -262,6 +262,7 @@
                 {% endcall %}
 
                 {# ── Volet RGPD ── #}
+                {% if features.gdpr %}
                 {% call section('Données personnelles (RGPD)', 'bi-shield-lock', 'rose') %}
                     <div class="row g-3">
                         <div class="col-md-3 d-flex align-items-center">
@@ -288,6 +289,7 @@
                         </div>
                     </div>
                 {% endcall %}
+                {% endif %}
 
                 {% call section('Description', 'bi-journal-text', 'slate') %}
                 <div class="mb-3">

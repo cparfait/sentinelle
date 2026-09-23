@@ -26,8 +26,8 @@
             Carte, clé USB ou fichier d'un élu ou d'un agent —
             <a href="{{ url_for('certificates.create', kind='tls') }}">c'est un certificat TLS ?</a>
             {% else %}
-            Certificat serveur lu sur le domaine —
-            <a href="{{ url_for('certificates.create', kind='signature') }}">c'est un certificat électronique ?</a>
+            Certificat serveur lu sur le domaine{% if features.ecerts %} —
+            <a href="{{ url_for('certificates.create', kind='signature') }}">c'est un certificat électronique ?</a>{% endif %}
             {% endif %}
         </small>
         {% endif %}{% endset %}

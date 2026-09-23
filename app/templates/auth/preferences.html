@@ -27,6 +27,9 @@
     {% else %}<span class="badge-status badge-muted"><i class="bi bi-window-stack"></i>Alertes logiciels désactivées</span>{% endif %}
     {% if db_backups %}<span class="badge-status badge-success"><i class="bi bi-database"></i>{{ db_backups|length }} sauvegarde{{ 's' if db_backups|length > 1 }}</span>
     {% else %}<span class="badge-status badge-danger"><i class="bi bi-database"></i>Aucune sauvegarde</span>{% endif %}
+    {% set modules_coupes = modules|rejectattr('on')|list %}
+    {% if modules_coupes %}<span class="badge-status badge-muted"><i class="bi bi-toggles"></i>{{ modules_coupes|length }} module{{ 's' if modules_coupes|length > 1 }} désactivé{{ 's' if modules_coupes|length > 1 }}</span>
+    {% else %}<span class="badge-status badge-muted"><i class="bi bi-toggles"></i>Tous les modules actifs</span>{% endif %}
     {% if documents_enabled %}<span class="badge-status badge-muted"><i class="bi bi-paperclip"></i>Pièces jointes : {{ document_max_mb }} Mo</span>
     {% else %}<span class="badge-status badge-muted"><i class="bi bi-paperclip"></i>Pièces jointes désactivées</span>{% endif %}
     {% if ui_primary_color %}<span class="badge-status badge-muted" style="--badge: {{ ui_primary_color }};"><i class="bi bi-palette"></i>Couleur personnalisée</span>
@@ -46,6 +49,7 @@
         <div class="som-famille">Données</div>
         <a href="#secDb" class="form-sommaire-lien" data-cible="secDb"><i class="bi bi-database"></i><span>Base de données</span><span class="som-etat"></span></a>
         <a href="#secDocuments" class="form-sommaire-lien" data-cible="secDocuments"><i class="bi bi-paperclip"></i><span>Pièces jointes</span><span class="som-etat"></span></a>
+        <a href="#secModules" class="form-sommaire-lien" data-cible="secModules"><i class="bi bi-toggles"></i><span>Modules</span><span class="som-etat"></span></a>
         <a href="#secReferentiels" class="form-sommaire-lien" data-cible="secReferentiels"><i class="bi bi-list-ul"></i><span>Référentiels</span><span class="som-etat"></span></a>
         <div class="som-famille">Affichage</div>
         <a href="#secDashboard" class="form-sommaire-lien" data-cible="secDashboard"><i class="bi bi-grid-1x2"></i><span>Tableau de bord</span><span class="som-etat"></span></a>
@@ -651,6 +655,32 @@
                             </div>
                         </div>
                         <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> Enregistrer
+                        </button>
+                    </form>
+            </div>
+        </section>
+
+        <section class="form-section pref-rubrique" id="secModules">
+            <div class="form-section-titre">
+                <i class="bi bi-toggles me-2"></i>Modules
+                {% if modules_coupes %}<span class="badge bg-secondary ms-2">{{ modules|length - modules_coupes|length }}/{{ modules|length }} actifs</span>
+                {% else %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Tous actifs</span>{% endif %}
+            </div>
+            <p class="form-section-aide">Les volets que la collectivité utilise ou non. Un module désactivé disparaît des écrans ; ce qui a été saisi reste en base et revient en le réactivant.</p>
+            <div class="form-section-corps">
+                    <form method="POST" action="{{ url_for('auth.preferences') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="save_modules">
+                        {% for m in modules %}
+                        <div class="form-check form-switch{{ ' mt-3' if not loop.first }}">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="module_{{ m.name }}" name="module_{{ m.name }}" {% if m.on %}checked{% endif %}>
+                            <label class="form-check-label fw-medium" for="module_{{ m.name }}">{{ m.label }}</label>
+                        </div>
+                        <p class="text-muted small mt-1 mb-0">{{ m.help }}</p>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-sm btn-primary mt-3">
                             <i class="bi bi-check-lg me-1"></i> Enregistrer
                         </button>
                     </form>

@@ -24,7 +24,10 @@ SECRET_KEYS = {'MAIL_PASSWORD', 'O365_CLIENT_SECRET', 'LDAP_BIND_PASSWORD',
 # Typage applique au chargement (le reste = chaine).
 _BOOL = {'LDAP_ENABLED', 'LDAP_USE_SSL', 'LDAP_VALIDATE_CERT', 'CT_MONITORING',
          'SESAME_API_ENABLED', 'DASHBOARD_CUSTOM', 'DOCUMENTS_ENABLED',
-         'DOCUMENT_INLINE_VIEW', 'SOFTWARE_ALERTS'}
+         'DOCUMENT_INLINE_VIEW', 'SOFTWARE_ALERTS',
+         # Modules debrayables (voir app/features.py)
+         'QUOTES_ENABLED', 'GDPR_ENABLED', 'SOFTWARE_LINKS_ENABLED',
+         'ELECTRONIC_CERTS_ENABLED'}
 _INT = {'LDAP_PORT', 'MAIL_PORT', 'DOCUMENT_MAX_MB', 'BACKUP_DB_KEEP'}
 _TRIPLET = {'THRESHOLD_EXPIRY', 'THRESHOLD_DOMAIN', 'THRESHOLD_TASK', 'THRESHOLD_CONTRACT'}
 
@@ -52,6 +55,8 @@ MANAGED = _BOOL | _INT | _TRIPLET | _CSV | {
     'REPORT_SCHEDULE',  # envoi planifie du bilan PDF : off / monthly / weekly
     'CT_MONITORING',    # surveillance Certificate Transparency (crt.sh) : on/off
     'SOFTWARE_ALERTS',  # alertes logiciels (fin de vie, licences depassees) : on/off
+    # Modules debrayables : devis, RGPD, flux entre logiciels, certificats electroniques.
+    'QUOTES_ENABLED', 'GDPR_ENABLED', 'SOFTWARE_LINKS_ENABLED', 'ELECTRONIC_CERTS_ENABLED',
     'DASHBOARD_CUSTOM', # tableau de bord personnalisable par utilisateur : on/off
     # Pieces jointes stockees en base (actes signes, guides, deliberations).
     'DOCUMENTS_ENABLED', 'DOCUMENT_MAX_MB', 'DOCUMENT_INLINE_VIEW',

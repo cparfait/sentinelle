@@ -79,6 +79,11 @@ class Config:
     CT_MONITORING = os.getenv('CT_MONITORING', 'true').lower() in ('true', '1', 'yes')
     # Alertes logiciels : fin de vie, plafond de licences depasse (hebdomadaire).
     SOFTWARE_ALERTS = os.getenv('SOFTWARE_ALERTS', 'true').lower() in ('true', '1', 'yes')
+    # Modules debrayables (app/features.py) : actifs par defaut.
+    QUOTES_ENABLED = os.getenv('QUOTES_ENABLED', 'true').lower() in ('true', '1', 'yes')
+    GDPR_ENABLED = os.getenv('GDPR_ENABLED', 'true').lower() in ('true', '1', 'yes')
+    SOFTWARE_LINKS_ENABLED = os.getenv('SOFTWARE_LINKS_ENABLED', 'true').lower() in ('true', '1', 'yes')
+    ELECTRONIC_CERTS_ENABLED = os.getenv('ELECTRONIC_CERTS_ENABLED', 'true').lower() in ('true', '1', 'yes')
     # Pieces jointes : actives par defaut -- elles ne coutent rien tant qu'on
     # n'en depose pas, et l'ecran serait introuvable autrement. La taille
     # maximale borne ce que la base a vocation a heberger : une piece jointe est

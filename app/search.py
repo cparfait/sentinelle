@@ -224,7 +224,8 @@ def search():
         # Un devis se cherche par la societe qui l'a remis (fiche ou nom libre),
         # l'objet de la consultation ou ses notes ; il renvoie vers la fiche du
         # logiciel, ou vivent les consultations.
-        quotes = Quote.query.join(Consultation).join(Software).filter(
+        from app.features import enabled as module_actif
+        quotes = [] if not module_actif('quotes') else Quote.query.join(Consultation).join(Software).filter(
             Software.is_active,
             or_(
                 Quote.supplier_name.ilike(like),

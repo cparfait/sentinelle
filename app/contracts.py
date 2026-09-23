@@ -7,6 +7,7 @@ from flask import (Blueprint, render_template, redirect, url_for, request, flash
                    jsonify)
 from flask_login import login_required, current_user
 from app import db
+from app import features
 from app.models import (Contract, ContractHistory, ContractItem, Consultation,
                         Quote, Supplier, Equipment, Software, UserService,
                         CONTRACT_KIND_LABELS, CONTRACT_NATURE_LABELS,
@@ -311,6 +312,7 @@ def software_detach(id, software_id):
 @login_required
 @require_edit
 def consultation_add(software_id):
+    features.require('quotes')
     sw = Software.query.get_or_404(software_id)
     subject = (request.form.get('subject', '') or '').strip()
     if not subject:
@@ -329,6 +331,7 @@ def consultation_add(software_id):
 @login_required
 @require_delete
 def consultation_delete(consultation_id):
+    features.require('quotes')
     cons = Consultation.query.get_or_404(consultation_id)
     swid, objet = cons.software_id, cons.subject
     db.session.delete(cons)   # les devis suivent (cascade)
@@ -342,6 +345,7 @@ def consultation_delete(consultation_id):
 @login_required
 @require_edit
 def quote_add(consultation_id):
+    features.require('quotes')
     cons = Consultation.query.get_or_404(consultation_id)
     f = request.form
     sid = parse_int(f.get('supplier_id'))
@@ -363,6 +367,7 @@ def quote_add(consultation_id):
 @login_required
 @require_edit
 def quote_select(quote_id):
+    features.require('quotes')
     """Marque le devis retenu. AU PLUS UN par consultation : les autres sont
     demarques dans le meme geste, faute de quoi deux devis retenus se
     contrediraient sans que rien ne tranche."""
@@ -380,6 +385,7 @@ def quote_select(quote_id):
 @login_required
 @require_delete
 def quote_delete(quote_id):
+    features.require('quotes')
     quote = Quote.query.get_or_404(quote_id)
     swid = quote.consultation.software_id
     db.session.delete(quote)

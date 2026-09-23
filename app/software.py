@@ -8,6 +8,7 @@ from flask import (Blueprint, render_template, redirect, url_for, request, flash
                    jsonify)
 from flask_login import login_required
 from app import db
+from app import features
 from app.models import (Software, Supplier, Contract, Equipment, Referential,
                         UserService, SoftwareLink, SoftwareShare,
                         HOSTING_LABELS, LIFECYCLE_LABELS, SOURCE_TYPE_LABELS,
@@ -62,12 +63,14 @@ def _fill(sw, f):
     sw.tech_responsible_email = (f.get('tech_responsible_email', '') or '').strip() or None
     sw.no_contract_note = (f.get('no_contract_note', '') or '').strip() or None
     sw.description = f.get('description') or None
-    # ── Volet RGPD ──
-    sw.gdpr_personal_data = f.get('gdpr_personal_data') == 'on'
-    sw.gdpr_categories = (f.get('gdpr_categories', '') or '').strip() or None
-    sw.gdpr_registry_ref = (f.get('gdpr_registry_ref', '') or '').strip() or None
-    sw.gdpr_location = (f.get('gdpr_location') if f.get('gdpr_location') in DATA_LOCATION_LABELS
-                        else 'inconnue')
+    # ── Volet RGPD ── Module coupe : le formulaire ne porte pas ces champs,
+    # et les lire effacerait ce qui avait ete saisi avant.
+    if features.enabled('gdpr'):
+        sw.gdpr_personal_data = f.get('gdpr_personal_data') == 'on'
+        sw.gdpr_categories = (f.get('gdpr_categories', '') or '').strip() or None
+        sw.gdpr_registry_ref = (f.get('gdpr_registry_ref', '') or '').strip() or None
+        sw.gdpr_location = (f.get('gdpr_location') if f.get('gdpr_location') in DATA_LOCATION_LABELS
+                            else 'inconnue')
     # Serveur(s) d'installation (multi-selection), equipements actifs uniquement.
     ids = [parse_int(v) for v in f.getlist('equipment_ids')]
     ids = [i for i in ids if i]
@@ -261,6 +264,7 @@ def delete(id):
 @login_required
 @require_edit
 def link_add(id):
+    features.require('links')
     """Declare un flux SORTANT depuis cette fiche. Le sens est porte par la
     ligne ; la fiche d'en face le verra comme entrant, sans qu'on ait a le
     saisir deux fois."""
@@ -291,6 +295,7 @@ def link_add(id):
 @login_required
 @require_delete
 def link_delete(link_id):
+    features.require('links')
     lien = SoftwareLink.query.get_or_404(link_id)
     # On revient sur la fiche d'ou l'on a clique, qui n'est pas toujours la
     # source : les deux sens s'affichent et se retirent des deux cotes.

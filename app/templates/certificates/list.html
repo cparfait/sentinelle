@@ -23,7 +23,7 @@
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li><a class="dropdown-item" href="{{ url_for('certificates.create', kind='tls') }}"><i class="bi bi-award me-2"></i>Certificat TLS</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('certificates.create', kind='signature') }}"><i class="bi bi-person-badge me-2"></i>Certificat électronique</a></li>
+                {% if features.ecerts %}<li><a class="dropdown-item" href="{{ url_for('certificates.create', kind='signature') }}"><i class="bi bi-person-badge me-2"></i>Certificat électronique</a></li>{% endif %}
             </ul>
         </div>
         {% endif %}
@@ -52,7 +52,7 @@
 {% set segments %}
 <div class="seg-tabs">
     <a class="seg-tab {% if not kind %}active{% endif %}" href="{{ url_for('certificates.list', q=q) }}">Tous <span class="seg-tab-count">{{ total_all }}</span></a>
-    {% for value, label in kind_labels.items() %}
+    {% for value, label in kind_labels.items() if value != 'signature' or features.ecerts or counts[value] %}
     <a class="seg-tab {% if kind == value %}active{% endif %}" href="{{ url_for('certificates.list', kind=value, q=q) }}">{{ label }} <span class="seg-tab-count">{{ counts[value] }}</span></a>
     {% endfor %}
 </div>

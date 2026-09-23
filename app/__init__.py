@@ -45,7 +45,9 @@ def create_app(config_class=Config):
         from markupsafe import Markup
         from app.theming import primary_css_override
 
+        from app.features import all_flags
         return {'now': lambda: datetime.now(timezone.utc),
+                'features': all_flags(),
                 'active_snooze': get_active_snooze,
                 'alert_permission': permission_category,
                 'role_label': role_label,

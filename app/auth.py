@@ -294,6 +294,13 @@ def _persist_config(updates):
     config_store.save(updates)
 
 
+def _modules_context():
+    """Les modules debrayables et leur etat, pour la rubrique Modules."""
+    from app.features import FEATURES, enabled
+    return [{'name': n, 'label': lab, 'help': aide, 'on': enabled(n)}
+            for n, (_k, lab, aide) in FEATURES.items()]
+
+
 @bp.route('/preferences', methods=['GET', 'POST'])
 @login_required
 @require_admin
@@ -404,6 +411,18 @@ def preferences():
             current_app.config['CT_MONITORING'] = enabled
             audit_record('config surveillance CT', detail=f'actif={enabled}', category='preferences')
             flash('Surveillance Certificate Transparency ' + ('activée' if enabled else 'désactivée') + '.', 'success')
+
+        elif action == 'save_modules':
+            from app.features import FEATURES
+            etats = {key: request.form.get(f'module_{name}') == 'on'
+                     for name, (key, _l, _h) in FEATURES.items()}
+            _persist_config({k: ('true' if v else 'false') for k, v in etats.items()})
+            for k, v in etats.items():
+                current_app.config[k] = v
+            coupes = [FEATURES[n][1] for n, (k, _l, _h) in FEATURES.items() if not etats[k]]
+            audit_record('config modules', detail=('désactivés : ' + ', '.join(coupes)) if coupes else 'tous actifs',
+                         category='preferences')
+            flash('Modules enregistrés.', 'success')
 
         elif action == 'save_software_alerts':
             enabled = request.form.get('software_alerts') == 'on'
@@ -697,6 +716,7 @@ def preferences():
                            report_recipients=', '.join(current_app.config.get('REPORT_RECIPIENTS') or []),
                            ct_monitoring=current_app.config.get('CT_MONITORING', True),
                            software_alerts=current_app.config.get('SOFTWARE_ALERTS', True),
+                           modules=_modules_context(),
                            dashboard_custom=current_app.config.get('DASHBOARD_CUSTOM', True),
                            documents_enabled=current_app.config.get('DOCUMENTS_ENABLED', True),
                            document_max_mb=current_app.config.get('DOCUMENT_MAX_MB', 10),

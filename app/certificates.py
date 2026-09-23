@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_required, current_user
 from app import db
+from app import features
 from app.models import (Certificate, CertificateHistory, Supplier, UserService,
                         CERT_KIND_LABELS, CIVILITY_LABELS, CERT_USAGE_LABELS,
                         CERT_SUPPORT_LABELS, CERT_VALIDITY_LABELS)
@@ -164,6 +165,9 @@ def _valide(kind, service_name, domain, expiry_date, holder):
 def create():
     kind = request.values.get('kind')
     kind = kind if kind in CERT_KIND_LABELS else 'tls'
+    if kind == 'signature' and not features.enabled('ecerts'):
+        flash('Les certificats électroniques sont désactivés dans les Préférences.', 'warning')
+        return redirect(url_for('certificates.list'))
     if request.method == 'POST':
         service_name = (request.form.get('service_name') or '').strip()
         domain = (request.form.get('domain') or '').strip()
