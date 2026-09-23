@@ -729,8 +729,10 @@ a:hover .stat-card,
     color: var(--strong);
     font-variant-numeric: tabular-nums;
 }
+.stat-card .stat-texte { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .stat-card .stat-label {
     display: block;
+    min-width: 0;
     font-size: 0.74rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -1216,6 +1218,12 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 /* A cote d'un intitule sur deux lignes, un intitule d'une ligne cale en bas
    (le defaut de Bootstrap) semble tomber : on centre, comme les cellules. */
 .table thead th { vertical-align: middle; }
+
+/* Validation rapide des sauvegardes (tableau de bord) : trois boutons et un
+   champ par ligne, serres pour ne pas dicter la hauteur des lignes. */
+.qc-btn { padding: 2px 9px; font-size: 0.78rem; line-height: 1.4; border-radius: 6px; white-space: nowrap; }
+.qc-btn i { font-size: 0.85em; }
+.qc-commentaire { padding: 2px 8px; font-size: 0.78rem; height: 26px; min-height: 26px; border-radius: 6px; }
 
 /* Utilitaires des cellules a deux etages (voir certificates/list.html). */
 .text-faint { color: var(--faint) !important; }

@@ -5,8 +5,11 @@
    grille) est geree dans dashboard.html. #}
 
 {% from '_icones.html' import icone %}
-{% macro stat_card(url, label, icon, color, s, ok_label='OK', danger_label='critiques', warning_label='urgents', key='') %}
+{% macro stat_card(url, label, icon, color, s, ok_label='OK', danger_label='critiques', warning_label='urgents', key='', singulier='') %}
 {% set total = s.total or 0 %}
+{# L'intitule s'accorde au nombre : « 1 compte », « 7 comptes » (0 prend le
+   singulier, comme en francais). #}
+{% if singulier and total <= 1 %}{% set label = singulier %}{% endif %}
 {# Domaine du menu dont releve la vignette : son icone en prend la couleur. #}
 {% set dom = namespace(key='') %}
 {% for d in nav_domaines %}{% for e in d.entries %}{% if e.blueprint == key %}{% set dom.key = d.key %}{% endif %}{% endfor %}{% endfor %}
@@ -14,8 +17,9 @@
     <span class="stat-toggle" role="button" tabindex="-1" title="Masquer / afficher cette vignette" aria-hidden="true"><i class="bi"></i></span>
     <div class="d-flex align-items-center gap-2">
         <div class="stat-icon{% if dom.key %} dom-{{ dom.key }}{% endif %}">{{ icone(icon, 20) }}</div>
-        <div class="flex-grow-1 min-w-0">
-            <div class="stat-number">{{ total }}</div>
+        {# Le nombre et l'intitule sur une meme ligne, calee sur l'icone. #}
+        <div class="stat-texte flex-grow-1 min-w-0">
+            <span class="stat-number">{{ total }}</span>
             <span class="stat-label">{{ label }}</span>
         </div>
     </div>
@@ -71,7 +75,7 @@
         {{ stat_card(c.url, c.label, c.icon, c.color, c.s,
                      ok_label=c.get('ok_label', 'OK'),
                      danger_label='critiques', warning_label='urgents',
-                     key=c.key) }}
+                     key=c.key, singulier=c.get('singulier', '')) }}
         {% endfor %}
     </div>
     {% if dashboard_custom %}
@@ -82,7 +86,7 @@
             {{ stat_card(c.url, c.label, c.icon, c.color, c.s,
                          ok_label=c.get('ok_label', 'OK'),
                          danger_label='critiques', warning_label='urgents',
-                         key=c.key) }}
+                         key=c.key, singulier=c.get('singulier', '')) }}
             {% endfor %}
             <div class="stat-tray-empty text-muted small {% if dash_hidden_cards %}d-none{% endif %}">Aucune vignette masquée.</div>
         </div>
@@ -139,17 +143,17 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="backup_id" value="{{ backup.id }}">
                                 </form>
-                                <input type="text" name="comment" form="qc-{{ backup.id }}" class="form-control form-control-sm" placeholder="Commentaire..." style="min-width: 150px;">
+                                <input type="text" name="comment" form="qc-{{ backup.id }}" class="form-control form-control-sm qc-commentaire" placeholder="Commentaire..." style="min-width: 130px;">
                             </td>
                             <td>
                                 <div class="d-flex gap-2">
-                                    <button type="submit" form="qc-{{ backup.id }}" name="status" value="ok" class="btn btn-success fw-medium" title="Valider OK">
+                                    <button type="submit" form="qc-{{ backup.id }}" name="status" value="ok" class="btn btn-sm btn-success fw-medium qc-btn" title="Valider OK">
                                         <i class="bi bi-check-lg me-1"></i>OK
                                     </button>
-                                    <button type="submit" form="qc-{{ backup.id }}" name="status" value="warning" class="btn btn-warning fw-medium" title="Marquer en avertissement">
+                                    <button type="submit" form="qc-{{ backup.id }}" name="status" value="warning" class="btn btn-sm btn-warning fw-medium qc-btn" title="Marquer en avertissement">
                                         <i class="bi bi-exclamation-triangle me-1"></i>Attention
                                     </button>
-                                    <button type="submit" form="qc-{{ backup.id }}" name="status" value="failed" class="btn btn-danger fw-medium" title="Marquer en échec">
+                                    <button type="submit" form="qc-{{ backup.id }}" name="status" value="failed" class="btn btn-sm btn-danger fw-medium qc-btn" title="Marquer en échec">
                                         <i class="bi bi-x-lg me-1"></i>Échec
                                     </button>
                                 </div>

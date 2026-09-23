@@ -37,16 +37,17 @@ WIDGET_SPAN_MAX = 12
 # le filtrage can_view), et rendu (endpoint/libelle/icone/couleur + libelles de
 # legende specifiques). L'ordre est personnalisable par utilisateur, comme les
 # blocs. `cat` = categorie de permission ; `key` sert d'identifiant d'ordre.
+# `label` au pluriel, `singulier` pour 0 ou 1 : « 1 compte », « 7 comptes ».
 STAT_CARDS = [
-    {'key': 'accounts',     'cat': 'accounts',     'label': 'Comptes',         'icon': 'bi-key',               'color': '#6366f1', 'endpoint': 'accounts.list'},
-    {'key': 'certificates', 'cat': 'certificates', 'label': 'Certificats',     'icon': 'bi-award',             'color': '#10b981', 'endpoint': 'certificates.list'},
-    {'key': 'domains',      'cat': 'domains',      'label': 'Domaines',        'icon': 'bi-globe',             'color': '#3b82f6', 'endpoint': 'domains.list'},
-    {'key': 'backups',      'cat': 'backups',      'label': 'Sauvegardes',     'icon': 'bi-cloud-arrow-up',    'color': '#06b6d4', 'endpoint': 'backups.list'},
-    {'key': 'tests',        'cat': 'tests',        'label': 'Tests',           'icon': 'bi-clipboard-check',   'color': '#f59e0b', 'endpoint': 'tests.list'},
-    {'key': 'reviews',      'cat': 'reviews',      'label': 'Revue de droits', 'icon': 'bi-person-check',      'color': '#8b5cf6', 'endpoint': 'reviews.list'},
-    {'key': 'updates',      'cat': 'updates',      'label': 'Mises à jour',    'icon': 'bi-arrow-up-circle',   'color': '#ec4899', 'endpoint': 'updates.list'},
-    {'key': 'inventory',    'cat': 'inventory',    'label': 'Matériel',        'icon': 'bi-hdd-stack',         'color': '#0ea5e9', 'endpoint': 'inventory.list'},
-    {'key': 'contracts',    'cat': 'contracts',    'label': 'Contrats',        'icon': 'bi-file-earmark-text', 'color': '#14b8a6', 'endpoint': 'contracts.list'},
+    {'key': 'accounts',     'cat': 'accounts',     'label': 'Comptes',         'icon': 'bi-key',               'color': '#6366f1', 'singulier': 'Compte', 'endpoint': 'accounts.list'},
+    {'key': 'certificates', 'cat': 'certificates', 'label': 'Certificats',     'icon': 'bi-award',             'color': '#10b981', 'singulier': 'Certificat', 'endpoint': 'certificates.list'},
+    {'key': 'domains',      'cat': 'domains',      'label': 'Domaines',        'icon': 'bi-globe',             'color': '#3b82f6', 'singulier': 'Domaine', 'endpoint': 'domains.list'},
+    {'key': 'backups',      'cat': 'backups',      'label': 'Sauvegardes',     'icon': 'bi-cloud-arrow-up',    'color': '#06b6d4', 'singulier': 'Sauvegarde', 'endpoint': 'backups.list'},
+    {'key': 'tests',        'cat': 'tests',        'label': 'Tests',           'icon': 'bi-clipboard-check',   'color': '#f59e0b', 'singulier': 'Test', 'endpoint': 'tests.list'},
+    {'key': 'reviews',      'cat': 'reviews',      'label': 'Revues de droits', 'icon': 'bi-person-check',      'color': '#8b5cf6', 'singulier': 'Revue de droits', 'endpoint': 'reviews.list'},
+    {'key': 'updates',      'cat': 'updates',      'label': 'Mises à jour',    'icon': 'bi-arrow-up-circle',   'color': '#ec4899', 'singulier': 'Mise à jour', 'endpoint': 'updates.list'},
+    {'key': 'inventory',    'cat': 'inventory',    'label': 'Matériels',       'icon': 'bi-hdd-stack',         'color': '#0ea5e9', 'singulier': 'Matériel', 'endpoint': 'inventory.list'},
+    {'key': 'contracts',    'cat': 'contracts',    'label': 'Contrats',        'icon': 'bi-file-earmark-text', 'color': '#14b8a6', 'singulier': 'Contrat', 'endpoint': 'contracts.list'},
 ]
 
 
