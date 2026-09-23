@@ -57,7 +57,7 @@ def primary_css_override(hex_color):
 
 # Couleur du logo SVG d'origine (static/img/logo.svg) : un aplat indigo-700
 # depuis le 2026-09-23 (l'ancien degrade indigo/bleu est abandonne).
-_LOGO_COLOR = '#4338ca'
+_LOGO_COLOR = '#4f46e5'
 
 
 def tinted_logo_svg(svg, hex_color):
