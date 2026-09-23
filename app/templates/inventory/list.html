@@ -169,7 +169,10 @@
             <thead>
                 <tr>
                     <th>{{ sorth('name', 'Nom') }}</th>
-                    {% for key, label in columns %}<th data-col="{{ key }}">{{ sorth(key, label) }}</th>{% endfor %}
+                    {# En-têtes abrégés dans le tableau seulement (le sélecteur de colonnes garde
+                       le libellé entier) ; le libellé entier reste au survol. #}
+                    {% set entetes_courts = {'criticality': 'Crit.'} %}
+                    {% for key, label in columns %}<th data-col="{{ key }}"{% if key in entetes_courts %} title="{{ label }}"{% endif %}>{{ sorth(key, entetes_courts.get(key, label)) }}</th>{% endfor %}
                     <th>{{ sorth('status', 'Statut') }}</th>
                 </tr>
             </thead>
