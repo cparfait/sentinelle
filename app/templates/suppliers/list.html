@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Fournisseurs - Sentinelle{% endblock %}
 
-{% from '_liste.html' import barre, actions, bouton_modifier, bouton_supprimer, vide %}
+{% from '_liste.html' import barre %}
 {% block content %}
 <div class="page-header">
     <div>
@@ -31,7 +31,6 @@
                     <th>N° client</th>
                     <th>Portail</th>
                     <th>Contrats</th>
-                    <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -61,16 +60,10 @@
                         {% set n = s.contracts.filter_by(is_active=True).count() %}
                         {% if n %}<span class="badge bg-light text-dark border">{{ n }}</span>{% else %}<span class="text-muted">-</span>{% endif %}
                     </td>
-                    <td class="col-actions">
-                        {% call actions() %}
-                        {% if current_user.can_edit('contracts') %}{{ bouton_modifier(url_for('suppliers.edit', id=s.id)) }}{% endif %}
-                        {% if current_user.can_delete('contracts') %}{{ bouton_supprimer(url_for('suppliers.delete', id=s.id), 'Supprimer ce fournisseur ?') }}{% endif %}
-                        {% endcall %}
-                    </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="8" class="text-center py-4 text-muted">
+                    <td colspan="7" class="text-center py-4 text-muted">
                         <i class="bi bi-building" style="font-size: 2rem;"></i>
                         <p class="mt-2 mb-0">Aucun fournisseur.
                             {% if current_user.can_edit('contracts') %}
