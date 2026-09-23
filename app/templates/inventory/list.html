@@ -8,10 +8,11 @@
 {% set kind_icons = {'vm': 'monitor', 'physical': 'server', 'nas': 'hard-drive',
                      'storage': 'database', 'network': 'router'} %}
 
-{# Colonnes configurables : (clé, libellé). Nom / Statut / Actions sont toujours affichés. #}
+{# Colonnes configurables : (clé, libellé). Nom (avec l'OS en dessous) et Statut sont
+   toujours affichés — l'OS a quitté les colonnes pour se ranger sous le nom (Dom 2026-09-23). #}
 {% set columns = [
     ('kind', 'Type'), ('environment', 'Env.'), ('criticality', 'Criticité'),
-    ('os', 'OS'), ('os_last_update', 'MAJ OS'), ('ip_address', 'Adresse IP'),
+    ('os_last_update', 'MAJ OS'), ('ip_address', 'Adresse IP'),
     ('host_server', 'Hôte'), ('hypervisor', 'Hyperviseur'), ('netmask', 'Masque'),
     ('vlan', 'VLAN'), ('vcpu', 'vCPU'), ('ram_go', 'RAM (Go)'), ('storage', 'Stockage (Go)'),
     ('manufacturer_model', 'Constructeur / Modèle'), ('serial_number', 'N° série'),
@@ -23,7 +24,7 @@
     ('supervision', 'Supervision'), ('pra_pca', 'PRA/PCA'),
     ('backup1', 'Sauvegarde 1'), ('backup2', 'Sauvegarde 2'), ('observations', 'Observations')
 ] %}
-{% set default_cols = ['kind', 'environment', 'criticality', 'os', 'ip_address', 'warranty_end'] %}
+{% set default_cols = ['kind', 'environment', 'criticality', 'ip_address', 'warranty_end'] %}
 
 {% block content %}
 {% set reseau = famille == 'reseau' %}
@@ -214,6 +215,7 @@
                 <tr class="row-{{ e.computed_status() }}{% if e.environment == 'decommissioned' %} inv-decommissioned{% endif %}">
                     <td>
                         <a href="{{ url_for('inventory.detail', id=e.id) }}" class="fw-medium text-decoration-none">{{ e.name }}</a>
+                        {% if vals.os %}<small class="d-block text-muted">{{ vals.os }}</small>{% endif %}
                     </td>
                     {% for key, label in columns %}
                     <td data-col="{{ key }}">
