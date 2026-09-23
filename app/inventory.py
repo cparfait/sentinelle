@@ -21,7 +21,7 @@ ENV_CHOICES = [('', '—'), ('prod', 'Production'), ('preprod', 'Préproduction'
 # rattachement logiciel/serveur de l'inventaire, et la colonne ne se remplit
 # plus.
 SEARCH_FIELDS = ['name', 'os', 'os_version', 'ip_address', 'host_server', 'hypervisor',
-                 'role_principal', 'serial_number', 'location', 'management_url',
+                 'role_principal', 'serial_number', 'service_tag', 'location', 'management_url',
                  'manufacturer_model', 'usage', 'observations']
 
 
@@ -86,6 +86,7 @@ def _apply_form(eq, f):
     eq.hdd3_go = _pf(f.get('hdd3_go'))
     eq.manufacturer_model = _txt(f, 'manufacturer_model')
     eq.serial_number = _txt(f, 'serial_number')
+    eq.service_tag = _txt(f, 'service_tag')
     eq.purchase_date = _pd(f.get('purchase_date'))
     eq.warranty_end = _pd(f.get('warranty_end'))
     eq.maintenance_contract = _txt(f, 'maintenance_contract')

@@ -55,6 +55,8 @@ _RULES = [
     ('numero de serie', 'serial_number', 'text'),
     ('n de serie', 'serial_number', 'text'),
     ('serie', 'serial_number', 'text'),
+    ('service tag', 'service_tag', 'text'),
+    ('servicetag', 'service_tag', 'text'),
     ('date achat', 'purchase_date', 'date'),
     ('mise en service', 'purchase_date', 'date'),
     ('fin de garantie', 'warranty_end', 'date'),

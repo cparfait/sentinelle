@@ -32,7 +32,7 @@ applicatives. Le tout avec des **alertes automatiques** (mail + Teams), un **ré
 - **Mises à jour** — suivi des versions et du statut (à jour / disponible / critique) + qui a fait la MàJ.
 
 ### Inventaire du parc
-- **Serveurs** — VM, serveurs physiques, NAS et **baies de stockage** : OS, IP, virtualisation, matériel,
+- **Serveurs** — VM, serveurs physiques, NAS et **baies de stockage** : OS, IP, virtualisation, matériel (n° de série, Service Tag),
   garantie, emplacement, sauvegardes, PRA/PCA.
 - **Réseau** — switches, pare-feu, routeurs et bornes WiFi : modèle, n° de série, VLAN, **nombre de ports**,
   interface d'administration, emplacement, garantie.

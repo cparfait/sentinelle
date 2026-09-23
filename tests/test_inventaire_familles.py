@@ -245,3 +245,21 @@ def test_la_fiche_ne_delaye_plus_ses_champs(client):
     # Les balises se ferment : une grille mal fermee disloque la page sans
     # lever d'erreur, le gabarit rend et l'ecran est de travers.
     assert html.count('<div') == html.count('</div>')
+
+
+def test_service_tag_sur_fiche_et_recherche(client, app):
+    """Le Service Tag (Dell, HP...) est un identifiant de support distinct du
+    numero de serie : la fiche l'affiche a cote, et la recherche de la liste
+    le retrouve comme elle retrouve le numero de serie."""
+    e = Equipment(name='SRV-DELL-01', kind='physical', ip_address='172.16.1.29',
+                  serial_number='SN-0001', service_tag='7XKQ2R3')
+    db.session.add(e)
+    db.session.commit()
+
+    html = client.get(f'/inventory/{e.id}').get_data(as_text=True)
+    assert 'Service Tag' in html and '7XKQ2R3' in html
+
+    html = client.get('/inventory/?q=7XKQ2R3').get_data(as_text=True)
+    assert 'SRV-DELL-01' in html
+    html = client.get('/inventory/?q=ZZZ-INCONNU').get_data(as_text=True)
+    assert 'SRV-DELL-01' not in html

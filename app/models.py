@@ -838,6 +838,10 @@ class Equipment(db.Model):
     # Materiel & garantie (physique / nas)
     manufacturer_model = db.Column(db.String(128))
     serial_number = db.Column(db.String(128))
+    # Service Tag (Dell, HP, Lenovo...) : identifiant de support DISTINCT du numero
+    # de serie -- c est lui que reclame la hotline, et il ne se devine pas a
+    # partir de l autre (Dom 2026-09-23).
+    service_tag = db.Column(db.String(64))
     purchase_date = db.Column(db.Date)
     warranty_end = db.Column(db.Date)
     maintenance_contract = db.Column(db.String(128))

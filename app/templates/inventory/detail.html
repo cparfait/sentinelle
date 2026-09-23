@@ -149,6 +149,7 @@
                     <div class="fiche-grille">
                         {{ champ('Constructeur / Modèle', item.manufacturer_model) }}
                         {{ champ('N° de série', item.serial_number) }}
+                        {{ champ('Service Tag', item.service_tag) }}
                         {{ champ('Emplacement', item.location) }}
                         {{ champ('Date achat / MES', item.purchase_date.strftime('%d/%m/%Y') if item.purchase_date else '') }}
                         {{ champ('Fin de garantie', item.warranty_end.strftime('%d/%m/%Y') if item.warranty_end else '') }}

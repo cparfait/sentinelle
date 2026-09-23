@@ -147,6 +147,7 @@ def search():
                 Equipment.os.ilike(like),
                 Equipment.role_principal.ilike(like),
                 Equipment.serial_number.ilike(like),
+                Equipment.service_tag.ilike(like),
                 Equipment.host_server.ilike(like),
             )
         ).all()
