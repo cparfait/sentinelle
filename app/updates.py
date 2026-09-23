@@ -70,8 +70,8 @@ def create():
             updated_by=request.form.get('updated_by', '').strip() or None,
             description=request.form.get('description'),
             priority=request.form.get('priority', 'medium'),
-            equipment_id=_parse_equipment_id(request.form.get('equipment_id')),
         )
+        u.software_id, u.equipment_id = _cible(name, request.form.get('equipment_id'))
         db.session.add(u)
         db.session.commit()
         db.session.add(UpdateHistory(update_id=u.id, action='creation',
@@ -115,7 +115,7 @@ def edit(id):
         update.updated_by = request.form.get('updated_by', '').strip() or None
         update.description = request.form.get('description')
         update.priority = request.form.get('priority', 'medium')
-        update.equipment_id = _parse_equipment_id(request.form.get('equipment_id'))
+        update.software_id, update.equipment_id = _cible(name, request.form.get('equipment_id'))
         db.session.commit()
         flash('Mise a jour modifiee', 'success')
         return redirect(url_for('updates.detail', id=id))
@@ -158,10 +158,28 @@ def delete(id):
     return redirect(url_for('updates.list'))
 
 
+def _cible(name, equipment_form):
+    """(software_id, equipment_id) d'une mise a jour. L'equipement choisi dans
+    le formulaire prime ; sinon le nom cherche sa fiche, logiciel ou
+    equipement, quand UNE fiche active le porte. Le nom reste : une mise a
+    jour peut viser un element hors inventaire."""
+    from sqlalchemy import func
+    from app.models import Software, Equipment
+    nom = (name or '').strip().lower()
+    logiciels = Software.query.filter(Software.is_active.is_(True),
+                                      func.lower(Software.name) == nom).all() if nom else []
+    software_id = logiciels[0].id if len(logiciels) == 1 else None
+    equipment_id = _parse_equipment_id(equipment_form)
+    if equipment_id is None and nom:
+        equipements = Equipment.query.filter(Equipment.is_active.is_(True),
+                                             func.lower(Equipment.name) == nom).all()
+        equipment_id = equipements[0].id if len(equipements) == 1 else None
+    return software_id, equipment_id
+
+
 def _active_assets():
     """Suggestions pour le champ « nom » : logiciels métiers (type application)
-    et équipements de l'inventaire (type système). Remplace l'ancien catalogue
-    Asset des Préférences."""
+    et équipements de l'inventaire (type système)."""
     from types import SimpleNamespace
     from app.models import Software, Equipment
     apps = [SimpleNamespace(name=s.name, asset_type='application')

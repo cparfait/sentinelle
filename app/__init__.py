@@ -365,8 +365,13 @@ def _migrate_data():
     # rien ne la lit : on la verse une fois dans `hosting`, puis on l'oublie.
     from sqlalchemy import inspect as _inspect
     _cols = set()
+    _tables = set()
+    _ccols = set()
     try:
-        _cols = {c['name'] for c in _inspect(db.engine).get_columns('software')}
+        _insp = _inspect(db.engine)
+        _tables = set(_insp.get_table_names())
+        _cols = {c['name'] for c in _insp.get_columns('software')}
+        _ccols = {c['name'] for c in _insp.get_columns('contract')}
     except Exception:
         pass
     if 'is_saas' in _cols:
@@ -432,15 +437,25 @@ def _migrate_data():
         " WHERE software_id IS NULL AND ("
         "  SELECT COUNT(*) FROM software s2"
         "  WHERE lower(s2.name) = lower(access_review.application) AND s2.is_active = 1) = 1"))
-    # Le type d'asset « server » est remplace par « divers » (les serveurs sont
-    # desormais geres dans l'inventaire).
-    db.session.execute(text("UPDATE asset SET asset_type='divers' WHERE asset_type='server'"))
-    # Contrats : l'ancien lien unique equipment_id devient une relation N:N
-    # (table contract_equipment). On y recopie les liens existants une fois.
-    db.session.execute(text(
-        "INSERT OR IGNORE INTO contract_equipment (contract_id, equipment_id) "
-        "SELECT id, equipment_id FROM contract "
-        "WHERE equipment_id IS NOT NULL"))
+    # Contrats : l'ancien lien unique equipment_id est devenu une relation N:N
+    # (table contract_equipment). La colonne n'est plus declaree ; si une base
+    # ancienne l'a encore, on y recopie les liens une fois.
+    if 'equipment_id' in _ccols:
+        db.session.execute(text(
+            "INSERT OR IGNORE INTO contract_equipment (contract_id, equipment_id) "
+            "SELECT id, equipment_id FROM contract "
+            "WHERE equipment_id IS NOT NULL"))
+    # Mises a jour : la cible designee par son nom rejoint la fiche logiciel
+    # ou equipement du meme nom, quand UNE fiche active le porte, pour les
+    # lignes encore sans aucun lien.
+    for table, col in (('software', 'software_id'), ('equipment', 'equipment_id')):
+        db.session.execute(text(
+            f"UPDATE system_update SET {col} = ("
+            f"  SELECT t.id FROM {table} t"
+            f"  WHERE lower(t.name) = lower(system_update.name) AND t.is_active = 1)"
+            f" WHERE software_id IS NULL AND equipment_id IS NULL AND ("
+            f"  SELECT COUNT(*) FROM {table} t2"
+            f"  WHERE lower(t2.name) = lower(system_update.name) AND t2.is_active = 1) = 1"))
     # Marches : l'ancien lien unique Software.contract_id devient une relation
     # N:N (table contract_software). Un marche en couvre souvent plusieurs --
     # UGAP, marches communs a deux applications --, ce que la cle unique ne
@@ -459,14 +474,16 @@ def _migrate_data():
         "UPDATE certificate SET service_id = NULL WHERE service_id IN "
         "(SELECT id FROM referential WHERE kind = 'user_service')"))
     db.session.execute(text("DELETE FROM referential WHERE kind = 'user_service'"))
-    # Catalogue « applications » des Preferences -> inventaire Logiciels.
-    # Migration unique et idempotente (par nom). Les Asset restent en base
-    # (dormants) ; c'est l'ecran Preferences qui est retire.
-    db.session.execute(text(
-        "INSERT INTO software (name, description, is_active, hosting, created_at, updated_at) "
-        "SELECT a.name, a.description, 1, 'on_premise', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP "
-        "FROM asset a WHERE a.asset_type='application' AND a.is_active=1 "
-        "AND NOT EXISTS (SELECT 1 FROM software s WHERE s.name = a.name)"))
+    # Ancien catalogue « applications » des Preferences (table asset) ->
+    # inventaire Logiciels. Le modele n'existe plus ; une base neuve n'a pas la
+    # table, une base ancienne la garde, dormante, et la migration reste
+    # idempotente (par nom).
+    if 'asset' in _tables:
+        db.session.execute(text(
+            "INSERT INTO software (name, description, is_active, hosting, created_at, updated_at) "
+            "SELECT a.name, a.description, 1, 'on_premise', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP "
+            "FROM asset a WHERE a.asset_type IN ('application') AND a.is_active=1 "
+            "AND NOT EXISTS (SELECT 1 FROM software s WHERE s.name = a.name)"))
     db.session.commit()
 
 

@@ -39,12 +39,18 @@ def test_edit_remplace_les_equipements(client):
 
 
 def test_migration_ancien_equipment_id(app):
+    """Une base ancienne a encore la colonne contract.equipment_id (le modele
+    ne la declare plus) : le lien est recopie dans contract_equipment."""
+    from sqlalchemy import text
     e = Equipment(name='LegacySRV', kind='physical')
     db.session.add(e)
     db.session.commit()
     ct = Contract(name='Ancien')
-    ct.equipment_id = e.id          # ancien lien direct, sans ligne d'association
     db.session.add(ct)
+    db.session.commit()
+    db.session.execute(text('ALTER TABLE contract ADD COLUMN equipment_id INTEGER'))
+    db.session.execute(text('UPDATE contract SET equipment_id = :e WHERE id = :c'),
+                       {'e': e.id, 'c': ct.id})
     db.session.commit()
     assert ct.equipments == []
     _migrate_data()                 # doit recopier equipment_id -> contract_equipment

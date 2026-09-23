@@ -61,7 +61,7 @@ def _purge_obj(etype, obj):
     if etype == 'equipment':
         # SQLite n'applique pas les FK : on detache explicitement les elements
         # lies (vue 360°) pour ne pas laisser d'equipment_id orphelin.
-        for model in (Certificate, Backup, SystemUpdate, Contract):
+        for model in (Certificate, Backup, SystemUpdate, Account):
             model.query.filter_by(equipment_id=obj.id).update({'equipment_id': None})
         # Liens N:N (contrat/logiciel <-> equipement) : supprimer les associations.
         from app.models import contract_equipment, software_equipment
@@ -70,12 +70,18 @@ def _purge_obj(etype, obj):
         db.session.execute(software_equipment.delete().where(
             software_equipment.c.equipment_id == obj.id))
     if etype == 'software':
-        # Detacher les MAJ rattachees a ce logiciel avant suppression definitive.
-        SystemUpdate.query.filter_by(software_id=obj.id).update({'software_id': None})
+        # Detacher ce qui pointe sur ce logiciel : MAJ, revues de droits, comptes.
+        for model in (SystemUpdate, AccessReview, Account):
+            model.query.filter_by(software_id=obj.id).update({'software_id': None})
     if etype == 'supplier':
-        # Meme principe : detacher les references avant suppression definitive.
-        Equipment.query.filter_by(supplier_id=obj.id).update({'supplier_id': None})
-        Contract.query.filter_by(supplier_id=obj.id).update({'supplier_id': None})
+        # Meme principe : detacher les references avant suppression definitive
+        # (equipements, contrats, certificats, comptes, domaines enregistres).
+        for model in (Equipment, Contract, Certificate, Account):
+            model.query.filter_by(supplier_id=obj.id).update({'supplier_id': None})
+        Domain.query.filter_by(registrar_id=obj.id).update({'registrar_id': None})
+    if etype == 'domain':
+        # Les certificats TLS qui relevaient de ce domaine perdent leur fiche.
+        Certificate.query.filter_by(domain_id=obj.id).update({'domain_id': None})
     db.session.delete(obj)
 
 

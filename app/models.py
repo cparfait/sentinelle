@@ -768,22 +768,10 @@ class UpdateHistory(db.Model):
     performed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
-ASSET_TYPE_LABELS = {'application': 'Application', 'divers': 'Divers'}
-
-
-class Asset(db.Model):
-    """Catalogue d'applications et de systemes/serveurs, defini dans les
-    preferences. Alimente les listes deroulantes des mises a jour et revues."""
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128), nullable=False)
-    asset_type = db.Column(db.String(20), default='application')  # application / divers
-    description = db.Column(db.String(256))
-    is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-
-    def type_label(self):
-        return ASSET_TYPE_LABELS.get(self.asset_type, self.asset_type)
-
+# L'ancien catalogue « Asset » (applications et systemes des Preferences) n'a
+# plus de modele : ses applications ont rejoint l'inventaire Logiciels, ses
+# systemes l'inventaire materiel. La table survit, dormante, dans les bases
+# qui l'ont connue (voir _migrate_data) ; une base neuve ne la cree plus.
 
 EQUIPMENT_KIND_LABELS = {
     'vm': 'VM',
@@ -1206,9 +1194,10 @@ class Contract(db.Model):
     renewal_years = db.Column(db.Integer)
     notice_days = db.Column(db.Integer, default=0)   # preavis de resiliation (jours)
     auto_renew = db.Column(db.Boolean, default=False)  # tacite reconduction
-    # Colonne historique (1 equipement) conservee pour la migration : SQLite ne
-    # permet pas de la retirer proprement. Les liens font foi via `equipments`.
-    equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'), index=True)
+    # L'ancien lien unique `equipment_id` n'est plus declare : les liens font
+    # foi via `equipments`. La colonne survit dans les bases existantes (SQLite
+    # ne la retire pas sans reconstruire la table) et _migrate_data la recopie
+    # une fois si elle est encore la.
     # Plusieurs equipements couverts par le contrat (M:N). Cote contrat = liste
     # simple (affectation possible sur un contrat neuf) ; le backref
     # `Equipment.contracts` reste dynamique pour la vue 360° (filter_by).

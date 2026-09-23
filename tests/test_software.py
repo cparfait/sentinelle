@@ -1,7 +1,9 @@
 """Tests Lot 2 : inventaire Logiciels métiers, liens serveurs (M:N), statut MAJ
 agrégé et migration du catalogue applications (Asset) vers Software."""
 from app import db, _migrate_data
-from app.models import Software, Supplier, Equipment, Contract, Asset, SystemUpdate
+from sqlalchemy import text
+
+from app.models import Software, Supplier, Equipment, Contract, SystemUpdate
 
 
 def test_create_software_multi_serveurs(client):
@@ -111,8 +113,14 @@ def test_computed_status_depuis_updates(app):
 
 
 def test_migration_asset_application(app):
-    db.session.add(Asset(name='GLPI', asset_type='application', description='Parc'))
-    db.session.add(Asset(name='Bidule', asset_type='divers'))
+    """Une base ancienne a encore la table asset (le modele n'existe plus) :
+    ses applications rejoignent les logiciels, une seule fois."""
+    db.session.execute(text(
+        "CREATE TABLE asset (id INTEGER PRIMARY KEY, name VARCHAR(128) NOT NULL, "
+        "asset_type VARCHAR(20), description VARCHAR(256), is_active BOOLEAN, created_at DATETIME)"))
+    db.session.execute(text(
+        "INSERT INTO asset (name, asset_type, description, is_active) VALUES "
+        "('GLPI', 'application', 'Parc', 1), ('Bidule', 'divers', NULL, 1)"))
     db.session.commit()
     _migrate_data()
     assert [s.name for s in Software.query.all()] == ['GLPI']   # 'divers' non migré
