@@ -413,12 +413,12 @@ details.sidebar-section--repliable > summary:hover { color: var(--muted); }
 /* Une couleur par domaine du menu (voir app/navigation.py), partagee par les
    icones du menu et celles des vignettes du tableau de bord. Les icones restent
    monochromes : la teinte dit a quel domaine on appartient. */
-.dom-aujourdhui     { --nav-icon: #4f46e5; } /* indigo-600 */
+.dom-aujourdhui     { --nav-icon: #6366f1; } /* indigo-500 : la couleur du nom Sentinelle (degrade du logo), le sprite fixant stroke=currentColor, pas de degrade possible */
 .dom-echeances      { --nav-icon: #f97316; } /* orange-500 */
 .dom-exploitation   { --nav-icon: var(--success); }
 .dom-parc           { --nav-icon: #facc15; } /* yellow-400 */
 .dom-administration { --nav-icon: #7c3aed; } /* violet-600 */
-[data-theme="dark"] .dom-aujourdhui     { --nav-icon: #818cf8; }
+[data-theme="dark"] .dom-aujourdhui     { --nav-icon: #6366f1; } /* idem : le nom garde son degrade en sombre */
 [data-theme="dark"] .dom-echeances      { --nav-icon: #fb923c; }
 [data-theme="dark"] .dom-parc           { --nav-icon: #fde047; }
 [data-theme="dark"] .dom-administration { --nav-icon: #a78bfa; }
