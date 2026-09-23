@@ -2,7 +2,10 @@
 from flask import request
 
 PER_PAGE = 25
-PER_PAGE_CHOICES = (25, 50, 100, 200)
+PER_PAGE_CHOICES = (10, 25, 50, 100, 200)
+# Le materiel se lit par petites pages : dix lignes par defaut, le selecteur
+# sous le tableau permettant de voir plus large (Dom 2026-09-23).
+INVENTORY_PER_PAGE = 10
 
 
 def resolve_per_page(default=PER_PAGE):

@@ -148,7 +148,7 @@ def list():
     }
     if kind:
         items = [e for e in items if e.kind == kind]
-    from app.paging import paginate, text_search, resolve_per_page
+    from app.paging import paginate, text_search, resolve_per_page, INVENTORY_PER_PAGE
 
     items = text_search(items, q, SEARCH_FIELDS)
 
@@ -210,7 +210,7 @@ def list():
         sort = ''
         items.sort(key=lambda e: status_rank(e.computed_status()))
 
-    per_page = resolve_per_page()
+    per_page = resolve_per_page(default=INVENTORY_PER_PAGE)
     items, page, pages, total = paginate(items, per_page)
     counts = {k: Equipment.query.filter_by(is_active=True, kind=k).count()
               for k in natures}

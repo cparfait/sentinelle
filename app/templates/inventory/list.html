@@ -241,9 +241,8 @@
     </div>
 </div>
 {# Le sélecteur « lignes par page » vit sous le tableau, à droite de la barre de
-   pagination (toujours affichée ici, même sur une seule page) ; il soumet le
-   formulaire de filtres via son attribut form= (Dom 2026-09-23). #}
-{% set pagination_toujours = true %}
+   pagination ; il soumet le formulaire de filtres via son attribut form=
+   (Dom 2026-09-23). #}
 {% set pagination_droite %}
 <select name="per_page" form="invFilters" class="form-select inv-perpage" onchange="this.form.submit()" title="Lignes par page">
     {% for n in per_page_choices %}<option value="{{ n }}" {{ 'selected' if per_page == n }}>{{ n }} / page</option>{% endfor %}

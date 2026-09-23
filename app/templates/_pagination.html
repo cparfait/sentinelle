@@ -1,8 +1,9 @@
 {# Contrôles de pagination. Variables : page, pages, et si la vue les fournit
    total (nombre d'éléments) et per_page. Préserve les filtres (ex. q).
-   `pagination_toujours` : la barre s'affiche même sur une seule page ;
+   La barre s'affiche même sur une seule page (Dom 2026-09-23) : le compteur
+   « 1–8 sur 8 » dit combien la liste contient, ce que rien d'autre ne disait.
    `pagination_droite` : un bloc capturé rendu à droite (ex. lignes par page). #}
-{% if pages and (pages > 1 or pagination_toujours) %}
+{% if pages %}
 {% set base_args = request.args.to_dict() %}
 <nav class="pagination-bar" aria-label="Pagination">
     <span class="pagination-info">
