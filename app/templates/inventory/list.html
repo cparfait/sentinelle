@@ -246,7 +246,7 @@
 {% set pagination_toujours = true %}
 {% set pagination_droite %}
 <select name="per_page" form="invFilters" class="form-select inv-perpage" onchange="this.form.submit()" title="Lignes par page">
-    {% for n in per_page_choices %}<option value="{{ n }}" {{ 'selected' if per_page == n }}>{{ n }}/page</option>{% endfor %}
+    {% for n in per_page_choices %}<option value="{{ n }}" {{ 'selected' if per_page == n }}>{{ n }} / page</option>{% endfor %}
     <option value="all" {{ 'selected' if per_page is none }}>Tous</option>
 </select>
 {% endset %}
