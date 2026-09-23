@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Contrats - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge, delai_badge %}
-{% from '_liste.html' import barre, actions, cellule, bouton_modifier, vide %}
+{% from '_liste.html' import barre, vide %}
 
 {% block content %}
 <div class="page-header">
@@ -21,47 +21,67 @@
 
 {{ barre(q) }}
 
+{# La disposition des marchés de SoftInventory : le contrat (nature et référence
+   en dessous), le fournisseur, les logiciels couverts, la période sur deux
+   lignes, le montant annuel, puis l'état. L'état reste celui de Sentinelle —
+   Critique / À prévoir / OK selon le préavis — avec le délai en petit dessous ;
+   la date « agir avant » se lit au survol. Disposition fixe : les colonnes de
+   texte se tronquent (le titre entier reste au survol) au lieu d'élargir le
+   tableau. Les lignes gardent leur classe row-<statut> : c'est elle que lit
+   le filtre Tous / Critique / À prévoir / OK. La reconduction se lit dans la
+   fiche, comme le bouton Modifier. #}
 <div class="data-card">
     <div class="table-responsive">
-        <table class="table table-hover mb-0 js-filterable">
+        <table class="table table-hover mb-0 js-filterable tableau-contrats">
+            <colgroup>
+                <col style="width: 43%"><col style="width: 37%"><col style="width: 20%">
+                <col style="width: 5rem"><col style="width: 6.25rem"><col style="width: 116px">
+            </colgroup>
             <thead>
                 <tr>
-                    <th>Statut</th>
                     <th>Contrat</th>
-                    <th>Agir avant</th>
-                    <th>Échéance</th>
                     <th>Fournisseur</th>
-                    <th>Coût / an</th>
-                    <th>Reconduction</th>
-                    <th class="col-actions"><span class="visually-hidden">Actions</span></th>
+                    <th>Logiciels couverts</th>
+                    <th class="text-center">Période</th>
+                    <th class="text-end">Coût / an</th>
+                    <th class="text-center pe-0">État</th>
                 </tr>
             </thead>
             <tbody>
                 {% for c in contracts %}
                 <tr class="row-{{ c.status() }}">
-                    <td>{{ status_badge(c.status()) }}</td>
                     <td>
-                        <a href="{{ url_for('contracts.detail', id=c.id) }}" class="fw-medium text-decoration-none">{{ c.name }}</a>
-                        <small class="d-block text-muted">{{ c.kind_label() }}{% if c.reference %} · <code>{{ c.reference }}</code>{% endif %}</small>
+                        <a href="{{ url_for('contracts.detail', id=c.id) }}" class="fw-medium text-decoration-none d-block text-truncate" title="{{ c.name }}">{{ c.name }}</a>
+                        <small class="d-block text-truncate text-faint">{{ c.kind_label() }}{% if c.reference %} · {{ c.reference }}{% endif %}</small>
                     </td>
-                    <td>
-                        {% set days = c.days_left() %}
-                        {% if days is not none %}
-                        {{ cellule(c.action_deadline().strftime('%d/%m/%Y'), delai_badge(days, c.status(), passe='préavis dépassé de')) }}
-                        {% else %}<span class="text-muted">à renseigner</span>{% endif %}
+                    <td class="text-truncate">
+                        {%- if c.supplier %}<a href="{{ url_for('suppliers.detail', id=c.supplier_id) }}" class="text-decoration-none" title="{{ c.supplier.name }}">{{ c.supplier.name }}</a>{% else %}—{% endif -%}
                     </td>
-                    <td>{{ c.end_date.strftime('%d/%m/%Y') if c.end_date else '—' }}</td>
-                    <td>{% if c.supplier %}<a href="{{ url_for('suppliers.detail', id=c.supplier_id) }}" class="text-decoration-none">{{ c.supplier.name }}</a>{% else %}—{% endif %}</td>
-                    <td class="text-nowrap">{{ ('%.0f' | format(c.cost_yearly)) ~ ' €' if c.cost_yearly else '—' }}</td>
-                    <td>{% if c.auto_renew %}Tacite{% else %}Non{% endif %}</td>
-                    <td class="col-actions">
-                        {% call actions() %}
-                        {% if current_user.can_edit('contracts') %}{{ bouton_modifier(url_for('contracts.edit', id=c.id)) }}{% endif %}
-                        {% endcall %}
+                    {# La liste entière au survol : c'est la colonne où la coupure
+                       retire le plus, un contrat pouvant couvrir plusieurs logiciels. #}
+                    <td class="cell-logiciels">
+                        {%- set logiciels = c.software | map(attribute='name') | join(' · ') -%}
+                        {%- if logiciels %}<span class="d-block text-truncate text-muted" title="{{ logiciels }}">{{ logiciels }}</span>
+                        {%- else %}<span class="badge-status badge-muted">aucun</span>{% endif -%}
+                    </td>
+                    <td class="cell-periode text-muted">
+                        {%- if c.start_date or c.end_date -%}
+                        <span class="d-block">{{ c.start_date.strftime('%d/%m/%Y') if c.start_date else '…' }}</span>
+                        <span class="d-block mt-1">{{ c.end_date.strftime('%d/%m/%Y') if c.end_date else '…' }}</span>
+                        {%- else %}—{% endif -%}
+                    </td>
+                    <td class="cell-montant text-muted">
+                        {{- ('{:,.0f}'.format(c.cost_yearly) | replace(',', ' ')) ~ ' €' if c.cost_yearly else '—' -}}
+                    </td>
+                    {% set days = c.days_left() %}
+                    <td class="cell-etat" {% if days is not none %}title="Agir avant le {{ c.action_deadline().strftime('%d/%m/%Y') }}"{% endif %}>
+                        {{ status_badge(c.status()) }}
+                        {% if days is not none %}{{ delai_badge(days, c.status(), passe='dépassé de') }}
+                        {% else %}<span class="delai text-muted">à renseigner</span>{% endif %}
                     </td>
                 </tr>
                 {% else %}
-                {{ vide(8, 'Aucun contrat.', url_for('contracts.create') if current_user.can_edit('contracts') else None, 'bi-file-earmark-text') }}
+                {{ vide(6, 'Aucun contrat.', url_for('contracts.create') if current_user.can_edit('contracts') else None, 'bi-file-earmark-text') }}
                 {% endfor %}
             </tbody>
         </table>

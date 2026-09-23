@@ -1264,7 +1264,21 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 .table.tableau-fournisseurs tbody td .pile a:hover i { color: var(--primary); }
 .table.tableau-fournisseurs tbody td a.pile-site { font-size: 0.75rem; color: var(--faint); }
 .table.tableau-fournisseurs tbody td a.pile-site:hover { color: var(--primary); text-decoration: underline; }
-.tableau-fournisseurs .cell-horaires { font-size: 0.75rem; line-height: 1.35; }.badge-status svg.lucide { margin-right: 3px; }
+.tableau-fournisseurs .cell-horaires { font-size: 0.75rem; line-height: 1.35; }
+/* Liste des contrats : la disposition des marches de SoftInventory. Trois
+   colonnes de texte en pourcentage (43 / 37 / 20), puis periode, montant et
+   etat en largeur fixe. La periode et le montant en 12 px gris : ce sont des
+   donnees de plus sur la ligne, pas son sujet ; tabular-nums aligne les
+   chiffres d'une ligne a l'autre. L'etat garde la pastille d'urgence de
+   Sentinelle, le delai en petit dessous ("dans 24 j", "depasse de 76 j"). */
+.tableau-contrats { table-layout: fixed; }
+.tableau-contrats td { overflow: hidden; }
+.tableau-contrats .cell-periode { text-align: center; white-space: nowrap; font-size: 0.75rem; line-height: 1.15; }
+.tableau-contrats .cell-montant { text-align: right; white-space: nowrap; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.tableau-contrats .cell-etat { text-align: center; padding-right: 0; }
+.tableau-contrats .cell-etat .delai { display: block; margin-top: 3px; font-size: 0.72rem; line-height: 1.15; white-space: normal; }
+.tableau-contrats .cell-logiciels { font-size: 0.75rem; line-height: 1.15; }
+.badge-status svg.lucide { margin-right: 3px; }
 .table-responsive::-webkit-scrollbar { height: 6px; }
 .table-hover tbody tr { transition: background-color 0.12s ease; }
 .table-hover tbody tr:hover { background-color: rgba(var(--primary-rgb), 0.07); }
