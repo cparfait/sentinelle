@@ -29,7 +29,7 @@
                                 <option value="{{ review.application }}" selected>{{ review.application }} (hors inventaire)</option>
                                 {% endif %}
                             </select>
-                            {% if current_user.can_edit('inventory') %}{{ qa_button('qaModalSoftware', 'reviewApp', 'Ajouter une application') }}{% endif %}
+                            {% if current_user.can_edit('software') %}{{ qa_button('qaModalSoftware', 'reviewApp', 'Ajouter une application') }}{% endif %}
                         </div>
                         <small class="text-muted">Issu de l'inventaire <a href="{{ url_for('software.list') }}">Logiciels / Applications</a>.</small>
                     </div>
@@ -91,5 +91,5 @@
     </div>
 </div>
 
-{% if current_user.can_edit('inventory') %}{{ qa_modal_software() }}{% endif %}
+{% if current_user.can_edit('software') %}{{ qa_modal_software() }}{% endif %}
 {% endblock %}

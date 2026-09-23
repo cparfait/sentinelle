@@ -54,8 +54,8 @@ DOMAINES = [
     ]},
     {'key': 'parc', 'label': 'Parc', 'entries': [
         _e('inventory.list', 'Matériel', 'bi-hdd-stack', 'inventory', 'inventory', lucide='server'),
-        _e('software.list', 'Logiciels', 'bi-window-stack', 'inventory', 'software', lucide='package'),
-        _e('suppliers.list', 'Fournisseurs', 'bi-building', 'contracts', lucide='building'),
+        _e('software.list', 'Logiciels', 'bi-window-stack', 'software', 'software', lucide='package'),
+        _e('suppliers.list', 'Fournisseurs', 'bi-building', 'suppliers', lucide='building'),
     ]},
 ]
 

@@ -24,12 +24,12 @@
 {% set sous_titre %}{{ supplier.kind_label() }}{% if supplier.contact_name %} · {{ supplier.contact_name }}{% endif %}{% if supplier.website %} · <a href="{{ supplier.website }}" target="_blank" rel="noopener">{{ supplier.website | replace('https://', '') | replace('http://', '') }}</a>{% endif %}{% endset %}
 {% set primaire %}{% if current_user.can_edit('contracts') %}<a href="{{ url_for('contracts.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Nouveau contrat</a>{% endif %}{% endset %}
 {% set menu %}
-    {% if current_user.can_delete('contracts') %}
+    {% if current_user.can_delete('suppliers') %}
     {{ menu_post(url_for('suppliers.delete', id=supplier.id), 'Supprimer', 'bi-trash', confirm='Supprimer ce fournisseur ?', danger=True) }}
     {% endif %}
 {% endset %}
 {{ entete(supplier.name, sous_titre, primaire=primaire,
-          modifier=url_for('suppliers.edit', id=supplier.id) if current_user.can_edit('contracts') else None, menu=menu) }}
+          modifier=url_for('suppliers.edit', id=supplier.id) if current_user.can_edit('suppliers') else None, menu=menu) }}
 
 {% call barre('ficheSupplier') %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
@@ -158,7 +158,7 @@
     {% endcall %}
 
     {% call volet('documents') %}
-    {% with doc_parent_kind='supplier', doc_parent_id=supplier.id, doc_permission='contracts' %}{% include '_documents.html' %}{% endwith %}
+    {% with doc_parent_kind='supplier', doc_parent_id=supplier.id, doc_permission='suppliers' %}{% include '_documents.html' %}{% endwith %}
     {% endcall %}
 
     {% call volet('materiel-couvert') %}

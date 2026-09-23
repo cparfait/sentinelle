@@ -22,7 +22,7 @@ bp = Blueprint('software', __name__)
 
 @bp.before_request
 def _guard_view():
-    return view_guard('inventory')
+    return view_guard('software')
 
 
 def _fill(sw, f):

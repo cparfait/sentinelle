@@ -275,8 +275,8 @@ def search():
     _cat_perm = {'account': 'accounts', 'certificate': 'certificates',
                  'backup': 'backups', 'test': 'tests', 'domaine': 'domains',
                  'revue': 'reviews', 'mise à jour': 'updates', 'inventaire': 'inventory',
-                 'fournisseur': 'contracts', 'contrat': 'contracts',
-                 'logiciel': 'inventory', 'devis': 'contracts'}
+                 'fournisseur': 'suppliers', 'contrat': 'contracts',
+                 'logiciel': 'software', 'devis': 'contracts'}
     # Une piece jointe porte sa propre categorie (celle de sa fiche parente).
     results = [r for r in results
                if current_user.can_view(r.get('perm') or _cat_perm.get(r['type']))]

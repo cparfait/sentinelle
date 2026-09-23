@@ -240,6 +240,7 @@ def create_app(config_class=Config):
         _auto_migrate_sqlite()
         _relacher_colonnes_certificat()
         _migrate_data()
+        _migrate_roles()
         _seed_roles()
         _seed_referentials()
         _seed_default_user()
@@ -666,6 +667,26 @@ def _seed_referentials():
         for i, label in enumerate(labels):
             db.session.add(Referential(kind=kind, label=label, position=i))
         changed = True
+    if changed:
+        db.session.commit()
+
+
+def _migrate_roles():
+    """Un droit nouveau-ne herite du droit qu'il remplace : « software » du
+    niveau « inventory », « suppliers » du niveau « contracts ». Une seule fois
+    (la cle absente le dit), pour que personne ne perde l'acces aux logiciels
+    ni aux fournisseurs au redemarrage. Passe AVANT _seed_roles, qui sinon
+    completerait les roles par defaut avec un niveau standard."""
+    from app.models import Role, PERMISSION_INHERITANCE
+    changed = False
+    for role in Role.query.filter_by(is_admin=False).all():
+        perms = dict(role.permissions or {})
+        for nouveau, source in PERMISSION_INHERITANCE.items():
+            if nouveau not in perms and source in perms:
+                perms[nouveau] = perms[source]
+                changed = True
+        if perms != (role.permissions or {}):
+            role.permissions = perms
     if changed:
         db.session.commit()
 

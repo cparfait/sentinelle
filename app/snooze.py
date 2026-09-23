@@ -10,7 +10,7 @@ VALID_TYPES = ('account', 'certificate', 'backup', 'test', 'domain', 'review',
 # Categorie de droits qui gouverne une alerte, quand elle n'est pas simplement
 # le type au pluriel : le materiel et les logiciels relevent de l'inventaire,
 # une alerte CT de la fiche du domaine.
-_PERMISSION = {'equipment': 'inventory', 'software': 'inventory', 'ct': 'domains'}
+_PERMISSION = {'equipment': 'inventory', 'software': 'software', 'ct': 'domains'}
 
 
 def permission_category(entity_type):

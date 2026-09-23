@@ -54,12 +54,12 @@
     {% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right me-1"></i> Ouvrir l'application</a>{% endif %}
 {% endset %}
 {% set menu %}
-    {% if current_user.can_delete('inventory') %}
+    {% if current_user.can_delete('software') %}
     {{ menu_post(url_for('software.delete', id=item.id), 'Supprimer', 'bi-trash', confirm='Supprimer ce logiciel ?', danger=True) }}
     {% endif %}
 {% endset %}
 {{ entete(item.name, sous_titre, statut=item.computed_status(), primaire=primaire,
-          modifier=url_for('software.edit', id=item.id) if current_user.can_edit('inventory') else None, menu=menu) }}
+          modifier=url_for('software.edit', id=item.id) if current_user.can_edit('software') else None, menu=menu) }}
 
 {% if item.over_licence() %}
 <div class="alert alert-warning py-2 px-3 small">
@@ -402,7 +402,7 @@
        et on les cherche dans cet ordre. #}
     {% if documents_enabled %}
     {% call volet('documents') %}
-        {% with doc_parent_kind='software', doc_parent_id=item.id, doc_permission='inventory', doc_title='Documents' %}{% include '_documents.html' %}{% endwith %}
+        {% with doc_parent_kind='software', doc_parent_id=item.id, doc_permission='software', doc_title='Documents' %}{% include '_documents.html' %}{% endwith %}
         {% include 'software/_pieces_heritees.html' %}
         {% include 'software/_partages.html' %}
     {% endcall %}

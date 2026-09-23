@@ -9,7 +9,7 @@
         <p class="page-subtitle">Qui appeler en cas d'incident : hotlines, n° client, portails</p>
     </div>
     <div class="page-actions">
-        {% if current_user.can_edit('contracts') %}
+        {% if current_user.can_edit('suppliers') %}
         <a href="{{ url_for('suppliers.create') }}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-1"></i> Nouveau fournisseur
         </a>
@@ -84,7 +84,7 @@
                     <td colspan="4" class="text-center py-4 text-muted">
                         <i class="bi bi-building" style="font-size: 2rem;"></i>
                         <p class="mt-2 mb-0">Aucun fournisseur.
-                            {% if current_user.can_edit('contracts') %}
+                            {% if current_user.can_edit('suppliers') %}
                             <a href="{{ url_for('suppliers.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a>
                             {% endif %}
                         </p>

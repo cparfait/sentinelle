@@ -115,7 +115,7 @@
                                     <option value="{{ s.id }}" {{ 'selected' if item and item.supplier_id == s.id }}>{{ s.name }}</option>
                                     {% endfor %}
                                 </select>
-                                {% if current_user.can_edit('contracts') %}{{ qa_button('qaModalSupplier', 'eqSupplier', 'Ajouter un fournisseur') }}{% endif %}
+                                {% if current_user.can_edit('suppliers') %}{{ qa_button('qaModalSupplier', 'eqSupplier', 'Ajouter un fournisseur') }}{% endif %}
                             </div>
                         </div>
                     </div>
@@ -176,7 +176,7 @@
     </div>
 </div>
 
-{% if current_user.can_edit('contracts') %}{{ qa_modal_supplier() }}{% endif %}
+{% if current_user.can_edit('suppliers') %}{{ qa_modal_supplier() }}{% endif %}
 
 <script>
 (function () {

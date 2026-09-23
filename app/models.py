@@ -47,14 +47,20 @@ def _status_from_days(days_left, key, default=None):
 
 # Categories soumises aux permissions par role (les sections Utilisateurs et
 # Preferences restent reservees aux administrateurs via is_admin).
+# Les logiciels et les fournisseurs ont leur propre droit depuis le 23/09/2026 :
+# avant, ils empruntaient « inventory » et « contracts ». _migrate_roles()
+# recopie ces niveaux une fois dans les roles existants.
 PERMISSION_CATEGORIES = ['accounts', 'certificates', 'domains', 'backups', 'tests',
-                         'reviews', 'updates', 'inventory', 'contracts', 'alerts']
+                         'reviews', 'updates', 'inventory', 'software', 'contracts',
+                         'suppliers', 'alerts']
 CATEGORY_LABELS = {
     'accounts': 'Comptes', 'certificates': 'Certificats', 'domains': 'Domaines',
     'backups': 'Sauvegardes', 'tests': 'Tests', 'reviews': 'Revues de droits',
-    'updates': 'Mises à jour', 'inventory': 'Matériel & logiciels',
-    'contracts': 'Contrats & fournisseurs', 'alerts': 'Alertes',
+    'updates': 'Mises à jour', 'inventory': 'Matériel', 'software': 'Logiciels',
+    'contracts': 'Contrats', 'suppliers': 'Fournisseurs', 'alerts': 'Alertes',
 }
+# Droit dont un nouveau droit herite a sa creation : (nouveau, source).
+PERMISSION_INHERITANCE = {'software': 'inventory', 'suppliers': 'contracts'}
 # Niveaux : 0 aucun, 1 lecture, 2 ecriture, 3 suppression (cumulatifs)
 PERMISSION_LEVELS = {0: 'Aucun', 1: 'Lecture', 2: 'Écriture', 3: 'Suppression'}
 
@@ -64,7 +70,7 @@ PERMISSION_LEVELS = {0: 'Aucun', 1: 'Lecture', 2: 'Écriture', 3: 'Suppression'}
 # chacun de leur cote.
 CONFORMITY_CATEGORIES = ['accounts', 'certificates', 'domains', 'backups',
                          'tests', 'reviews', 'updates', 'inventory', 'software', 'contracts']
-CONFORMITY_LABELS = {**CATEGORY_LABELS, 'inventory': 'Matériel', 'software': 'Logiciels'}
+CONFORMITY_LABELS = dict(CATEGORY_LABELS)
 # Categories auxquelles un webhook peut s'abonner : celles des droits, hors
 # le journal des alertes lui-meme.
 WEBHOOK_CATEGORIES = [c for c in PERMISSION_CATEGORIES if c != 'alerts']
@@ -1675,8 +1681,8 @@ class Software(db.Model):
 # suit la fiche a laquelle elle est accrochee -- lire un marche et lire ses
 # pieces sont la meme permission.
 DOCUMENT_PARENTS = {
-    'software': ('software_id', 'inventory'),
-    'supplier': ('supplier_id', 'contracts'),
+    'software': ('software_id', 'software'),
+    'supplier': ('supplier_id', 'suppliers'),
     'contract': ('contract_id', 'contracts'),
     'contract_item': ('contract_item_id', 'contracts'),
     'quote': ('quote_id', 'contracts'),

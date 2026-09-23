@@ -29,9 +29,9 @@ SPECS = {
                   'fk': None, 'label': 'Matériel', 'name': lambda o: o.name},
     'contract': {'model': Contract, 'cat': 'contracts', 'hist': ContractHistory,
                  'fk': 'contract_id', 'label': 'Contrats', 'name': lambda o: o.name},
-    'supplier': {'model': Supplier, 'cat': 'contracts', 'hist': None,
+    'supplier': {'model': Supplier, 'cat': 'suppliers', 'hist': None,
                  'fk': None, 'label': 'Fournisseurs', 'name': lambda o: o.name},
-    'software': {'model': Software, 'cat': 'inventory', 'hist': None,
+    'software': {'model': Software, 'cat': 'software', 'hist': None,
                  'fk': None, 'label': 'Logiciels', 'name': lambda o: o.name},
 }
 

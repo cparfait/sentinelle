@@ -7,10 +7,8 @@ _BP_CATEGORY = {
     'accounts': 'accounts', 'certificates': 'certificates', 'domains': 'domains',
     'backups': 'backups', 'tests': 'tests', 'reviews': 'reviews',
     'updates': 'updates', 'inventory': 'inventory', 'alerts': 'alerts',
-    # Contrats et annuaire fournisseurs partagent la meme categorie de droits.
-    'contracts': 'contracts', 'suppliers': 'contracts',
-    # Les logiciels metiers font partie de l'inventaire.
-    'software': 'inventory',
+    'contracts': 'contracts', 'suppliers': 'suppliers',
+    'software': 'software',
 }
 
 

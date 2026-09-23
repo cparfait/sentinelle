@@ -121,17 +121,17 @@ def _client_pour(app, permissions):
 
 def test_la_categorie_de_droits_d_une_alerte(app):
     from app.snooze import permission_category
-    assert permission_category('software') == 'inventory'
+    assert permission_category('software') == 'software'
     assert permission_category('equipment') == 'inventory'
     assert permission_category('account') == 'accounts'
 
 
-def test_le_report_d_une_alerte_logiciel_demande_le_droit_inventaire(app):
+def test_le_report_d_une_alerte_logiciel_demande_le_droit_logiciels(app):
     from app.snooze import is_snoozed
     sw = Software(name='Ciril', lifecycle='fin_de_vie')
     db.session.add(sw)
     db.session.commit()
-    c = _client_pour(app, {'inventory': 2})
+    c = _client_pour(app, {'software': 2})
     html = c.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
     assert 'Reporter…' in html
     r = c.post('/alerts/snooze', data={'entity_type': 'software', 'entity_id': str(sw.id),
@@ -145,7 +145,7 @@ def test_sans_droit_d_ecriture_pas_de_report(app):
     sw = Software(name='Ciril')
     db.session.add(sw)
     db.session.commit()
-    c = _client_pour(app, {'inventory': 1})
+    c = _client_pour(app, {'software': 1})
     assert 'Reporter…' not in c.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
     c.post('/alerts/snooze', data={'entity_type': 'software', 'entity_id': str(sw.id), 'days': '7'})
     assert not is_snoozed('software', sw.id)

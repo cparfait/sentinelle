@@ -2,8 +2,8 @@
 {# ═══ Partage reseau ═══
    Ou vivent les installeurs, les outils, les notes de version — tout ce qui
    est trop lourd ou trop vivant pour une piece jointe. #}
-{% set peut_editer = current_user.can_edit('inventory') %}
-{% set peut_supprimer = current_user.can_delete('inventory') %}
+{% set peut_editer = current_user.can_edit('software') %}
+{% set peut_supprimer = current_user.can_delete('software') %}
 
 <div class="data-card h-100">
     <div class="card-header-custom d-flex justify-content-between align-items-center">

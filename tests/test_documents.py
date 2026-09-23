@@ -107,7 +107,7 @@ def test_la_piece_herite_de_la_categorie_de_sa_fiche(client):
                        expiry_date=__import__('datetime').date(2030, 1, 1))
     db.session.add_all([sw, ct, cert])
     db.session.commit()
-    assert Document(software_id=sw.id).permission_category() == 'inventory'
+    assert Document(software_id=sw.id).permission_category() == 'software'
     assert Document(contract_id=ct.id).permission_category() == 'contracts'
     assert Document(certificate_id=cert.id).permission_category() == 'certificates'
     # Sans parent identifiable, on retombe sur la plus restrictive plutôt que

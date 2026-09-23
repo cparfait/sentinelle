@@ -2,8 +2,8 @@
 {# ═══ Flux ═══
    Par ou passent les donnees : ce que ce logiciel alimente, ce dont il se
    nourrit. Le sens est porte par la ligne, jamais saisi deux fois. #}
-{% set peut_editer = current_user.can_edit('inventory') %}
-{% set peut_supprimer = current_user.can_delete('inventory') %}
+{% set peut_editer = current_user.can_edit('software') %}
+{% set peut_supprimer = current_user.can_delete('software') %}
 
 <div class="data-card h-100">
     <div class="card-header-custom d-flex justify-content-between align-items-center">

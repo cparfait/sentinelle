@@ -15,7 +15,7 @@ bp = Blueprint('suppliers', __name__)
 
 @bp.before_request
 def _guard_view():
-    return view_guard('contracts')
+    return view_guard('suppliers')
 
 
 # Champs texte simples du formulaire, verses tels quels. La liste vaut

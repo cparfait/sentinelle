@@ -117,6 +117,9 @@ def alert_count():
         cats['updates'] = _cnt(SystemUpdate.query.filter_by(is_active=True).all(), lambda o: o.status_color(), 'update')
     if current_user.can_view('inventory'):
         cats['inventory'] = _cnt(Equipment.query.filter_by(is_active=True).all(), lambda o: o.computed_status(), 'equipment')
+    if current_user.can_view('software'):
+        from app.models import Software
+        cats['software'] = _cnt(Software.query.filter_by(is_active=True).all(), lambda o: o.computed_status(), 'software')
     if current_user.can_view('contracts'):
         cats['contracts'] = _cnt(Contract.query.filter_by(is_active=True).all(), lambda o: o.status(), 'contract')
 
