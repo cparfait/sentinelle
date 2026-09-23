@@ -1230,6 +1230,18 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 .tabular { font-variant-numeric: tabular-nums; }
 .tableau-certificats { table-layout: fixed; }
 .tableau-certificats td { overflow: hidden; }
+/* Liste des logiciels : meme disposition fixe que les certificats. Les
+   cellules de texte se tronquent ; l'en-tete de la colonne d'actions garde la
+   largeur de son <col> (le 1 % de .col-actions, en disposition fixe,
+   ecraserait les boutons). Les pastilles sont centrees sans rembourrage a
+   droite : centrees dans leur boite de contenu, elles tombaient 6 px a gauche
+   du milieu de la colonne. Les services, seule colonne qui se replie, en petit
+   et serre pour ne pas creuser la rangee. */
+.tableau-logiciels { table-layout: fixed; }
+.tableau-logiciels td { overflow: hidden; }
+.tableau-logiciels th.col-actions { width: auto; }
+.tableau-logiciels .cell-services { font-size: 0.75rem; line-height: 1.15; }
+.tableau-logiciels .badge-status { vertical-align: middle; }
 .badge-status svg.lucide { margin-right: 3px; }
 .table-responsive::-webkit-scrollbar { height: 6px; }
 .table-hover tbody tr { transition: background-color 0.12s ease; }

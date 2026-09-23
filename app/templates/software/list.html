@@ -27,45 +27,78 @@
 {% endset %}
 {{ barre(q, hidden={'host': host}, segments=segments) }}
 
+{# La disposition du tableau des logiciels de SoftInventory (comme les
+   certificats) : le nom et sa technologie en dessous, l'éditeur, les
+   services qui s'en servent, puis trois pastilles serrées — criticité,
+   cycle de vie, hébergement — dans des colonnes de largeur fixe. Disposition
+   fixe : les colonnes de texte se tronquent (le nom entier reste au survol)
+   au lieu d'élargir le tableau, et la liste garde un pas de 48 px par ligne.
+   Responsable, version et serveurs se lisent dans la fiche. Le marqueur
+   Docker rejoint le nom, le développement interne tient lieu d'éditeur. #}
 <div class="data-card">
     <div class="table-responsive">
-        <table class="table table-hover mb-0 align-middle">
+        <table class="table table-hover mb-0 align-middle tableau-logiciels">
+            {# Les trois colonnes de pastilles et celle des actions sont en
+               pixels ; les trois de texte se partagent le reste (35 / 30 / 35). #}
+            <colgroup>
+                <col style="width: 35%"><col style="width: 30%"><col style="width: 35%">
+                <col style="width: 92px"><col style="width: 118px"><col style="width: 124px">
+                <col style="width: 84px">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Logiciel</th>
                     <th>Éditeur</th>
-                    <th>Responsable</th>
-                    <th>Version</th>
-                    <th>Cycle de vie</th>
-                    <th>Serveurs</th>
-                    <th>Hébergement</th>
+                    <th>Services</th>
+                    <th class="text-center pe-0">Criticité</th>
+                    <th class="text-center pe-0">Cycle de vie</th>
+                    <th class="text-center pe-0">Hébergement</th>
                     <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
                 {% for s in items %}
                 <tr>
-                    <td><a href="{{ url_for('software.detail', id=s.id) }}" class="fw-medium text-decoration-none">{{ s.name }}</a></td>
-                    <td class="small">{% if s.supplier %}<a href="{{ url_for('suppliers.detail', id=s.supplier_id) }}" class="text-decoration-none">{{ s.supplier.name }}</a>{% else %}<span class="text-muted">-</span>{% endif %}</td>
-                    <td class="small">
-                        {% if s.responsible %}{{ s.responsible }}{% if s.responsible_email %} <a href="mailto:{{ s.responsible_email }}" class="text-decoration-none" title="{{ s.responsible_email }}" aria-label="Envoyer un mail au responsable"><i class="bi bi-envelope"></i></a>{% endif %}
-                        {% elif s.responsible_email %}<a href="mailto:{{ s.responsible_email }}" class="text-decoration-none">{{ s.responsible_email }}</a>
-                        {% else %}<span class="text-muted">-</span>{% endif %}
+                    {# Le nom, tronqué mais entier au survol ; à côté, le lien vers
+                       le site et le marqueur Docker ; en dessous, la technologie. #}
+                    <td>
+                        <span class="d-flex align-items-center gap-1">
+                            <a href="{{ url_for('software.detail', id=s.id) }}" class="fw-medium text-decoration-none text-truncate" style="min-width: 0" title="{{ s.name }}">{{ s.name }}</a>
+                            {%- if s.url %} <a href="{{ s.url }}" target="_blank" rel="noreferrer noopener" class="text-faint flex-shrink-0" title="Ouvrir {{ s.url }}" aria-label="Ouvrir le site du logiciel"><i class="bi bi-box-arrow-up-right"></i></a>{% endif %}
+                            {%- if s.is_docker %} <i class="icon-docker flex-shrink-0" title="Conteneurisé (Docker)" aria-label="Conteneurisé (Docker)"></i>{% endif %}
+                        </span>
+                        {% if s.technology %}<small class="d-block text-truncate text-faint">{{ s.technology.label }}</small>{% endif %}
                     </td>
-                    <td class="small">{{ s.version or '-' }}</td>
-                    <td class="text-nowrap"><span class="badge bg-{{ s.lifecycle_color() }}-subtle text-{{ s.lifecycle_color() }}">{{ s.lifecycle_label() }}</span></td>
-                    <td class="small">
-                        {# « Aucun serveur » est une reponse, pas un vide : le tiret ne
-                           reclame pas de saisie, la ou un 0 se lirait comme un oubli. #}
-                        {% if s.no_server %}<span class="text-muted" title="Aucun serveur : hors parc">—</span>
-                        {% else %}{{ s.equipments|length }}{% endif %}
+                    {# Fait maison : pas d'éditeur, mais la colonne doit le dire
+                       plutôt que d'afficher un tiret trompeur. #}
+                    <td class="text-truncate">
+                        {%- if s.internal_dev %}<span class="text-muted" title="Développement interne">Développement interne</span>
+                        {%- elif s.supplier %}<a href="{{ url_for('suppliers.detail', id=s.supplier_id) }}" class="text-decoration-none" title="{{ s.supplier.name }}">{{ s.supplier.name }}</a>
+                        {%- else %}<span class="text-muted">—</span>{% endif -%}
                     </td>
-                    <td class="text-nowrap">
-                        {%- if s.hosting == 'saas' %}<span class="badge bg-info-subtle text-info">SaaS</span>
-                        {%- elif s.hosting == 'hybride' %}<span class="badge bg-warning-subtle text-warning">Hybride</span>
-                        {%- else %}<span class="badge bg-light text-dark border">On premise</span>{% endif %}
-                        {%- if s.is_docker %} <span class="badge bg-primary-subtle text-primary"><i class="icon-docker me-1"></i>Docker</span>{% endif %}
-                        {%- if s.internal_dev %} <span class="badge bg-secondary-subtle text-secondary" title="Développement interne"><i class="bi bi-code-slash"></i></span>{% endif %}</td>
+                    {# Les directions qui s'en servent : la seule colonne qui se
+                       replie souvent sur deux lignes, en petit et serré. #}
+                    <td class="cell-services text-muted">
+                        {{- s.user_services|map(attribute='name')|join(' · ') or '—' -}}
+                    </td>
+                    {# Un tiret, pas une pastille « Non évaluée » : la plupart des
+                       fiches n'ont pas de criticité, et une colonne de pastilles
+                       grises couvrirait les quelques-unes qui disent quelque chose. #}
+                    <td class="text-center pe-0">
+                        {%- if s.criticality -%}
+                        {%- set cc = s.criticality_color() -%}
+                        <span class="badge-status {{ 'badge-muted' if cc == 'secondary' else 'badge-' ~ cc }}">{{ s.criticality_label().split(' - ')|last }}</span>
+                        {%- else %}<span class="text-faint">—</span>{% endif -%}
+                    </td>
+                    <td class="text-center pe-0">
+                        {%- set lc = s.lifecycle_color() -%}
+                        <span class="badge-status {{ 'badge-muted' if lc == 'secondary' else 'badge-' ~ lc }}">{{ s.lifecycle_label() }}</span>
+                    </td>
+                    <td class="text-center pe-0">
+                        {%- if s.hosting == 'saas' %}<span class="badge-status badge-info">SaaS</span>
+                        {%- elif s.hosting == 'hybride' %}<span class="badge-status badge-warning">Hybride</span>
+                        {%- else %}<span class="badge-status badge-accent">On premise</span>{% endif -%}
+                    </td>
                     <td class="col-actions">
                         {% call actions() %}
                         {% if current_user.can_edit('inventory') %}{{ bouton_modifier(url_for('software.edit', id=s.id)) }}{% endif %}
@@ -75,7 +108,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="9" class="text-center py-4 text-muted">
+                    <td colspan="7" class="text-center py-4 text-muted">
                         <i class="bi bi-window-stack" style="font-size: 2rem;"></i>
                         <p class="mt-2 mb-0">Aucun logiciel.
                             {% if current_user.can_edit('inventory') %}
