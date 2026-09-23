@@ -183,7 +183,7 @@
         <div class="card-header-custom d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h6 class="fw-bold mb-0"><i class="bi bi-list-check me-2"></i>À traiter <span class="text-muted fw-normal ms-1">{{ urgent_items|length }}</span></h6>
             {% if urgent_items %}
-            {% set cat_labels = {'account': 'Comptes', 'certificate': 'Certificats', 'domain': 'Domaines', 'backup': 'Sauvegardes', 'test': 'Tests', 'review': 'Revues', 'update': 'Mises à jour', 'contract': 'Contrats', 'equipment': 'Matériel'} %}
+            {% set cat_labels = {'account': 'Comptes', 'certificate': 'Certificats', 'domain': 'Domaines', 'backup': 'Sauvegardes', 'test': 'Tests', 'review': 'Revues', 'update': 'Mises à jour', 'contract': 'Contrats', 'equipment': 'Matériel', 'software': 'Logiciels'} %}
             <div id="urgentFilters" class="d-flex flex-wrap gap-1">
                 <button type="button" class="status-filter status-filter-secondary active urgent-filter" data-cat="">Tous</button>
                 {% for cat in urgent_items | map(attribute='type') | unique %}
@@ -193,7 +193,7 @@
             {% endif %}
         </div>
         {% if urgent_items %}
-        {% set icones = {'account': 'bi-key', 'certificate': 'bi-award', 'domain': 'bi-globe', 'backup': 'bi-cloud-arrow-up', 'test': 'bi-clipboard-check', 'review': 'bi-person-check', 'update': 'bi-arrow-up-circle', 'contract': 'bi-file-earmark-text'} %}
+        {% set icones = {'account': 'bi-key', 'certificate': 'bi-award', 'domain': 'bi-globe', 'backup': 'bi-cloud-arrow-up', 'test': 'bi-clipboard-check', 'review': 'bi-person-check', 'update': 'bi-arrow-up-circle', 'contract': 'bi-file-earmark-text', 'equipment': 'bi-hdd-stack', 'software': 'bi-window-stack'} %}
         {% set horizons = [('depasse', 'Dépassé', 'danger'), ('semaine', 'Cette semaine', 'warning'), ('a-traiter', 'À traiter', 'warning'), ('mois', 'Ce mois-ci', 'info'), ('plus-tard', 'Plus tard', 'info')] %}
         <div class="table-responsive">
             <table class="table mb-0 urgent-table" id="urgentList">

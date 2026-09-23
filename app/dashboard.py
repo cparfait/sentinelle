@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from flask_login import login_required, current_user
 from app.models import (Account, Certificate, Backup, BackupCheck, TestTask,
                         AlertLog, Domain, AccessReview, SystemUpdate, Equipment,
-                        Contract)
+                        Contract, Software)
 from app import db
 from app.libelles import delai
 
@@ -47,6 +47,7 @@ STAT_CARDS = [
     {'key': 'reviews',      'cat': 'reviews',      'label': 'Revues de droits', 'icon': 'bi-person-check',      'color': '#8b5cf6', 'singulier': 'Revue de droits', 'endpoint': 'reviews.list'},
     {'key': 'updates',      'cat': 'updates',      'label': 'Mises à jour',    'icon': 'bi-arrow-up-circle',   'color': '#ec4899', 'singulier': 'Mise à jour', 'endpoint': 'updates.list'},
     {'key': 'inventory',    'cat': 'inventory',    'label': 'Matériels',       'icon': 'bi-hdd-stack',         'color': '#0ea5e9', 'singulier': 'Matériel', 'endpoint': 'inventory.list'},
+    {'key': 'software',     'cat': 'inventory',    'label': 'Logiciels',       'icon': 'bi-window-stack',      'color': '#a855f7', 'singulier': 'Logiciel', 'endpoint': 'software.list'},
     {'key': 'contracts',    'cat': 'contracts',    'label': 'Contrats',        'icon': 'bi-file-earmark-text', 'color': '#14b8a6', 'singulier': 'Contrat', 'endpoint': 'contracts.list'},
 ]
 
@@ -236,6 +237,7 @@ def by_status(status):
         ('reviews', 'Revue de droits', AccessReview, lambda o: o.application, 'reviews', lambda o: o.computed_status()),
         ('updates', 'Mises à jour', SystemUpdate, lambda o: o.name, 'updates', lambda o: o.status_color()),
         ('inventory', 'Matériel', Equipment, lambda o: o.name, 'inventory', lambda o: o.computed_status()),
+        ('inventory', 'Logiciels', Software, lambda o: o.name, 'inventory/logiciels', lambda o: o.computed_status()),
     ]
     items = []
     for cat, label, model, namef, prefix, statusf in sources:
@@ -475,6 +477,7 @@ def index():
     reviews = AccessReview.query.filter_by(is_active=True).all() if current_user.can_view('reviews') else []
     updates = SystemUpdate.query.filter_by(is_active=True).all() if current_user.can_view('updates') else []
     equipments = Equipment.query.filter_by(is_active=True).all() if current_user.can_view('inventory') else []
+    software = Software.query.filter_by(is_active=True).all() if current_user.can_view('inventory') else []
     contracts = Contract.query.filter_by(is_active=True).all() if current_user.can_view('contracts') else []
 
     # Statut calcule UNE seule fois par objet (computed_status() requete la
@@ -488,6 +491,7 @@ def index():
     rev_st = [(r, r.computed_status()) for r in reviews]
     upd_st = [(u, u.status_color()) for u in updates]
     inv_st = [(e, e.computed_status()) for e in equipments]
+    sw_st = [(s, s.computed_status()) for s in software]
     ctr_st = [(c, c.status()) for c in contracts]
 
     def _counts(pairs):
@@ -571,6 +575,22 @@ def index():
                 'status': st, 'url': f'/updates/{u.id}'
             })
 
+    # Un logiciel n'a pas de compte a rebours : il est a traiter parce qu'une
+    # MAJ critique l'attend ou parce qu'il est en fin de vie sans successeur.
+    for s, st in sw_st:
+        if st in ('danger', 'warning'):
+            if st == 'danger':
+                detail = 'Mise à jour critique en attente'
+            elif s.lifecycle == 'fin_de_vie':
+                detail = 'En fin de vie, successeur à trouver'
+            else:
+                detail = 'Mise à jour disponible'
+            urgent_items.append({
+                'type': 'software', 'name': s.name, 'detail': detail, 'days': None,
+                'action': None, 'ancre': None,
+                'status': st, 'url': f'/inventory/logiciels/{s.id}'
+            })
+
     for c, st in ctr_st:
         if st in ('danger', 'warning'):
             deadline = c.action_deadline()
@@ -650,6 +670,7 @@ def index():
         'reviews': _counts(rev_st),
         'updates': _counts(upd_st),
         'inventory': _counts(inv_st),
+        'software': _counts(sw_st),
         'contracts': _counts(ctr_st),
     }
 

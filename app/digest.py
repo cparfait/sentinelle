@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from html import escape
 
 from app.models import (Account, Certificate, Backup, TestTask, Domain,
-                        AccessReview, SystemUpdate, Contract)
+                        AccessReview, SystemUpdate, Contract, Software)
 from app.snooze import active_snooze_keys
 from app.libelles import STATUS_LABELS as _LABELS
 
@@ -14,7 +14,7 @@ _COLORS = {'danger': '#ef4444', 'warning': '#f59e0b', 'info': '#3b82f6',
 _LIST_PATHS = {'Comptes': '/accounts/', 'Certificats': '/certificates/',
                'Domaines': '/domains/', 'Sauvegardes': '/backups/', 'Tests': '/tests/',
                'Revue de droits': '/reviews/', 'Mises a jour': '/updates/',
-               'Contrats': '/contracts/'}
+               'Logiciels': '/inventory/logiciels/', 'Contrats': '/contracts/'}
 
 
 def _collect():
@@ -128,6 +128,24 @@ def _collect():
             items.append({'name': u.name, 'detail': detail,
                           'status': s, 'path': f'/updates/{u.id}'})
     domains.append({'key': 'Mises a jour', 'total': len(updates), 'items': items})
+
+    # Logiciels : MAJ critique en attente, ou fin de vie sans successeur.
+    software = Software.query.filter_by(is_active=True).all()
+    items = []
+    for sw in software:
+        if ('software', sw.id) in snoozed:
+            continue
+        s = sw.computed_status()
+        if s in ('danger', 'warning'):
+            if s == 'danger':
+                detail = 'Mise a jour critique en attente'
+            elif sw.lifecycle == 'fin_de_vie':
+                detail = 'En fin de vie, successeur a trouver'
+            else:
+                detail = 'Mise a jour disponible'
+            items.append({'name': sw.name, 'detail': detail,
+                          'status': s, 'path': f'/inventory/logiciels/{sw.id}'})
+    domains.append({'key': 'Logiciels', 'total': len(software), 'items': items})
 
     # Contrats & licences
     contracts = Contract.query.filter_by(is_active=True).all()

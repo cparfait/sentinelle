@@ -67,7 +67,7 @@ def create_app(config_class=Config):
             return {}
         from app.models import (Account, Certificate, Domain, Backup, TestTask,
                                 AccessReview, SystemUpdate, Equipment, Role,
-                                Contract)
+                                Contract, Software)
 
         trash_models = [('accounts', Account), ('certificates', Certificate),
                         ('domains', Domain), ('backups', Backup), ('tests', TestTask),
@@ -97,6 +97,7 @@ def create_app(config_class=Config):
                 'reviews': _danger(AccessReview.query.filter_by(is_active=True).all(), 'computed_status', 'review'),
                 'updates': _danger(SystemUpdate.query.filter_by(is_active=True).all(), 'status_color', 'update'),
                 'inventory': _danger(Equipment.query.filter_by(is_active=True).all(), 'computed_status', 'equipment'),
+                'software': _danger(Software.query.filter_by(is_active=True).all(), 'computed_status', 'software'),
                 'contracts': _danger(Contract.query.filter_by(is_active=True).all(), 'status', 'contract'),
             }
             # Corbeille : compte par categorie (la somme visible depend des
