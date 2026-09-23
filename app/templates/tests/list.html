@@ -29,17 +29,16 @@
         <table class="table table-hover mb-0 js-filterable">
             <thead>
                 <tr>
-                    <th>Statut</th>
                     <th>Test</th>
                     <th>Prochaine échéance</th>
                     <th>Dernière exécution</th>
                     <th>Priorité</th>
+                    <th>Statut</th>
                 </tr>
             </thead>
             <tbody>
                 {% for test in tests %}
                 <tr class="row-{{ test.computed_status() }}">
-                    <td>{{ status_badge(test.computed_status()) }}</td>
                     <td>
                         <a href="{{ url_for('tests.detail', id=test.id) }}" class="fw-medium text-decoration-none">{{ test.name }}</a>
                         {% for value, label in test_types %}{% if test.test_type == value %}<small class="d-block text-muted">{{ label }}</small>{% endif %}{% endfor %}
@@ -51,6 +50,7 @@
                     </td>
                     <td>{{ test.last_performed.strftime('%d/%m/%Y') if test.last_performed else '—' }}</td>
                     <td>{{ priorite(test.priority) }}</td>
+                    <td>{{ status_badge(test.computed_status()) }}</td>
                 </tr>
                 {% else %}
                 {{ vide(5, 'Aucun test.', url_for('tests.create') if current_user.can_edit('tests') else None) }}

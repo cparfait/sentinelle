@@ -26,18 +26,17 @@
         <table class="table table-hover mb-0 js-filterable">
             <thead>
                 <tr>
-                    <th>Statut</th>
                     <th>Application</th>
                     <th>Prochaine revue</th>
                     <th>Responsable</th>
                     <th>Fréquence</th>
                     <th>Priorité</th>
+                    <th>Statut</th>
                 </tr>
             </thead>
             <tbody>
                 {% for r in reviews %}
                 <tr class="row-{{ r.computed_status() }}">
-                    <td>{{ status_badge(r.computed_status()) }}</td>
                     <td><a href="{{ url_for('reviews.detail', id=r.id) }}" class="fw-medium text-decoration-none">{{ r.application }}</a></td>
                     <td>
                         {% if r.next_review %}
@@ -47,6 +46,7 @@
                     <td>{{ r.responsible or '—' }}</td>
                     <td>tous les {{ r.frequency_days }} j</td>
                     <td>{{ priorite(r.priority) }}</td>
+                    <td>{{ status_badge(r.computed_status()) }}</td>
                 </tr>
                 {% else %}
                 {{ vide(6, 'Aucune revue de droits enregistrée.', url_for('reviews.create') if current_user.can_edit('reviews') else None) }}

@@ -42,18 +42,17 @@
         <table class="table table-hover mb-0 js-filterable">
             <thead>
                 <tr>
-                    <th>Statut</th>
                     <th>Service</th>
                     <th>Aujourd'hui</th>
                     <th>Planification</th>
                     <th>Réussite 30 j</th>
                     <th>Emplacement</th>
+                    <th>Statut</th>
                 </tr>
             </thead>
             <tbody>
                 {% for backup in backups %}
                 <tr class="row-{{ backup.computed_status() }}">
-                    <td>{{ status_badge(backup.computed_status()) }}</td>
                     <td>
                         <a href="{{ url_for('backups.detail', id=backup.id) }}" class="fw-medium text-decoration-none">{{ backup.service_name }}</a>
                         <small class="d-block text-muted">{{ {'full': 'Complet', 'incremental': 'Incrémental', 'differential': 'Différentiel', 'snapshot': 'Snapshot'}.get(backup.backup_type, backup.backup_type or '') }}</small>
@@ -76,6 +75,7 @@
                         {% else %}<span class="text-muted">—</span>{% endif %}
                     </td>
                     <td><small>{{ backup.location or '—' }}</small></td>
+                    <td>{{ status_badge(backup.computed_status()) }}</td>
                 </tr>
                 {% else %}
                 {{ vide(6, 'Aucune sauvegarde.', url_for('backups.create') if current_user.can_edit('backups') else None) }}

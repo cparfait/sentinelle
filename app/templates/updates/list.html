@@ -27,18 +27,17 @@
         <table class="table table-hover mb-0 js-filterable">
             <thead>
                 <tr>
-                    <th>Statut</th>
                     <th>Application</th>
                     <th>Version actuelle</th>
                     <th>Dernière version</th>
                     <th>Dernière mise à jour</th>
                     <th>Priorité</th>
+                    <th>Statut</th>
                 </tr>
             </thead>
             <tbody>
                 {% for u in updates %}
                 <tr class="row-{{ u.status_color() }}">
-                    <td><span class="badge-status badge-{{ u.status_color() }}">{{ status_labels.get(u.status, u.status) }}</span></td>
                     <td>
                         <a href="{{ url_for('updates.detail', id=u.id) }}" class="fw-medium text-decoration-none">{{ u.name }}</a>
                         <small class="d-block text-muted">{{ type_labels.get(u.system_type, u.system_type) }}</small>
@@ -47,6 +46,7 @@
                     <td><code>{{ u.latest_version or '—' }}</code></td>
                     <td>{{ u.last_update.strftime('%d/%m/%Y') if u.last_update else '—' }}</td>
                     <td>{{ priority_label(u.priority) }}</td>
+                    <td><span class="badge-status badge-{{ u.status_color() }}">{{ status_labels.get(u.status, u.status) }}</span></td>
                 </tr>
                 {% else %}
                 {{ vide(6, 'Aucune application ni système suivi.', url_for('updates.create') if current_user.can_edit('updates') else None) }}
