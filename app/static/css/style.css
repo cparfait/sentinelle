@@ -292,12 +292,19 @@ button:focus-visible,
     object-fit: contain;
 }
 
+/* Le nom porte le degrade du logo (indigo-500 vers bleu-500, cf. img/logo.svg)
+   plutot que le primaire uni : les deux se lisent d'une seule couleur. */
 .sidebar-logo-text {
     font-size: 1.125rem;
     font-weight: 600;
     letter-spacing: -0.02em;
-    color: inherit;
+    color: #6366f1;
+    background: linear-gradient(135deg, #6366f1, #3b82f6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
+.sidebar-header:hover .sidebar-logo-text { filter: brightness(0.9); }
 
 .sidebar-search { padding: 10px 12px 4px !important; }
 
