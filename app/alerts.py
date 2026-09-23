@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import AlertLog
 from app.email_service import send_email, render_alert_email
-from app.snooze import set_snooze, clear_snooze, VALID_TYPES
+from app.snooze import set_snooze, clear_snooze, VALID_TYPES, permission_category
 from app.decorators import view_guard
 
 bp = Blueprint('alerts', __name__)
@@ -20,12 +20,13 @@ _DETAIL_ENDPOINT = {
     'review': 'reviews.detail',
     'update': 'updates.detail',
     'equipment': 'inventory.detail',
+    'software': 'software.detail',
     'contract': 'contracts.detail',
 }
 
 # Prefixe d'URL quand il differe de entity_type + 's' (pour les liens des emails)
 # 'ct' (alerte Certificate Transparency) pointe vers la fiche du domaine concerne.
-_URL_PREFIX = {'equipment': 'inventory', 'ct': 'domains'}
+_URL_PREFIX = {'equipment': 'inventory', 'software': 'inventory/logiciels', 'ct': 'domains'}
 
 
 @bp.before_request
@@ -38,7 +39,10 @@ def _guard_view():
 
 
 def _entity_category(entity_type):
-    return entity_type + 's'  # account -> accounts, etc.
+    # account -> accounts... mais equipment et software -> inventory : sans cette
+    # correspondance, reporter une alerte materiel demandait un droit
+    # « equipments » qui n'existe pas, et seul un administrateur y parvenait.
+    return permission_category(entity_type)
 
 
 @bp.route('/')
@@ -161,7 +165,7 @@ def send_alert(subject, body, entity_type=None, entity_id=None, entity_name=None
         # entity_type (singulier) -> categorie (pluriel) pour router les webhooks.
         try:
             from app.notify import notify_all
-            category = (entity_type + 's') if entity_type else None
+            category = permission_category(entity_type) if entity_type else None
             notify_all(subject, body, status=status, url=url, category=category)
         except Exception:
             pass

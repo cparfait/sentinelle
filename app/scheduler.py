@@ -324,6 +324,42 @@ def check_inventory():
                        status='danger' if e.computed_status() == 'danger' else 'warning')
 
 
+def check_software(today=None):
+    """Alertes sur les logiciels : fin de vie sans successeur, plafond de
+    licences depasse. Ni l'un ni l'autre n'a de date : un rappel quotidien
+    serait du bruit, on ecrit le lundi, comme pour la fin de support des OS.
+    `today` se passe dans les tests ; en production la date du jour suffit."""
+    with _app.app_context():
+        if not _app.config.get('SOFTWARE_ALERTS', True):
+            return
+        from app.models import Software
+        today = today or datetime.now(timezone.utc).date()
+        if today.weekday() != 0:
+            return
+        for sw in Software.query.filter_by(is_active=True).all():
+            if is_snoozed('software', sw.id):
+                continue
+            reasons = []
+            if sw.lifecycle == 'fin_de_vie':
+                reasons.append('En fin de vie : un successeur est à trouver')
+            if sw.over_licence():
+                reasons.append(f'Plafond de licences dépassé : {sw.users_count} utilisateurs '
+                               f'pour {sw.users_max} prévus au contrat')
+            if not reasons:
+                continue
+            subject = f"Alerte logiciel - {sw.name}"
+            body = (
+                f"Le logiciel suivant nécessite une attention :\n\n"
+                f"Nom : {sw.name}{' ' + sw.version if sw.version else ''}\n"
+                f"Éditeur : {sw.supplier.name if sw.supplier else 'N/A'}\n"
+                f"Hébergement : {sw.hosting_label()}\n"
+                f"Responsable : {sw.responsible or 'N/A'}\n\n"
+                + '\n'.join(f"- {r}" for r in reasons) + "\n"
+            )
+            send_alert(subject, body, 'software', sw.id, sw.name,
+                       status='danger' if sw.computed_status() == 'danger' else 'warning')
+
+
 def refresh_certificates_tls():
     """Lit en direct la date d'expiration reelle de chaque certificat actif et
     met a jour les fiches. Tourne avant l'alerte certificats du matin."""
@@ -492,6 +528,8 @@ def start_scheduler(app):
                       id='check_updates', replace_existing=True)
     scheduler.add_job(check_inventory, 'cron', hour=8, minute=58,
                       id='check_inventory', replace_existing=True)
+    scheduler.add_job(check_software, 'cron', hour=9, minute=0,
+                      id='check_software', replace_existing=True)
     scheduler.add_job(check_contracts, 'cron', hour=8, minute=40,
                       id='check_contracts', replace_existing=True)
 

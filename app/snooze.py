@@ -5,7 +5,17 @@ from app import db
 from app.models import AlertSnooze
 
 VALID_TYPES = ('account', 'certificate', 'backup', 'test', 'domain', 'review',
-               'update', 'equipment', 'contract')
+               'update', 'equipment', 'software', 'contract')
+
+# Categorie de droits qui gouverne une alerte, quand elle n'est pas simplement
+# le type au pluriel : le materiel et les logiciels relevent de l'inventaire,
+# une alerte CT de la fiche du domaine.
+_PERMISSION = {'equipment': 'inventory', 'software': 'inventory', 'ct': 'domains'}
+
+
+def permission_category(entity_type):
+    """La categorie de droits a exiger pour reporter ou router une alerte."""
+    return _PERMISSION.get(entity_type, entity_type + 's')
 
 
 def get_active_snooze(entity_type, entity_id):

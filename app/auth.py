@@ -405,6 +405,13 @@ def preferences():
             audit_record('config surveillance CT', detail=f'actif={enabled}', category='preferences')
             flash('Surveillance Certificate Transparency ' + ('activée' if enabled else 'désactivée') + '.', 'success')
 
+        elif action == 'save_software_alerts':
+            enabled = request.form.get('software_alerts') == 'on'
+            _persist_config({'SOFTWARE_ALERTS': 'true' if enabled else 'false'})
+            current_app.config['SOFTWARE_ALERTS'] = enabled
+            audit_record('config alertes logiciels', detail=f'actif={enabled}', category='preferences')
+            flash('Alertes logiciels ' + ('activées' if enabled else 'désactivées') + '.', 'success')
+
         elif action == 'save_documents':
             enabled = request.form.get('documents_enabled') == 'on'
             # Le plafond est borne des deux cotes : zero rendrait tout depot
@@ -689,6 +696,7 @@ def preferences():
                            report_schedule=current_app.config.get('REPORT_SCHEDULE', 'off'),
                            report_recipients=', '.join(current_app.config.get('REPORT_RECIPIENTS') or []),
                            ct_monitoring=current_app.config.get('CT_MONITORING', True),
+                           software_alerts=current_app.config.get('SOFTWARE_ALERTS', True),
                            dashboard_custom=current_app.config.get('DASHBOARD_CUSTOM', True),
                            documents_enabled=current_app.config.get('DOCUMENTS_ENABLED', True),
                            document_max_mb=current_app.config.get('DOCUMENT_MAX_MB', 10),

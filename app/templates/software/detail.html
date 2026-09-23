@@ -260,6 +260,7 @@
                         {% endcall %}
                         </div>
                     </div>
+                    {% with entity_type='software', entity_id=item.id %}{% include '_snooze_card.html' %}{% endwith %}
                 </div>
             </div>
         </div>

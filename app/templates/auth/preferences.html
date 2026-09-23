@@ -23,6 +23,8 @@
     {% else %}<span class="badge-status badge-muted"><i class="bi bi-diagram-3"></i>LDAP désactivé</span>{% endif %}
     {% if ct_monitoring %}<span class="badge-status badge-success"><i class="bi bi-shield-lock"></i>Surveillance CT activée</span>
     {% else %}<span class="badge-status badge-muted"><i class="bi bi-shield-lock"></i>Surveillance CT désactivée</span>{% endif %}
+    {% if software_alerts %}<span class="badge-status badge-success"><i class="bi bi-window-stack"></i>Alertes logiciels activées</span>
+    {% else %}<span class="badge-status badge-muted"><i class="bi bi-window-stack"></i>Alertes logiciels désactivées</span>{% endif %}
     {% if db_backups %}<span class="badge-status badge-success"><i class="bi bi-database"></i>{{ db_backups|length }} sauvegarde{{ 's' if db_backups|length > 1 }}</span>
     {% else %}<span class="badge-status badge-danger"><i class="bi bi-database"></i>Aucune sauvegarde</span>{% endif %}
     {% if documents_enabled %}<span class="badge-status badge-muted"><i class="bi bi-paperclip"></i>Pièces jointes : {{ document_max_mb }} Mo</span>
@@ -198,7 +200,7 @@
                 <i class="bi bi-shield-lock me-2"></i>Surveillance
                 {% if ct_monitoring %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>CT activé</span>{% else %}<span class="badge bg-secondary ms-2">CT désactivé</span>{% endif %}
             </div>
-            <p class="form-section-aide">Veille Certificate Transparency : un certificat émis pour l'un de vos domaines hors de Sentinelle déclenche une alerte.</p>
+            <p class="form-section-aide">Veille Certificate Transparency et suivi des logiciels : ce qui se surveille sans date d'échéance.</p>
             <div class="form-section-corps">
                     <form method="POST" action="{{ url_for('auth.preferences') }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -209,6 +211,20 @@
                             <label class="form-check-label fw-medium" for="ctMonitoring">Certificate Transparency (crt.sh)</label>
                         </div>
                         <p class="text-muted small mt-1 mb-2">Scan quotidien des journaux CT pour détecter les certificats émis pour vos domaines à l'insu de la DSI (shadow IT, prestataire, usurpation). Les alertes suivent la catégorie « Domaines ».</p>
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> Enregistrer
+                        </button>
+                    </form>
+                    <hr>
+                    <form method="POST" action="{{ url_for('auth.preferences') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="save_software_alerts">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="softwareAlerts" name="software_alerts" {% if software_alerts %}checked{% endif %}>
+                            <label class="form-check-label fw-medium" for="softwareAlerts">Alertes logiciels</label>
+                        </div>
+                        <p class="text-muted small mt-1 mb-2">Chaque lundi, un mail pour les logiciels en fin de vie sans successeur et ceux dont le nombre d'utilisateurs dépasse le plafond du contrat. Les alertes suivent la catégorie « Logiciels ».</p>
                         <button type="submit" class="btn btn-sm btn-primary">
                             <i class="bi bi-check-lg me-1"></i> Enregistrer
                         </button>

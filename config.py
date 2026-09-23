@@ -77,6 +77,8 @@ class Config:
     # Surveillance Certificate Transparency (crt.sh) : detection des certificats
     # emis pour les domaines suivis a l'insu de la DSI. Desactivable globalement.
     CT_MONITORING = os.getenv('CT_MONITORING', 'true').lower() in ('true', '1', 'yes')
+    # Alertes logiciels : fin de vie, plafond de licences depasse (hebdomadaire).
+    SOFTWARE_ALERTS = os.getenv('SOFTWARE_ALERTS', 'true').lower() in ('true', '1', 'yes')
     # Pieces jointes : actives par defaut -- elles ne coutent rien tant qu'on
     # n'en depose pas, et l'ecran serait introuvable autrement. La taille
     # maximale borne ce que la base a vocation a heberger : une piece jointe est

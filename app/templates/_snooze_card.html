@@ -1,7 +1,7 @@
 {# Report des alertes (« je m'en occupe »). Variables : entity_type, entity_id.
    Compact : une ligne d'état, et le formulaire replié derrière « Reporter… » —
    c'est un geste rare, il ne mérite pas une carte entière sur chaque fiche. #}
-{% if current_user.can_edit(entity_type ~ 's') %}
+{% if current_user.can_edit(alert_permission(entity_type)) %}
 {% set snz = active_snooze(entity_type, entity_id) %}
 <div class="data-card fiche-alertes mb-3">
     {% if snz %}

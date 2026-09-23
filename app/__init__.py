@@ -36,7 +36,7 @@ def create_app(config_class=Config):
 
     @app.context_processor
     def inject_now():
-        from app.snooze import get_active_snooze
+        from app.snooze import get_active_snooze, permission_category
 
         def role_label(name):
             labels = {'admin': 'Administrateur', 'editor': 'Éditeur', 'viewer': 'Lecteur'}
@@ -47,6 +47,7 @@ def create_app(config_class=Config):
 
         return {'now': lambda: datetime.now(timezone.utc),
                 'active_snooze': get_active_snooze,
+                'alert_permission': permission_category,
                 'role_label': role_label,
                 'ui_primary_css': lambda: Markup(primary_css_override(
                     app.config.get('UI_PRIMARY_COLOR', '')))}

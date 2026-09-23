@@ -24,19 +24,20 @@ SECRET_KEYS = {'MAIL_PASSWORD', 'O365_CLIENT_SECRET', 'LDAP_BIND_PASSWORD',
 # Typage applique au chargement (le reste = chaine).
 _BOOL = {'LDAP_ENABLED', 'LDAP_USE_SSL', 'LDAP_VALIDATE_CERT', 'CT_MONITORING',
          'SESAME_API_ENABLED', 'DASHBOARD_CUSTOM', 'DOCUMENTS_ENABLED',
-         'DOCUMENT_INLINE_VIEW'}
+         'DOCUMENT_INLINE_VIEW', 'SOFTWARE_ALERTS'}
 _INT = {'LDAP_PORT', 'MAIL_PORT', 'DOCUMENT_MAX_MB', 'BACKUP_DB_KEEP'}
 _TRIPLET = {'THRESHOLD_EXPIRY', 'THRESHOLD_DOMAIN', 'THRESHOLD_TASK', 'THRESHOLD_CONTRACT'}
 
 # Destinataires : liste globale + une liste optionnelle par categorie d'entite
 # (vide = repli sur la globale). Cles alignees sur les entity_type des alertes.
 ALERT_CATEGORIES = ('account', 'certificate', 'domain', 'backup', 'test',
-                    'review', 'update', 'equipment', 'contract')
+                    'review', 'update', 'equipment', 'software', 'contract')
 ALERT_CATEGORY_LABELS = {
     'account': 'Comptes / mots de passe', 'certificate': 'Certificats',
     'domain': 'Domaines', 'backup': 'Sauvegardes', 'test': 'Tests récurrents',
     'review': 'Revues de droits', 'update': 'Mises à jour',
-    'equipment': 'Matériel', 'contract': 'Contrats & licences',
+    'equipment': 'Matériel', 'software': 'Logiciels',
+    'contract': 'Contrats & licences',
 }
 _CSV = {'ALERT_RECIPIENTS', 'REPORT_RECIPIENTS'} | {
     f'ALERT_RECIPIENTS_{c.upper()}' for c in ALERT_CATEGORIES}
@@ -50,6 +51,7 @@ MANAGED = _BOOL | _INT | _TRIPLET | _CSV | {
     'TEAMS_WEBHOOK_URL', 'SLACK_WEBHOOK_URL', 'DISCORD_WEBHOOK_URL',
     'REPORT_SCHEDULE',  # envoi planifie du bilan PDF : off / monthly / weekly
     'CT_MONITORING',    # surveillance Certificate Transparency (crt.sh) : on/off
+    'SOFTWARE_ALERTS',  # alertes logiciels (fin de vie, licences depassees) : on/off
     'DASHBOARD_CUSTOM', # tableau de bord personnalisable par utilisateur : on/off
     # Pieces jointes stockees en base (actes signes, guides, deliberations).
     'DOCUMENTS_ENABLED', 'DOCUMENT_MAX_MB', 'DOCUMENT_INLINE_VIEW',
