@@ -59,8 +59,15 @@ CATEGORY_LABELS = {
 PERMISSION_LEVELS = {0: 'Aucun', 1: 'Lecture', 2: 'Écriture', 3: 'Suppression'}
 
 # Categories agregees dans l'indicateur « Conformite globale » du tableau de bord.
+# Ce sont les vignettes du tableau de bord, pas les categories de droits : le
+# materiel et les logiciels partagent le droit « inventory » mais se comptent
+# chacun de leur cote.
 CONFORMITY_CATEGORIES = ['accounts', 'certificates', 'domains', 'backups',
-                         'tests', 'reviews', 'updates', 'inventory', 'contracts']
+                         'tests', 'reviews', 'updates', 'inventory', 'software', 'contracts']
+CONFORMITY_LABELS = {**CATEGORY_LABELS, 'inventory': 'Matériel', 'software': 'Logiciels'}
+# Categories auxquelles un webhook peut s'abonner : celles des droits, hors
+# le journal des alertes lui-meme.
+WEBHOOK_CATEGORIES = [c for c in PERMISSION_CATEGORIES if c != 'alerts']
 
 
 class Setting(db.Model):

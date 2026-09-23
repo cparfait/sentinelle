@@ -35,7 +35,7 @@ def _sesame_context():
 
 
 def _webhooks_context():
-    from app.models import (Webhook, WEBHOOK_CHANNELS, CONFORMITY_CATEGORIES,
+    from app.models import (Webhook, WEBHOOK_CHANNELS, WEBHOOK_CATEGORIES,
                             CATEGORY_LABELS)
     return {
         'webhooks': {
@@ -45,7 +45,7 @@ def _webhooks_context():
         },
         'category_webhooks': Webhook.query.order_by(Webhook.category, Webhook.channel).all(),
         'webhook_channels': WEBHOOK_CHANNELS,
-        'gestion_categories': CONFORMITY_CATEGORIES,
+        'gestion_categories': WEBHOOK_CATEGORIES,
         'conformity_labels': CATEGORY_LABELS,
     }
 

@@ -655,7 +655,7 @@ def preferences():
     from app.db_backup import db_size_mb
     db_taille_mo = db_size_mb(current_app)
 
-    from app.models import CONFORMITY_CATEGORIES, CATEGORY_LABELS
+    from app.models import CONFORMITY_CATEGORIES, CONFORMITY_LABELS
 
     from app.app_settings import get_conformity_categories
     conformity_included = set(get_conformity_categories())
@@ -727,7 +727,7 @@ def preferences():
                            backup_db_keep=current_app.config.get('BACKUP_DB_KEEP', 14),
                            ldap_config=ldap_config,
                            conformity_categories=CONFORMITY_CATEGORIES,
-                           conformity_labels=CATEGORY_LABELS,
+                           conformity_labels=CONFORMITY_LABELS,
                            conformity_included=conformity_included)
 
 
