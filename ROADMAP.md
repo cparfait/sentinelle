@@ -74,6 +74,23 @@ collectivité) vivent désormais dans Sentinelle, et ses données y ont été re
 - ✅ **Reprise des données** — `tools/reprise_softinventory.py` : lit la base PostgreSQL de SoftInventory
   (ou un dump restauré) et la verse ici. Rejouable (`import_map`), avec un mode `--essai` qui compte sans
   rien écrire et nomme ce qui ne se rapproche pas.
+- ✅ **Fin des coutures (audit du 23/09/2026)** — les logiciels sont partout où les autres entités
+  sont : **recherche** (avec devis et pièces jointes), **tableau de bord** (vignette, « À traiter »,
+  badge du menu, pages par statut), **digest**, **conformité globale**, **alerte hebdomadaire** (fin de
+  vie sans successeur, plafond de licences dépassé ; catégorie et destinataires « Logiciels »,
+  interrupteur dans Préférences). Rubrique **Modules** de Préférences pour débrayer devis, RGPD, flux
+  entre logiciels et certificats électroniques (`app/features.py`).
+- ✅ **Le texte libre devient un lien** — revue de droits → logiciel, certificat TLS → domaine enregistré
+  (le plus long l'emporte), bureau d'enregistrement → fournisseur (nature « Bureau d'enregistrement »),
+  compte → logiciel / équipement / fournisseur, mise à jour → logiciel ou équipement. Même schéma partout :
+  le texte reste affiché, le lien se pose à la saisie par nom exact, l'existant est rapproché une fois
+  au démarrage sans homonyme ni remise en cause d'un lien déjà posé. Les fiches d'en face listent ce qui
+  les désigne.
+- ✅ **Nettoyage** — plus de modèle `Asset` (table dormante lue sous condition), plus de colonne
+  `Contract.equipment_id` dans le modèle (recopiée si une base ancienne l'a encore), purge de la corbeille
+  qui détache tous les liens.
+- ✅ **Droits propres aux logiciels et aux fournisseurs** — catégories `software` et `suppliers`, héritées
+  une fois de `inventory` et `contracts` dans les rôles existants (`_migrate_roles`).
 
 ## Inventaire du parc
 - ✅ **Baies de stockage et matériel réseau** — deux natures de plus (switch, pare-feu, routeur, borne WiFi),

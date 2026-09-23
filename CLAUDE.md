@@ -57,7 +57,18 @@ pytest dans `requirements-dev.txt`). Toute évolution de la logique de statut
   / désactivable depuis la page Préférences** (`auth/preferences.html` + action POST dans
   `preferences()`), avec la clé persistée via `config_store` (l'ajouter à `MANAGED`, et à
   `_BOOL` si c'est un interrupteur). Prévoir un défaut sûr et un repli `.env`/`config.py`.
-  Référence : `CT_MONITORING` (surveillance Certificate Transparency).
+  Référence : `CT_MONITORING` (surveillance Certificate Transparency). Pour un **module**
+  entier (écrans + routes d'écriture), le déclarer dans `app/features.py` : il rejoint la
+  rubrique *Modules* de Préférences, `features.<nom>` masque ses écrans dans les gabarits
+  et `features.require('<nom>')` ferme ses routes d'écriture (404) quand il est coupé.
+- **Droits** : une catégorie de permission par module (`PERMISSION_CATEGORIES`), y compris
+  `software` et `suppliers`. Un blueprint nouveau se déclare dans `_BP_CATEGORY`
+  (`app/decorators.py`). Une catégorie nouvelle qui remplace un droit emprunté se recopie
+  une fois dans les rôles existants via `PERMISSION_INHERITANCE` et `_migrate_roles()`.
+- **Liens plutôt que texte libre** : quand une fiche désigne une autre entité, porter un
+  `<entité>_id` à côté du texte affiché, poser le lien à la saisie (nom exact, sans homonyme)
+  et rapprocher l'existant une fois dans `_migrate_data()` sans toucher un lien déjà posé.
+  Références : `AccessReview.software_id`, `Certificate.domain_id`, `Domain.registrar_id`.
 - **Scheduler** : ne PAS appeler `create_app()` dans un job. `start_scheduler(app)` reçoit
   l'app et les jobs utilisent `with _app.app_context()`. Les jobs sont enregistrés avec
   `replace_existing=True`.

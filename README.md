@@ -131,8 +131,9 @@ Voir [`.env.example`](.env.example). Principaux réglages :
 | **Éditeur** | Création / modification / suppression des données |
 | **Lecteur** | Lecture seule |
 
-Les rôles sont **éditables** et on peut **créer des rôles personnalisés** (matrice par catégorie)
-dans *Rôles & permissions*. Authentification **locale + LDAP/AD** simultanées ; **2FA** activable
+Les rôles sont **éditables** et on peut **créer des rôles personnalisés** (matrice par catégorie :
+comptes, certificats, domaines, sauvegardes, tests, revues, mises à jour, matériel, logiciels,
+contrats, fournisseurs, alertes) dans *Rôles & permissions*. Authentification **locale + LDAP/AD** simultanées ; **2FA** activable
 par chaque utilisateur depuis son profil.
 
 ## ⏰ Tâches planifiées (quotidiennes)
@@ -143,7 +144,8 @@ par chaque utilisateur depuis son profil.
 | 06h00 | Synchro expiration mots de passe AD *(si configuré)* |
 | 07h00 / 07h10 | Rafraîchissement TLS des certificats / RDAP des domaines |
 | 07h30 | Envoi du récap quotidien |
-| 08h00–08h55 | Alertes (mots de passe, certificats, backups, tests, domaines, revues, MàJ) |
+| 08h00–08h58 | Alertes (mots de passe, certificats, backups, tests, domaines, revues, MàJ, contrats, matériel) |
+| 09h00, le lundi | Alertes logiciels : fin de vie sans successeur, plafond de licences dépassé |
 | toutes les 30 min | Scan du dossier de mails de backup *(si configuré)* |
 
 État et historique d'exécution visibles dans *Tâches planifiées* (admin).
