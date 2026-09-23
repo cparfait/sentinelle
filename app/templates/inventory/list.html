@@ -215,7 +215,7 @@
                 <tr class="row-{{ e.computed_status() }}{% if e.environment == 'decommissioned' %} inv-decommissioned{% endif %}">
                     <td>
                         <a href="{{ url_for('inventory.detail', id=e.id) }}" class="fw-medium text-decoration-none">{{ e.name }}</a>
-                        {% if vals.os %}<small class="d-block text-muted">{{ vals.os }}</small>{% endif %}
+                        {% if vals.os %}<small class="d-block text-muted" style="line-height: 1">{{ vals.os }}</small>{% endif %}
                     </td>
                     {% for key, label in columns %}
                     <td data-col="{{ key }}">
