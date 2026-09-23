@@ -98,8 +98,9 @@ def create():
         db.session.commit()
         db.session.add(DomainHistory(domain_id=d.id, action='creation',
                                      comment=f'Domaine cree : {d.name}', performed_by=current_user.username))
+        n = d.rattacher_certificats()
         db.session.commit()
-        flash('Domaine ajoute avec succes', 'success')
+        flash('Domaine ajoute avec succes' + (f' ({n} certificat(s) rattaché(s))' if n else ''), 'success')
         return redirect(url_for('domains.list'))
     return render_template('domains/form.html', domain=None)
 
@@ -114,7 +115,10 @@ def detail(id):
         CtLogEntry.crtsh_id.desc()).limit(50).all()
     ct_entries.sort(key=lambda e: (e.status != 'new', -(e.crtsh_id or 0)))
     ct_new = domain.ct_new_count()
+    certificats = sorted(domain.certificates.filter_by(is_active=True).all(),
+                         key=lambda c: (c.expiry_date is None, c.expiry_date))
     return render_template('domains/detail.html', domain=domain, histories=histories,
+                           certificats=certificats,
                            ct_entries=ct_entries, ct_new=ct_new)
 
 
@@ -177,6 +181,7 @@ def edit(id):
         domain.auto_renew = request.form.get('auto_renew') == 'on'
         domain.description = request.form.get('description')
         domain.priority = request.form.get('priority', 'medium')
+        domain.rattacher_certificats()
         db.session.commit()
         flash('Domaine modifie avec succes', 'success')
         return redirect(url_for('domains.detail', id=id))

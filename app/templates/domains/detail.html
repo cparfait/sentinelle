@@ -3,6 +3,7 @@
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
 {% from '_fiche.html' import entete, bandeau_echeance, menu_lien, menu_post, menu_sep, historique, activite %}
 {% from '_onglets.html' import barre, onglet, volets, volet %}
+{% from '_macros.html' import status_badge %}
 {% set peut_editer = current_user.can_edit('domains') %}
 
 {% block content %}
@@ -33,6 +34,7 @@
 
 {% call barre('ficheDomain') %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+    {% if current_user.can_view('certificates') %}{{ onglet('certificats', 'Certificats', 'bi-award', compteur=certificats|length) }}{% endif %}
     {{ onglet('certificate-transparency', 'Certificate Transparency', 'bi-search', compteur=ct_entries|length) }}
     {{ onglet('historique', 'Historique', 'bi-clock-history', compteur=histories|length) }}
 {% endcall %}
@@ -72,6 +74,36 @@
         </div>
     </div>
     {% endcall %}
+
+    {% if current_user.can_view('certificates') %}
+    {% call volet('certificats') %}
+    <div class="data-card mb-3">
+        <div class="card-header-custom">
+            <h6 class="fw-bold mb-0"><i class="bi bi-award me-2"></i>Certificats TLS de ce domaine
+                <span class="badge bg-secondary ms-1">{{ certificats|length }}</span></h6>
+            <small class="text-muted">Les certificats suivis dont le nom d'hôte relève de ce domaine</small>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead><tr><th>Service</th><th>Nom d'hôte</th><th>Émetteur</th><th class="text-nowrap">Expire le</th><th>Statut</th></tr></thead>
+                <tbody>
+                    {% for c in certificats %}
+                    <tr>
+                        <td><a href="{{ url_for('certificates.detail', id=c.id) }}" class="text-decoration-none fw-medium">{{ c.service_name }}</a></td>
+                        <td class="small"><code>{{ c.domain }}</code></td>
+                        <td class="small">{{ c.issuer or '—' }}</td>
+                        <td class="text-nowrap small">{{ c.expiry_date.strftime('%d/%m/%Y') if c.expiry_date else '—' }}</td>
+                        <td>{{ status_badge(c.status()) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="text-center py-3 text-muted">Aucun certificat suivi pour ce domaine.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endcall %}
+    {% endif %}
 
     {% call volet('certificate-transparency') %}
     <div class="data-card mb-3">

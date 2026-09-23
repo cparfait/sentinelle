@@ -257,6 +257,12 @@ class Certificate(db.Model):
     # n'en a pas. NULLABLE depuis qu'ils cohabitent ; la route l'exige encore
     # pour le TLS, ou il est ce qui identifie la fiche.
     domain = db.Column(db.String(256))
+    # La fiche du domaine ENREGISTRE dont releve ce nom d'hote : le certificat
+    # de www.mairie.fr releve du domaine mairie.fr. Le nom d'hote reste dans
+    # `domain` -- c'est lui que le certificat protege --, le lien dit a quelle
+    # fiche (expiration du domaine, surveillance CT) il se rattache.
+    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id'), index=True)
+    registered_domain = db.relationship('Domain', backref=db.backref('certificates', lazy='dynamic'))
     issuer = db.Column(db.String(128))
     # Equipement de l'inventaire qui porte ce certificat (vue 360°), optionnel.
     equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'), index=True)
@@ -587,6 +593,36 @@ class Domain(db.Model):
 
     def ct_new_count(self):
         return self.ct_entries.filter_by(status='new').count()
+
+    @staticmethod
+    def for_host(host):
+        """La fiche de domaine dont releve ce nom d'hote : le domaine qui lui
+        est egal ou dont il est un sous-domaine. Le plus long l'emporte :
+        intra.rh.mairie.fr releve de rh.mairie.fr avant mairie.fr. None si
+        aucun domaine actif ne correspond."""
+        host = (host or '').strip().lower().rstrip('.')
+        if not host:
+            return None
+        meilleur = None
+        for d in Domain.query.filter_by(is_active=True).all():
+            nom = (d.name or '').strip().lower().rstrip('.')
+            if nom and (host == nom or host.endswith('.' + nom)):
+                if meilleur is None or len(nom) > len(meilleur.name):
+                    meilleur = d
+        return meilleur
+
+    def rattacher_certificats(self):
+        """Relie a cette fiche les certificats TLS encore sans domaine dont le
+        nom d'hote en releve. Sert a la creation d'un domaine : les certificats
+        saisis avant lui l'attendaient."""
+        n = 0
+        for c in Certificate.query.filter(Certificate.kind == 'tls',
+                                          Certificate.domain_id.is_(None),
+                                          Certificate.domain.isnot(None)).all():
+            if Domain.for_host(c.domain) is self:
+                c.domain_id = self.id
+                n += 1
+        return n
 
 
 class DomainHistory(db.Model):

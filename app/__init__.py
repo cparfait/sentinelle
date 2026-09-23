@@ -391,6 +391,16 @@ def _migrate_data():
         "DELETE FROM app_config WHERE key IN "
         "('SOFTINVENTORY_URL', 'SOFTINVENTORY_KEY', "
         " 'INVENTORY_API_ENABLED', 'INVENTORY_API_TOKEN')"))
+    # Certificats TLS : le nom d'hote rejoint la fiche du domaine enregistre
+    # dont il releve (www.mairie.fr -> mairie.fr). Ne touche qu'aux fiches
+    # encore sans lien : un rattachement pose a la main n'est pas remis en cause.
+    from app.models import Certificate, Domain
+    for c in Certificate.query.filter(Certificate.kind == 'tls',
+                                      Certificate.domain_id.is_(None),
+                                      Certificate.domain.isnot(None)).all():
+        d = Domain.for_host(c.domain)
+        if d is not None:
+            c.domain_id = d.id
     # Revues de droits : l'application saisie en texte libre rejoint la fiche
     # logiciel du meme nom. Seulement quand UN logiciel actif porte ce nom :
     # deux homonymes, et l'on ne sait pas lequel la revue visait -- le lien

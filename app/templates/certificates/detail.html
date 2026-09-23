@@ -83,6 +83,13 @@
                 <div class="fiche-bloc">
                     {{ titre_section('Le certificat', 'bi-patch-check', 'slate', 'mb-0') }}
                     <div class="fiche-grille">
+                        {% call champ_bloc('Domaine') %}
+                        {%- if certificate.registered_domain -%}
+                        <a href="{{ url_for('domains.detail', id=certificate.domain_id) }}" class="text-decoration-none"><i class="bi bi-globe me-1"></i>{{ certificate.registered_domain.name }}</a>
+                        {%- else -%}
+                        <span class="text-muted">hors du référentiel des domaines</span>
+                        {%- endif -%}
+                        {% endcall %}
                         {{ champ('Émetteur', certificate.issuer) }}
                         {{ champ('Renouvellement', 'Automatique' if certificate.auto_renew else 'Manuel') }}
                     </div>

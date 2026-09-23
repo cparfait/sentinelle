@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from flask_login import login_required, current_user
 from app import db
 from app import features
-from app.models import (Certificate, CertificateHistory, Supplier, UserService,
+from app.models import (Certificate, CertificateHistory, Supplier, UserService, Domain,
                         CERT_KIND_LABELS, CIVILITY_LABELS, CERT_USAGE_LABELS,
                         CERT_SUPPORT_LABELS, CERT_VALIDITY_LABELS)
 from app.cert_checker import fetch_cert_info
@@ -140,6 +140,16 @@ def check_domain():
         return jsonify(ok=False, error=str(e))
 
 
+def _domaine_pour(kind, host):
+    """L'identifiant de la fiche domaine dont releve ce nom d'hote, pour un
+    certificat TLS ; None sinon (certificat electronique, hote hors du
+    referentiel des domaines)."""
+    if kind != 'tls' or not host:
+        return None
+    d = Domain.for_host(host)
+    return d.id if d else None
+
+
 def _valide(kind, service_name, domain, expiry_date, holder):
     """Ce qu'il faut pour que la fiche veuille dire quelque chose, selon sa
     nature. Un certificat TLS sans domaine ne designe rien ; un certificat
@@ -182,6 +192,7 @@ def create():
             kind=kind,
             service_name=service_name,
             domain=domain or None,
+            domain_id=_domaine_pour(kind, domain),
             issuer=request.form.get('issuer'),
             issued_at=parse_date(request.form.get('issued_at')),
             expiry_date=expiry_date,
@@ -241,6 +252,7 @@ def edit(id):
                                    kind=kind, **_form_context())
         cert.service_name = service_name
         cert.domain = domain or None
+        cert.domain_id = _domaine_pour(cert.kind, domain)
         cert.issuer = request.form.get('issuer')
         cert.issued_at = parse_date(request.form.get('issued_at'))
         cert.expiry_date = expiry_date
