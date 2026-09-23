@@ -635,9 +635,17 @@ class CtLogEntry(db.Model):
 
 
 class AccessReview(db.Model):
-    """Revue de droits d'une application metier (activite recurrente)."""
+    """Revue de droits d'une application metier (activite recurrente).
+
+    `application` est le nom affiche ; `software_id` relie la revue a la fiche
+    de l'inventaire Logiciels quand elle existe. Le nom survit au lien : une
+    revue peut porter sur une application hors inventaire, et l'historique
+    d'une revue ne doit pas se vider parce qu'une fiche a ete supprimee.
+    """
     id = db.Column(db.Integer, primary_key=True)
     application = db.Column(db.String(128), nullable=False)
+    software_id = db.Column(db.Integer, db.ForeignKey('software.id'), index=True)
+    software = db.relationship('Software', backref=db.backref('access_reviews', lazy='dynamic'))
     responsible = db.Column(db.String(128))
     # Email du responsable : destinataire du mail de revue / validation des taches.
     responsible_email = db.Column(db.String(120))

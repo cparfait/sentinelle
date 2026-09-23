@@ -391,6 +391,17 @@ def _migrate_data():
         "DELETE FROM app_config WHERE key IN "
         "('SOFTINVENTORY_URL', 'SOFTINVENTORY_KEY', "
         " 'INVENTORY_API_ENABLED', 'INVENTORY_API_TOKEN')"))
+    # Revues de droits : l'application saisie en texte libre rejoint la fiche
+    # logiciel du meme nom. Seulement quand UN logiciel actif porte ce nom :
+    # deux homonymes, et l'on ne sait pas lequel la revue visait -- le lien
+    # se posera a la main, le texte reste affiche entre-temps.
+    db.session.execute(text(
+        "UPDATE access_review SET software_id = ("
+        "  SELECT s.id FROM software s"
+        "  WHERE lower(s.name) = lower(access_review.application) AND s.is_active = 1)"
+        " WHERE software_id IS NULL AND ("
+        "  SELECT COUNT(*) FROM software s2"
+        "  WHERE lower(s2.name) = lower(access_review.application) AND s2.is_active = 1) = 1"))
     # Le type d'asset « server » est remplace par « divers » (les serveurs sont
     # desormais geres dans l'inventaire).
     db.session.execute(text("UPDATE asset SET asset_type='divers' WHERE asset_type='server'"))

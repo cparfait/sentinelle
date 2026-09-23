@@ -41,8 +41,10 @@ def create():
         next_review = parse_date(request.form.get('next_review'))
         if not next_review and last_review:
             next_review = last_review + timedelta(days=freq)
+        logiciel = _logiciel_par_nom(application)
         r = AccessReview(
-            application=application,
+            application=logiciel.name if logiciel else application,
+            software_id=logiciel.id if logiciel else None,
             responsible=request.form.get('responsible', '').strip() or None,
             responsible_email=request.form.get('responsible_email', '').strip() or None,
             scope=request.form.get('scope'),
@@ -80,7 +82,9 @@ def edit(id):
         if not application:
             flash('L\'application est obligatoire.', 'danger')
             return render_template('reviews/form.html', review=review, assets=_app_assets())
-        review.application = application
+        logiciel = _logiciel_par_nom(application)
+        review.application = logiciel.name if logiciel else application
+        review.software_id = logiciel.id if logiciel else None
         review.responsible = request.form.get('responsible', '').strip() or None
         review.responsible_email = request.form.get('responsible_email', '').strip() or None
         review.scope = request.form.get('scope')
@@ -130,3 +134,16 @@ def _app_assets():
     """Revues de droits : suggestions issues de l'inventaire Logiciels métiers."""
     from app.models import Software
     return Software.query.filter_by(is_active=True).order_by(Software.name).all()
+
+
+def _logiciel_par_nom(nom):
+    """La fiche logiciel que designe ce nom, ou None. Le formulaire propose
+    les noms de l'inventaire ; une saisie qui n'en est pas (application hors
+    inventaire) laisse la revue sans lien. Deux homonymes actifs : aucun."""
+    from sqlalchemy import func
+    from app.models import Software
+    if not nom:
+        return None
+    candidats = Software.query.filter(Software.is_active.is_(True),
+                                      func.lower(Software.name) == nom.lower()).all()
+    return candidats[0] if len(candidats) == 1 else None

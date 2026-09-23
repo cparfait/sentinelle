@@ -34,6 +34,13 @@
                 <div class="fiche-bloc">
                     {{ titre_section('La revue', 'bi-person-check', 'slate', 'mb-0') }}
                     <div class="fiche-grille">
+                        {% call champ_bloc('Logiciel') %}
+                        {%- if review.software -%}
+                        <a href="{{ url_for('software.detail', id=review.software_id) }}" class="text-decoration-none"><i class="bi bi-window-stack me-1"></i>{{ review.software.name }}</a>
+                        {%- else -%}
+                        <span class="text-muted">{{ review.application }} <small>(hors inventaire)</small></span>
+                        {%- endif -%}
+                        {% endcall %}
                         {% call champ_bloc('Responsable') %}
                         {%- if review.responsible or review.responsible_email -%}
                         {{ review.responsible or '' }}
