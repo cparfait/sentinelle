@@ -26,19 +26,18 @@
         <table class="table table-hover mb-0 js-filterable">
             <thead>
                 <tr>
-                    <th>Statut</th>
                     <th>Domaine</th>
                     <th>Expiration</th>
                     <th>Registrar</th>
                     <th>Renouvellement</th>
+                    <th>Statut</th>
                     <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
                 {% for d in domains %}
                 <tr class="row-{{ d.status() }}">
-                    <td>{{ status_badge(d.status()) }}</td>
-                    <td><a href="{{ url_for('domains.detail', id=d.id) }}" class="fw-medium text-decoration-none"><code>{{ d.name }}</code></a></td>
+                    <td><a href="{{ url_for('domains.detail', id=d.id) }}" class="fw-medium text-decoration-none">{{ d.name }}</a></td>
                     <td>
                         {% if d.expiry_date %}
                         {{ cellule(d.expiry_date.strftime('%d/%m/%Y'), delai_badge(d.expiry_date, d.status(), passe='expiré depuis')) }}
@@ -46,6 +45,7 @@
                     </td>
                     <td>{{ d.registrar or '—' }}</td>
                     <td>{% if d.auto_renew %}<i class="bi bi-arrow-repeat me-1 text-muted"></i>Automatique{% else %}Manuel{% endif %}</td>
+                    <td>{{ status_badge(d.status()) }}</td>
                     <td class="col-actions">
                         {% call actions() %}
                         {% if current_user.can_edit('domains') %}{{ bouton_modifier(url_for('domains.edit', id=d.id)) }}{% endif %}
