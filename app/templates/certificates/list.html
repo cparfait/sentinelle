@@ -2,6 +2,7 @@
 {% block title %}Certificats - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge, delai_badge, priorite %}
 {% from '_liste.html' import barre, actions, cellule, bouton_modifier, vide %}
+{% from '_icones.html' import icone, lucide %}
 
 {% block content %}
 <div class="page-header">
@@ -58,57 +59,78 @@
 {% endset %}
 {{ barre(q, hidden={'kind': kind}, segments=segments) }}
 
+{# La disposition du tableau des certificats de SoftInventory : qui (et à
+   quel titre), pour quel service, délivré par qui, valable de quand à quand
+   — le statut se lit dans la pastille de validité, pas dans une colonne à
+   part. Les lignes gardent leur classe row-<statut> : c'est elle que lit le
+   filtre « Tous / Critique / À prévoir / OK ». #}
 <div class="data-card">
     <div class="table-responsive">
-        <table class="table table-hover mb-0 js-filterable">
+        <table class="table table-hover mb-0 js-filterable tableau-certificats">
+            <colgroup>
+                <col style="width: 26%"><col style="width: 19%"><col style="width: 15%">
+                <col style="width: 22%"><col style="width: 14%"><col>
+            </colgroup>
             <thead>
                 <tr>
-                    <th>Statut</th>
+                    <th>Titulaire</th>
                     <th>Service</th>
-                    <th>Expiration</th>
-                    <th>Émetteur</th>
-                    <th>Émission</th>
-                    <th>Renouvellement</th>
-                    <th>Priorité</th>
+                    <th>Autorité</th>
+                    <th>Validité</th>
+                    <th>Type / Modèle</th>
                     <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
                 {% for cert in certificates %}
+                {% set electronique = cert.kind == 'signature' %}
                 <tr class="row-{{ cert.status() }}">
-                    <td>{{ status_badge(cert.status()) }}</td>
+                    {# Titulaire : la personne pour un certificat électronique, le
+                       service pour un TLS ; en dessous, la qualité et l'usage,
+                       ou le domaine. #}
                     <td>
-                        <a href="{{ url_for('certificates.detail', id=cert.id) }}" class="fw-medium text-decoration-none">{{ cert.service_name }}</a>
-                        {%- if cert.kind == 'signature' %}
-                        <small class="d-block text-muted">{{ cert.holder_label() or 'certificat électronique' }}{% if cert.holder_role %} · {{ cert.holder_role }}{% endif %}</small>
-                        {%- elif cert.domain %}<small class="d-block text-muted"><code>{{ cert.domain }}</code></small>{% endif -%}
+                        <a href="{{ url_for('certificates.detail', id=cert.id) }}" class="fw-medium text-decoration-none d-block text-truncate" title="{{ cert.label() }}">
+                            {{- (cert.holder_label() or cert.service_name) if electronique else cert.service_name -}}
+                        </a>
+                        {%- if electronique -%}
+                        {%- set qualite = [cert.holder_role, cert.usage_label()] | select | join(' · ') -%}
+                        {%- if qualite %}<small class="d-block text-truncate text-faint">{{ qualite }}</small>{% endif -%}
+                        {%- elif cert.domain %}<small class="d-block text-truncate text-faint">{{ cert.domain }}</small>{% endif -%}
                     </td>
-                    <td>
-                        {# Un certificat révoqué n'est plus utilisable : le décompte de
-                           ses jours n'a plus de sens. #}
-                        {% if not cert.expiry_date %}
-                        <span class="text-muted">à renseigner</span>
-                        {% elif not cert.monitored() %}
-                        {{ cellule(cert.expiry_date.strftime('%d/%m/%Y'), 'hors surveillance') }}
-                        {% else %}
-                        {{ cellule(cert.expiry_date.strftime('%d/%m/%Y'), delai_badge(cert.expiry_date, cert.status(), passe='expiré depuis')) }}
-                        {% endif %}
-                    </td>
-                    <td>
-                        {%- if cert.kind == 'signature' %}{{ cert.supplier.name if cert.supplier else '—' }}
+                    {# Le service utilisateur rattaché — pour un TLS aussi, sinon la
+                       colonne répéterait le titulaire. #}
+                    <td class="text-muted text-truncate">{{ cert.service.name if cert.service else '—' }}</td>
+                    <td class="text-muted text-truncate">
+                        {%- if electronique %}{{ cert.supplier.name if cert.supplier else '—' }}
                         {%- else %}{{ cert.issuer or '—' }}{% endif -%}
                     </td>
-                    <td>{{ cert.issued_at.strftime('%d/%m/%Y') if cert.issued_at else '—' }}</td>
+                    {# Validité : les deux dates sur une ligne, et la pastille qui
+                       dit où l'on en est. Un certificat révoqué n'a plus de
+                       décompte ; sans date, il n'y a rien à compter. #}
                     <td>
-                        {%- if cert.kind == 'signature' -%}
-                        {{ cert.validity_label() }}
-                        {%- elif cert.auto_renew -%}
-                        <i class="bi bi-arrow-repeat me-1 text-muted"></i>Automatique
+                        <small class="d-block text-muted text-nowrap tabular">
+                            {{- cert.issued_at.strftime('%d/%m/%Y') if cert.issued_at else '…' }} → {{ cert.expiry_date.strftime('%d/%m/%Y') if cert.expiry_date else '…' -}}
+                        </small>
+                        {% if cert.validity == 'revoque' %}
+                        <span class="badge-status badge-danger mt-1">{{ lucide('calendar-clock', 12) }}Révoqué</span>
+                        {% elif not cert.expiry_date %}
+                        <span class="badge-status badge-warning mt-1">{{ lucide('calendar-clock', 12) }}Date à renseigner</span>
+                        {% else %}
+                        <span class="badge-status badge-{{ cert.status() }} mt-1">{{ lucide('calendar-clock', 12) }}{{ jours(cert.expiry_date) | delai(passe='expiré depuis') }}</span>
+                        {% endif %}
+                    </td>
+                    {# Type / Modèle : le niveau de garantie (RGS**, eIDAS…) ou le
+                       support pour un électronique ; TLS ou Wildcard, et le mode
+                       de renouvellement, pour un TLS. #}
+                    <td class="text-muted">
+                        {%- if electronique -%}
+                        <span class="d-block text-truncate">{{ cert.level or cert.support_label() or 'Électronique' }}</span>
+                        {%- if cert.level and cert.support %}<small class="d-block text-truncate text-faint">{{ cert.support_label() }}</small>{% endif -%}
                         {%- else -%}
-                        Manuel
+                        <span class="d-block">{{ 'Wildcard' if cert.domain and cert.domain.startswith('*.') else 'TLS' }}</span>
+                        <small class="d-block text-faint">{% if cert.auto_renew %}{{ icone('bi-arrow-repeat', 12, 'me-1') }}Automatique{% else %}Manuel{% endif %}</small>
                         {%- endif -%}
                     </td>
-                    <td>{{ priorite(cert.priority) }}</td>
                     <td class="col-actions">
                         {% call actions() %}
                         {% if current_user.can_edit('certificates') %}{{ bouton_modifier(url_for('certificates.edit', id=cert.id)) }}{% endif %}
@@ -116,7 +138,7 @@
                     </td>
                 </tr>
                 {% else %}
-                {{ vide(8, 'Aucun certificat.', url_for('certificates.create', kind=kind or 'tls') if current_user.can_edit('certificates') else None) }}
+                {{ vide(6, 'Aucun certificat.', url_for('certificates.create', kind=kind or 'tls') if current_user.can_edit('certificates') else None) }}
                 {% endfor %}
             </tbody>
         </table>

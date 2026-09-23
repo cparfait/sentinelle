@@ -211,7 +211,7 @@ def test_dashboard_nomme_les_echeances_comme_l_agenda(app, client):
                            next_password_change=today + timedelta(days=15)))
     db.session.commit()
     body = client.get('/').data.decode('utf-8')
-    assert 'Élus - Mme Elodie DORFIAC' in body
+    assert 'Élus - Mme DORFIAC Elodie' in body
     assert 'Élus - None' not in body
     # Un compte se distingue de son homonyme par son identifiant.
     assert 'Active Directory (svc-backup)' in body

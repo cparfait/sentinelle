@@ -102,14 +102,92 @@ LUCIDE_PAR_ICONE = {e['icon']: e['lucide']
 LUCIDE_PAR_ICONE['bi-trash3'] = 'trash-2'   # la Corbeille, hors DOMAINES
 
 
-def lucide_de(icone):
-    """Le nom Lucide d'une icone Bootstrap (« bi-key » ou « key »), ou None
-    si le module n'en a pas : le gabarit retombe alors sur Bootstrap."""
+# Les icones des RUBRIQUES de fiche (« Le certificat », « Suivi », « Notes »…),
+# avec la couleur de leur pastille. Une meme icone garde la meme couleur d'une
+# fiche a l'autre : la cle est toujours orange, le calendrier toujours ambre.
+# Les familles suivent celles du menu : orange pour ce qui expire ou se paie,
+# vert pour ce qui tourne, bleu pour le materiel, violet pour les personnes et
+# les liaisons, indigo pour l'ecrit, ardoise pour le reglage.
+RUBRIQUES = {
+    # ecrit, description
+    'bi-journal-text': ('notebook-text', 'indigo'),
+    'bi-file-earmark-text': ('file-pen', 'orange'),
+    'bi-paperclip': ('paperclip', 'indigo'),
+    'bi-folder2-open': ('folder-open', 'indigo'),
+    'bi-info-circle': ('info', 'sky'),
+    'bi-flag': ('flag', 'rose'),
+    'bi-tag': ('tag', 'indigo'),
+    'bi-tags': ('tags', 'indigo'),
+    # acces, securite
+    'bi-key': ('key-round', 'orange'),
+    'bi-shield-lock': ('lock-keyhole', 'orange'),
+    'bi-shield-check': ('shield-check', 'orange'),
+    'bi-patch-check': ('badge-check', 'orange'),
+    'bi-award': ('shield-check', 'orange'),
+    'bi-person-lock': ('user-lock', 'orange'),
+    # personnes
+    'bi-person': ('user', 'violet'),
+    'bi-people': ('users', 'violet'),
+    'bi-person-badge': ('id-card', 'violet'),
+    'bi-person-check': ('user-check', 'violet'),
+    'bi-person-gear': ('user-cog', 'violet'),
+    'bi-person-lines-fill': ('contact-round', 'violet'),
+    'bi-building': ('building', 'violet'),
+    # liaisons
+    'bi-diagram-3': ('network', 'violet'),
+    'bi-diagram-2': ('git-fork', 'violet'),
+    # temps
+    'bi-calendar-event': ('calendar-days', 'amber'),
+    'bi-calendar-check': ('calendar-check', 'amber'),
+    'bi-calendar-range': ('calendar-range', 'amber'),
+    'bi-arrow-repeat': ('refresh-cw', 'amber'),
+    'bi-arrow-up-circle': ('circle-arrow-up', 'emerald'),
+    # argent
+    'bi-cash-coin': ('coins', 'orange'),
+    'bi-receipt': ('receipt', 'orange'),
+    # materiel, exploitation
+    'bi-hdd-stack': ('server', 'sky'),
+    'bi-hdd-network': ('hard-drive', 'sky'),
+    'bi-hdd': ('hard-drive', 'sky'),
+    'bi-pc-display': ('monitor', 'sky'),
+    'bi-cpu': ('cpu', 'sky'),
+    'bi-window-stack': ('package', 'sky'),
+    'bi-globe': ('globe', 'sky'),
+    'bi-cloud': ('cloud', 'emerald'),
+    'bi-cloud-arrow-up': ('cloud-upload', 'emerald'),
+    'bi-clipboard-check': ('clipboard-list', 'emerald'),
+    'bi-life-preserver': ('life-buoy', 'emerald'),
+    # reglage
+    'bi-tools': ('wrench', 'slate'),
+    'bi-sliders': ('sliders-horizontal', 'slate'),
+    'bi-gear-wide-connected': ('settings', 'slate'),
+}
+
+
+def _bi(icone):
     if not icone:
         return None
-    if not icone.startswith('bi-'):
-        icone = 'bi-' + icone
-    return LUCIDE_PAR_ICONE.get(icone)
+    return icone if icone.startswith('bi-') else 'bi-' + icone
+
+
+def lucide_de(icone):
+    """Le nom Lucide d'une icone Bootstrap (« bi-key » ou « key »), ou None
+    si rien n'y correspond : le gabarit retombe alors sur Bootstrap. Le menu
+    a la priorite sur les rubriques, pour qu'un module garde son icone."""
+    icone = _bi(icone)
+    if not icone:
+        return None
+    if icone in LUCIDE_PAR_ICONE:
+        return LUCIDE_PAR_ICONE[icone]
+    rubrique = RUBRIQUES.get(icone)
+    return rubrique[0] if rubrique else None
+
+
+def couleur_icone(icone):
+    """La couleur de pastille d'une icone de rubrique (« orange », « sky »…),
+    ou « slate » quand l'icone n'a pas de famille."""
+    rubrique = RUBRIQUES.get(_bi(icone) or '')
+    return rubrique[1] if rubrique else 'slate'
 
 
 def entree_active():

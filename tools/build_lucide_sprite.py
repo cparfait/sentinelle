@@ -35,6 +35,11 @@ ICONES = [
     'monitor', 'hard-drive', 'database', 'router', 'box',
     # Menu utilisateur (pied de la barre laterale).
     'user', 'log-out', 'chevron-down',
+    # Rubriques de fiche (voir RUBRIQUES dans app/navigation.py).
+    'paperclip', 'folder-open', 'info', 'flag', 'tag', 'tags',
+    'lock-keyhole', 'badge-check', 'user-lock', 'id-card', 'user-cog', 'contact-round',
+    'network', 'git-fork', 'calendar-check', 'calendar-range', 'refresh-cw',
+    'coins', 'receipt', 'cpu', 'cloud', 'life-buoy', 'wrench', 'settings',
 ]
 
 

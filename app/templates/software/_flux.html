@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone %}
 {# ═══ Flux ═══
    Par ou passent les donnees : ce que ce logiciel alimente, ce dont il se
    nourrit. Le sens est porte par la ligne, jamais saisi deux fois. #}
@@ -6,7 +7,7 @@
 
 <div class="data-card h-100">
     <div class="card-header-custom d-flex justify-content-between align-items-center">
-        <h6 class="fw-bold fiche-titre fiche-titre--violet mb-0"><i class="bi bi-diagram-3 me-2"></i>Flux avec d'autres logiciels
+        <h6 class="fw-bold fiche-titre fiche-titre--violet mb-0">{{ icone('bi-diagram-3', 14, 'ico ico-' ~ couleur_icone('bi-diagram-3')) }}Flux avec d'autres logiciels
             <span class="badge bg-secondary ms-1">{{ (sortants | length) + (entrants | length) }}</span></h6>
         {% if peut_editer and autres_logiciels %}
         <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"

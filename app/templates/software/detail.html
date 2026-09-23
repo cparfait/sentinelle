@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from '_icones.html' import icone %}
 {% block title %}{{ item.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
@@ -188,7 +189,7 @@
             <div class="col-lg-4">
                 <div class="fiche-cote">
                     <div class="data-card p-4 mb-3">
-                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2"><i class="bi bi-building me-2"></i>Éditeur</h6>
+                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2">{{ icone('bi-building', 14, 'ico ico-' ~ couleur_icone('bi-building')) }}Éditeur</h6>
                         <div class="fw-medium mb-2"><a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}">{{ sup.name }}</a></div>
                         <ul class="list-unstyled small mb-0">
                             {% if sup.customer_ref %}<li class="mb-1"><span class="text-muted">N° client</span> <span class="fw-medium">{{ sup.customer_ref }}</span></li>{% endif %}
@@ -201,7 +202,7 @@
                     </div>
                     {% if sup.has_contacts() %}
                     <div class="data-card p-4 mb-3">
-                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2"><i class="bi bi-person-lines-fill me-2"></i>Contacts
+                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2">{{ icone('bi-person-lines-fill', 14, 'ico ico-' ~ couleur_icone('bi-person-lines-fill')) }}Contacts
                             <small class="fw-normal text-muted">(de l'éditeur)</small></h6>
                         <ul class="list-unstyled small mb-0">
                             {{ contact('Commercial', sup.commercial_contact, sup.commercial_phone, sup.commercial_email) }}
@@ -281,7 +282,7 @@
     <div class="col-xl-6">
         <div class="data-card h-100">
             <div class="card-header-custom">
-                <h6 class="fw-bold fiche-titre fiche-titre--sky mb-0"><i class="bi bi-arrow-up-circle me-2"></i>Mises à jour liées
+                <h6 class="fw-bold fiche-titre fiche-titre--sky mb-0">{{ icone('bi-arrow-up-circle', 14, 'ico ico-' ~ couleur_icone('bi-arrow-up-circle')) }}Mises à jour liées
                     <span class="badge bg-secondary ms-1">{{ updates|length }}</span></h6>
             </div>
             <div class="table-responsive">
@@ -308,7 +309,7 @@
     <div class="col-xl-6">
         <div class="data-card h-100">
             <div class="card-header-custom">
-                <h6 class="fw-bold fiche-titre fiche-titre--teal mb-0"><i class="bi bi-clipboard-check me-2"></i>Tâches récurrentes
+                <h6 class="fw-bold fiche-titre fiche-titre--teal mb-0">{{ icone('bi-clipboard-check', 14, 'ico ico-' ~ couleur_icone('bi-clipboard-check')) }}Tâches récurrentes
                     <span class="badge bg-secondary ms-1">{{ taches | length }}</span></h6>
             </div>
             <div class="table-responsive">

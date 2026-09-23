@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone %}
 {# ═══ Partage reseau ═══
    Ou vivent les installeurs, les outils, les notes de version — tout ce qui
    est trop lourd ou trop vivant pour une piece jointe. #}
@@ -6,7 +7,7 @@
 
 <div class="data-card h-100">
     <div class="card-header-custom d-flex justify-content-between align-items-center">
-        <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0"><i class="bi bi-folder2-open me-2"></i>Dossiers du partage réseau
+        <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0">{{ icone('bi-folder2-open', 14, 'ico ico-' ~ couleur_icone('bi-folder2-open')) }}Dossiers du partage réseau
             <span class="badge bg-secondary ms-1">{{ partages | length }}</span></h6>
         {% if peut_editer %}
         <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"

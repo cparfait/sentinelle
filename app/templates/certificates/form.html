@@ -93,16 +93,16 @@
                             <div class="form-text">Vide pour une machine.</div>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label fw-medium">Prénom</label>
-                            <input type="text" name="first_name" class="form-control"
-                                   value="{{ certificate.first_name or '' if certificate else '' }}">
-                        </div>
-                        <div class="col-md-3">
                             <label class="form-label fw-medium">Nom *</label>
                             <input type="text" name="holder" class="form-control" required
                                    value="{{ certificate.holder or '' if certificate else '' }}"
                                    data-ad-search data-ad-email="holder_email"
                                    placeholder="ARNAUD, ou SERVEUR CLIENT RGS">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-medium">Prénom</label>
+                            <input type="text" name="first_name" class="form-control"
+                                   value="{{ certificate.first_name or '' if certificate else '' }}">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-medium">Email</label>

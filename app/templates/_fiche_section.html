@@ -10,9 +10,13 @@
    Usage :  {% from '_fiche_section.html' import titre_section %}
             {{ titre_section('Réseau', 'bi-diagram-3', 'teal') }}
 #}
+{# L'icone est celle de Lucide quand app/navigation.py (RUBRIQUES) la
+   connait, dans une pastille de la couleur de sa famille ; `couleur` ne
+   teinte plus que le reste (barre, filet). #}
 {% macro titre_section(titre, icone, couleur='indigo', classes='mb-2 mt-3') %}
+{% from '_icones.html' import icone as _icone %}
 <h6 class="fw-bold fiche-titre fiche-titre--{{ couleur }} {{ classes }}">
-    <i class="bi {{ icone }} me-2"></i>{{ titre }}</h6>
+    {{ _icone(icone, 14, 'ico ico-' ~ couleur_icone(icone)) }}{{ titre }}</h6>
 {% endmacro %}
 
 {# ═══ Un champ de la grille dense ═══

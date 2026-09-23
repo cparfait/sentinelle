@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone %}
 {# ═══ Pièces jointes ═══
    Partial réutilisable : le fichier qui atteste ce que la fiche affirme.
    Attend `doc_parent_kind`, `doc_parent_id` et `doc_permission` (la catégorie
@@ -11,7 +12,7 @@
 {% set peut_retirer = current_user.can_delete(doc_permission) %}
 <div class="data-card mb-3">
     <div class="card-header-custom d-flex justify-content-between align-items-center">
-        <h6 class="fw-bold fiche-titre fiche-titre--indigo mb-0"><i class="bi bi-paperclip me-2"></i>{{ doc_title | default('Pièces jointes') }}
+        <h6 class="fw-bold fiche-titre fiche-titre--indigo mb-0">{{ icone('bi-paperclip', 14, 'ico ico-' ~ couleur_icone('bi-paperclip')) }}{{ doc_title | default('Pièces jointes') }}
             <span class="badge bg-secondary ms-1">{{ pieces | length }}</span></h6>
         {% if peut_deposer %}
         <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"

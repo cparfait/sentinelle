@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone %}
 {# ═══ Pièces héritées ═══
    Ce que la fiche ne porte pas elle-même, mais qui la documente : l'acte versé
    sous le marché, la pièce d'un poste, le devis d'une consultation.
@@ -13,7 +14,7 @@
 {% if pieces_heritees %}
 <div class="data-card mb-3">
     <div class="card-header-custom">
-        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-0"><i class="bi bi-diagram-2 me-2"></i>Pièces des marchés et des devis
+        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-0">{{ icone('bi-diagram-2', 14, 'ico ico-' ~ couleur_icone('bi-diagram-2')) }}Pièces des marchés et des devis
             <span class="badge bg-secondary ms-1">{{ pieces_heritees | length }}</span></h6>
     </div>
     <div class="table-responsive">

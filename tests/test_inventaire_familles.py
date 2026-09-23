@@ -205,8 +205,9 @@ def test_la_fiche_porte_les_couleurs_du_formulaire(client):
         # les intitules, pas leur mise en page.
         return {t.strip(): c for c, t in re.findall(motif, html, re.S)}
 
+    # L'icone du titre est un <svg> Lucide (ou, a defaut, un <i> Bootstrap).
     des_fiches = couleurs(
-        fiche, r'fiche-titre--(\w+)[^>]*>\s*<i[^>]*></i>([^<]+?)</h6>')
+        fiche, r'fiche-titre--(\w+)[^>]*>\s*(?:<svg[^>]*>.*?</svg>|<i[^>]*></i>)([^<]+?)</h6>')
     du_formulaire = couleurs(
         formulaire,
         r'form-section form-section--(\w+)[^>]*>\s*<legend[^>]*>'

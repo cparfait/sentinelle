@@ -35,20 +35,19 @@
         <table class="table table-hover mb-0 js-filterable">
             <thead>
                 <tr>
-                    <th>Statut</th>
                     <th>Service</th>
                     <th>Utilisateur</th>
-                    <th>Prochain changement</th>
-                    <th>Dernier changement</th>
+                    <th class="th-2l">Prochain<br>changement</th>
+                    <th class="th-2l">Dernier<br>changement</th>
                     <th>Rotation</th>
                     <th>Priorité</th>
+                    <th>Statut</th>
                     <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
                 {% for account in accounts %}
                 <tr class="row-{{ account.status() }}">
-                    <td>{{ status_badge(account.status()) }}</td>
                     <td>
                         <a href="{{ url_for('accounts.detail', id=account.id) }}" class="fw-medium text-decoration-none">{{ account.service_name }}</a>
                         {% if account.url %}<small class="d-block text-muted">{{ account.url }}</small>{% endif %}
@@ -62,6 +61,7 @@
                     <td>{{ account.last_password_change.strftime('%d/%m/%Y') if account.last_password_change else '—' }}</td>
                     <td>{{ 'tous les %d j' % account.rotation_days if account.rotation_days else '—' }}</td>
                     <td>{{ priorite(account.priority) }}</td>
+                    <td>{{ status_badge(account.status()) }}</td>
                     <td class="col-actions">
                         {% call actions() %}
                         {% if current_user.can_edit('accounts') %}{{ bouton_modifier(url_for('accounts.edit', id=account.id)) }}{% endif %}

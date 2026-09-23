@@ -32,8 +32,8 @@ def test_creation_d_un_certificat_electronique(client):
 
     c = Certificate.query.filter_by(service_name='Signature des marchés').one()
     assert c.kind == 'signature' and c.domain is None
-    assert c.holder_label() == 'Mme Claire ARNAUD'
-    assert c.label() == 'Signature des marchés - Mme Claire ARNAUD'
+    assert c.holder_label() == 'Mme ARNAUD Claire'
+    assert c.label() == 'Signature des marchés - Mme ARNAUD Claire'
     assert c.supplier_id == ca.id and c.service_id == sv.id
     assert c.usage_label() == 'Signature' and c.support_label() == 'Carte à puce'
     assert c.duration_years == 3 and c.amount_ttc == 120.5
@@ -214,7 +214,7 @@ def test_csv_transporte_les_deux_natures(client):
     created, errors = csv_io.import_csv('certificates', contenu)
     assert created == 3 and not errors
     sig = Certificate.query.filter_by(service_name='Parapheur').one()
-    assert sig.kind == 'signature' and sig.holder_label() == 'Mme Claire ARNAUD'
+    assert sig.kind == 'signature' and sig.holder_label() == 'Mme ARNAUD Claire'
     assert sig.level == 'RGS**'
     assert Certificate.query.filter_by(service_name='Ancien').one().kind == 'tls'
 

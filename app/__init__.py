@@ -307,8 +307,9 @@ def create_app(config_class=Config):
             v = 0
         return url_for('static', filename=filename, v=v)
 
-    from app.navigation import lucide_de
+    from app.navigation import lucide_de, couleur_icone
     app.jinja_env.globals['lucide_de'] = lucide_de
+    app.jinja_env.globals['couleur_icone'] = couleur_icone
 
     from app.scheduler import start_scheduler
     if not app.config.get('TESTING'):

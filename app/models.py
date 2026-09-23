@@ -332,9 +332,11 @@ class Certificate(db.Model):
         return CERT_VALIDITY_LABELS.get(self.validity, 'Valide')
 
     def holder_label(self):
-        """« M. Jean ARNAUD », dans l'ordre ou on le lit. Le nom seul quand le
-        reste manque -- l'inventaire n'a longtemps porte que des patronymes."""
-        bouts = [self.civility_label(), self.first_name, self.holder]
+        """« M. ARNAUD Jean » : le nom avant le prenom, comme dans SoftInventory
+        et sur les actes -- c'est lui qu'on cherche des yeux dans une liste.
+        Le nom seul quand le reste manque : l'inventaire n'a longtemps porte
+        que des patronymes."""
+        bouts = [self.civility_label(), self.holder, self.first_name]
         return ' '.join(b for b in bouts if b)
 
     def label(self):

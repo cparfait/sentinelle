@@ -393,7 +393,7 @@ details.sidebar-section--repliable > summary:hover { color: var(--muted); }
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 4px 12px;
+    padding: 2px 12px;
     margin-bottom: 2px;
     color: var(--text);
     font-size: 0.875rem;
@@ -1001,17 +1001,20 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 }
 .card-header-custom h6 i { margin-right: 6px; }
 
-/* Titres de bloc posés dans le corps d'une carte : meme barre, meme casse. */
-.data-card h6.fw-bold:not(.card-header-custom h6) {
+/* Titres de bloc posés dans le corps d'une carte : meme barre, meme casse.
+   Le titre d'une RUBRIQUE (.fiche-bloc) en est exclu : il a sa propre mise
+   en forme (pastille d'icone, pas de barre) et doit s'aligner sur les champs
+   qu'il coiffe, sans le retrait de la barre. */
+.data-card h6.fw-bold:not(.card-header-custom h6):not(.fiche-bloc > h6) {
     position: relative;
     padding-left: 14px;
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--muted);
+    color: var(--text);
 }
-.data-card h6.fw-bold:not(.card-header-custom h6)::before {
+.data-card h6.fw-bold:not(.card-header-custom h6):not(.fiche-bloc > h6)::before {
     content: "";
     position: absolute;
     left: 0;
@@ -1084,7 +1087,10 @@ body.dash-editing .stat-toggle { display: inline-flex; }
     background: transparent;
 }
 .table tbody td {
-    padding: 11px 12px;
+    /* 48 px de haut au minimum, peu de rembourrage : une ligne a deux
+       etages (nom + sous-titre) ne grandit presque pas. */
+    height: 48px;
+    padding: 5px 12px;
     vertical-align: middle;
     border-top: 1px solid var(--line);
     border-bottom: 0;
@@ -1203,6 +1209,20 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 /* Sous la derniere ligne : ni filet ni ascenseur qui traine. L'ascenseur
    horizontal ne parait que si le tableau deborde vraiment. */
 .table-responsive { overflow-y: hidden; }
+
+/* En-tete sur deux lignes (« Prochain<br>changement ») : une colonne de
+   dates n'a pas a etre aussi large que son intitule. */
+.table thead th.th-2l { white-space: normal; line-height: 1; }
+/* A cote d'un intitule sur deux lignes, un intitule d'une ligne cale en bas
+   (le defaut de Bootstrap) semble tomber : on centre, comme les cellules. */
+.table thead th { vertical-align: middle; }
+
+/* Utilitaires des cellules a deux etages (voir certificates/list.html). */
+.text-faint { color: var(--faint) !important; }
+.tabular { font-variant-numeric: tabular-nums; }
+.tableau-certificats { table-layout: fixed; }
+.tableau-certificats td { overflow: hidden; }
+.badge-status svg.lucide { margin-right: 3px; }
 .table-responsive::-webkit-scrollbar { height: 6px; }
 .table-hover tbody tr { transition: background-color 0.12s ease; }
 .table-hover tbody tr:hover { background-color: rgba(var(--primary-rgb), 0.07); }
@@ -2233,7 +2253,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     font-weight: 800;
     letter-spacing: 0.09em;
     text-transform: uppercase;
-    color: rgb(var(--sec));
+    color: var(--text);
     background: none;
     border: 0;
 }
@@ -2250,6 +2270,39 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     color: rgb(var(--sec)) !important;
     background: rgba(var(--sec), 0.13);
 }
+/* La meme pastille pour une icone Lucide, teintee par sa famille (.ico-*) :
+   l'icone en couleur pleine, le fond en lavis. */
+.data-card .fiche-bloc > h6.fiche-titre > svg.lucide.ico {
+    display: inline-block;
+    width: 25px;
+    height: 25px;
+    padding: 5px;
+    margin: 0;
+    border-radius: 8px;
+    vertical-align: middle;
+    color: rgb(var(--ico-rgb, var(--sec)));
+    background: rgba(var(--ico-rgb, var(--sec)), 0.13);
+    stroke-width: 2.5;
+}
+/* Dans un en-tete de carte, pas de pastille : l'icone seule, en couleur. */
+.card-header-custom h6.fiche-titre > svg.lucide.ico { margin-right: 6px; color: rgb(var(--ico-rgb, var(--sec))); }
+.ico-indigo  { --ico-rgb: 79, 70, 229; }
+.ico-sky     { --ico-rgb: 2, 132, 199; }
+.ico-emerald { --ico-rgb: 5, 150, 105; }
+.ico-amber   { --ico-rgb: 217, 119, 6; }
+.ico-orange  { --ico-rgb: 249, 115, 22; }
+.ico-rose    { --ico-rgb: 225, 29, 72; }
+.ico-violet  { --ico-rgb: 124, 58, 237; }
+.ico-slate   { --ico-rgb: 100, 116, 139; }
+[data-theme="dark"] .ico-indigo  { --ico-rgb: 129, 140, 248; }
+[data-theme="dark"] .ico-sky     { --ico-rgb: 56, 189, 248; }
+[data-theme="dark"] .ico-emerald { --ico-rgb: 52, 211, 153; }
+[data-theme="dark"] .ico-amber   { --ico-rgb: 251, 191, 36; }
+[data-theme="dark"] .ico-orange  { --ico-rgb: 251, 146, 60; }
+[data-theme="dark"] .ico-rose    { --ico-rgb: 251, 113, 133; }
+[data-theme="dark"] .ico-violet  { --ico-rgb: 167, 139, 250; }
+[data-theme="dark"] .ico-slate   { --ico-rgb: 148, 163, 184; }
+
 /* Le filet prolonge l'intitule jusqu'au bord de la colonne et s'y dissout :
    il dit ou commence la rubrique sans tracer de cadre autour d'elle. */
 .data-card .fiche-bloc > h6.fiche-titre::after { display: none; }
@@ -2303,7 +2356,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 
 /* ---- Les titres des cartes autonomes : la barre d'accent, teintee ---- */
 .fiche-titre { --sec: var(--sec-indigo); }
-.data-card h6.fiche-titre { color: rgb(var(--sec)); }
+.data-card h6.fiche-titre { color: var(--text); }
 .data-card h6.fiche-titre::before { background: rgb(var(--sec)); }
 /* !important : les gabarits posent encore des utilitaires Bootstrap
    (text-primary, text-success) sur ces icones. */
