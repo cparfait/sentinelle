@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Tests - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge, delai_badge, priorite %}
-{% from '_liste.html' import barre, actions, cellule, bouton_modifier, vide %}
+{% from '_liste.html' import barre, cellule, vide %}
 
 {% block content %}
 <div class="page-header">
@@ -34,7 +34,6 @@
                     <th>Prochaine échéance</th>
                     <th>Dernière exécution</th>
                     <th>Priorité</th>
-                    <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -52,14 +51,9 @@
                     </td>
                     <td>{{ test.last_performed.strftime('%d/%m/%Y') if test.last_performed else '—' }}</td>
                     <td>{{ priorite(test.priority) }}</td>
-                    <td class="col-actions">
-                        {% call actions() %}
-                        {% if current_user.can_edit('tests') %}{{ bouton_modifier(url_for('tests.edit', id=test.id)) }}{% endif %}
-                        {% endcall %}
-                    </td>
                 </tr>
                 {% else %}
-                {{ vide(6, 'Aucun test.', url_for('tests.create') if current_user.can_edit('tests') else None) }}
+                {{ vide(5, 'Aucun test.', url_for('tests.create') if current_user.can_edit('tests') else None) }}
                 {% endfor %}
             </tbody>
         </table>

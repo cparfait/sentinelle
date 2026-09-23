@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Certificats - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge, delai_badge, priorite %}
-{% from '_liste.html' import barre, actions, cellule, bouton_modifier, vide %}
+{% from '_liste.html' import barre, vide %}
 {% from '_icones.html' import icone, lucide %}
 
 {% block content %}
@@ -78,7 +78,6 @@
                     <th>Autorité</th>
                     <th>Validité</th>
                     <th>Type / Modèle</th>
-                    <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -131,14 +130,9 @@
                         <small class="d-block text-faint">{% if cert.auto_renew %}{{ icone('bi-arrow-repeat', 12, 'me-1') }}Automatique{% else %}Manuel{% endif %}</small>
                         {%- endif -%}
                     </td>
-                    <td class="col-actions">
-                        {% call actions() %}
-                        {% if current_user.can_edit('certificates') %}{{ bouton_modifier(url_for('certificates.edit', id=cert.id)) }}{% endif %}
-                        {% endcall %}
-                    </td>
                 </tr>
                 {% else %}
-                {{ vide(6, 'Aucun certificat.', url_for('certificates.create', kind=kind or 'tls') if current_user.can_edit('certificates') else None) }}
+                {{ vide(5, 'Aucun certificat.', url_for('certificates.create', kind=kind or 'tls') if current_user.can_edit('certificates') else None) }}
                 {% endfor %}
             </tbody>
         </table>

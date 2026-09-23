@@ -2,7 +2,7 @@
 {% block title %}Mises à jour - Sentinelle{% endblock %}
 {% set status_labels = dict(status_choices) %}
 {% set type_labels = dict(type_choices) %}
-{% from '_liste.html' import barre, actions, bouton_modifier, bouton_supprimer, vide %}
+{% from '_liste.html' import barre, vide %}
 
 {% block content %}
 <div class="page-header">
@@ -33,7 +33,6 @@
                     <th>Dernière version</th>
                     <th>Dernière mise à jour</th>
                     <th>Priorité</th>
-                    <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -48,15 +47,9 @@
                     <td><code>{{ u.latest_version or '—' }}</code></td>
                     <td>{{ u.last_update.strftime('%d/%m/%Y') if u.last_update else '—' }}</td>
                     <td>{{ priority_label(u.priority) }}</td>
-                    <td class="col-actions">
-                        {% call actions() %}
-                        {% if current_user.can_edit('updates') %}{{ bouton_modifier(url_for('updates.edit', id=u.id)) }}{% endif %}
-                        {% if current_user.can_delete('updates') %}{{ bouton_supprimer(url_for('updates.delete', id=u.id), 'Supprimer « ' ~ u.name ~ ' » ?') }}{% endif %}
-                        {% endcall %}
-                    </td>
                 </tr>
                 {% else %}
-                {{ vide(7, 'Aucune application ni système suivi.', url_for('updates.create') if current_user.can_edit('updates') else None) }}
+                {{ vide(6, 'Aucune application ni système suivi.', url_for('updates.create') if current_user.can_edit('updates') else None) }}
                 {% endfor %}
             </tbody>
         </table>

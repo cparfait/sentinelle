@@ -25,7 +25,6 @@
 ] %}
 {% set default_cols = ['kind', 'environment', 'criticality', 'os', 'ip_address', 'warranty_end'] %}
 
-{% from '_liste.html' import actions, bouton_modifier, bouton_supprimer %}
 {% block content %}
 {% set reseau = famille == 'reseau' %}
 <div class="page-header">
@@ -171,7 +170,6 @@
                     <th>{{ sorth('name', 'Nom') }}</th>
                     {% for key, label in columns %}<th data-col="{{ key }}">{{ sorth(key, label) }}</th>{% endfor %}
                     <th>{{ sorth('status', 'Statut') }}</th>
-                    <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -227,15 +225,9 @@
                     {% set reasons = e.status_reasons() %}
                     <td><span class="badge-status badge-{{ e.computed_status() }}" data-bs-toggle="tooltip"
                               title="{{ reasons | join(' · ') if reasons else 'Aucun point d’attention — équipement OK' }}">{{ status_labels.get(e.computed_status(), e.computed_status()) }}</span></td>
-                    <td class="col-actions">
-                        {% call actions() %}
-                        {% if current_user.can_edit('inventory') %}{{ bouton_modifier(url_for('inventory.edit', id=e.id)) }}{% endif %}
-                        {% if current_user.can_delete('inventory') %}{{ bouton_supprimer(url_for('inventory.delete', id=e.id), 'Supprimer « ' ~ e.name ~ ' » ?') }}{% endif %}
-                        {% endcall %}
-                    </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="{{ columns|length + 3 }}" class="text-center py-4 text-muted">
+                <tr><td colspan="{{ columns|length + 2 }}" class="text-center py-4 text-muted">
                     <i class="bi bi-hdd-stack" style="font-size: 2rem;"></i>
                     <p class="mt-2 mb-0">Aucun équipement.
                         {% if current_user.can_edit('inventory') %}<a href="{{ url_for('inventory.import_xlsx') }}">Importer votre fichier Excel</a> ou <a href="{{ url_for('inventory.create', famille=famille) }}">en ajouter un</a>.{% endif %}

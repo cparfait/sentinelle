@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Sauvegardes - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
-{% from '_liste.html' import barre, actions, cellule, bouton_modifier, vide %}
+{% from '_liste.html' import barre, cellule, vide %}
 
 {% block content %}
 <div class="page-header">
@@ -48,7 +48,6 @@
                     <th>Planification</th>
                     <th>Réussite 30 j</th>
                     <th>Emplacement</th>
-                    <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -77,14 +76,9 @@
                         {% else %}<span class="text-muted">—</span>{% endif %}
                     </td>
                     <td><small>{{ backup.location or '—' }}</small></td>
-                    <td class="col-actions">
-                        {% call actions() %}
-                        {% if current_user.can_edit('backups') %}{{ bouton_modifier(url_for('backups.edit', id=backup.id)) }}{% endif %}
-                        {% endcall %}
-                    </td>
                 </tr>
                 {% else %}
-                {{ vide(7, 'Aucune sauvegarde.', url_for('backups.create') if current_user.can_edit('backups') else None) }}
+                {{ vide(6, 'Aucune sauvegarde.', url_for('backups.create') if current_user.can_edit('backups') else None) }}
                 {% endfor %}
             </tbody>
         </table>

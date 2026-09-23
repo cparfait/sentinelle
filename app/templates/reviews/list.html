@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Revues de droits - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge, delai_badge, priorite %}
-{% from '_liste.html' import barre, actions, cellule, bouton_modifier, bouton_supprimer, vide %}
+{% from '_liste.html' import barre, cellule, vide %}
 
 {% block content %}
 <div class="page-header">
@@ -32,7 +32,6 @@
                     <th>Responsable</th>
                     <th>Fréquence</th>
                     <th>Priorité</th>
-                    <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -48,15 +47,9 @@
                     <td>{{ r.responsible or '—' }}</td>
                     <td>tous les {{ r.frequency_days }} j</td>
                     <td>{{ priorite(r.priority) }}</td>
-                    <td class="col-actions">
-                        {% call actions() %}
-                        {% if current_user.can_edit('reviews') %}{{ bouton_modifier(url_for('reviews.edit', id=r.id)) }}{% endif %}
-                        {% if current_user.can_delete('reviews') %}{{ bouton_supprimer(url_for('reviews.delete', id=r.id), 'Supprimer « ' ~ r.application ~ ' » ?') }}{% endif %}
-                        {% endcall %}
-                    </td>
                 </tr>
                 {% else %}
-                {{ vide(7, 'Aucune revue de droits enregistrée.', url_for('reviews.create') if current_user.can_edit('reviews') else None) }}
+                {{ vide(6, 'Aucune revue de droits enregistrée.', url_for('reviews.create') if current_user.can_edit('reviews') else None) }}
                 {% endfor %}
             </tbody>
         </table>
