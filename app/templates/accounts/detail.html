@@ -42,6 +42,16 @@
                         {{ champ('Priorité', priority_label(account.priority)) }}
                     </div>
                 </div>
+                {% if account.software or account.equipment or account.supplier %}
+                <div class="fiche-bloc">
+                    {{ titre_section('Rattaché à', 'bi-diagram-3', 'slate', 'mb-0') }}
+                    <div class="fiche-grille">
+                        {% if account.software %}{% call champ_bloc('Logiciel') %}<a href="{{ url_for('software.detail', id=account.software_id) }}" class="text-decoration-none"><i class="bi bi-window-stack me-1"></i>{{ account.software.name }}</a>{% endcall %}{% endif %}
+                        {% if account.equipment %}{% call champ_bloc('Équipement') %}<a href="{{ url_for('inventory.detail', id=account.equipment_id) }}" class="text-decoration-none"><i class="bi bi-hdd-stack me-1"></i>{{ account.equipment.name }}</a>{% endcall %}{% endif %}
+                        {% if account.supplier %}{% call champ_bloc('Fournisseur') %}<a href="{{ url_for('suppliers.detail', id=account.supplier_id) }}" class="text-decoration-none"><i class="bi bi-building me-1"></i>{{ account.supplier.name }}</a>{% endcall %}{% endif %}
+                    </div>
+                </div>
+                {% endif %}
                 <div class="fiche-bloc">
                     {{ titre_section('Rotation', 'bi-arrow-repeat', 'slate', 'mb-0') }}
                     <div class="fiche-grille">

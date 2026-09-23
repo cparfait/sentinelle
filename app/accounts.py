@@ -48,11 +48,12 @@ def create():
         username = (request.form.get('username') or '').strip()
         if not service_name or not username:
             flash('Le service et l\'identifiant sont obligatoires.', 'danger')
-            return render_template('accounts/form.html', account=None)
+            return render_template('accounts/form.html', account=None, **_form_context())
         a = Account(
             service_name=service_name,
             username=username,
             url=request.form.get('url'),
+            **_liens(request.form),
             description=request.form.get('description'),
             last_password_change=parse_date(request.form.get('last_password_change')),
             rotation_days=parse_int(request.form.get('rotation_days'), 90, minimum=1),
@@ -71,7 +72,7 @@ def create():
         db.session.commit()
         flash('Compte ajouté avec succès', 'success')
         return redirect(url_for('accounts.list'))
-    return render_template('accounts/form.html', account=None)
+    return render_template('accounts/form.html', account=None, **_form_context())
 
 
 @bp.route('/<int:id>')
@@ -92,10 +93,12 @@ def edit(id):
         username = (request.form.get('username') or '').strip()
         if not service_name or not username:
             flash('Le service et l\'identifiant sont obligatoires.', 'danger')
-            return render_template('accounts/form.html', account=account)
+            return render_template('accounts/form.html', account=account, **_form_context())
         account.service_name = service_name
         account.username = username
         account.url = request.form.get('url')
+        for champ, valeur in _liens(request.form).items():
+            setattr(account, champ, valeur)
         account.description = request.form.get('description')
         account.last_password_change = parse_date(request.form.get('last_password_change'))
         account.rotation_days = parse_int(request.form.get('rotation_days'), 90, minimum=1)
@@ -105,7 +108,29 @@ def edit(id):
         db.session.commit()
         flash('Compte modifié avec succès', 'success')
         return redirect(url_for('accounts.detail', id=id))
-    return render_template('accounts/form.html', account=account)
+    return render_template('accounts/form.html', account=account, **_form_context())
+
+
+def _form_context():
+    from app.models import Software, Equipment, Supplier
+    return {
+        'software': Software.query.filter_by(is_active=True).order_by(Software.name).all(),
+        'equipments': Equipment.query.filter_by(is_active=True).order_by(Equipment.name).all(),
+        'suppliers': Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all(),
+    }
+
+
+def _liens(form):
+    """Les rattachements choisis dans le formulaire, verifies : un identifiant
+    qui ne designe pas une fiche active ne se pose pas."""
+    from app.models import Software, Equipment, Supplier
+    liens = {}
+    for champ, modele in (('software_id', Software), ('equipment_id', Equipment),
+                          ('supplier_id', Supplier)):
+        ident = parse_int(form.get(champ))
+        fiche = db.session.get(modele, ident) if ident else None
+        liens[champ] = fiche.id if (fiche is not None and fiche.is_active) else None
+    return liens
 
 
 @bp.route('/<int:id>/password-changed', methods=['POST'])

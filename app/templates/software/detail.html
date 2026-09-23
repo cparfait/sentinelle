@@ -89,7 +89,7 @@
     {{ onglet('contrats', 'Contrats et marchés', 'bi-file-earmark-text', compteur=marches|length) }}
     {% if features.quotes %}{{ onglet('devis', 'Devis', 'bi-cash-coin', compteur=consultations|length) }}{% endif %}
     {% endif %}
-    {{ onglet('suivi', 'Suivi', 'bi-activity', compteur=(updates|length) + (taches|length) + (revues|length)) }}
+    {{ onglet('suivi', 'Suivi', 'bi-activity', compteur=(updates|length) + (taches|length) + (revues|length) + (comptes|length)) }}
     {% if documents_enabled %}
     {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=(pieces|length) + (pieces_heritees|length)) }}
     {% endif %}
@@ -356,6 +356,34 @@
                         </tr>
                         {% else %}
                         <tr><td colspan="4" class="text-center py-3 text-muted">Aucune revue de droits rattachée</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if current_user.can_view('accounts') %}
+    <div class="col-xl-6">
+        <div class="data-card h-100">
+            <div class="card-header-custom">
+                <h6 class="fw-bold fiche-titre fiche-titre--orange mb-0">{{ icone('bi-key', 14, 'ico ico-' ~ couleur_icone('bi-key')) }}Comptes
+                    <span class="badge bg-secondary ms-1">{{ comptes | length }}</span></h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Service</th><th>Utilisateur</th><th>Prochain changement</th><th>Statut</th></tr></thead>
+                    <tbody>
+                        {% for a in comptes %}
+                        <tr>
+                            <td><a href="{{ url_for('accounts.detail', id=a.id) }}" class="text-decoration-none">{{ a.service_name }}</a></td>
+                            <td class="small">{{ a.username }}</td>
+                            <td class="small text-nowrap">{{ a.next_password_change.strftime('%d/%m/%Y') if a.next_password_change else '—' }}</td>
+                            <td>{{ status_badge(a.status()) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center py-3 text-muted">Aucun compte rattaché</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

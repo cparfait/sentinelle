@@ -218,8 +218,9 @@ def detail(id):
               .order_by(Software.name).all())
     from app.documents import enabled as documents_actifs, inherited_for_software
     revues = item.access_reviews.filter_by(is_active=True).all()
+    comptes = item.accounts.filter_by(is_active=True).all()
     return render_template('software/detail.html', item=item, updates=updates,
-                           revues=revues,
+                           revues=revues, comptes=comptes,
                            consultations=consultations, marches=marches,
                            marches_rattachables=_marches_rattachables(item),
                            pieces_heritees=(inherited_for_software(item)

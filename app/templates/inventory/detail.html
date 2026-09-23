@@ -212,7 +212,8 @@
     {% set show_bkps = current_user.can_view('backups') and linked['backups'] %}
     {% set show_upds = current_user.can_view('updates') and linked['updates'] %}
     {% set show_ctrs = current_user.can_view('contracts') and linked['contracts'] %}
-    {% if show_certs or show_bkps or show_upds or show_ctrs %}
+    {% set show_accts = current_user.can_view('accounts') and linked['accounts'] %}
+    {% if show_certs or show_bkps or show_upds or show_ctrs or show_accts %}
     <div class="data-card p-4 mb-3">
         {{ titre_section('Éléments liés', 'bi-diagram-3', 'slate', 'mb-3') }}
         {% if show_certs %}
@@ -253,12 +254,24 @@
         {% endif %}
         {% if show_ctrs %}
         <small class="text-muted d-block mb-1">Contrats</small>
-        <ul class="list-unstyled mb-0">
+        <ul class="list-unstyled {{ 'mb-2' if show_accts else 'mb-0' }}">
             {% for c in linked['contracts'] %}
             <li class="mb-1">
                 <span class="badge-status badge-{{ c.status() }} me-1"></span>
                 <a href="{{ url_for('contracts.detail', id=c.id) }}">{{ c.name }}</a>
                 {% if c.end_date %}<small class="text-muted">éch. {{ c.end_date.strftime('%d/%m/%Y') }}</small>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% if show_accts %}
+        <small class="text-muted d-block mb-1">Comptes</small>
+        <ul class="list-unstyled mb-0">
+            {% for a in linked['accounts'] %}
+            <li class="mb-1">
+                <span class="badge-status badge-{{ a.status() }} me-1"></span>
+                <a href="{{ url_for('accounts.detail', id=a.id) }}">{{ a.service_name }} ({{ a.username }})</a>
+                {% if a.next_password_change %}<small class="text-muted">mdp avant le {{ a.next_password_change.strftime('%d/%m/%Y') }}</small>{% endif %}
             </li>
             {% endfor %}
         </ul>

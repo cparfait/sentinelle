@@ -194,10 +194,22 @@ class User(UserMixin, db.Model):
 
 
 class Account(db.Model):
+    """Compte a mot de passe suivi. `service_name` reste le libelle affiche ;
+    les trois liens, tous optionnels, disent CE QUE le compte sert : un
+    logiciel (admin GLPI), un equipement (admin du coeur de reseau), un
+    fournisseur (espace client OVH). Un compte n'a pas toujours de fiche
+    derriere lui, et il peut en avoir deux -- l'admin d'un logiciel installe
+    sur un serveur donne."""
     id = db.Column(db.Integer, primary_key=True)
     service_name = db.Column(db.String(128), nullable=False)
     username = db.Column(db.String(128), nullable=False)
     url = db.Column(db.String(256))
+    software_id = db.Column(db.Integer, db.ForeignKey('software.id'), index=True)
+    software = db.relationship('Software', backref=db.backref('accounts', lazy='dynamic'))
+    equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'), index=True)
+    equipment = db.relationship('Equipment', backref=db.backref('accounts', lazy='dynamic'))
+    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), index=True)
+    supplier = db.relationship('Supplier', backref=db.backref('accounts', lazy='dynamic'))
     description = db.Column(db.Text)
     last_password_change = db.Column(db.Date)
     next_password_change = db.Column(db.Date)
@@ -992,6 +1004,8 @@ class Equipment(db.Model):
                 .order_by(SystemUpdate.name).all(),
             'contracts': self.contracts.filter_by(is_active=True)
                 .order_by(Contract.end_date.asc()).all(),
+            'accounts': self.accounts.filter_by(is_active=True)
+                .order_by(Account.service_name, Account.username).all(),
         }
 
     def eol_info(self):

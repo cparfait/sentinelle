@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Modifier' if account else 'Ajouter' }} un compte - Sentinelle{% endblock %}
 {% from '_form_section.html' import section %}
+{% from '_quick_add.html' import qa_button, qa_modal_software, qa_modal_equipment, qa_modal_supplier %}
 
 {% block content %}
 {% from '_formulaire.html' import entete_form, pied_form %}
@@ -46,6 +47,48 @@
                 </div>
                 {% endcall %}
 
+                {% call section('Rattachement', 'bi-diagram-3', 'violet') %}
+                <p class="text-muted small mb-3">Ce que le compte sert. Facultatif, cumulable : l'admin d'un logiciel installé sur un serveur donné se rattache aux deux.</p>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-medium">Logiciel</label>
+                        <div class="input-group">
+                            <select name="software_id" id="accountSoftware" class="form-select">
+                                <option value="">— aucun —</option>
+                                {% for s in software %}
+                                <option value="{{ s.id }}" {{ 'selected' if account and account.software_id == s.id }}>{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if current_user.can_edit('inventory') %}{{ qa_button('qaModalSoftware', 'accountSoftware', 'Ajouter un logiciel') }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-medium">Équipement</label>
+                        <div class="input-group">
+                            <select name="equipment_id" id="accountEquipment" class="form-select">
+                                <option value="">— aucun —</option>
+                                {% for e in equipments %}
+                                <option value="{{ e.id }}" {{ 'selected' if account and account.equipment_id == e.id }}>{{ e.name }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if current_user.can_edit('inventory') %}{{ qa_button('qaModalEquipment', 'accountEquipment', 'Ajouter un équipement') }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-medium">Fournisseur</label>
+                        <div class="input-group">
+                            <select name="supplier_id" id="accountSupplier" class="form-select">
+                                <option value="">— aucun —</option>
+                                {% for s in suppliers %}
+                                <option value="{{ s.id }}" {{ 'selected' if account and account.supplier_id == s.id }}>{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if current_user.can_edit('contracts') %}{{ qa_button('qaModalSupplier', 'accountSupplier', 'Ajouter un fournisseur') }}{% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endcall %}
+
                 {% call section('Rotation du mot de passe', 'bi-arrow-repeat', 'emerald') %}
                 <div class="row">
                     <div class="col-md-6 mb-3">
@@ -74,4 +117,6 @@
         </div>
     </div>
 </div>
+{% if current_user.can_edit('inventory') %}{{ qa_modal_software() }}{{ qa_modal_equipment() }}{% endif %}
+{% if current_user.can_edit('contracts') %}{{ qa_modal_supplier() }}{% endif %}
 {% endblock %}

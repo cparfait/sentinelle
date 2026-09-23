@@ -42,6 +42,7 @@
     {{ onglet('materiel-couvert', 'Matériel couvert', 'bi-hdd-stack') }}
     {{ onglet('logiciels', 'Logiciels', 'bi-window-stack') }}
     {% if current_user.can_view('domains') and domains %}{{ onglet('domaines', 'Domaines', 'bi-globe', compteur=domains|length) }}{% endif %}
+    {% if current_user.can_view('accounts') and accounts %}{{ onglet('comptes', 'Comptes', 'bi-key', compteur=accounts|length) }}{% endif %}
     {{ onglet('contrats', 'Contrats', 'bi-file-earmark-text') }}
 {% endcall %}
 
@@ -229,6 +230,32 @@
                         <td class="small text-nowrap">{{ d.expiry_date.strftime('%d/%m/%Y') if d.expiry_date else '—' }}</td>
                         <td class="small">{{ 'Automatique' if d.auto_renew else 'Manuel' }}</td>
                         <td>{{ status_badge(d.status()) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endcall %}
+    {% endif %}
+
+    {% if current_user.can_view('accounts') and accounts %}
+    {% call volet('comptes') %}
+    <div class="data-card mb-3">
+        <div class="card-header-custom">
+            <h6 class="fw-bold fiche-titre fiche-titre--orange mb-0">{{ icone('bi-key', 14, 'ico ico-' ~ couleur_icone('bi-key')) }}Comptes chez ce fournisseur
+                <span class="badge bg-secondary ms-1">{{ accounts|length }}</span></h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Service</th><th>Utilisateur</th><th class="text-nowrap">Prochain changement</th><th>Statut</th></tr></thead>
+                <tbody>
+                    {% for a in accounts %}
+                    <tr>
+                        <td><a href="{{ url_for('accounts.detail', id=a.id) }}" class="fw-medium text-decoration-none">{{ a.service_name }}</a></td>
+                        <td class="small">{{ a.username }}</td>
+                        <td class="small text-nowrap">{{ a.next_password_change.strftime('%d/%m/%Y') if a.next_password_change else '—' }}</td>
+                        <td>{{ status_badge(a.status()) }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

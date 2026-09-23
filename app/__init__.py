@@ -401,6 +401,17 @@ def _migrate_data():
         d = Domain.for_host(c.domain)
         if d is not None:
             c.domain_id = d.id
+    # Comptes : le nom du service rejoint la fiche logiciel ou equipement du
+    # meme nom, quand UNE fiche active le porte, et seulement pour les comptes
+    # encore sans aucun rattachement.
+    for table, col in (('software', 'software_id'), ('equipment', 'equipment_id')):
+        db.session.execute(text(
+            f"UPDATE account SET {col} = ("
+            f"  SELECT t.id FROM {table} t"
+            f"  WHERE lower(t.name) = lower(account.service_name) AND t.is_active = 1)"
+            f" WHERE software_id IS NULL AND equipment_id IS NULL AND supplier_id IS NULL AND ("
+            f"  SELECT COUNT(*) FROM {table} t2"
+            f"  WHERE lower(t2.name) = lower(account.service_name) AND t2.is_active = 1) = 1"))
     # Domaines : le bureau d'enregistrement saisi en texte rejoint la fiche
     # fournisseur du meme nom, quand UNE fiche active porte ce nom.
     db.session.execute(text(
