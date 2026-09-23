@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Logiciels métiers - Sentinelle{% endblock %}
 
-{% from '_liste.html' import barre, actions, bouton_modifier, bouton_supprimer, vide %}
+{% from '_liste.html' import barre %}
 {% block content %}
 <div class="page-header">
     <div>
@@ -33,17 +33,17 @@
    cycle de vie, hébergement — dans des colonnes de largeur fixe. Disposition
    fixe : les colonnes de texte se tronquent (le nom entier reste au survol)
    au lieu d'élargir le tableau, et la liste garde un pas de 48 px par ligne.
-   Responsable, version et serveurs se lisent dans la fiche. Le marqueur
+   Responsable, version et serveurs se lisent dans la fiche, où l'on modifie et
+   supprime aussi (plus de boutons de ligne, demande Dom 2026-09-23). Le marqueur
    Docker rejoint le nom, le développement interne tient lieu d'éditeur. #}
 <div class="data-card">
     <div class="table-responsive">
         <table class="table table-hover mb-0 align-middle tableau-logiciels">
-            {# Les trois colonnes de pastilles et celle des actions sont en
-               pixels ; les trois de texte se partagent le reste (35 / 30 / 35). #}
+            {# Les trois colonnes de pastilles sont en pixels ; les trois de texte
+               se partagent le reste (35 / 30 / 35). #}
             <colgroup>
                 <col style="width: 35%"><col style="width: 30%"><col style="width: 35%">
                 <col style="width: 92px"><col style="width: 118px"><col style="width: 124px">
-                <col style="width: 84px">
             </colgroup>
             <thead>
                 <tr>
@@ -53,7 +53,6 @@
                     <th class="text-center pe-0">Criticité</th>
                     <th class="text-center pe-0">Cycle de vie</th>
                     <th class="text-center pe-0">Hébergement</th>
-                    <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -99,16 +98,10 @@
                         {%- elif s.hosting == 'hybride' %}<span class="badge-status badge-warning">Hybride</span>
                         {%- else %}<span class="badge-status badge-accent">On premise</span>{% endif -%}
                     </td>
-                    <td class="col-actions">
-                        {% call actions() %}
-                        {% if current_user.can_edit('inventory') %}{{ bouton_modifier(url_for('software.edit', id=s.id)) }}{% endif %}
-                        {% if current_user.can_delete('inventory') %}{{ bouton_supprimer(url_for('software.delete', id=s.id), 'Supprimer ce logiciel ?') }}{% endif %}
-                        {% endcall %}
-                    </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" class="text-center py-4 text-muted">
+                    <td colspan="6" class="text-center py-4 text-muted">
                         <i class="bi bi-window-stack" style="font-size: 2rem;"></i>
                         <p class="mt-2 mb-0">Aucun logiciel.
                             {% if current_user.can_edit('inventory') %}
