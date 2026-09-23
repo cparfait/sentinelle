@@ -9,752 +9,725 @@
     </div>
 </div>
 
-{# Un sommaire à gauche (construit par formulaire.js à partir des rubriques) :
-   onze accordéons fermés ne disaient pas où chercher un réglage. #}
-<div class="form-page">
-    <nav class="form-sommaire" id="prefsSommaire" aria-label="Rubriques des préférences"></nav>
-    <div class="form-corps">
-        <div class="accordion" id="prefsAccordion">
+{# Onze rubriques OUVERTES, groupées en quatre familles, dans le gabarit des
+   formulaires de fiches (bandeau titre, aide, corps) — plus d'accordéon : onze
+   blocs fermés ne disaient ni où chercher un réglage, ni ce qui restait à faire.
+   Un bandeau d'état en tête résume ce qui est réglé ; le sommaire de gauche
+   reprend les familles, avec un point d'état par rubrique (validé par Dom sur
+   maquette, 2026-09-23). Les identifiants secXxx des rubriques sont conservés :
+   ce sont les ancres des liens venus d'ailleurs. #}
+<div class="pref-etat" aria-label="État des réglages">
+    {% if mail_configured %}<span class="badge-status badge-success"><i class="bi bi-envelope"></i>Messagerie : {{ 'Office 365' if mail_method == 'o365' else 'SMTP' }}</span>
+    {% else %}<span class="badge-status badge-danger"><i class="bi bi-envelope"></i>Messagerie non configurée</span>{% endif %}
+    {% if ldap_config.enabled %}<span class="badge-status badge-success"><i class="bi bi-diagram-3"></i>LDAP activé</span>
+    {% else %}<span class="badge-status badge-muted"><i class="bi bi-diagram-3"></i>LDAP désactivé</span>{% endif %}
+    {% if ct_monitoring %}<span class="badge-status badge-success"><i class="bi bi-shield-lock"></i>Surveillance CT activée</span>
+    {% else %}<span class="badge-status badge-muted"><i class="bi bi-shield-lock"></i>Surveillance CT désactivée</span>{% endif %}
+    {% if db_backups %}<span class="badge-status badge-success"><i class="bi bi-database"></i>{{ db_backups|length }} sauvegarde{{ 's' if db_backups|length > 1 }}</span>
+    {% else %}<span class="badge-status badge-danger"><i class="bi bi-database"></i>Aucune sauvegarde</span>{% endif %}
+    {% if documents_enabled %}<span class="badge-status badge-muted"><i class="bi bi-paperclip"></i>Pièces jointes : {{ document_max_mb }} Mo</span>
+    {% else %}<span class="badge-status badge-muted"><i class="bi bi-paperclip"></i>Pièces jointes désactivées</span>{% endif %}
+    {% if ui_primary_color %}<span class="badge-status badge-muted" style="--badge: {{ ui_primary_color }};"><i class="bi bi-palette"></i>Couleur personnalisée</span>
+    {% else %}<span class="badge-status badge-muted"><i class="bi bi-palette"></i>Palette d'origine</span>{% endif %}
+</div>
 
-            {# ============================ MESSAGERIE ============================ #}
-            <div class="accordion-item" style="order:6;">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secMail" aria-expanded="false" aria-controls="secMail">
-                        <i class="bi bi-envelope me-2"></i>Messagerie
-                        {% if mail_configured %}
-                        <span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Configuré</span>
-                        {% else %}
-                        <span class="badge bg-danger ms-2"><i class="bi bi-x-circle me-1"></i>Non configuré</span>
-                        {% endif %}
-                    </button>
-                </h2>
-                <div id="secMail" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
-                    <div class="accordion-body">
-                        <form method="POST" action="{{ url_for('auth.preferences') }}" class="d-flex align-items-center gap-2 mb-3">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="action" value="set_mail_method">
-                            <label class="text-muted small mb-0" style="width:90px;">Méthode</label>
-                            <select name="mail_method" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
-                                <option value="o365" {% if mail_method == 'o365' %}selected{% endif %}>Office 365 (Graph API)</option>
-                                <option value="smtp" {% if mail_method == 'smtp' %}selected{% endif %}>SMTP</option>
-                            </select>
-                        </form>
+<div class="form-page pref-page">
+    <nav class="form-sommaire" id="prefsSommaire" aria-label="Rubriques des préférences">
+        <div class="som-famille">Accès &amp; sécurité</div>
+        <a href="#secLdap" class="form-sommaire-lien" data-cible="secLdap"><i class="bi bi-diagram-3"></i><span>Authentification LDAP</span><span class="som-etat"></span></a>
+        <a href="#secConformity" class="form-sommaire-lien" data-cible="secConformity"><i class="bi bi-speedometer2"></i><span>Conformité globale</span><span class="som-etat"></span></a>
+        <a href="#secSurveillance" class="form-sommaire-lien" data-cible="secSurveillance"><i class="bi bi-shield-lock"></i><span>Surveillance</span><span class="som-etat"></span></a>
+        <div class="som-famille">Messagerie &amp; alertes</div>
+        <a href="#secMail" class="form-sommaire-lien" data-cible="secMail"><i class="bi bi-envelope"></i><span>Messagerie</span><span class="som-etat"></span></a>
+        <a href="#secRecipients" class="form-sommaire-lien" data-cible="secRecipients"><i class="bi bi-people"></i><span>Destinataires &amp; test</span><span class="som-etat"></span></a>
+        <a href="#secThresholds" class="form-sommaire-lien" data-cible="secThresholds"><i class="bi bi-sliders"></i><span>Seuils d'alerte</span><span class="som-etat"></span></a>
+        <div class="som-famille">Données</div>
+        <a href="#secDb" class="form-sommaire-lien" data-cible="secDb"><i class="bi bi-database"></i><span>Base de données</span><span class="som-etat"></span></a>
+        <a href="#secDocuments" class="form-sommaire-lien" data-cible="secDocuments"><i class="bi bi-paperclip"></i><span>Pièces jointes</span><span class="som-etat"></span></a>
+        <a href="#secReferentiels" class="form-sommaire-lien" data-cible="secReferentiels"><i class="bi bi-list-ul"></i><span>Référentiels</span><span class="som-etat"></span></a>
+        <div class="som-famille">Affichage</div>
+        <a href="#secDashboard" class="form-sommaire-lien" data-cible="secDashboard"><i class="bi bi-grid-1x2"></i><span>Tableau de bord</span><span class="som-etat"></span></a>
+        <a href="#secAppearance" class="form-sommaire-lien" data-cible="secAppearance"><i class="bi bi-palette"></i><span>Apparence</span><span class="som-etat"></span></a>
+    </nav>
+    <div class="form-corps" id="prefsRubriques">
+        <div class="form-famille">Accès &amp; sécurité</div>
 
-                        {% if mail_method == 'o365' %}
-                        <div class="data-card p-3 mb-0" style="background: var(--body-bg);">
-                            <h6 class="fw-bold small mb-2"><i class="bi bi-microsoft me-1"></i>Configuration Office 365</h6>
-
-                            <form method="POST" action="{{ url_for('auth.preferences') }}">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="action" value="save_o365">
-                                <div class="row g-2">
-                                    <div class="col-md-6">
-                                        <label class="form-label small">Client ID (Application ID)</label>
-                                        <input type="text" name="o365_client_id" class="form-control form-control-sm"
-                                               value="{{ o365_config.client_id }}" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label small">Client Secret</label>
-                                        <input type="password" name="o365_client_secret" class="form-control form-control-sm"
-                                               value="{{ o365_config.client_secret }}" placeholder="Entrez le secret client">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label small">Tenant ID (Directory ID)</label>
-                                        <input type="text" name="o365_tenant_id" class="form-control form-control-sm"
-                                               value="{{ o365_config.tenant_id }}" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label small">Email emetteur</label>
-                                        <input type="email" name="o365_sender_email" class="form-control form-control-sm"
-                                               value="{{ o365_config.sender_email }}" placeholder="sentinelle@votredomaine.com">
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label small">URL de redirection</label>
-                                        <input type="url" name="o365_redirect_uri" class="form-control form-control-sm"
-                                               value="{{ o365_config.redirect_uri }}" placeholder="http://127.0.0.1:5000/auth/o365/callback">
-                                        <small class="text-muted">Ajoutez cette URL dans Azure AD > Authentication > Add a platform > Web</small>
-                                    </div>
-                                </div>
-                                <button type="submit" class="btn btn-sm btn-primary mt-2">
-                                    <i class="bi bi-check-lg me-1"></i> Enregistrer la configuration
-                                </button>
-                            </form>
-
-                            <hr class="my-3">
-
-                            {% if o365_app_configured %}
-                                {% if o365_connected %}
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <span class="badge bg-success me-2"><i class="bi bi-check-circle me-1"></i>Connecte</span>
-                                        <span class="fw-medium">{{ o365_user_email }}</span>
-                                    </div>
-                                    <form method="POST" action="{{ url_for('auth.preferences') }}">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <input type="hidden" name="action" value="disconnect_o365">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">
-                                            <i class="bi bi-box-arrow-right me-1"></i> Deconnecter
-                                        </button>
-                                    </form>
-                                </div>
-                                {% else %}
-                                <div class="text-center py-2">
-                                    <a href="{{ url_for('auth.o365_connect') }}" class="btn btn-primary">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 23 23" width="18" height="18" style="vertical-align: middle; margin-right: 8px;">
-                                            <path fill="#f25022" d="M1 1h10v10H1z"/>
-                                            <path fill="#00a4ef" d="M12 1h10v10H12z"/>
-                                            <path fill="#7fba00" d="M1 12h10v10H1z"/>
-                                            <path fill="#ffb900" d="M12 12h10v10H12z"/>
-                                        </svg>
-                                        Se connecter avec Microsoft
-                                    </a>
-                                    <p class="text-muted mt-2 mb-0 small">Cliquez pour autoriser Sentinelle a envoyer des emails via votre compte</p>
-                                </div>
-                                {% endif %}
-                            {% else %}
-                            <div class="alert alert-info py-2 small mb-0">
-                                <i class="bi bi-info-circle me-1"></i>
-                                <strong>Configuration Azure AD requise :</strong>
-                                <ol class="mt-1 mb-0 ps-3">
-                                    <li>Aller sur <strong>portal.azure.com</strong> > Azure Active Directory > App registrations > New registration</li>
-                                    <li>Ajouter la permission <strong>Mail.Send</strong> (Delegated) sous Microsoft Graph</li>
-                                    <li>Dans <strong>Authentication</strong> > Add a platform > Web, ajoutez l'URL de redirection ci-dessus</li>
-                                    <li>Creer un secret client dans <strong>Certificats & secrets</strong></li>
-                                    <li>Renseigner les champs ci-dessus et enregistrer</li>
-                                    <li>Cliquer sur <strong>Se connecter avec Microsoft</strong> pour autoriser l'envoi</li>
-                                </ol>
-                            </div>
-                            {% endif %}
-                        </div>
-                        {% else %}
-                        <div class="data-card p-3 mb-0" style="background: var(--body-bg);">
-                            <h6 class="fw-bold small mb-2"><i class="bi bi-envelope me-1"></i>Configuration SMTP</h6>
-                            <form method="POST" action="{{ url_for('auth.preferences') }}">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="action" value="save_smtp">
-                                <div class="row g-2">
-                                    <div class="col-md-8">
-                                        <label class="form-label small">Serveur</label>
-                                        <input type="text" name="smtp_server" class="form-control form-control-sm"
-                                               value="{{ smtp_config.server }}" placeholder="smtp.office365.com">
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label small">Port</label>
-                                        <input type="number" name="smtp_port" class="form-control form-control-sm"
-                                               value="{{ smtp_config.port }}" placeholder="587">
-                                    </div>
-                                    <div class="col-md-2 d-flex align-items-end">
-                                        <span class="text-muted small">587 = TLS</span>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label small">Adresse expeditrice (From)</label>
-                                        <input type="email" name="smtp_sender" class="form-control form-control-sm"
-                                               value="{{ smtp_config.sender }}" placeholder="sentinelle@votredomaine.fr">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label small">Utilisateur <span class="text-muted">(optionnel)</span></label>
-                                        <input type="text" name="smtp_username" class="form-control form-control-sm"
-                                               value="{{ smtp_config.username }}" placeholder="laisser vide pour Direct Send">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label small">Mot de passe <span class="text-muted">(optionnel)</span></label>
-                                        <input type="password" name="smtp_password" class="form-control form-control-sm"
-                                               placeholder="laisser vide pour Direct Send">
-                                    </div>
-                                </div>
-                                <div class="alert alert-info py-2 small mt-2 mb-0">
-                                    <i class="bi bi-info-circle me-1"></i>
-                                    <strong>Direct Send (recommande, sans mot de passe) :</strong>
-                                    Serveur = <code>votredomaine-fr.mail.protection.outlook.com</code>, Port = <code>25</code>,
-                                    Utilisateur et Mot de passe <strong>vides</strong>. L'adresse expeditrice doit etre
-                                    de votre domaine et les destinataires internes.
-                                </div>
-                                <button type="submit" class="btn btn-sm btn-primary mt-2">
-                                    <i class="bi bi-check-lg me-1"></i> Enregistrer la configuration SMTP
-                                </button>
-                            </form>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
+        <section class="form-section pref-rubrique" id="secLdap">
+            <div class="form-section-titre">
+                <i class="bi bi-diagram-3 me-2"></i>Authentification LDAP / Active Directory
+                {% if ldap_config.enabled %}<span class="badge bg-success ms-2">Activé</span>{% endif %}
             </div>
-
-            {# ===================== DESTINATAIRES & TEST D'ENVOI ===================== #}
-            <div class="accordion-item" style="order:5;">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secRecipients" aria-expanded="false" aria-controls="secRecipients">
-                        <i class="bi bi-people me-2"></i>Destinataires &amp; test d'envoi
-                        {% if configured.recipients %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Configuré</span>{% endif %}
-                    </button>
-                </h2>
-                <div id="secRecipients" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
-                    <div class="accordion-body">
-                        <form method="POST" action="{{ url_for('auth.preferences') }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="action" value="save_recipients">
-                            <label class="form-label small">Adresses qui recevront les alertes automatiques
-                                <span class="text-muted">(separees par des virgules ou des retours a la ligne)</span></label>
-                            <textarea name="alert_recipients" rows="2" class="form-control form-control-sm"
-                                      placeholder="dsi@votredomaine.fr, sauvegarde@votredomaine.fr">{{ alert_recipients }}</textarea>
-
-                            <details class="mt-3" {{ 'open' if alert_recipients_by_cat.values()|select|list }}>
-                                <summary class="small fw-bold" style="cursor:pointer;">
-                                    <i class="bi bi-diagram-3 me-1"></i>Destinataires par catégorie
-                                    <span class="text-muted fw-normal">— optionnel : une catégorie sans adresse utilise la liste globale ci-dessus</span>
-                                </summary>
-                                <div class="row g-2 mt-1">
-                                    {% for cat, label in alert_category_labels.items() %}
-                                    <div class="col-md-6">
-                                        <label class="form-label small mb-1" for="rcpt_{{ cat }}">{{ label }}</label>
-                                        <input type="text" id="rcpt_{{ cat }}" name="alert_recipients_{{ cat }}"
-                                               class="form-control form-control-sm"
-                                               value="{{ alert_recipients_by_cat[cat] }}"
-                                               placeholder="— liste globale —">
+            <p class="form-section-aide">Connexion des utilisateurs avec leur compte de l'annuaire ; les comptes locaux restent utilisables.</p>
+            <div class="form-section-corps">
+                    <form method="POST" action="{{ url_for('auth.preferences') }}" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="save_ldap">
+                        <div class="form-check form-switch mb-2">
+                            <input type="checkbox" class="form-check-input" name="ldap_enabled" id="ldapEnabled"
+                                   {{ 'checked' if ldap_config.enabled }}>
+                            <label class="form-check-label" for="ldapEnabled">Activer l'authentification LDAP/AD
+                                <span class="text-muted small">(les comptes locaux restent utilisables en parallèle)</span></label>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label small">Serveur <span class="text-muted">(FQDN ou IP, sans ldap://)</span></label>
+                                <input type="text" name="ldap_server" class="form-control form-control-sm"
+                                       value="{{ ldap_config.server }}" placeholder="dc.votredomaine.lan ou IP de votre DC">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Port</label>
+                                <input type="number" name="ldap_port" id="ldapPort" class="form-control form-control-sm" value="{{ ldap_config.port }}">
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <div>
+                                    <div class="form-check form-switch">
+                                        <input type="checkbox" class="form-check-input" name="ldap_ssl" id="ldapSsl" {{ 'checked' if ldap_config.ssl }}>
+                                        <label class="form-check-label small" for="ldapSsl">SSL / LDAPS (port 636)</label>
                                     </div>
-                                    {% endfor %}
-                                </div>
-                            </details>
-
-                            <button type="submit" class="btn btn-sm btn-primary mt-3">
-                                <i class="bi bi-check-lg me-1"></i> Enregistrer les destinataires
-                            </button>
-                        </form>
-
-                        <hr>
-                        <h6 class="fw-bold mb-2"><i class="bi bi-file-earmark-pdf me-2"></i>Bilan PDF planifié</h6>
-                        <form method="POST" action="{{ url_for('auth.preferences') }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="action" value="save_report">
-                            <div class="row g-2 align-items-end">
-                                <div class="col-md-3">
-                                    <label class="form-label small" for="reportSchedule">Fréquence d'envoi</label>
-                                    <select name="report_schedule" id="reportSchedule" class="form-select form-select-sm">
-                                        <option value="off" {{ 'selected' if report_schedule == 'off' }}>Désactivé</option>
-                                        <option value="weekly" {{ 'selected' if report_schedule == 'weekly' }}>Hebdomadaire (lundi)</option>
-                                        <option value="monthly" {{ 'selected' if report_schedule == 'monthly' }}>Mensuel (le 1er)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small" for="reportRecipients">Destinataires
-                                        <span class="text-muted">(vide = destinataires des alertes)</span></label>
-                                    <input type="text" name="report_recipients" id="reportRecipients"
-                                           class="form-control form-control-sm" value="{{ report_recipients }}"
-                                           placeholder="direction@votredomaine.fr">
-                                </div>
-                                <div class="col-md-3 d-flex gap-2">
-                                    <button type="submit" class="btn btn-sm btn-primary">
-                                        <i class="bi bi-check-lg me-1"></i> Enregistrer
-                                    </button>
+                                    <div class="form-check form-switch">
+                                        <input type="checkbox" class="form-check-input" name="ldap_validate_cert" id="ldapValidate" {{ 'checked' if ldap_config.validate_cert }}>
+                                        <label class="form-check-label small" for="ldapValidate">Valider le certificat</label>
+                                    </div>
                                 </div>
                             </div>
-                        </form>
-                        <form method="POST" action="{{ url_for('auth.preferences') }}" class="mt-2">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="action" value="send_report_now">
-                            <button type="submit" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-send me-1"></i> Envoyer le bilan maintenant
-                            </button>
-                        </form>
-
-                        <hr>
-                        <h6 class="fw-bold mb-2"><i class="bi bi-send me-2"></i>Test d'envoi</h6>
-                        <form method="POST" action="{{ url_for('auth.preferences') }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <div class="row g-2 align-items-end">
-                                <div class="col-md-6">
-                                    <label class="form-label small">Destinataire</label>
-                                    <input type="email" name="test_email" class="form-control form-control-sm"
-                                           value="{{ current_user.email }}" placeholder="email@exemple.com">
-                                </div>
-                                <div class="col-md-6 d-flex gap-2">
-                                    <button type="submit" name="action" value="test_email"
-                                            class="btn btn-sm btn-primary mt-2" {% if not mail_configured %}disabled{% endif %}>
-                                        <i class="bi bi-send me-1"></i> Email de test
-                                    </button>
-                                    <button type="submit" name="action" value="send_digest"
-                                            class="btn btn-sm btn-outline-primary mt-2" {% if not mail_configured %}disabled{% endif %}>
-                                        <i class="bi bi-clipboard-data me-1"></i> Envoyer un récap
-                                    </button>
-                                </div>
+                            <div class="col-12">
+                                <small class="text-muted">Certificat CA — <strong>optionnel</strong> : utile uniquement si « Valider le certificat » est coché et que votre DC utilise une CA interne. Deux méthodes au choix (l'import écrase le chemin) :</small>
                             </div>
-                        </form>
-                    </div>
-                </div>
+                            <div class="col-md-7">
+                                <label class="form-label small">Chemin d'un CA (PEM) déjà sur le serveur <span class="text-muted">— optionnel</span></label>
+                                <input type="text" name="ldap_ca_cert" class="form-control form-control-sm"
+                                       value="{{ ldap_config.ca_cert }}" placeholder="C:\chemin\vers\ca.pem">
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label small">… ou importer le fichier CA <span class="text-muted">(.pem / .crt / .cer) — optionnel</span></label>
+                                <input type="file" name="ldap_ca_cert_file" accept=".pem,.crt,.cer,.cert" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small">Domaine (UPN)</label>
+                                <input type="text" name="ldap_domain" class="form-control form-control-sm"
+                                       value="{{ ldap_config.domain }}" placeholder="votredomaine.lan">
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label small">Base DN (recherche)</label>
+                                <input type="text" name="ldap_base_dn" class="form-control form-control-sm"
+                                       value="{{ ldap_config.base_dn }}" placeholder="DC=votredomaine,DC=lan">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label small">Groupe AD autorisé
+                                    <span class="badge bg-warning text-dark ms-1">fortement conseillé</span></label>
+                                <input type="text" name="ldap_required_group" class="form-control form-control-sm"
+                                       value="{{ ldap_config.required_group }}"
+                                       placeholder="ex : Sentinelle-Users  ou  CN=Sentinelle,OU=Groupes,DC=votredomaine,DC=lan">
+                                <small class="text-muted">Restreint la connexion aux <strong>membres de ce groupe</strong> (groupes imbriqués inclus), au lieu d'ouvrir l'accès à tout l'annuaire. Laisser vide = tout utilisateur AD peut se connecter. Nécessite le Base DN.</small>
+                            </div>
+                        </div>
+                        <div class="row g-2 mt-1">
+                            <div class="col-12"><small class="text-muted">Compte de service (lecture seule) — sert uniquement à <strong>lire l'annuaire AD</strong> (recherche d'utilisateurs, synchro des expirations de mots de passe). Ce n'est <strong>pas</strong> un compte utilisateur Sentinelle : il n'a ni rôle ni accès à l'application.</small></div>
+                            <div class="col-md-6">
+                                <label class="form-label small">Identifiant du compte de service</label>
+                                <input type="text" name="ldap_bind_user" class="form-control form-control-sm"
+                                       value="{{ ldap_config.bind_user }}" placeholder="svc-sentinelle@votredomaine.lan">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small">Mot de passe {% if ldap_config.bind_set %}<span class="text-success">(défini)</span>{% endif %}</label>
+                                <input type="password" name="ldap_bind_password" class="form-control form-control-sm"
+                                       placeholder="{{ 'laisser vide pour ne pas changer' if ldap_config.bind_set else 'mot de passe du compte de service' }}">
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 mt-2">
+                            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i> Enregistrer LDAP</button>
+                        </div>
+                        <small class="text-muted d-block mt-1">Les utilisateurs AD validés sont créés automatiquement en lecture seule ; ajustez leur rôle ensuite dans Utilisateurs. La synchro des expirations utilise le compte de service + le Base DN.</small>
+                    </form>
+                    <form method="POST" action="{{ url_for('auth.preferences') }}" class="mt-2">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="test_ldap">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plug me-1"></i> Tester la connexion</button>
+                        <small class="text-muted ms-1">Teste la configuration <strong>enregistrée</strong> (compte de service).</small>
+                    </form>
+                    <script>
+                    (function () {
+                        var ssl = document.getElementById('ldapSsl');
+                        var port = document.getElementById('ldapPort');
+                        if (!ssl || !port) return;
+                        // Bascule le port par defaut (389 <-> 636) selon LDAPS,
+                        // sans ecraser un port personnalise saisi par l'admin.
+                        ssl.addEventListener('change', function () {
+                            var v = (port.value || '').trim();
+                            if (ssl.checked && (v === '' || v === '389')) {
+                                port.value = '636';
+                            } else if (!ssl.checked && v === '636') {
+                                port.value = '389';
+                            }
+                        });
+                    })();
+                    </script>
             </div>
+        </section>
 
-            {# Notifications (webhooks) déplacées vers Administration → Connecteurs. #}
-
-            {# Catalogue applications retiré : les applications sont désormais gérées
-               dans l'Inventaire → onglet « Logiciels métiers ». #}
-
-            {# ===================== LDAP / ACTIVE DIRECTORY ===================== #}
-            <div class="accordion-item" style="order:2;">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secLdap" aria-expanded="false" aria-controls="secLdap">
-                        <i class="bi bi-diagram-3 me-2"></i>Authentification LDAP / Active Directory
-                        {% if ldap_config.enabled %}<span class="badge bg-success ms-2">Activé</span>{% endif %}
-                    </button>
-                </h2>
-                <div id="secLdap" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
-                    <div class="accordion-body">
-                        <form method="POST" action="{{ url_for('auth.preferences') }}" enctype="multipart/form-data">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="action" value="save_ldap">
-                            <div class="form-check form-switch mb-2">
-                                <input type="checkbox" class="form-check-input" name="ldap_enabled" id="ldapEnabled"
-                                       {{ 'checked' if ldap_config.enabled }}>
-                                <label class="form-check-label" for="ldapEnabled">Activer l'authentification LDAP/AD
-                                    <span class="text-muted small">(les comptes locaux restent utilisables en parallèle)</span></label>
+        <section class="form-section pref-rubrique" id="secConformity">
+            <div class="form-section-titre">
+                <i class="bi bi-speedometer2 me-2"></i>Conformité globale
+                {% if configured.conformity %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Personnalisé</span>{% endif %}
+                <span class="badge bg-secondary ms-2">{{ conformity_included|length }}/{{ conformity_categories|length }}</span>
+            </div>
+            <p class="form-section-aide">Les contrôles qui entrent dans le score de conformité du tableau de bord.</p>
+            <div class="form-section-corps">
+                    <p class="text-muted small">Catégories prises en compte dans l'indicateur de <strong>Conformité globale</strong> du tableau de bord. Les cartes de chaque catégorie restent visibles ; seul le pourcentage global est affecté.</p>
+                    <form method="POST" action="{{ url_for('auth.preferences') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="save_conformity">
+                        <div class="row g-2">
+                            {% for cat in conformity_categories %}
+                            <div class="col-md-6 col-lg-4">
+                                <label class="d-flex align-items-center gap-2 p-2 rounded border mb-0" style="cursor: pointer;">
+                                    <input type="checkbox" class="form-check-input mt-0" name="conformity"
+                                           value="{{ cat }}" {{ 'checked' if cat in conformity_included }}>
+                                    <span class="fw-medium small">{{ conformity_labels.get(cat, cat) }}</span>
+                                </label>
                             </div>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary mt-2"><i class="bi bi-check-lg me-1"></i> Enregistrer la conformité</button>
+                    </form>
+            </div>
+        </section>
+
+        <section class="form-section pref-rubrique" id="secSurveillance">
+            <div class="form-section-titre">
+                <i class="bi bi-shield-lock me-2"></i>Surveillance
+                {% if ct_monitoring %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>CT activé</span>{% else %}<span class="badge bg-secondary ms-2">CT désactivé</span>{% endif %}
+            </div>
+            <p class="form-section-aide">Veille Certificate Transparency : un certificat émis pour l'un de vos domaines hors de Sentinelle déclenche une alerte.</p>
+            <div class="form-section-corps">
+                    <form method="POST" action="{{ url_for('auth.preferences') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="save_ct">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="ctMonitoring" name="ct_monitoring" {% if ct_monitoring %}checked{% endif %}>
+                            <label class="form-check-label fw-medium" for="ctMonitoring">Certificate Transparency (crt.sh)</label>
+                        </div>
+                        <p class="text-muted small mt-1 mb-2">Scan quotidien des journaux CT pour détecter les certificats émis pour vos domaines à l'insu de la DSI (shadow IT, prestataire, usurpation). Les alertes suivent la catégorie « Domaines ».</p>
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> Enregistrer
+                        </button>
+                    </form>
+            </div>
+        </section>
+        <div class="form-famille">Messagerie &amp; alertes</div>
+
+        <section class="form-section pref-rubrique" id="secMail">
+            <div class="form-section-titre">
+                <i class="bi bi-envelope me-2"></i>Messagerie
+                {% if mail_configured %}
+                <span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Configuré</span>
+                {% else %}
+                <span class="badge bg-danger ms-2"><i class="bi bi-x-circle me-1"></i>Non configuré</span>
+                {% endif %}
+            </div>
+            <p class="form-section-aide">Le compte qui envoie les alertes, les bilans et les envois de test.</p>
+            <div class="form-section-corps">
+                    <form method="POST" action="{{ url_for('auth.preferences') }}" class="d-flex align-items-center gap-2 mb-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="set_mail_method">
+                        <label class="text-muted small mb-0" style="width:90px;">Méthode</label>
+                        <select name="mail_method" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                            <option value="o365" {% if mail_method == 'o365' %}selected{% endif %}>Office 365 (Graph API)</option>
+                            <option value="smtp" {% if mail_method == 'smtp' %}selected{% endif %}>SMTP</option>
+                        </select>
+                    </form>
+
+                    {% if mail_method == 'o365' %}
+                    <div class="data-card p-3 mb-0" style="background: var(--body-bg);">
+                        <h6 class="fw-bold small mb-2"><i class="bi bi-microsoft me-1"></i>Configuration Office 365</h6>
+
+                        <form method="POST" action="{{ url_for('auth.preferences') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="save_o365">
                             <div class="row g-2">
                                 <div class="col-md-6">
-                                    <label class="form-label small">Serveur <span class="text-muted">(FQDN ou IP, sans ldap://)</span></label>
-                                    <input type="text" name="ldap_server" class="form-control form-control-sm"
-                                           value="{{ ldap_config.server }}" placeholder="dc.votredomaine.lan ou IP de votre DC">
+                                    <label class="form-label small">Client ID (Application ID)</label>
+                                    <input type="text" name="o365_client_id" class="form-control form-control-sm"
+                                           value="{{ o365_config.client_id }}" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
                                 </div>
-                                <div class="col-md-2">
-                                    <label class="form-label small">Port</label>
-                                    <input type="number" name="ldap_port" id="ldapPort" class="form-control form-control-sm" value="{{ ldap_config.port }}">
+                                <div class="col-md-6">
+                                    <label class="form-label small">Client Secret</label>
+                                    <input type="password" name="o365_client_secret" class="form-control form-control-sm"
+                                           value="{{ o365_config.client_secret }}" placeholder="Entrez le secret client">
                                 </div>
-                                <div class="col-md-4 d-flex align-items-end">
-                                    <div>
-                                        <div class="form-check form-switch">
-                                            <input type="checkbox" class="form-check-input" name="ldap_ssl" id="ldapSsl" {{ 'checked' if ldap_config.ssl }}>
-                                            <label class="form-check-label small" for="ldapSsl">SSL / LDAPS (port 636)</label>
-                                        </div>
-                                        <div class="form-check form-switch">
-                                            <input type="checkbox" class="form-check-input" name="ldap_validate_cert" id="ldapValidate" {{ 'checked' if ldap_config.validate_cert }}>
-                                            <label class="form-check-label small" for="ldapValidate">Valider le certificat</label>
-                                        </div>
-                                    </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">Tenant ID (Directory ID)</label>
+                                    <input type="text" name="o365_tenant_id" class="form-control form-control-sm"
+                                           value="{{ o365_config.tenant_id }}" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
                                 </div>
-                                <div class="col-12">
-                                    <small class="text-muted">Certificat CA — <strong>optionnel</strong> : utile uniquement si « Valider le certificat » est coché et que votre DC utilise une CA interne. Deux méthodes au choix (l'import écrase le chemin) :</small>
-                                </div>
-                                <div class="col-md-7">
-                                    <label class="form-label small">Chemin d'un CA (PEM) déjà sur le serveur <span class="text-muted">— optionnel</span></label>
-                                    <input type="text" name="ldap_ca_cert" class="form-control form-control-sm"
-                                           value="{{ ldap_config.ca_cert }}" placeholder="C:\chemin\vers\ca.pem">
-                                </div>
-                                <div class="col-md-5">
-                                    <label class="form-label small">… ou importer le fichier CA <span class="text-muted">(.pem / .crt / .cer) — optionnel</span></label>
-                                    <input type="file" name="ldap_ca_cert_file" accept=".pem,.crt,.cer,.cert" class="form-control form-control-sm">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label small">Domaine (UPN)</label>
-                                    <input type="text" name="ldap_domain" class="form-control form-control-sm"
-                                           value="{{ ldap_config.domain }}" placeholder="votredomaine.lan">
-                                </div>
-                                <div class="col-md-8">
-                                    <label class="form-label small">Base DN (recherche)</label>
-                                    <input type="text" name="ldap_base_dn" class="form-control form-control-sm"
-                                           value="{{ ldap_config.base_dn }}" placeholder="DC=votredomaine,DC=lan">
+                                <div class="col-md-6">
+                                    <label class="form-label small">Email emetteur</label>
+                                    <input type="email" name="o365_sender_email" class="form-control form-control-sm"
+                                           value="{{ o365_config.sender_email }}" placeholder="sentinelle@votredomaine.com">
                                 </div>
                                 <div class="col-md-12">
-                                    <label class="form-label small">Groupe AD autorisé
-                                        <span class="badge bg-warning text-dark ms-1">fortement conseillé</span></label>
-                                    <input type="text" name="ldap_required_group" class="form-control form-control-sm"
-                                           value="{{ ldap_config.required_group }}"
-                                           placeholder="ex : Sentinelle-Users  ou  CN=Sentinelle,OU=Groupes,DC=votredomaine,DC=lan">
-                                    <small class="text-muted">Restreint la connexion aux <strong>membres de ce groupe</strong> (groupes imbriqués inclus), au lieu d'ouvrir l'accès à tout l'annuaire. Laisser vide = tout utilisateur AD peut se connecter. Nécessite le Base DN.</small>
+                                    <label class="form-label small">URL de redirection</label>
+                                    <input type="url" name="o365_redirect_uri" class="form-control form-control-sm"
+                                           value="{{ o365_config.redirect_uri }}" placeholder="http://127.0.0.1:5000/auth/o365/callback">
+                                    <small class="text-muted">Ajoutez cette URL dans Azure AD > Authentication > Add a platform > Web</small>
                                 </div>
                             </div>
-                            <div class="row g-2 mt-1">
-                                <div class="col-12"><small class="text-muted">Compte de service (lecture seule) — sert uniquement à <strong>lire l'annuaire AD</strong> (recherche d'utilisateurs, synchro des expirations de mots de passe). Ce n'est <strong>pas</strong> un compte utilisateur Sentinelle : il n'a ni rôle ni accès à l'application.</small></div>
-                                <div class="col-md-6">
-                                    <label class="form-label small">Identifiant du compte de service</label>
-                                    <input type="text" name="ldap_bind_user" class="form-control form-control-sm"
-                                           value="{{ ldap_config.bind_user }}" placeholder="svc-sentinelle@votredomaine.lan">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small">Mot de passe {% if ldap_config.bind_set %}<span class="text-success">(défini)</span>{% endif %}</label>
-                                    <input type="password" name="ldap_bind_password" class="form-control form-control-sm"
-                                           placeholder="{{ 'laisser vide pour ne pas changer' if ldap_config.bind_set else 'mot de passe du compte de service' }}">
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center gap-2 mt-2">
-                                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i> Enregistrer LDAP</button>
-                            </div>
-                            <small class="text-muted d-block mt-1">Les utilisateurs AD validés sont créés automatiquement en lecture seule ; ajustez leur rôle ensuite dans Utilisateurs. La synchro des expirations utilise le compte de service + le Base DN.</small>
-                        </form>
-                        <form method="POST" action="{{ url_for('auth.preferences') }}" class="mt-2">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="action" value="test_ldap">
-                            <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plug me-1"></i> Tester la connexion</button>
-                            <small class="text-muted ms-1">Teste la configuration <strong>enregistrée</strong> (compte de service).</small>
-                        </form>
-                        <script>
-                        (function () {
-                            var ssl = document.getElementById('ldapSsl');
-                            var port = document.getElementById('ldapPort');
-                            if (!ssl || !port) return;
-                            // Bascule le port par defaut (389 <-> 636) selon LDAPS,
-                            // sans ecraser un port personnalise saisi par l'admin.
-                            ssl.addEventListener('change', function () {
-                                var v = (port.value || '').trim();
-                                if (ssl.checked && (v === '' || v === '389')) {
-                                    port.value = '636';
-                                } else if (!ssl.checked && v === '636') {
-                                    port.value = '389';
-                                }
-                            });
-                        })();
-                        </script>
-                    </div>
-                </div>
-            </div>
-
-            {# ===================== SURVEILLANCE ===================== #}
-            <div class="accordion-item" style="order:9;">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secSurveillance" aria-expanded="false" aria-controls="secSurveillance">
-                        <i class="bi bi-shield-lock me-2"></i>Surveillance
-                        {% if ct_monitoring %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>CT activé</span>{% else %}<span class="badge bg-secondary ms-2">CT désactivé</span>{% endif %}
-                    </button>
-                </h2>
-                <div id="secSurveillance" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
-                    <div class="accordion-body">
-                        <form method="POST" action="{{ url_for('auth.preferences') }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="action" value="save_ct">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch"
-                                       id="ctMonitoring" name="ct_monitoring" {% if ct_monitoring %}checked{% endif %}>
-                                <label class="form-check-label fw-medium" for="ctMonitoring">Certificate Transparency (crt.sh)</label>
-                            </div>
-                            <p class="text-muted small mt-1 mb-2">Scan quotidien des journaux CT pour détecter les certificats émis pour vos domaines à l'insu de la DSI (shadow IT, prestataire, usurpation). Les alertes suivent la catégorie « Domaines ».</p>
-                            <button type="submit" class="btn btn-sm btn-primary">
-                                <i class="bi bi-check-lg me-1"></i> Enregistrer
+                            <button type="submit" class="btn btn-sm btn-primary mt-2">
+                                <i class="bi bi-check-lg me-1"></i> Enregistrer la configuration
                             </button>
                         </form>
-                    </div>
-                </div>
-            </div>
 
-            {# ===================== REFERENTIELS ===================== #}
-            <div class="accordion-item" style="order:9;">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secReferentiels" aria-expanded="false" aria-controls="secReferentiels">
-                        <i class="bi bi-list-ul me-2"></i>Référentiels et services utilisateurs
-                    </button>
-                </h2>
-                <div id="secReferentiels" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
-                    <div class="accordion-body">
-                        <p class="text-muted small mb-2">Les listes de valeurs proposées dans les formulaires —
-                            technologies applicatives, catégories de pièces jointes, types de tâches — et l'annuaire
-                            des services utilisateurs (directions de la collectivité), avec leur référent.</p>
-                        <p class="text-muted small mb-3">Seuls les libellés <strong>descriptifs</strong> s'y règlent :
-                            le cycle de vie d'un logiciel ou le statut d'un certificat pilotent des filtres et des
-                            couleurs, et restent fixes.</p>
-                        <a href="{{ url_for('referentials.index') }}" class="btn btn-sm btn-primary">
-                            <i class="bi bi-arrow-right me-1"></i> Gérer les référentiels
-                        </a>
-                    </div>
-                </div>
-            </div>
+                        <hr class="my-3">
 
-            {# ===================== PIECES JOINTES ===================== #}
-            <div class="accordion-item" style="order:10;">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secDocuments" aria-expanded="false" aria-controls="secDocuments">
-                        <i class="bi bi-paperclip me-2"></i>Pièces jointes
-                        {% if documents_enabled %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Activées ({{ document_max_mb }} Mo)</span>{% else %}<span class="badge bg-secondary ms-2">Désactivées</span>{% endif %}
-                    </button>
-                </h2>
-                <div id="secDocuments" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
-                    <div class="accordion-body">
-                        <form method="POST" action="{{ url_for('auth.preferences') }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="action" value="save_documents">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch"
-                                       id="documentsEnabled" name="documents_enabled" {% if documents_enabled %}checked{% endif %}>
-                                <label class="form-check-label fw-medium" for="documentsEnabled">Pièces jointes sur les fiches</label>
-                            </div>
-                            <p class="text-muted small mt-1 mb-2">Marchés signés, délibérations, guides, attestations d'autorité —
-                                déposés sur la fiche qu'ils documentent. Les fichiers vivent <strong>en base</strong> : une
-                                sauvegarde de la base est complète à elle seule, aucun fichier ne peut se retrouver orphelin.
-                                Désactivées, elles disparaissent des écrans ; les fichiers déjà déposés restent en base.</p>
-                            <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" role="switch"
-                                       id="documentInlineView" name="document_inline_view" {% if document_inline_view %}checked{% endif %}>
-                                <label class="form-check-label fw-medium" for="documentInlineView">Ouvrir les documents dans le navigateur</label>
-                            </div>
-                            <p class="text-muted small mb-2">Ouvre les <strong>PDF et les images</strong> dans un
-                                nouvel onglet, sans les enregistrer d'abord — la fiche reste ouverte derrière,
-                                et le navigateur apporte sa visionneuse : zoom, recherche, impression. Les autres types se téléchargent toujours. Le SVG en est
-                                volontairement exclu : c'est du XML qui peut porter des scripts.</p>
-                            <div class="row g-2 align-items-end mb-2" style="max-width:22rem">
-                                <div class="col-7">
-                                    <label class="form-label small mb-1" for="documentMaxMb">Taille maximale par fichier</label>
-                                    <div class="input-group input-group-sm">
-                                        <input type="number" class="form-control" id="documentMaxMb"
-                                               name="document_max_mb" min="1" max="100" value="{{ document_max_mb }}">
-                                        <span class="input-group-text">Mo</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-sm btn-primary">
-                                <i class="bi bi-check-lg me-1"></i> Enregistrer
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            {# ===================== AFFICHAGE / TABLEAU DE BORD ===================== #}
-            <div class="accordion-item" style="order:11;">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secDashboard" aria-expanded="false" aria-controls="secDashboard">
-                        <i class="bi bi-grid-1x2 me-2"></i>Tableau de bord
-                        {% if dashboard_custom %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Personnalisable</span>{% else %}<span class="badge bg-secondary ms-2">Disposition fixe</span>{% endif %}
-                    </button>
-                </h2>
-                <div id="secDashboard" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
-                    <div class="accordion-body">
-                        <form method="POST" action="{{ url_for('auth.preferences') }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="action" value="save_dashboard_custom">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" role="switch"
-                                       id="dashboardCustom" name="dashboard_custom" {% if dashboard_custom %}checked{% endif %}>
-                                <label class="form-check-label fw-medium" for="dashboardCustom">Tableau de bord personnalisable</label>
-                            </div>
-                            <p class="text-muted small mt-1 mb-2">Chaque utilisateur peut choisir les blocs affichés sur son tableau de bord et les réordonner (bouton « Personnaliser » en haut du tableau de bord). Désactivé : tout le monde voit la disposition par défaut.</p>
-                            <button type="submit" class="btn btn-sm btn-primary">
-                                <i class="bi bi-check-lg me-1"></i> Enregistrer
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            {# ===================== APPARENCE ===================== #}
-            <div class="accordion-item" style="order:12;">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secAppearance" aria-expanded="false" aria-controls="secAppearance">
-                        <i class="bi bi-palette me-2"></i>Apparence
-                        {% if ui_primary_color %}<span class="badge ms-2" style="background:{{ ui_primary_color }};"><i class="bi bi-check-circle me-1"></i>Personnalisée</span>{% else %}<span class="badge bg-secondary ms-2">Palette d'origine</span>{% endif %}
-                    </button>
-                </h2>
-                <div id="secAppearance" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
-                    <div class="accordion-body">
-                        <form method="POST" action="{{ url_for('auth.preferences') }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="action" value="save_ui_color">
-                            <p class="text-muted small mb-3">Couleur principale de l'interface (boutons, liens, onglets, logo, fond de la page de connexion), pour tous les utilisateurs. Elle s'applique aussi au thème sombre (déclinaison éclaircie). Décochée : palette d'origine (indigo). Choisissez une couleur foncée, le texte posé dessus est blanc.</p>
-                            <div class="d-flex align-items-center gap-3 flex-wrap mb-3">
-                                <div class="form-check form-switch mb-0">
-                                    <input class="form-check-input" type="checkbox" role="switch"
-                                           id="uiColorEnabled" name="ui_color_enabled" {% if ui_primary_color %}checked{% endif %}>
-                                    <label class="form-check-label fw-medium" for="uiColorEnabled">Couleur personnalisée</label>
-                                </div>
-                                <input type="color" class="form-control form-control-color" name="ui_primary_color"
-                                       value="{{ ui_primary_color or '#4f46e5' }}" title="Choisir la couleur principale">
-                            </div>
-                            <button type="submit" class="btn btn-sm btn-primary">
-                                <i class="bi bi-check-lg me-1"></i> Enregistrer
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            {# ===================== SEUILS D'ALERTE ===================== #}
-            <div class="accordion-item" style="order:8;">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secThresholds" aria-expanded="false" aria-controls="secThresholds">
-                        <i class="bi bi-sliders me-2"></i>Seuils d'alerte (jours restants)
-                        {% if configured.thresholds %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Personnalisé</span>{% endif %}
-                    </button>
-                </h2>
-                <div id="secThresholds" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
-                    <div class="accordion-body">
-                        <form method="POST" action="{{ url_for('auth.preferences') }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="action" value="save_thresholds">
-                            <table class="table table-sm align-middle mb-2">
-                                <thead><tr><th></th><th class="text-danger">Critique ≤</th><th class="text-warning">Attention ≤</th><th class="text-info">Proche ≤</th></tr></thead>
-                                <tbody>
-                                    {% set rows = [('expiry', 'Comptes & certificats'), ('domain', 'Noms de domaine'), ('task', 'Tests & revues de droits'), ('contract', 'Contrats & licences (échéance - préavis)')] %}
-                                    {% for key, label in rows %}
-                                    <tr>
-                                        <td class="fw-medium">{{ label }}</td>
-                                        {% for i in range(3) %}
-                                        <td><input type="number" min="0" name="{{ key }}_{{ ['danger','warning','info'][i] }}"
-                                                   value="{{ thresholds[key][i] }}" class="form-control form-control-sm" style="width:90px;"></td>
-                                        {% endfor %}
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i> Enregistrer les seuils</button>
-                            <small class="text-muted d-block mt-1">Détermine la couleur de statut selon le nombre de jours restants avant échéance.</small>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            {# ===================== CONFORMITÉ GLOBALE ===================== #}
-            <div class="accordion-item" style="order:4;">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secConformity" aria-expanded="false" aria-controls="secConformity">
-                        <i class="bi bi-speedometer2 me-2"></i>Conformité globale
-                        {% if configured.conformity %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Personnalisé</span>{% endif %}
-                        <span class="badge bg-secondary ms-2">{{ conformity_included|length }}/{{ conformity_categories|length }}</span>
-                    </button>
-                </h2>
-                <div id="secConformity" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
-                    <div class="accordion-body">
-                        <p class="text-muted small">Catégories prises en compte dans l'indicateur de <strong>Conformité globale</strong> du tableau de bord. Les cartes de chaque catégorie restent visibles ; seul le pourcentage global est affecté.</p>
-                        <form method="POST" action="{{ url_for('auth.preferences') }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="action" value="save_conformity">
-                            <div class="row g-2">
-                                {% for cat in conformity_categories %}
-                                <div class="col-md-6 col-lg-4">
-                                    <label class="d-flex align-items-center gap-2 p-2 rounded border mb-0" style="cursor: pointer;">
-                                        <input type="checkbox" class="form-check-input mt-0" name="conformity"
-                                               value="{{ cat }}" {{ 'checked' if cat in conformity_included }}>
-                                        <span class="fw-medium small">{{ conformity_labels.get(cat, cat) }}</span>
-                                    </label>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            <button type="submit" class="btn btn-sm btn-primary mt-2"><i class="bi bi-check-lg me-1"></i> Enregistrer la conformité</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            {# ===================== BASE DE DONNÉES ===================== #}
-            <div class="accordion-item" style="order:3;">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secDb" aria-expanded="false" aria-controls="secDb">
-                        <i class="bi bi-database me-2"></i>Base de données
-                        <span class="badge bg-secondary ms-2">{{ db_backups|length }} sauvegarde(s)</span>
-                    </button>
-                </h2>
-                <div id="secDb" class="accordion-collapse collapse" data-bs-parent="#prefsAccordion">
-                    <div class="accordion-body">
-                        {# La retention se regle ICI et non dans la stack : c'est une
-                           politique, pas un parametre de deploiement, et la changer ne
-                           devrait pas demander de redeployer. L'encombrement est
-                           annonce parce qu'une copie pese ce que pese la base — pieces
-                           jointes comprises. #}
-                        <form method="POST" action="{{ url_for('auth.preferences') }}" class="mb-3">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="action" value="save_backup_keep">
-                            <div class="row g-2 align-items-end">
-                                <div class="col-auto">
-                                    <label class="form-label small mb-1" for="backupDbKeep">Sauvegardes conservées</label>
-                                    <input type="number" class="form-control form-control-sm" id="backupDbKeep"
-                                           name="backup_db_keep" min="1" max="30" value="{{ backup_db_keep }}"
-                                           style="width:6rem" data-taille="{{ db_taille_mo }}">
-                                </div>
-                                <div class="col-auto">
-                                    <button type="submit" class="btn btn-sm btn-primary">
-                                        <i class="bi bi-check-lg me-1"></i> Enregistrer
-                                    </button>
-                                </div>
-                                <div class="col">
-                                    <small class="text-muted" id="backupKeepEstimation"></small>
-                                </div>
-                            </div>
-                            <div class="form-text">La plus ancienne part quand une nouvelle arrive. Une copie pèse
-                                autant que la base ({{ db_taille_mo }} Mo aujourd'hui), pièces jointes comprises.</div>
-                        </form>
-
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <small class="text-muted">
-                                {{ db_backups|length }} sauvegarde(s) conservée(s)
-                                {% if db_backups %}— dernière le {{ db_backups[0].date.strftime('%d/%m/%Y %H:%M') }}{% endif %}
-                            </small>
-                            <div class="d-flex gap-2">
-                                {# Deux boutons : l'archive complete pese ce que
-                                   pesent les pieces jointes, l'allegee quelques
-                                   centaines de kilo-octets. L'allegee ne remplace
-                                   pas la complete, elle s'intercale entre deux. #}
-                                <div class="btn-group">
-                                    <a href="{{ url_for('data_io.export_full') }}" class="btn btn-sm btn-outline-success"
-                                       title="Archive ZIP (base + CSV + page HTML) pour clé USB">
-                                        <i class="bi bi-usb-drive me-1"></i> Export complet
-                                    </a>
-                                    <a href="{{ url_for('data_io.export_full', sans_documents=1) }}"
-                                       class="btn btn-sm btn-outline-secondary"
-                                       title="Même archive, sans les octets des pièces jointes : les fiches restent, leur contenu non">
-                                        allégé
-                                    </a>
+                        {% if o365_app_configured %}
+                            {% if o365_connected %}
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="badge bg-success me-2"><i class="bi bi-check-circle me-1"></i>Connecte</span>
+                                    <span class="fw-medium">{{ o365_user_email }}</span>
                                 </div>
                                 <form method="POST" action="{{ url_for('auth.preferences') }}">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" name="action" value="backup_db" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-download me-1"></i> Sauvegarder maintenant
+                                    <input type="hidden" name="action" value="disconnect_o365">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-box-arrow-right me-1"></i> Deconnecter
                                     </button>
                                 </form>
                             </div>
+                            {% else %}
+                            <div class="text-center py-2">
+                                <a href="{{ url_for('auth.o365_connect') }}" class="btn btn-primary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 23 23" width="18" height="18" style="vertical-align: middle; margin-right: 8px;">
+                                        <path fill="#f25022" d="M1 1h10v10H1z"/>
+                                        <path fill="#00a4ef" d="M12 1h10v10H12z"/>
+                                        <path fill="#7fba00" d="M1 12h10v10H1z"/>
+                                        <path fill="#ffb900" d="M12 12h10v10H12z"/>
+                                    </svg>
+                                    Se connecter avec Microsoft
+                                </a>
+                                <p class="text-muted mt-2 mb-0 small">Cliquez pour autoriser Sentinelle a envoyer des emails via votre compte</p>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                        <div class="alert alert-info py-2 small mb-0">
+                            <i class="bi bi-info-circle me-1"></i>
+                            <strong>Configuration Azure AD requise :</strong>
+                            <ol class="mt-1 mb-0 ps-3">
+                                <li>Aller sur <strong>portal.azure.com</strong> > Azure Active Directory > App registrations > New registration</li>
+                                <li>Ajouter la permission <strong>Mail.Send</strong> (Delegated) sous Microsoft Graph</li>
+                                <li>Dans <strong>Authentication</strong> > Add a platform > Web, ajoutez l'URL de redirection ci-dessus</li>
+                                <li>Creer un secret client dans <strong>Certificats & secrets</strong></li>
+                                <li>Renseigner les champs ci-dessus et enregistrer</li>
+                                <li>Cliquer sur <strong>Se connecter avec Microsoft</strong> pour autoriser l'envoi</li>
+                            </ol>
                         </div>
-                        {% if db_backups %}
-                        <ul class="list-group list-group-flush small">
-                            {% for b in db_backups[:8] %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
-                                <span><i class="bi bi-file-earmark-zip me-1"></i>{{ b.name }}</span>
-                                <span class="d-flex align-items-center gap-2">
-                                    <span class="text-muted">{{ b.date.strftime('%d/%m/%Y %H:%M') }} · {{ b.size_kb }} Ko</span>
-                                    <form method="POST" action="{{ url_for('auth.preferences') }}">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <input type="hidden" name="action" value="delete_db_backup">
-                                        <input type="hidden" name="name" value="{{ b.name }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Supprimer" aria-label="Supprimer"
-                                                data-confirm="Supprimer cette sauvegarde ?">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                </span>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                        <small class="text-muted d-block mt-1">Sauvegarde automatique quotidienne (01h00).</small>
                         {% endif %}
                     </div>
-                </div>
+                    {% else %}
+                    <div class="data-card p-3 mb-0" style="background: var(--body-bg);">
+                        <h6 class="fw-bold small mb-2"><i class="bi bi-envelope me-1"></i>Configuration SMTP</h6>
+                        <form method="POST" action="{{ url_for('auth.preferences') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="save_smtp">
+                            <div class="row g-2">
+                                <div class="col-md-8">
+                                    <label class="form-label small">Serveur</label>
+                                    <input type="text" name="smtp_server" class="form-control form-control-sm"
+                                           value="{{ smtp_config.server }}" placeholder="smtp.office365.com">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Port</label>
+                                    <input type="number" name="smtp_port" class="form-control form-control-sm"
+                                           value="{{ smtp_config.port }}" placeholder="587">
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <span class="text-muted small">587 = TLS</span>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label small">Adresse expeditrice (From)</label>
+                                    <input type="email" name="smtp_sender" class="form-control form-control-sm"
+                                           value="{{ smtp_config.sender }}" placeholder="sentinelle@votredomaine.fr">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">Utilisateur <span class="text-muted">(optionnel)</span></label>
+                                    <input type="text" name="smtp_username" class="form-control form-control-sm"
+                                           value="{{ smtp_config.username }}" placeholder="laisser vide pour Direct Send">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">Mot de passe <span class="text-muted">(optionnel)</span></label>
+                                    <input type="password" name="smtp_password" class="form-control form-control-sm"
+                                           placeholder="laisser vide pour Direct Send">
+                                </div>
+                            </div>
+                            <div class="alert alert-info py-2 small mt-2 mb-0">
+                                <i class="bi bi-info-circle me-1"></i>
+                                <strong>Direct Send (recommande, sans mot de passe) :</strong>
+                                Serveur = <code>votredomaine-fr.mail.protection.outlook.com</code>, Port = <code>25</code>,
+                                Utilisateur et Mot de passe <strong>vides</strong>. L'adresse expeditrice doit etre
+                                de votre domaine et les destinataires internes.
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary mt-2">
+                                <i class="bi bi-check-lg me-1"></i> Enregistrer la configuration SMTP
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
             </div>
+        </section>
 
-        </div>
+        <section class="form-section pref-rubrique" id="secRecipients">
+            <div class="form-section-titre">
+                <i class="bi bi-people me-2"></i>Destinataires &amp; test d'envoi
+                {% if configured.recipients %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Configuré</span>{% endif %}
+            </div>
+            <p class="form-section-aide">Qui reçoit les alertes et le bilan PDF planifié ; un envoi de test pour vérifier.</p>
+            <div class="form-section-corps">
+                    <form method="POST" action="{{ url_for('auth.preferences') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="save_recipients">
+                        <label class="form-label small">Adresses qui recevront les alertes automatiques
+                            <span class="text-muted">(separees par des virgules ou des retours a la ligne)</span></label>
+                        <textarea name="alert_recipients" rows="2" class="form-control form-control-sm"
+                                  placeholder="dsi@votredomaine.fr, sauvegarde@votredomaine.fr">{{ alert_recipients }}</textarea>
+
+                        <details class="mt-3" {{ 'open' if alert_recipients_by_cat.values()|select|list }}>
+                            <summary class="small fw-bold" style="cursor:pointer;">
+                                <i class="bi bi-diagram-3 me-1"></i>Destinataires par catégorie
+                                <span class="text-muted fw-normal">— optionnel : une catégorie sans adresse utilise la liste globale ci-dessus</span>
+                            </summary>
+                            <div class="row g-2 mt-1">
+                                {% for cat, label in alert_category_labels.items() %}
+                                <div class="col-md-6">
+                                    <label class="form-label small mb-1" for="rcpt_{{ cat }}">{{ label }}</label>
+                                    <input type="text" id="rcpt_{{ cat }}" name="alert_recipients_{{ cat }}"
+                                           class="form-control form-control-sm"
+                                           value="{{ alert_recipients_by_cat[cat] }}"
+                                           placeholder="— liste globale —">
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </details>
+
+                        <button type="submit" class="btn btn-sm btn-primary mt-3">
+                            <i class="bi bi-check-lg me-1"></i> Enregistrer les destinataires
+                        </button>
+                    </form>
+
+                    <hr>
+                    <h6 class="fw-bold mb-2"><i class="bi bi-file-earmark-pdf me-2"></i>Bilan PDF planifié</h6>
+                    <form method="POST" action="{{ url_for('auth.preferences') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="save_report">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label small" for="reportSchedule">Fréquence d'envoi</label>
+                                <select name="report_schedule" id="reportSchedule" class="form-select form-select-sm">
+                                    <option value="off" {{ 'selected' if report_schedule == 'off' }}>Désactivé</option>
+                                    <option value="weekly" {{ 'selected' if report_schedule == 'weekly' }}>Hebdomadaire (lundi)</option>
+                                    <option value="monthly" {{ 'selected' if report_schedule == 'monthly' }}>Mensuel (le 1er)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small" for="reportRecipients">Destinataires
+                                    <span class="text-muted">(vide = destinataires des alertes)</span></label>
+                                <input type="text" name="report_recipients" id="reportRecipients"
+                                       class="form-control form-control-sm" value="{{ report_recipients }}"
+                                       placeholder="direction@votredomaine.fr">
+                            </div>
+                            <div class="col-md-3 d-flex gap-2">
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-check-lg me-1"></i> Enregistrer
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    <form method="POST" action="{{ url_for('auth.preferences') }}" class="mt-2">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="send_report_now">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-send me-1"></i> Envoyer le bilan maintenant
+                        </button>
+                    </form>
+
+                    <hr>
+                    <h6 class="fw-bold mb-2"><i class="bi bi-send me-2"></i>Test d'envoi</h6>
+                    <form method="POST" action="{{ url_for('auth.preferences') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-6">
+                                <label class="form-label small">Destinataire</label>
+                                <input type="email" name="test_email" class="form-control form-control-sm"
+                                       value="{{ current_user.email }}" placeholder="email@exemple.com">
+                            </div>
+                            <div class="col-md-6 d-flex gap-2">
+                                <button type="submit" name="action" value="test_email"
+                                        class="btn btn-sm btn-primary mt-2" {% if not mail_configured %}disabled{% endif %}>
+                                    <i class="bi bi-send me-1"></i> Email de test
+                                </button>
+                                <button type="submit" name="action" value="send_digest"
+                                        class="btn btn-sm btn-outline-primary mt-2" {% if not mail_configured %}disabled{% endif %}>
+                                    <i class="bi bi-clipboard-data me-1"></i> Envoyer un récap
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+            </div>
+        </section>
+
+        <section class="form-section pref-rubrique" id="secThresholds">
+            <div class="form-section-titre">
+                <i class="bi bi-sliders me-2"></i>Seuils d'alerte (jours restants)
+                {% if configured.thresholds %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Personnalisé</span>{% endif %}
+            </div>
+            <p class="form-section-aide">Le nombre de jours restants qui fait passer un statut en Proche, Attention puis Critique.</p>
+            <div class="form-section-corps">
+                    <form method="POST" action="{{ url_for('auth.preferences') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="save_thresholds">
+                        <table class="table table-sm align-middle mb-2">
+                            <thead><tr><th></th><th class="text-danger">Critique ≤</th><th class="text-warning">Attention ≤</th><th class="text-info">Proche ≤</th></tr></thead>
+                            <tbody>
+                                {% set rows = [('expiry', 'Comptes & certificats'), ('domain', 'Noms de domaine'), ('task', 'Tests & revues de droits'), ('contract', 'Contrats & licences (échéance - préavis)')] %}
+                                {% for key, label in rows %}
+                                <tr>
+                                    <td class="fw-medium">{{ label }}</td>
+                                    {% for i in range(3) %}
+                                    <td><input type="number" min="0" name="{{ key }}_{{ ['danger','warning','info'][i] }}"
+                                               value="{{ thresholds[key][i] }}" class="form-control form-control-sm" style="width:90px;"></td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i> Enregistrer les seuils</button>
+                        <small class="text-muted d-block mt-1">Détermine la couleur de statut selon le nombre de jours restants avant échéance.</small>
+                    </form>
+            </div>
+        </section>
+        <div class="form-famille">Données</div>
+
+        <section class="form-section pref-rubrique" id="secDb">
+            <div class="form-section-titre">
+                <i class="bi bi-database me-2"></i>Base de données
+                {% if db_backups %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>{{ db_backups|length }} sauvegarde{{ 's' if db_backups|length > 1 }}</span>{% else %}<span class="badge bg-danger ms-2"><i class="bi bi-x-circle me-1"></i>Aucune sauvegarde</span>{% endif %}
+            </div>
+            <p class="form-section-aide">Copies de la base, pièces jointes comprises : rétention et sauvegarde manuelle.</p>
+            <div class="form-section-corps">
+                    {# La retention se regle ICI et non dans la stack : c'est une
+                       politique, pas un parametre de deploiement, et la changer ne
+                       devrait pas demander de redeployer. L'encombrement est
+                       annonce parce qu'une copie pese ce que pese la base — pieces
+                       jointes comprises. #}
+                    <form method="POST" action="{{ url_for('auth.preferences') }}" class="mb-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="save_backup_keep">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-auto">
+                                <label class="form-label small mb-1" for="backupDbKeep">Sauvegardes conservées</label>
+                                <input type="number" class="form-control form-control-sm" id="backupDbKeep"
+                                       name="backup_db_keep" min="1" max="30" value="{{ backup_db_keep }}"
+                                       style="width:6rem" data-taille="{{ db_taille_mo }}">
+                            </div>
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-check-lg me-1"></i> Enregistrer
+                                </button>
+                            </div>
+                            <div class="col">
+                                <small class="text-muted" id="backupKeepEstimation"></small>
+                            </div>
+                        </div>
+                        <div class="form-text">La plus ancienne part quand une nouvelle arrive. Une copie pèse
+                            autant que la base ({{ db_taille_mo }} Mo aujourd'hui), pièces jointes comprises.</div>
+                    </form>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <small class="text-muted">
+                            {{ db_backups|length }} sauvegarde(s) conservée(s)
+                            {% if db_backups %}— dernière le {{ db_backups[0].date.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+                        </small>
+                        <div class="d-flex gap-2">
+                            {# Deux boutons : l'archive complete pese ce que
+                               pesent les pieces jointes, l'allegee quelques
+                               centaines de kilo-octets. L'allegee ne remplace
+                               pas la complete, elle s'intercale entre deux. #}
+                            <div class="btn-group">
+                                <a href="{{ url_for('data_io.export_full') }}" class="btn btn-sm btn-outline-success"
+                                   title="Archive ZIP (base + CSV + page HTML) pour clé USB">
+                                    <i class="bi bi-usb-drive me-1"></i> Export complet
+                                </a>
+                                <a href="{{ url_for('data_io.export_full', sans_documents=1) }}"
+                                   class="btn btn-sm btn-outline-secondary"
+                                   title="Même archive, sans les octets des pièces jointes : les fiches restent, leur contenu non">
+                                    allégé
+                                </a>
+                            </div>
+                            <form method="POST" action="{{ url_for('auth.preferences') }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" name="action" value="backup_db" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-download me-1"></i> Sauvegarder maintenant
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% if db_backups %}
+                    <ul class="list-group list-group-flush small">
+                        {% for b in db_backups[:8] %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
+                            <span><i class="bi bi-file-earmark-zip me-1"></i>{{ b.name }}</span>
+                            <span class="d-flex align-items-center gap-2">
+                                <span class="text-muted">{{ b.date.strftime('%d/%m/%Y %H:%M') }} · {{ b.size_kb }} Ko</span>
+                                <form method="POST" action="{{ url_for('auth.preferences') }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="action" value="delete_db_backup">
+                                    <input type="hidden" name="name" value="{{ b.name }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Supprimer" aria-label="Supprimer"
+                                            data-confirm="Supprimer cette sauvegarde ?">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <small class="text-muted d-block mt-1">Sauvegarde automatique quotidienne (01h00).</small>
+                    {% endif %}
+            </div>
+        </section>
+
+        <section class="form-section pref-rubrique" id="secDocuments">
+            <div class="form-section-titre">
+                <i class="bi bi-paperclip me-2"></i>Pièces jointes
+                {% if documents_enabled %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Activées ({{ document_max_mb }} Mo)</span>{% else %}<span class="badge bg-secondary ms-2">Désactivées</span>{% endif %}
+            </div>
+            <p class="form-section-aide">Fichiers accrochés aux fiches : activation, taille maximale, affichage.</p>
+            <div class="form-section-corps">
+                    <form method="POST" action="{{ url_for('auth.preferences') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="save_documents">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="documentsEnabled" name="documents_enabled" {% if documents_enabled %}checked{% endif %}>
+                            <label class="form-check-label fw-medium" for="documentsEnabled">Pièces jointes sur les fiches</label>
+                        </div>
+                        <p class="text-muted small mt-1 mb-2">Marchés signés, délibérations, guides, attestations d'autorité —
+                            déposés sur la fiche qu'ils documentent. Les fichiers vivent <strong>en base</strong> : une
+                            sauvegarde de la base est complète à elle seule, aucun fichier ne peut se retrouver orphelin.
+                            Désactivées, elles disparaissent des écrans ; les fichiers déjà déposés restent en base.</p>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="documentInlineView" name="document_inline_view" {% if document_inline_view %}checked{% endif %}>
+                            <label class="form-check-label fw-medium" for="documentInlineView">Ouvrir les documents dans le navigateur</label>
+                        </div>
+                        <p class="text-muted small mb-2">Ouvre les <strong>PDF et les images</strong> dans un
+                            nouvel onglet, sans les enregistrer d'abord — la fiche reste ouverte derrière,
+                            et le navigateur apporte sa visionneuse : zoom, recherche, impression. Les autres types se téléchargent toujours. Le SVG en est
+                            volontairement exclu : c'est du XML qui peut porter des scripts.</p>
+                        <div class="row g-2 align-items-end mb-2" style="max-width:22rem">
+                            <div class="col-7">
+                                <label class="form-label small mb-1" for="documentMaxMb">Taille maximale par fichier</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control" id="documentMaxMb"
+                                           name="document_max_mb" min="1" max="100" value="{{ document_max_mb }}">
+                                    <span class="input-group-text">Mo</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> Enregistrer
+                        </button>
+                    </form>
+            </div>
+        </section>
+
+        <section class="form-section pref-rubrique" id="secReferentiels">
+            <div class="form-section-titre">
+                <i class="bi bi-list-ul me-2"></i>Référentiels et services utilisateurs
+            </div>
+            <p class="form-section-aide">Listes de valeurs et services utilisateurs, gérés sur leur propre écran.</p>
+            <div class="form-section-corps">
+                    <p class="text-muted small mb-2">Les listes de valeurs proposées dans les formulaires —
+                        technologies applicatives, catégories de pièces jointes, types de tâches — et l'annuaire
+                        des services utilisateurs (directions de la collectivité), avec leur référent.</p>
+                    <p class="text-muted small mb-3">Seuls les libellés <strong>descriptifs</strong> s'y règlent :
+                        le cycle de vie d'un logiciel ou le statut d'un certificat pilotent des filtres et des
+                        couleurs, et restent fixes.</p>
+                    <a href="{{ url_for('referentials.index') }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-arrow-right me-1"></i> Gérer les référentiels
+                    </a>
+            </div>
+        </section>
+        <div class="form-famille">Affichage</div>
+
+        <section class="form-section pref-rubrique" id="secDashboard">
+            <div class="form-section-titre">
+                <i class="bi bi-grid-1x2 me-2"></i>Tableau de bord
+                {% if dashboard_custom %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Personnalisable</span>{% else %}<span class="badge bg-secondary ms-2">Disposition fixe</span>{% endif %}
+            </div>
+            <p class="form-section-aide">Ce que chaque utilisateur peut réorganiser sur son tableau de bord.</p>
+            <div class="form-section-corps">
+                    <form method="POST" action="{{ url_for('auth.preferences') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="save_dashboard_custom">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="dashboardCustom" name="dashboard_custom" {% if dashboard_custom %}checked{% endif %}>
+                            <label class="form-check-label fw-medium" for="dashboardCustom">Tableau de bord personnalisable</label>
+                        </div>
+                        <p class="text-muted small mt-1 mb-2">Chaque utilisateur peut choisir les blocs affichés sur son tableau de bord et les réordonner (bouton « Personnaliser » en haut du tableau de bord). Désactivé : tout le monde voit la disposition par défaut.</p>
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> Enregistrer
+                        </button>
+                    </form>
+            </div>
+        </section>
+
+        <section class="form-section pref-rubrique" id="secAppearance">
+            <div class="form-section-titre">
+                <i class="bi bi-palette me-2"></i>Apparence
+                {% if ui_primary_color %}<span class="badge ms-2" style="background:{{ ui_primary_color }};"><i class="bi bi-check-circle me-1"></i>Personnalisée</span>{% else %}<span class="badge bg-secondary ms-2">Palette d'origine</span>{% endif %}
+            </div>
+            <p class="form-section-aide">Couleur principale de l'interface, pour tous les utilisateurs.</p>
+            <div class="form-section-corps">
+                    <form method="POST" action="{{ url_for('auth.preferences') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="save_ui_color">
+                        <p class="text-muted small mb-3">Couleur principale de l'interface (boutons, liens, onglets, logo, fond de la page de connexion), pour tous les utilisateurs. Elle s'applique aussi au thème sombre (déclinaison éclaircie). Décochée : palette d'origine (indigo). Choisissez une couleur foncée, le texte posé dessus est blanc.</p>
+                        <div class="d-flex align-items-center gap-3 flex-wrap mb-3">
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       id="uiColorEnabled" name="ui_color_enabled" {% if ui_primary_color %}checked{% endif %}>
+                                <label class="form-check-label fw-medium" for="uiColorEnabled">Couleur personnalisée</label>
+                            </div>
+                            <input type="color" class="form-control form-control-color" name="ui_primary_color"
+                                   value="{{ ui_primary_color or '#4f46e5' }}" title="Choisir la couleur principale">
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> Enregistrer
+                        </button>
+                    </form>
+            </div>
+        </section>
     </div>
 </div>
 
 <script>
-// Conserve le bloc ouvert apres un enregistrement (la page se recharge en POST).
+// Après un enregistrement (la page se recharge en POST), on revient sur la
+// rubrique dont le formulaire a été soumis : la page est longue, et le message
+// de confirmation s'affiche en haut.
 (function () {
-    var acc = document.getElementById('prefsAccordion');
-    if (!acc) return;
     var KEY = 'prefsOpenSection';
-
-    function openSection(id) {
-        var target = document.getElementById(id);
-        if (!target) return;
-        acc.querySelectorAll('.accordion-collapse.show').forEach(function (el) {
-            if (el.id === id) return;
-            el.classList.remove('show');
-            var b = acc.querySelector('[data-bs-target="#' + el.id + '"]');
-            if (b) { b.classList.add('collapsed'); b.setAttribute('aria-expanded', 'false'); }
-        });
-        target.classList.add('show');
-        var btn = acc.querySelector('[data-bs-target="#' + id + '"]');
-        if (btn) { btn.classList.remove('collapsed'); btn.setAttribute('aria-expanded', 'true'); }
-    }
-
-    // Rouvre le dernier bloc actif (apres reload), puis oublie pour ne pas
-    // figer la navigation suivante.
     var saved = sessionStorage.getItem(KEY);
-    if (saved) { openSection(saved); sessionStorage.removeItem(KEY); }
-
-    // Memorise le bloc dont un formulaire vient d'etre soumis.
-    acc.querySelectorAll('form').forEach(function (form) {
+    if (saved) {
+        sessionStorage.removeItem(KEY);
+        var cible = document.getElementById(saved);
+        if (cible) cible.scrollIntoView({ block: 'start' });
+    }
+    document.querySelectorAll('#prefsRubriques form').forEach(function (form) {
         form.addEventListener('submit', function () {
-            var col = form.closest('.accordion-collapse');
-            if (col) sessionStorage.setItem(KEY, col.id);
+            var section = form.closest('.pref-rubrique');
+            if (section) sessionStorage.setItem(KEY, section.id);
         });
     });
 })();
@@ -781,35 +754,39 @@
 })();
 </script>
 <script>
+// Sommaire : le point d'état de chaque rubrique se lit sur la pastille de son
+// bandeau (vert = réglé, rouge = manquant, gris = neutre ou sans état), et la
+// rubrique courante se marque au défilement, comme sur les formulaires de fiche.
 (function () {
     var nav = document.getElementById('prefsSommaire');
-    var acc = document.getElementById('prefsAccordion');
-    if (!nav || !acc) return;
-    var items = Array.prototype.slice.call(acc.querySelectorAll(':scope > .accordion-item'));
-    items.sort(function (a, b) { return (parseInt(a.style.order, 10) || 0) - (parseInt(b.style.order, 10) || 0); });
-    items.forEach(function (item, i) {
-        var btn = item.querySelector('.accordion-button');
-        var pane = item.querySelector('.accordion-collapse');
-        if (!btn || !pane) return;
-        if (!item.id) item.id = 'pref-' + (i + 1);
-        var titre = (btn.childNodes[btn.childNodes.length > 1 ? 1 : 0] || btn).textContent.trim() || btn.textContent.trim();
-        var a = document.createElement('a');
-        a.href = '#' + item.id;
-        a.className = 'form-sommaire-lien';
-        a.innerHTML = '<span class="form-sommaire-n">' + (i + 1) + '</span><span></span>';
-        a.lastChild.textContent = btn.textContent.trim().split('\n')[0].trim();
+    if (!nav) return;
+    var liens = Array.prototype.slice.call(nav.querySelectorAll('.form-sommaire-lien'));
+    var entrees = [];
+    liens.forEach(function (a) {
+        var section = document.getElementById(a.dataset.cible);
+        if (!section) { a.remove(); return; }
+        var etat = a.querySelector('.som-etat');
+        var badge = section.querySelector('.form-section-titre .badge');
+        if (badge && etat) {
+            if (badge.classList.contains('bg-success')) etat.classList.add('ok');
+            else if (badge.classList.contains('bg-danger')) etat.classList.add('ko');
+        }
         a.addEventListener('click', function (e) {
             e.preventDefault();
-            if (window.bootstrap && bootstrap.Collapse) bootstrap.Collapse.getOrCreateInstance(pane, { toggle: false }).show();
-            item.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            nav.querySelectorAll('.form-sommaire-lien').forEach(function (l) { l.classList.remove('active'); });
-            a.classList.add('active');
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            history.replaceState(null, '', '#' + section.id);
         });
-        nav.appendChild(a);
+        entrees.push({ a: a, section: section });
     });
-    // Une rubrique nommee dans l'URL s'ouvre a l'arrivee.
-    var id = (location.hash || '').slice(1);
-    if (id) { var cible = nav.querySelector('a[href="#' + id + '"]'); if (cible) cible.click(); }
+    function actualiser() {
+        var courant = entrees[0];
+        entrees.forEach(function (l) {
+            if (l.section.getBoundingClientRect().top <= 160) courant = l;
+        });
+        entrees.forEach(function (l) { l.a.classList.toggle('active', l === courant); });
+    }
+    window.addEventListener('scroll', actualiser, { passive: true });
+    actualiser();
 })();
 </script>
 {% endblock %}

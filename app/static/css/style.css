@@ -2190,6 +2190,26 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 }
 .form-section-corps { padding: 16px; }
 
+/* ---- Preferences : rubriques ouvertes par familles (Dom 2026-09-23) ----
+   Le bandeau d etat en tete, le sommaire par familles (icone + point d etat),
+   et les bandeaux de rubrique qui poussent leurs pastilles a droite. */
+.pref-etat { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.pref-etat .badge-status { font-size: 0.75rem; padding: 3px 10px; gap: 6px; }
+.pref-etat .badge-status i { font-size: 0.8rem; }
+.pref-page .som-famille { margin: 14px 0 4px; padding: 0 10px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+.pref-page .som-famille:first-child { margin-top: 0; }
+.pref-page .form-sommaire-lien i { width: 16px; text-align: center; color: var(--faint); font-size: 0.9rem; }
+.pref-page .form-sommaire-lien.active i { color: var(--primary); }
+.som-etat { margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: var(--faint); opacity: 0.5; flex: 0 0 auto; }
+.som-etat.ok { background: var(--success); opacity: 1; }
+.som-etat.ko { background: var(--danger); opacity: 1; }
+.form-famille { margin: 0 0 10px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.form-section + .form-famille { margin-top: 28px; }
+.pref-rubrique { scroll-margin-top: 16px; }
+.pref-rubrique > .form-section-titre { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.pref-rubrique > .form-section-titre .badge { font-size: 0.68rem; padding: 2px 8px; margin-left: 0 !important; }
+.pref-rubrique > .form-section-titre .badge:first-of-type { margin-left: auto !important; }
+
 /* Les intitules de champ, un ton plus marque : dans une grille de trente, un
    gris pale se confond avec la valeur saisie. */
 .form-section-corps .form-label { font-weight: 600; color: var(--text); }
