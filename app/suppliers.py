@@ -6,7 +6,7 @@ from flask import (Blueprint, render_template, redirect, url_for, request, flash
                    jsonify)
 from flask_login import login_required
 from app import db
-from app.models import Supplier, Equipment, Contract, SUPPLIER_KIND_LABELS
+from app.models import Supplier, Equipment, Contract, SUPPLIER_KIND_LABELS, Domain
 from app.decorators import require_edit, require_delete, view_guard
 from app.audit import record as audit_record
 
@@ -78,8 +78,10 @@ def detail(id):
     if hasattr(supplier, 'software'):
         software = supplier.software.filter_by(is_active=True).all()
         software.sort(key=lambda s: (s.name or '').lower())
+    domains = supplier.domains.filter_by(is_active=True).order_by(Domain.name).all()
     return render_template('suppliers/detail.html', supplier=supplier,
                            equipments=equipments, contracts=contracts, software=software,
+                           domains=domains,
                            kind_labels=SUPPLIER_KIND_LABELS)
 
 

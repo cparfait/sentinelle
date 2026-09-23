@@ -41,6 +41,7 @@
     {% endif %}
     {{ onglet('materiel-couvert', 'Matériel couvert', 'bi-hdd-stack') }}
     {{ onglet('logiciels', 'Logiciels', 'bi-window-stack') }}
+    {% if current_user.can_view('domains') and domains %}{{ onglet('domaines', 'Domaines', 'bi-globe', compteur=domains|length) }}{% endif %}
     {{ onglet('contrats', 'Contrats', 'bi-file-earmark-text') }}
 {% endcall %}
 
@@ -210,6 +211,32 @@
         </div>
     </div>
     {% endcall %}
+
+    {% if current_user.can_view('domains') and domains %}
+    {% call volet('domaines') %}
+    <div class="data-card mb-3">
+        <div class="card-header-custom">
+            <h6 class="fw-bold fiche-titre fiche-titre--sky mb-0">{{ icone('bi-globe', 14, 'ico ico-' ~ couleur_icone('bi-globe')) }}Domaines enregistrés
+                <span class="badge bg-secondary ms-1">{{ domains|length }}</span></h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Domaine</th><th class="text-nowrap">Expire le</th><th>Renouvellement</th><th>Statut</th></tr></thead>
+                <tbody>
+                    {% for d in domains %}
+                    <tr>
+                        <td><a href="{{ url_for('domains.detail', id=d.id) }}" class="fw-medium text-decoration-none">{{ d.name }}</a></td>
+                        <td class="small text-nowrap">{{ d.expiry_date.strftime('%d/%m/%Y') if d.expiry_date else '—' }}</td>
+                        <td class="small">{{ 'Automatique' if d.auto_renew else 'Manuel' }}</td>
+                        <td>{{ status_badge(d.status()) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endcall %}
+    {% endif %}
 
     {% call volet('contrats') %}
     <div class="data-card">

@@ -42,7 +42,7 @@
                         {{ cellule(d.expiry_date.strftime('%d/%m/%Y'), delai_badge(d.expiry_date, d.status(), passe='expiré depuis')) }}
                         {% else %}<span class="text-muted">à renseigner</span>{% endif %}
                     </td>
-                    <td>{{ d.registrar or '—' }}</td>
+                    <td>{% if d.registrar_supplier %}<a href="{{ url_for('suppliers.detail', id=d.registrar_id) }}" class="text-decoration-none">{{ d.registrar_supplier.name }}</a>{% else %}{{ d.registrar or '—' }}{% endif %}</td>
                     <td>{% if d.auto_renew %}<i class="bi bi-arrow-repeat me-1 text-muted"></i>Automatique{% else %}Manuel{% endif %}</td>
                     <td>{{ status_badge(d.status()) }}</td>
                 </tr>

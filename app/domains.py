@@ -7,7 +7,7 @@ from app import db
 from app.models import Domain, DomainHistory, CtLogEntry
 from app.domain_checker import fetch_domain_info
 from app.ct_monitor import scan_domain
-from app.forms_util import parse_date, status_rank
+from app.forms_util import parse_date, parse_int, status_rank
 from app.decorators import require_edit, require_delete, view_guard
 
 bp = Blueprint('domains', __name__)
@@ -39,6 +39,9 @@ def refresh_domain_rdap(domain, performed_by):
     domain.expiry_date = info['expiry_date']
     if info.get('registrar'):
         domain.registrar = info['registrar']
+        if domain.registrar_id is None:
+            fiche = _fournisseur_par_nom(domain.registrar)
+            domain.registrar_id = fiche.id if fiche else None
     msg = f"Expiration mise a jour via RDAP : {info['expiry_date'].strftime('%d/%m/%Y')}"
     if old and old != info['expiry_date']:
         msg += f" (avant : {old.strftime('%d/%m/%Y')})"
@@ -85,10 +88,12 @@ def create():
         name = request.form.get('name', '').strip()
         if not name:
             flash('Le nom de domaine est obligatoire.', 'danger')
-            return render_template('domains/form.html', domain=None)
+            return render_template('domains/form.html', domain=None, **_form_context())
+        registrar, registrar_id = _registrar_depuis(request.form)
         d = Domain(
             name=name,
-            registrar=request.form.get('registrar', '').strip() or None,
+            registrar=registrar,
+            registrar_id=registrar_id,
             expiry_date=parse_date(request.form.get('expiry_date')),
             auto_renew=request.form.get('auto_renew') == 'on',
             description=request.form.get('description'),
@@ -102,7 +107,7 @@ def create():
         db.session.commit()
         flash('Domaine ajoute avec succes' + (f' ({n} certificat(s) rattaché(s))' if n else ''), 'success')
         return redirect(url_for('domains.list'))
-    return render_template('domains/form.html', domain=None)
+    return render_template('domains/form.html', domain=None, **_form_context())
 
 
 @bp.route('/<int:id>')
@@ -174,9 +179,9 @@ def edit(id):
         name = request.form.get('name', '').strip()
         if not name:
             flash('Le nom de domaine est obligatoire.', 'danger')
-            return render_template('domains/form.html', domain=domain)
+            return render_template('domains/form.html', domain=domain, **_form_context())
         domain.name = name
-        domain.registrar = request.form.get('registrar', '').strip() or None
+        domain.registrar, domain.registrar_id = _registrar_depuis(request.form)
         domain.expiry_date = parse_date(request.form.get('expiry_date'))
         domain.auto_renew = request.form.get('auto_renew') == 'on'
         domain.description = request.form.get('description')
@@ -185,7 +190,40 @@ def edit(id):
         db.session.commit()
         flash('Domaine modifie avec succes', 'success')
         return redirect(url_for('domains.detail', id=id))
-    return render_template('domains/form.html', domain=domain)
+    return render_template('domains/form.html', domain=domain, **_form_context())
+
+
+def _form_context():
+    from app.models import Supplier
+    return {'suppliers': Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()}
+
+
+def _fournisseur_par_nom(nom):
+    """La fiche fournisseur que designe ce nom, ou None. Rapprochement exact
+    (casse ignoree) : « OVH » ne designe pas « OVHcloud », c'est a l'humain de
+    le dire. Deux homonymes actifs : aucun."""
+    from sqlalchemy import func
+    from app.models import Supplier
+    if not nom:
+        return None
+    candidats = Supplier.query.filter(Supplier.is_active.is_(True),
+                                      func.lower(Supplier.name) == nom.strip().lower()).all()
+    return candidats[0] if len(candidats) == 1 else None
+
+
+def _registrar_depuis(form):
+    """(texte, registrar_id) depuis le formulaire. La fiche choisie prime ;
+    sans choix, le texte cherche sa fiche par nom. Une fiche choisie sans
+    texte prete son nom au texte, pour la liste et les mails."""
+    from app.models import Supplier
+    texte = (form.get('registrar', '') or '').strip() or None
+    choisi = parse_int(form.get('registrar_id'))
+    fiche = Supplier.query.get(choisi) if choisi else None
+    if fiche is None or not fiche.is_active:
+        fiche = _fournisseur_par_nom(texte)
+    if fiche is not None and not texte:
+        texte = fiche.name
+    return texte, (fiche.id if fiche else None)
 
 
 @bp.route('/<int:id>/check-rdap', methods=['POST'])

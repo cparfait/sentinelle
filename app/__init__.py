@@ -401,6 +401,15 @@ def _migrate_data():
         d = Domain.for_host(c.domain)
         if d is not None:
             c.domain_id = d.id
+    # Domaines : le bureau d'enregistrement saisi en texte rejoint la fiche
+    # fournisseur du meme nom, quand UNE fiche active porte ce nom.
+    db.session.execute(text(
+        "UPDATE domain SET registrar_id = ("
+        "  SELECT s.id FROM supplier s"
+        "  WHERE lower(s.name) = lower(domain.registrar) AND s.is_active = 1)"
+        " WHERE registrar_id IS NULL AND registrar IS NOT NULL AND ("
+        "  SELECT COUNT(*) FROM supplier s2"
+        "  WHERE lower(s2.name) = lower(domain.registrar) AND s2.is_active = 1) = 1"))
     # Revues de droits : l'application saisie en texte libre rejoint la fiche
     # logiciel du meme nom. Seulement quand UN logiciel actif porte ce nom :
     # deux homonymes, et l'on ne sait pas lequel la revue visait -- le lien

@@ -570,6 +570,11 @@ class Domain(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(256), nullable=False)
     registrar = db.Column(db.String(128))
+    # La fiche fournisseur du bureau d'enregistrement, avec ses contacts et ses
+    # contrats. Le nom en texte reste : c'est celui que le registre (RDAP)
+    # renvoie, et il ne correspond pas toujours a une fiche de l'annuaire.
+    registrar_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), index=True)
+    registrar_supplier = db.relationship('Supplier', backref=db.backref('domains', lazy='dynamic'))
     expiry_date = db.Column(db.Date)
     auto_renew = db.Column(db.Boolean, default=False)
     description = db.Column(db.Text)
@@ -1036,7 +1041,8 @@ class Equipment(db.Model):
 
 SUPPLIER_KIND_LABELS = {'editor': 'Éditeur logiciel', 'manufacturer': 'Constructeur',
                         'provider': 'Prestataire', 'operator': 'Opérateur',
-                        'ca': 'Autorité de certification', 'other': 'Autre'}
+                        'ca': 'Autorité de certification',
+                        'registrar': "Bureau d'enregistrement", 'other': 'Autre'}
 
 
 class Supplier(db.Model):

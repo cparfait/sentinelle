@@ -48,7 +48,14 @@
                 <div class="fiche-bloc">
                     {{ titre_section('Le domaine', 'bi-globe', 'slate', 'mb-0') }}
                     <div class="fiche-grille">
-                        {{ champ('Registrar', domain.registrar) }}
+                        {% call champ_bloc('Registrar') %}
+                        {%- if domain.registrar_supplier -%}
+                        <a href="{{ url_for('suppliers.detail', id=domain.registrar_id) }}" class="text-decoration-none"><i class="bi bi-building me-1"></i>{{ domain.registrar_supplier.name }}</a>
+                        {%- if domain.registrar and domain.registrar != domain.registrar_supplier.name %} <small class="text-muted">({{ domain.registrar }} au registre)</small>{% endif -%}
+                        {%- elif domain.registrar -%}
+                        {{ domain.registrar }} <small class="text-muted">(sans fiche fournisseur)</small>
+                        {%- endif -%}
+                        {% endcall %}
                         {{ champ('Renouvellement', 'Automatique' if domain.auto_renew else 'Manuel') }}
                     </div>
                 </div>
