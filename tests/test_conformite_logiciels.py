@@ -9,8 +9,10 @@ def test_les_logiciels_comptent_par_defaut_et_ont_leur_libelle(app):
     assert 'software' in CONFORMITY_CATEGORIES
     assert 'software' in get_conformity_categories()
     assert CONFORMITY_LABELS['software'] == 'Logiciels' and CONFORMITY_LABELS['inventory'] == 'Matériel'
-    # Les webhooks s'abonnent aux categories de droits : pas de « software » la.
-    assert 'software' not in WEBHOOK_CATEGORIES and 'inventory' in WEBHOOK_CATEGORIES
+    # Les webhooks s'abonnent aux categories de droits (logiciels compris
+    # depuis qu'ils ont la leur), jamais au journal des alertes lui-meme.
+    assert 'software' in WEBHOOK_CATEGORIES and 'inventory' in WEBHOOK_CATEGORIES
+    assert 'alerts' not in WEBHOOK_CATEGORIES
 
 
 def test_le_score_compte_les_logiciels(client, app):
