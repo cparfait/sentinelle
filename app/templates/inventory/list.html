@@ -50,7 +50,7 @@
 {% with active=famille %}{% include '_inventory_nav.html' %}{% endwith %}
 
 {% set status_choices = STATUS_LABELS.items() | list %}
-<form method="GET">
+<form method="GET" id="invFilters">
     <input type="hidden" name="kind" value="{{ kind }}">
     <input type="hidden" name="famille" value="{{ famille }}">
     <input type="hidden" name="sort" value="{{ sort }}">
@@ -76,10 +76,6 @@
                 <i class="bi bi-funnel"></i>{% if active_filters %} <span class="badge bg-primary">{{ active_filters }}</span>{% endif %}
             </button>
             {% if q or active_filters %}<a href="{{ url_for('inventory.list', famille=famille, kind=kind) }}" class="btn btn-ghost" title="Effacer la recherche"><i class="bi bi-x-lg me-1"></i>Effacer</a>{% endif %}
-            <select name="per_page" class="form-select inv-perpage" onchange="this.form.submit()" title="Lignes par page">
-                {% for n in per_page_choices %}<option value="{{ n }}" {{ 'selected' if per_page == n }}>{{ n }}/page</option>{% endfor %}
-                <option value="all" {{ 'selected' if per_page is none }}>Tous</option>
-            </select>
             <div class="dropdown">
                 <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
                     <i class="bi bi-layout-three-columns me-1"></i> Colonnes
@@ -243,6 +239,16 @@
         </table>
     </div>
 </div>
+{# Le sélecteur « lignes par page » vit sous le tableau, à droite de la barre de
+   pagination (toujours affichée ici, même sur une seule page) ; il soumet le
+   formulaire de filtres via son attribut form= (Dom 2026-09-23). #}
+{% set pagination_toujours = true %}
+{% set pagination_droite %}
+<select name="per_page" form="invFilters" class="form-select inv-perpage" onchange="this.form.submit()" title="Lignes par page">
+    {% for n in per_page_choices %}<option value="{{ n }}" {{ 'selected' if per_page == n }}>{{ n }}/page</option>{% endfor %}
+    <option value="all" {{ 'selected' if per_page is none }}>Tous</option>
+</select>
+{% endset %}
 {% include '_pagination.html' %}
 
 <script>

@@ -1,6 +1,8 @@
 {# Contrôles de pagination. Variables : page, pages, et si la vue les fournit
-   total (nombre d'éléments) et per_page. Préserve les filtres (ex. q). #}
-{% if pages and pages > 1 %}
+   total (nombre d'éléments) et per_page. Préserve les filtres (ex. q).
+   `pagination_toujours` : la barre s'affiche même sur une seule page ;
+   `pagination_droite` : un bloc capturé rendu à droite (ex. lignes par page). #}
+{% if pages and (pages > 1 or pagination_toujours) %}
 {% set base_args = request.args.to_dict() %}
 <nav class="pagination-bar" aria-label="Pagination">
     <span class="pagination-info">
@@ -25,6 +27,6 @@
         <span class="btn btn-outline-secondary btn-icon disabled" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
         {% endif %}
     </span>
-    <span></span>
+    <span class="pagination-droite">{{ pagination_droite if pagination_droite is defined }}</span>
 </nav>
 {% endif %}

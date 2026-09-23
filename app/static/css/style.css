@@ -2628,6 +2628,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .pagination-nav { display: flex; align-items: center; gap: 4px; justify-self: center; }
 .pagination-nav .pagination-info { padding: 0 8px; }
 .pagination-nav .btn.disabled { opacity: 0.4; }
+/* Troisieme colonne de la barre : le selecteur de lignes par page, cale a droite. */
+.pagination-droite { justify-self: end; }
 
 /* ==========================================================================
    BARRE DE LISTE : recherche a icone (224 px), segments de type, pastilles
