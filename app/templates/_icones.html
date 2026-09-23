@@ -1,0 +1,22 @@
+{# ═══ Icones ═══
+   Une icone de module se dessine PARTOUT de la meme facon : celle du menu.
+   `icone('bi-key')` rend l'icone Lucide que app/navigation.py associe a ce
+   module (sprite local app/static/vendor/lucide.svg, voir
+   tools/build_lucide_sprite.py) ; une icone sans correspondance reste en
+   Bootstrap, donc rien ne casse la ou Lucide n'est pas encore passe.
+
+   Le SVG herite de `color` comme un <i>, et sa taille de `taille` (px). #}
+{# Une icone Lucide par son nom, quand elle ne represente pas un module
+   (nature d'un equipement, par exemple). Doit etre dans le sprite. #}
+{% macro lucide(nom, taille=16, classes='') -%}
+<svg class="lucide lucide-{{ nom }}{% if classes %} {{ classes }}{% endif %}" width="{{ taille }}" height="{{ taille }}" aria-hidden="true"><use href="{{ static_v('vendor/lucide.svg') }}#{{ nom }}"/></svg>
+{%- endmacro %}
+
+{% macro icone(bi, taille=16, classes='') -%}
+{%- set nom = lucide_de(bi) -%}
+{%- if nom -%}
+{{ lucide(nom, taille, classes) }}
+{%- else -%}
+<i class="bi {{ bi if bi.startswith('bi-') else 'bi-' ~ bi }}{% if classes %} {{ classes }}{% endif %}"></i>
+{%- endif -%}
+{%- endmacro %}

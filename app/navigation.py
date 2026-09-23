@@ -18,40 +18,44 @@ Certificats » dit d'où l'on vient sans qu'on ait à relire le menu.
 
 Chaque entrée : endpoint de la page, libellé, icône Bootstrap, catégorie de
 droit (`can_view`, None = toujours visible), clé du compteur de la barre
-latérale (`nav_counts`, None = pas de compteur).
+latérale (`nav_counts`, None = pas de compteur), et l'icône Lucide que le menu
+affiche — celles de SoftInventory, au trait fin. Le sprite qui les porte est
+app/static/vendor/lucide.svg (voir tools/build_lucide_sprite.py) ; l'icône
+Bootstrap reste pour les autres usages.
 """
 from flask import request, url_for
 
 
-def _e(endpoint, label, icon, perm=None, count=None, blueprint=None):
+def _e(endpoint, label, icon, perm=None, count=None, blueprint=None, lucide=None):
     return {
         'endpoint': endpoint, 'label': label, 'icon': icon, 'perm': perm,
         'count': count, 'blueprint': blueprint or endpoint.split('.')[0],
+        'lucide': lucide,
     }
 
 
 DOMAINES = [
     {'key': 'aujourdhui', 'label': "Aujourd'hui", 'entries': [
-        _e('dashboard.index', 'Tableau de bord', 'bi-grid-1x2'),
-        _e('dashboard.agenda', 'À venir', 'bi-calendar-event'),
-        _e('dashboard.trends', 'Tendances', 'bi-graph-up'),
+        _e('dashboard.index', 'Tableau de bord', 'bi-grid-1x2', lucide='layout-dashboard'),
+        _e('dashboard.agenda', 'À venir', 'bi-calendar-event', lucide='calendar-days'),
+        _e('dashboard.trends', 'Tendances', 'bi-graph-up', lucide='chart-column'),
     ]},
     {'key': 'echeances', 'label': 'Échéances', 'entries': [
-        _e('accounts.list', 'Comptes', 'bi-key', 'accounts', 'accounts'),
-        _e('certificates.list', 'Certificats', 'bi-award', 'certificates', 'certificates'),
-        _e('domains.list', 'Domaines', 'bi-globe', 'domains', 'domains'),
-        _e('contracts.list', 'Contrats', 'bi-file-earmark-text', 'contracts', 'contracts'),
+        _e('accounts.list', 'Comptes', 'bi-key', 'accounts', 'accounts', lucide='key-round'),
+        _e('certificates.list', 'Certificats', 'bi-award', 'certificates', 'certificates', lucide='shield-check'),
+        _e('domains.list', 'Domaines', 'bi-globe', 'domains', 'domains', lucide='globe'),
+        _e('contracts.list', 'Contrats', 'bi-file-earmark-text', 'contracts', 'contracts', lucide='file-pen'),
     ]},
     {'key': 'exploitation', 'label': 'Exploitation', 'entries': [
-        _e('backups.list', 'Sauvegardes', 'bi-cloud-arrow-up', 'backups', 'backups'),
-        _e('tests.list', 'Tests', 'bi-clipboard-check', 'tests', 'tests'),
-        _e('updates.list', 'Mises à jour', 'bi-arrow-up-circle', 'updates', 'updates'),
-        _e('reviews.list', 'Revues de droits', 'bi-person-check', 'reviews', 'reviews'),
+        _e('backups.list', 'Sauvegardes', 'bi-cloud-arrow-up', 'backups', 'backups', lucide='cloud-upload'),
+        _e('tests.list', 'Tests', 'bi-clipboard-check', 'tests', 'tests', lucide='clipboard-list'),
+        _e('updates.list', 'Mises à jour', 'bi-arrow-up-circle', 'updates', 'updates', lucide='circle-arrow-up'),
+        _e('reviews.list', 'Revues de droits', 'bi-person-check', 'reviews', 'reviews', lucide='user-check'),
     ]},
     {'key': 'parc', 'label': 'Parc', 'entries': [
-        _e('inventory.list', 'Matériel', 'bi-hdd-stack', 'inventory', 'inventory'),
-        _e('software.list', 'Logiciels', 'bi-window-stack', 'inventory'),
-        _e('suppliers.list', 'Fournisseurs', 'bi-building', 'contracts'),
+        _e('inventory.list', 'Matériel', 'bi-hdd-stack', 'inventory', 'inventory', lucide='server'),
+        _e('software.list', 'Logiciels', 'bi-window-stack', 'inventory', lucide='package'),
+        _e('suppliers.list', 'Fournisseurs', 'bi-building', 'contracts', lucide='building'),
     ]},
 ]
 
@@ -59,13 +63,13 @@ DOMAINES = [
 # consulte avec le droit « alerts », pas seulement en administrateur ;
 # `admin=True` : réservé aux administrateurs.
 ADMINISTRATION = {'key': 'administration', 'label': 'Administration', 'entries': [
-    dict(_e('alerts.list', 'Alertes envoyées', 'bi-bell', 'alerts'), admin=False),
-    dict(_e('users.list', 'Utilisateurs', 'bi-people'), admin=True),
-    dict(_e('users.roles', 'Rôles & permissions', 'bi-shield-lock'), admin=True),
-    dict(_e('users.audit', "Journal d'audit", 'bi-journal-text'), admin=True),
-    dict(_e('users.scheduler_status', 'Tâches planifiées', 'bi-clock'), admin=True),
-    dict(_e('connectors.index', 'Connecteurs', 'bi-plugin', blueprint='connectors'), admin=True),
-    dict(_e('auth.preferences', 'Préférences', 'bi-sliders'), admin=True),
+    dict(_e('alerts.list', 'Alertes envoyées', 'bi-bell', 'alerts', lucide='bell'), admin=False),
+    dict(_e('users.list', 'Utilisateurs', 'bi-people', lucide='users'), admin=True),
+    dict(_e('users.roles', 'Rôles & permissions', 'bi-shield-lock', lucide='shield'), admin=True),
+    dict(_e('users.audit', "Journal d'audit", 'bi-journal-text', lucide='notebook-text'), admin=True),
+    dict(_e('users.scheduler_status', 'Tâches planifiées', 'bi-clock', lucide='calendar-clock'), admin=True),
+    dict(_e('connectors.index', 'Connecteurs', 'bi-plugin', blueprint='connectors', lucide='plug'), admin=True),
+    dict(_e('auth.preferences', 'Préférences', 'bi-sliders', lucide='sliders-horizontal'), admin=True),
 ]}
 
 # Pages qui n'ont pas d'entrée de menu mais appartiennent à un domaine.
@@ -88,6 +92,24 @@ _USERS_PREFIXES = {
 
 def _tous_domaines():
     return DOMAINES + [ADMINISTRATION]
+
+
+# Icone Bootstrap -> icone Lucide, pour tout ce qui represente un module hors
+# du menu (vignettes du tableau de bord, agenda, recherche...) : la meme icone
+# partout, definie une seule fois ci-dessus.
+LUCIDE_PAR_ICONE = {e['icon']: e['lucide']
+                    for d in DOMAINES + [ADMINISTRATION] for e in d['entries'] if e.get('lucide')}
+LUCIDE_PAR_ICONE['bi-trash3'] = 'trash-2'   # la Corbeille, hors DOMAINES
+
+
+def lucide_de(icone):
+    """Le nom Lucide d'une icone Bootstrap (« bi-key » ou « key »), ou None
+    si le module n'en a pas : le gabarit retombe alors sur Bootstrap."""
+    if not icone:
+        return None
+    if not icone.startswith('bi-'):
+        icone = 'bi-' + icone
+    return LUCIDE_PAR_ICONE.get(icone)
 
 
 def entree_active():

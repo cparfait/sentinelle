@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "_dashboard_widgets.html" as w with context %}
+{% from '_icones.html' import icone %}
 {% block title %}Tableau de bord - Sentinelle{% endblock %}
 
 {% block content %}
@@ -38,7 +39,7 @@
 <section class="dash-widget" data-widget="{{ key }}" style="--w-span: {{ dash_spans[key] }};">
     <div class="dash-widget-bar">
         <span class="dash-drag" title="Glisser pour déplacer" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>
-        <span class="dash-widget-name"><i class="bi {{ meta.icon }} me-1"></i>{{ meta.label }}</span>
+        <span class="dash-widget-name">{{ icone(meta.icon, 14, 'me-1') }}{{ meta.label }}</span>
         <button type="button" class="dash-toggle" data-widget="{{ key }}" title="Masquer / afficher ce bloc">
             <i class="bi"></i>
         </button>

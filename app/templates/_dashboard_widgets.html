@@ -4,6 +4,7 @@
    widget_body(key) rend le contenu d'un bloc ; l'enveloppe (barre d'edition,
    grille) est geree dans dashboard.html. #}
 
+{% from '_icones.html' import icone %}
 {% macro stat_card(url, label, icon, color, s, ok_label='OK', danger_label='critiques', warning_label='urgents', key='') %}
 {% set total = s.total or 0 %}
 {# Domaine du menu dont releve la vignette : son icone en prend la couleur. #}
@@ -12,7 +13,7 @@
 <a href="{{ url }}" class="stat-card text-decoration-none" style="--cat-color: {{ color }};"{% if key %} data-card="{{ key }}"{% endif %}>
     <span class="stat-toggle" role="button" tabindex="-1" title="Masquer / afficher cette vignette" aria-hidden="true"><i class="bi"></i></span>
     <div class="d-flex align-items-center gap-2">
-        <div class="stat-icon{% if dom.key %} dom-{{ dom.key }}{% endif %}"><i class="bi {{ icon }}"></i></div>
+        <div class="stat-icon{% if dom.key %} dom-{{ dom.key }}{% endif %}">{{ icone(icon, 20) }}</div>
         <div class="flex-grow-1 min-w-0">
             <div class="stat-number">{{ total }}</div>
             <span class="stat-label">{{ label }}</span>
@@ -267,7 +268,7 @@
                 {% from '_macros.html' import delai_badge %}
                 {% for u in upcoming %}
                 <a href="{{ u.url }}" class="text-decoration-none d-flex justify-content-between align-items-center gap-2 py-2 border-bottom">
-                    <span class="text-truncate"><i class="bi {{ u.icon }} me-2 text-muted"></i>{{ u.label }}</span>
+                    <span class="text-truncate">{{ icone(u.icon, 14, 'me-2 text-muted') }}{{ u.label }}</span>
                     <span class="flex-shrink-0 small">{{ delai_badge(u.days, 'danger' if u.days <= 7 else ('warning' if u.days <= 15 else 'info')) }}</span>
                 </a>
                 {% endfor %}

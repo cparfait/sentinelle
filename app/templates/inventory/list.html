@@ -3,8 +3,10 @@
 
 {% set status_labels = STATUS_LABELS %}
 {% set crit_colors = {1: 'secondary', 2: 'info', 3: 'warning', 4: 'danger'} %}
-{% set kind_icons = {'vm': 'bi-pc-display', 'physical': 'bi-server', 'nas': 'bi-hdd-network',
-                     'storage': 'bi-hdd-rack', 'network': 'bi-router'} %}
+{% from '_icones.html' import lucide %}
+{# Icones Lucide (sprite local) : une par nature d'equipement. #}
+{% set kind_icons = {'vm': 'monitor', 'physical': 'server', 'nas': 'hard-drive',
+                     'storage': 'database', 'network': 'router'} %}
 
 {# Colonnes configurables : (clé, libellé). Nom / Statut / Actions sont toujours affichés. #}
 {% set columns = [
@@ -217,7 +219,7 @@
                     </td>
                     {% for key, label in columns %}
                     <td data-col="{{ key }}">
-                        {% if key == 'kind' %}<span class="text-nowrap"><i class="bi {{ kind_icons.get(e.kind, 'bi-box') }} me-1 kind-icon kind-icon--{{ e.kind }}"></i>{{ vals.kind }}</span>
+                        {% if key == 'kind' %}<span class="text-nowrap">{{ lucide(kind_icons.get(e.kind, 'box'), 15, 'me-1 kind-icon kind-icon--' ~ e.kind) }}{{ vals.kind }}</span>
                         {% elif key == 'criticality' %}{% if e.criticality %}<span class="badge bg-{{ crit_colors.get(e.criticality, 'secondary') }}">{{ e.criticality }}</span>{% else %}-{% endif %}
                         {% else %}<small>{{ vals[key] or '-' }}</small>{% endif %}
                     </td>

@@ -1,7 +1,9 @@
+// La lune en clair, le soleil en sombre : le bouton montre le mode ou l'on
+// PEUT aller, comme dans CultuResa.
 function applyThemeIcons(theme) {
-    const cls = theme === 'dark' ? 'bi bi-sun js-theme-icon' : 'bi bi-moon js-theme-icon';
+    const glyphe = theme === 'dark' ? '☀️' : '🌙';
     document.querySelectorAll('.js-theme-icon').forEach(function(icon) {
-        icon.className = cls;
+        icon.textContent = glyphe;
     });
 }
 

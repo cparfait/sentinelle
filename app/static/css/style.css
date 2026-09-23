@@ -38,7 +38,6 @@
     --surface: #ffffff;
     --inset: #f1f5f9;
     --zebra: #f1f4f9;   /* une ligne sur deux, legerement grisee */
-    --thead: #e4e9f1;   /* en-tete de tableau : un ton plus fonce que la zebrure */
     --line: #e2e8f0;
     --sub: #cbd5e1;
     --strong: #0f172a;
@@ -125,7 +124,6 @@
     --surface: #1e293b;
     --inset: #233247;
     --zebra: #2c3b52;
-    --thead: #34445c;
     --line: #2b3a4f;
     --sub: #3a4a61;
     --strong: #f8fafc;
@@ -377,10 +375,12 @@ details.sidebar-section--repliable > summary:hover { color: var(--muted); }
 .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
 .sidebar-nav::-webkit-scrollbar-thumb { background: var(--sidebar-border); border-radius: 3px; }
 
-.sidebar-section { margin-bottom: 2px; }
+/* Le rythme du menu de SoftInventory : lignes de 28 px espacees de 2 px,
+   titre de section a 8 px de la ligne precedente. */
+.sidebar-section { margin-bottom: 0; }
 
 .sidebar-section-title {
-    padding: 10px 12px 2px;
+    padding: 6px 12px 2px;   /* + les 2 px sous la ligne precedente = 8 px */
     font-size: 0.64rem;
     font-weight: 700;
     line-height: 1rem;
@@ -417,6 +417,12 @@ details.sidebar-section--repliable > summary:hover { color: var(--muted); }
 [data-theme="dark"] .dom-administration { --nav-icon: #a78bfa; }
 
 .sidebar-link i { width: 16px; text-align: center; font-size: 1rem; flex-shrink: 0; color: var(--nav-icon, currentColor); }
+/* Icones Lucide (celles de SoftInventory) : un trait, pas un glyphe. La
+   couleur vient de `color` via stroke="currentColor" ; le trait est plus
+   gras que le 2 d'origine pour tenir aux petites tailles. Le SVG se cale
+   sur la ligne de texte comme le ferait un <i>. */
+svg.lucide { flex-shrink: 0; vertical-align: -0.18em; fill: none; stroke: currentColor; stroke-width: 2.75; stroke-linecap: round; stroke-linejoin: round; }
+.sidebar-link svg.lucide { width: 16px; height: 16px; vertical-align: baseline; color: var(--nav-icon, currentColor); }
 /* Icones de domaine en gras : une police d'icones ignore font-weight, on
    epaissit donc le trait par un contour de la meme couleur. */
 [class*="dom-"] .sidebar-link i { -webkit-text-stroke: 0.4px currentColor; }
@@ -480,7 +486,7 @@ details.sidebar-section--repliable > summary:hover { color: var(--muted); }
     flex-shrink: 0;
 }
 
-.sidebar-user-text { min-width: 0; flex: 1; padding-right: 60px; }
+.sidebar-user-text { min-width: 0; flex: 1; padding-right: 32px; }
 .sidebar-username {
     display: flex;
     align-items: center;
@@ -491,8 +497,8 @@ details.sidebar-section--repliable > summary:hover { color: var(--muted); }
     line-height: 1.25;
 }
 .sidebar-username > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sidebar-username i { font-size: 0.7rem; color: var(--faint); flex-shrink: 0; transition: transform 0.15s ease; }
-.sidebar-user[open] .sidebar-username i { transform: rotate(180deg); }
+.sidebar-username .sidebar-caret { color: var(--faint); flex-shrink: 0; transition: transform 0.15s ease; }
+.sidebar-user[open] .sidebar-username .sidebar-caret { transform: rotate(180deg); }
 .sidebar-role {
     display: block;
     font-size: 0.64rem;
@@ -523,13 +529,21 @@ details.sidebar-section--repliable > summary:hover { color: var(--muted); }
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 8px;
+    padding: 6px 10px;
     border-radius: 6px;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;   /* 13 px, comme CultuResa */
     font-weight: 500;
     color: var(--muted);
 }
 .sidebar-user-item:hover { background: var(--inset); color: var(--strong); }
+.sidebar-user-item svg.lucide { color: var(--faint); }
+.sidebar-user-item:hover svg.lucide { color: currentColor; }
+/* La deconnexion vit dans le menu, en rouge : c'est la seule action qui
+   fait sortir, elle ne se confond pas avec les autres. */
+.sidebar-user-item--danger { color: var(--danger); }
+.sidebar-user-item--danger svg.lucide { color: var(--danger); }
+.sidebar-user-item--danger:hover { background: var(--danger-dim); color: var(--danger); }
+.sidebar-user-sep { height: 1px; margin: 4px 6px; background: var(--line); }
 
 .sidebar-footer-icons {
     position: absolute;
@@ -558,6 +572,9 @@ details.sidebar-section--repliable > summary:hover { color: var(--muted); }
 }
 .sidebar-icon-btn:hover,
 .theme-toggle:hover { background: var(--inset); color: var(--strong); }
+/* L'emoji du theme (lune / soleil) : un peu plus petit que le glyphe qu'il
+   remplace, pour tenir dans le bouton de 28 px. */
+.theme-toggle .js-theme-icon { font-size: 0.8rem; line-height: 1; }
 .sidebar-icon-btn-danger:hover { background: var(--danger-dim); color: var(--danger); border-color: transparent; }
 
 /* ---- Backdrop + topbar mobile ---- */
@@ -698,6 +715,7 @@ a:hover .stat-card,
     color: var(--nav-icon, var(--muted));
     background: var(--inset);
 }
+.stat-card .stat-icon svg.lucide { width: 20px; height: 20px; vertical-align: baseline; }
 .stat-card .stat-icon[class*="dom-"] {
     background: color-mix(in srgb, var(--nav-icon) 12%, transparent);
     -webkit-text-stroke: 0.5px currentColor;
@@ -926,9 +944,10 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 .card-header-custom {
     --sec: var(--sec-indigo);
     position: relative;
-    /* Meme gris que les en-tetes de tableau. */
-    background: var(--thead);
-    border-bottom: 1px solid rgba(var(--sec), 0.16);
+    /* Fond de la carte : l'en-tete ne se distingue que par son titre, sa
+       barre d'accent et le filet qui le souligne. */
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
     min-height: 2.65rem;
     padding: 8px 20px 8px 28px;
     display: flex;
@@ -959,13 +978,13 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 .card-header-custom:has(.fiche-titre--violet)  { --sec: var(--sec-violet); }
 .card-header-custom:has(.fiche-titre--teal)    { --sec: var(--sec-teal); }
 .card-header-custom:has(.fiche-titre--slate)   { --sec: var(--sec-slate); }
-.card-header-custom h6.fiche-titre { color: rgb(var(--sec)); }
+.card-header-custom h6.fiche-titre { color: var(--text); }
 
 /* En theme sombre, 7 % d'une teinte deja eclaircie ne se voit plus sur le fond
    d'ardoise des cartes : la teinte monte, le filet aussi. */
 [data-theme="dark"] .card-header-custom {
-    background: var(--thead);
-    border-bottom-color: rgba(var(--sec), 0.22);
+    background: var(--surface);
+    border-bottom-color: var(--line);
 }
 [data-theme="dark"] .data-card h6.fw-bold:not(.card-header-custom h6):not(.fiche-bloc > h6) {
     background: rgba(var(--sec, var(--sec-indigo)), 0.12);
@@ -978,7 +997,7 @@ body.dash-editing .stat-toggle { display: inline-flex; }
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--muted);
+    color: var(--text);
 }
 .card-header-custom h6 i { margin-right: 6px; }
 
@@ -1049,38 +1068,40 @@ body.dash-editing .stat-toggle { display: inline-flex; }
     color: var(--text);
 }
 
+/* Le tableau de SoftInventory : en-tete sans fond, en petites capitales
+   grises, sous un filet ; pas de zebrure, des lignes hautes que seul un
+   filet separe. C'est l'espace qui aere, pas la couleur. */
 .table thead th {
     border-top: none;
-    border-bottom: none;
+    border-bottom: 1px solid var(--line);
     font-weight: 600;
     text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.04em;
-    color: var(--text);
-    padding: 12px 12px 6px;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    padding: 10px 12px;
     white-space: nowrap;
-    background: var(--thead);
+    background: transparent;
 }
 .table tbody td {
-    padding: 5px 12px;
+    padding: 11px 12px;
     vertical-align: middle;
     border-top: 1px solid var(--line);
     border-bottom: 0;
 }
-.table thead th:first-child,
-.table tbody td:first-child { padding-left: 20px; }
-.table thead th:last-child,
-.table tbody td:last-child { padding-right: 20px; }
-.table tbody tr:nth-child(even) { background-color: var(--zebra); }
+.table tbody tr:first-child td { border-top: 0; }
+/* Les filets s'arretent a l'aplomb du contenu, pas au bord de la carte :
+   c'est la carte qui porte la marge, comme dans SoftInventory. */
+.data-card > .table-responsive { padding: 0 20px 8px; }
 
 [data-theme="dark"] .table thead th {
-    background: var(--thead);
-    color: var(--text);
+    background: transparent;
+    color: var(--text-muted);
 }
 /* En-tetes a code couleur (ex. seuils Critique/Attention/Proche) : teintes
    claires lisibles sur le fond indigo plein, tout en gardant la semantique. */
 /* En-tetes triables : lien blanc, fleche d'inactivite estompee. */
-.table thead th a.th-sort { color: var(--text); text-decoration: none; white-space: nowrap; }
+.table thead th a.th-sort { color: var(--text-muted); text-decoration: none; white-space: nowrap; }
 .table thead th a.th-sort:hover { text-decoration: underline; }
 .table thead th a.th-sort .th-sort-idle { opacity: 0.35; font-size: 0.85em; }
 
@@ -1174,29 +1195,45 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 }
 
 .table tbody tr:last-child td { border-bottom: none; }
+/* Les liens des lignes se lisent comme du texte ; la couleur d'accent ne
+   vient qu'au survol, pour dire que c'est cliquable. Les boutons et les
+   badges, qui portent leur propre couleur, ne sont pas concernes. */
+.table tbody td a:not(.btn):not(.badge-status):not(.badge) { color: var(--text); }
+.table tbody td a:not(.btn):not(.badge-status):not(.badge):hover { color: var(--primary); }
+/* Sous la derniere ligne : ni filet ni ascenseur qui traine. L'ascenseur
+   horizontal ne parait que si le tableau deborde vraiment. */
+.table-responsive { overflow-y: hidden; }
+.table-responsive::-webkit-scrollbar { height: 6px; }
 .table-hover tbody tr { transition: background-color 0.12s ease; }
 .table-hover tbody tr:hover { background-color: rgba(var(--primary-rgb), 0.07); }
 
-/* ---- Badges de statut : pilule pastel (fond -dim, texte -text), jamais un
-   aplat sature ---- */
+/* ---- Badges de statut : le badge de SoftInventory. Le texte porte la
+   couleur pleine, le fond n'en est qu'un lavis (14 %) cerne d'un liseret
+   de la meme teinte (35 %) : une pilule qui se lit sans peser. Chaque
+   variante ne fournit que sa couleur (--badge, --badge-rgb). ---- */
 .badge-status {
+    --badge: var(--muted);
+    --badge-rgb: 100, 116, 139;
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 2px 10px;
+    padding: 1px 8px;
     border-radius: var(--radius-pill);
-    font-size: 0.75rem;
+    font-size: 0.6875rem;   /* 11 px */
     font-weight: 600;
     white-space: nowrap;
-    line-height: 1.35;
+    line-height: 1.5;
+    color: var(--badge);
+    background: rgba(var(--badge-rgb), 0.14);
+    box-shadow: inset 0 0 0 1px rgba(var(--badge-rgb), 0.35);
 }
 
-.badge-success { background: var(--success-dim); color: var(--success-text); }
-.badge-warning { background: var(--warning-dim); color: var(--warning-text); }
-.badge-danger  { background: var(--danger-dim);  color: var(--danger-text); }
-.badge-info    { background: var(--info-dim);    color: var(--info-text); }
-.badge-muted   { background: var(--inset);       color: var(--muted); }
-.badge-accent  { background: var(--primary-dim); color: var(--primary); }
+.badge-success { --badge: var(--success); --badge-rgb: var(--success-rgb); }
+.badge-warning { --badge: var(--warning); --badge-rgb: var(--warning-rgb); }
+.badge-danger  { --badge: var(--danger);  --badge-rgb: var(--danger-rgb); }
+.badge-info    { --badge: var(--info);    --badge-rgb: var(--info-rgb); }
+.badge-muted   { --badge: var(--faint);   --badge-rgb: 148, 163, 184; }
+.badge-accent  { --badge: var(--primary); --badge-rgb: var(--primary-rgb); }
 
 a.badge-status:hover { filter: brightness(0.96); }
 

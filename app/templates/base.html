@@ -28,7 +28,7 @@
         </button>
         <span class="topbar-title">Sentinelle</span>
         <span class="theme-toggle" onclick="toggleTheme()" title="Changer le theme" aria-label="Changer le theme" role="button" tabindex="0">
-            <i class="bi bi-moon js-theme-icon"></i>
+            <span class="js-theme-icon" aria-hidden="true">🌙</span>
         </span>
     </div>
     <div class="sidebar-backdrop" onclick="closeSidebar()"></div>
@@ -47,6 +47,8 @@
             </form>
         </div>
 
+        {% from '_icones.html' import icone, lucide %}
+
         {# Le menu : quatre domaines, chacun repond a une question (voir
            app/navigation.py). L'administration est repliee : on y va rarement. #}
         <nav class="sidebar-nav">
@@ -56,7 +58,7 @@
                 {% for e in dom.entries %}
                 {% if not e.perm or current_user.can_view(e.perm) %}
                 <a href="{{ url_for(e.endpoint) }}" class="sidebar-link {% if e.endpoint == nav_endpoint_actif %}active{% endif %}">
-                    <i class="bi {{ e.icon }}"></i>
+                    {{ icone(e.icon) }}
                     <span>{{ e.label }}</span>
                     {% if e.count and nav_counts and nav_counts[e.count] %}<span class="badge bg-danger rounded-pill ms-auto" title="{{ compte(nav_counts[e.count], 'danger') }}">{{ nav_counts[e.count] }}</span>{% endif %}
                 </a>
@@ -64,7 +66,7 @@
                 {% endfor %}
                 {% if dom.key == 'aujourdhui' and current_user.can_edit() and nav_counts and nav_counts.trash %}
                 <a href="{{ url_for('dashboard.trash') }}" class="sidebar-link {% if request.endpoint == 'dashboard.trash' %}active{% endif %}">
-                    <i class="bi bi-trash3"></i>
+                    {{ icone('bi-trash3') }}
                     <span>Corbeille</span>
                     <span class="badge bg-secondary rounded-pill ms-auto">{{ nav_counts.trash }}</span>
                 </a>
@@ -80,7 +82,7 @@
                 {% for e in nav_administration.entries %}
                 {% if (e.admin and current_user.is_admin) or (not e.admin and e.perm and current_user.can_view(e.perm)) %}
                 <a href="{{ url_for(e.endpoint) }}" class="sidebar-link {% if e.endpoint == nav_endpoint_actif %}active{% endif %}">
-                    <i class="bi {{ e.icon }}"></i>
+                    {{ icone(e.icon) }}
                     <span>{{ e.label }}</span>
                 </a>
                 {% endif %}
@@ -89,26 +91,28 @@
             {% endif %}
         </nav>
 
+        {# Le pied : la pastille de l'utilisateur ouvre un petit menu (profil,
+           securite, deconnexion) ; seul le theme reste en bouton a part. #}
         <div class="sidebar-footer">
             <details class="sidebar-user">
                 <summary class="sidebar-user-row">
                     <span class="sidebar-avatar" aria-hidden="true">{{ current_user.username[:2]|upper }}</span>
                     <span class="sidebar-user-text">
-                        <span class="sidebar-username"><span>{{ current_user.username }}</span><i class="bi bi-chevron-down"></i></span>
+                        <span class="sidebar-username"><span>{{ current_user.username }}</span>{{ lucide('chevron-down', 14, 'sidebar-caret') }}</span>
                         <span class="sidebar-role">{{ 'Administrateur' if current_user.is_admin else 'Utilisateur' }}</span>
                     </span>
                 </summary>
-                <div class="sidebar-user-menu">
-                    <a href="{{ url_for('auth.profile') }}" class="sidebar-user-item"><i class="bi bi-gear"></i> Mon profil</a>
+                <div class="sidebar-user-menu" role="menu">
+                    <a href="{{ url_for('auth.profile') }}" class="sidebar-user-item" role="menuitem">{{ lucide('user', 14) }}Mon compte</a>
+                    <a href="{{ url_for('auth.two_factor') }}" class="sidebar-user-item" role="menuitem">{{ lucide('shield-check', 14) }}Sécurité</a>
+                    <div class="sidebar-user-sep" role="separator"></div>
+                    <a href="{{ url_for('auth.logout') }}" class="sidebar-user-item sidebar-user-item--danger" role="menuitem">{{ lucide('log-out', 14) }}Déconnexion</a>
                 </div>
             </details>
             <span class="sidebar-footer-icons">
                 <span class="theme-toggle" onclick="toggleTheme()" title="Changer le thème" aria-label="Changer le thème" role="button" tabindex="0">
-                    <i id="theme-icon" class="bi bi-moon js-theme-icon"></i>
+                    <span id="theme-icon" class="js-theme-icon" aria-hidden="true">🌙</span>
                 </span>
-                <a href="{{ url_for('auth.logout') }}" class="sidebar-icon-btn sidebar-icon-btn-danger" title="Déconnexion" aria-label="Déconnexion">
-                    <i class="bi bi-box-arrow-right"></i>
-                </a>
             </span>
         </div>
     </div>

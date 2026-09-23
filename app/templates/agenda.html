@@ -2,6 +2,7 @@
 {% block title %}À venir - Sentinelle{% endblock %}
 
 {% from '_macros.html' import delai_badge %}
+{% from '_icones.html' import icone %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -110,7 +111,7 @@
                         {{ delai_badge(i.days, color) }}
                     </td>
                     <td>
-                        <i class="bi bi-{{ i.icon }} me-1 text-muted"></i>
+                        {{ icone(i.icon, 14, 'me-1 text-muted') }}
                         <a href="{{ i.url }}" class="text-decoration-none fw-medium">{{ i.name }}</a>
                         <span class="text-muted small ms-1">— {{ i.detail }}</span>
                     </td>

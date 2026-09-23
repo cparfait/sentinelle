@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Recherche - Sentinelle{% endblock %}
 
+{% from '_icones.html' import icone %}
 {% block content %}
 <div class="mb-4">
     <h1 class="page-title mb-3">Recherche globale</h1>
@@ -38,7 +39,7 @@
                 <tr>
                     <td>
                         <span class="badge-status badge-{{ r.badge }}">
-                            <i class="bi {{ r.icon }} me-1"></i>{{ r.type }}
+                            {{ icone(r.icon, 12, 'me-1') }}{{ r.type }}
                         </span>
                     </td>
                     <td class="fw-medium">{{ r.label }}</td>
