@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Domaines - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge, delai_badge %}
-{% from '_liste.html' import barre, actions, cellule, bouton_modifier, vide %}
+{% from '_liste.html' import barre, cellule, vide %}
 
 {% block content %}
 <div class="page-header">
@@ -31,7 +31,6 @@
                     <th>Registrar</th>
                     <th>Renouvellement</th>
                     <th>Statut</th>
-                    <th class="col-actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -46,14 +45,9 @@
                     <td>{{ d.registrar or '—' }}</td>
                     <td>{% if d.auto_renew %}<i class="bi bi-arrow-repeat me-1 text-muted"></i>Automatique{% else %}Manuel{% endif %}</td>
                     <td>{{ status_badge(d.status()) }}</td>
-                    <td class="col-actions">
-                        {% call actions() %}
-                        {% if current_user.can_edit('domains') %}{{ bouton_modifier(url_for('domains.edit', id=d.id)) }}{% endif %}
-                        {% endcall %}
-                    </td>
                 </tr>
                 {% else %}
-                {{ vide(6, 'Aucun domaine.', url_for('domains.create') if current_user.can_edit('domains') else None) }}
+                {{ vide(5, 'Aucun domaine.', url_for('domains.create') if current_user.can_edit('domains') else None) }}
                 {% endfor %}
             </tbody>
         </table>
