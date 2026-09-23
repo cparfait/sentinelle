@@ -1280,7 +1280,10 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 .tableau-contrats .cell-montant { text-align: right; white-space: nowrap; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
 .tableau-contrats .cell-etat { text-align: center; padding-right: 0; }
 .tableau-contrats .cell-etat .delai { display: block; margin-top: 3px; font-size: 0.72rem; line-height: 1.15; white-space: normal; }
-.tableau-contrats .cell-logiciels { font-size: 0.75rem; line-height: 1.15; }
+.tableau-contrats .cell-logiciels { font-size: 0.75rem; line-height: 1; }
+/* Jusqu'a trois lignes (3 x 12 px dans les 48 px de la rangee), interligne 1,
+   et les trois points en bout de derniere ligne quand la liste deborde. */
+.tableau-contrats .cell-logiciels .clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1; word-break: break-word; }
 .badge-status svg.lucide { margin-right: 3px; }
 .table-responsive::-webkit-scrollbar { height: 6px; }
 .table-hover tbody tr { transition: background-color 0.12s ease; }

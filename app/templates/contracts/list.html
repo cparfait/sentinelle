@@ -61,7 +61,7 @@
                        retire le plus, un contrat pouvant couvrir plusieurs logiciels. #}
                     <td class="cell-logiciels">
                         {%- set logiciels = c.software | map(attribute='name') | join(' · ') -%}
-                        {%- if logiciels %}<span class="d-block text-truncate text-muted" title="{{ logiciels }}">{{ logiciels }}</span>
+                        {%- if logiciels %}<span class="clamp-3 text-muted" title="{{ logiciels }}">{{ logiciels }}</span>
                         {%- else %}<span class="badge-status badge-muted">aucun</span>{% endif -%}
                     </td>
                     <td class="cell-periode text-muted">
