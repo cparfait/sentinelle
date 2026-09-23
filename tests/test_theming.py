@@ -31,14 +31,14 @@ def test_css_override_contient_les_variables():
 
 
 def test_logo_teinte(app, client):
-    # Sans couleur : le SVG d'origine (degrade indigo).
+    # Sans couleur : le SVG d'origine (aplat indigo-700).
     body = client.get('/logo.svg').data.decode('utf-8')
-    assert '#6366f1' in body and '#3b82f6' in body
+    assert '#4338ca' in body
 
     app.config['UI_PRIMARY_COLOR'] = '#0d9488'
     body = client.get('/logo.svg').data.decode('utf-8')
     assert '#0d9488' in body
-    assert '#6366f1' not in body and '#3b82f6' not in body
+    assert '#4338ca' not in body
 
 
 def test_css_override_fond_login():

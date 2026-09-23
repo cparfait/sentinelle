@@ -55,13 +55,14 @@ def primary_css_override(hex_color):
     )
 
 
-# Couleurs du degrade du logo SVG d'origine (static/img/logo.svg).
-_LOGO_COLORS = ('#6366f1', '#3b82f6')
+# Couleur du logo SVG d'origine (static/img/logo.svg) : un aplat indigo-700
+# depuis le 2026-09-23 (l'ancien degrade indigo/bleu est abandonne).
+_LOGO_COLOR = '#4338ca'
 
 
 def tinted_logo_svg(svg, hex_color):
-    """Recolore le degrade du logo avec la couleur du site (si definie)."""
+    """Recolore le logo avec la couleur du site (si definie)."""
     c = normalize_color(hex_color)
     if not c:
         return svg
-    return svg.replace(_LOGO_COLORS[0], c).replace(_LOGO_COLORS[1], color_mix(c, 0.3))
+    return svg.replace(_LOGO_COLOR, c)
