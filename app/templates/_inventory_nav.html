@@ -4,7 +4,7 @@
    Le matériel se lit en DEUX familles : un switch n'est pas un serveur, et les
    réunir sous « Matériel » obligeait à cinq onglets et à un titre qui énumère.
    C'est la même table et le même écran — seule la famille change. #}
-<div class="seg-tabs mb-3">
+<div class="seg-tabs mb-2">
     <a class="seg-tab {% if active == 'serveurs' %}active{% endif %}" href="{{ url_for('inventory.list') }}"><i class="bi bi-hdd-stack me-1"></i>Serveurs</a>
     <a class="seg-tab {% if active == 'reseau' %}active{% endif %}" href="{{ url_for('inventory.list', famille='reseau') }}"><i class="bi bi-router me-1"></i>Réseau</a>
 </div>
