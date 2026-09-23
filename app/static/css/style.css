@@ -1239,7 +1239,32 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 .tableau-logiciels td { overflow: hidden; }
 .tableau-logiciels .cell-services { font-size: 0.75rem; line-height: 1.15; }
 .tableau-logiciels .badge-status { vertical-align: middle; }
-.badge-status svg.lucide { margin-right: 3px; }
+/* Liste des fournisseurs : la disposition de l'annuaire des editeurs de
+   SoftInventory. Quatre colonnes fixes (26 / 27 / 27 / 20) ; les cellules
+   sans rembourrage vertical, la pile support (portail, adresse, numero) tenant
+   exactement dans les 48 px de la rangee. Une case vide reste vide, sans
+   tiret : ici l'absence est la regle, pas l'exception. */
+.tableau-fournisseurs { table-layout: fixed; }
+.tableau-fournisseurs td { overflow: hidden; }
+.tableau-fournisseurs tbody td { padding-top: 0; padding-bottom: 0; }
+/* Une pile de coordonnees : chaque ligne porte son icone a gauche, en petit
+   et en gris ; la premiere ligne du contact commercial garde le corps du
+   texte (c'est un nom), les autres sont en 12 px. */
+.pile { display: flex; flex-direction: column; font-size: 0.75rem; line-height: 1.35; min-width: 0; }
+.pile > * { display: flex; align-items: flex-start; gap: 5px; min-width: 0; text-decoration: none; }
+.pile > .pile-principal { font-size: 0.875rem; line-height: 1.4; }
+.pile > .pile-principal + * { margin-top: 2px; }
+.pile i { flex-shrink: 0; font-size: 0.7rem; line-height: inherit; color: var(--faint); }
+.pile .casse { word-break: break-all; }
+/* Les liens gris et le portail en couleur d'accent : la regle generale des
+   tableaux (liens couleur du texte) est plus specifique, d'ou le selecteur. */
+.table.tableau-fournisseurs tbody td .pile a.pile-faint { color: var(--faint); }
+.table.tableau-fournisseurs tbody td .pile a.pile-accent { color: var(--primary); }
+.table.tableau-fournisseurs tbody td .pile a:hover,
+.table.tableau-fournisseurs tbody td .pile a:hover i { color: var(--primary); }
+.table.tableau-fournisseurs tbody td a.pile-site { font-size: 0.75rem; color: var(--faint); }
+.table.tableau-fournisseurs tbody td a.pile-site:hover { color: var(--primary); text-decoration: underline; }
+.tableau-fournisseurs .cell-horaires { font-size: 0.75rem; line-height: 1.35; }.badge-status svg.lucide { margin-right: 3px; }
 .table-responsive::-webkit-scrollbar { height: 6px; }
 .table-hover tbody tr { transition: background-color 0.12s ease; }
 .table-hover tbody tr:hover { background-color: rgba(var(--primary-rgb), 0.07); }

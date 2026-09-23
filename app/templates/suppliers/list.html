@@ -19,51 +19,69 @@
 
 {{ barre(q) }}
 
+{# La disposition de l'annuaire des éditeurs de SoftInventory : le fournisseur
+   et son site en dessous, le contact commercial (nom qui ouvre le courrier,
+   numéro dessous), les trois canaux du support en pile (portail, adresse,
+   numéro), les horaires. Quatre colonnes fixes ; une case vide reste vide,
+   sans tiret — sur cette liste l'absence est la règle. Le type n'est marqué
+   que pour l'exception : l'annuaire est fait d'éditeurs. N° client et nombre
+   de marchés se lisent dans la fiche. #}
 <div class="data-card">
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 tableau-fournisseurs">
+            <colgroup>
+                <col style="width: 26%"><col style="width: 27%"><col style="width: 27%"><col style="width: 20%">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Fournisseur</th>
-                    <th>Type</th>
-                    <th>Hotline support</th>
-                    <th>Email</th>
-                    <th>N° client</th>
-                    <th>Portail</th>
-                    <th>Contrats</th>
+                    <th>Contact commercial</th>
+                    <th>Support</th>
+                    <th>Horaires du support</th>
                 </tr>
             </thead>
             <tbody>
                 {% for s in suppliers %}
                 <tr>
                     <td>
-                        <a href="{{ url_for('suppliers.detail', id=s.id) }}" class="fw-medium text-decoration-none">{{ s.name }}</a>
-                        {% if s.contact_name %}<br><small class="text-muted">{{ s.contact_name }}</small>{% endif %}
+                        <span class="d-flex align-items-center gap-2">
+                            <a href="{{ url_for('suppliers.detail', id=s.id) }}" class="fw-medium text-decoration-none text-truncate" style="min-width: 0" title="{{ s.name }}">{{ s.name }}</a>
+                            {%- if s.kind != 'editor' %} <span class="badge-status badge-muted flex-shrink-0">{{ s.kind_label() }}</span>{% endif %}
+                        </span>
+                        {% if s.website %}<a href="{{ s.website }}" target="_blank" rel="noopener" class="d-block text-truncate pile-site" title="Ouvrir {{ s.website }}">{{ s.website }}</a>{% endif %}
                     </td>
-                    <td>{{ s.kind_label() }}</td>
+                    {# Le commercial, sinon l'interlocuteur habituel et le standard :
+                       une personne et ses coordonnées dans une seule colonne. Faute
+                       de nom, l'adresse tient le libellé (« sales@… » est souvent
+                       une boîte partagée). #}
+                    {% set cc_nom = s.commercial_contact or s.contact_name %}
+                    {% set cc_mail = s.commercial_email or s.email %}
+                    {% set cc_tel = s.commercial_phone or s.phone %}
                     <td>
-                        {% if s.support_phone %}<a href="tel:{{ s.support_phone | replace(' ', '') }}" class="fw-bold"><i class="bi bi-telephone me-1"></i>{{ s.support_phone }}</a>
-                        {% elif s.phone %}<a href="tel:{{ s.phone | replace(' ', '') }}"><i class="bi bi-telephone me-1"></i>{{ s.phone }}</a>
-                        {% else %}<span class="text-muted">-</span>{% endif %}
-                        {% if s.hours %}<br><small class="text-muted">{{ s.hours }}</small>{% endif %}
+                        <div class="pile">
+                            {% if cc_mail %}<a href="mailto:{{ cc_mail }}" class="pile-principal" title="Écrire à {{ cc_mail }}"><i class="bi bi-envelope"></i><span class="text-truncate">{{ cc_nom or cc_mail }}</span></a>
+                            {% elif cc_nom %}<span class="pile-principal"><span class="text-truncate">{{ cc_nom }}</span></span>{% endif %}
+                            {% if cc_tel %}<a href="tel:{{ cc_tel | replace(' ', '') }}" class="pile-faint text-nowrap"><i class="bi bi-telephone"></i>{{ cc_tel }}</a>{% endif %}
+                        </div>
                     </td>
-                    <td>{% if s.email %}<a href="mailto:{{ s.email }}">{{ s.email }}</a>{% else %}<span class="text-muted">-</span>{% endif %}</td>
-                    <td>{% if s.customer_ref %}<code>{{ s.customer_ref }}</code>{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                    {# Le portail d'abord, puis l'adresse où l'on écrit, puis le
+                       numéro qu'on appelle. Une URL ne se coupe nulle part : on la
+                       casse de force plutôt que de déborder sur les horaires. #}
                     <td>
-                        {% if s.support_url %}
-                        <a href="{{ s.support_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary" title="Ouvrir le portail support" aria-label="Ouvrir le portail support">
-                            <i class="bi bi-box-arrow-up-right"></i>
-                        </a>
-                        {% else %}<span class="text-muted">-</span>{% endif %}
+                        <div class="pile">
+                            {% if s.support_url %}<a href="{{ s.support_url }}" target="_blank" rel="noopener" class="pile-accent casse" title="Ouvrir le portail support"><i class="bi bi-globe2"></i>{{ s.support_url }}</a>{% endif %}
+                            {% if s.support_email %}<a href="mailto:{{ s.support_email }}" class="pile-faint casse" title="Écrire à {{ s.support_email }}"><i class="bi bi-envelope"></i>{{ s.support_email }}</a>{% endif %}
+                            {% if s.support_phone %}<a href="tel:{{ s.support_phone | replace(' ', '') }}" class="pile-faint text-nowrap"><i class="bi bi-telephone"></i>{{ s.support_phone }}</a>{% endif %}
+                        </div>
                     </td>
-                    <td>
-                        {% set n = s.contracts.filter_by(is_active=True).count() %}
-                        {% if n %}<span class="badge bg-light text-dark border">{{ n }}</span>{% else %}<span class="text-muted">-</span>{% endif %}
+                    <td class="cell-horaires text-muted">
+                        {% if s.hours %}<span class="d-block">{{ s.hours }}</span>{% endif %}
+                        {% if s.hours2 %}<span class="d-block">{{ s.hours2 }}</span>{% endif %}
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" class="text-center py-4 text-muted">
+                    <td colspan="4" class="text-center py-4 text-muted">
                         <i class="bi bi-building" style="font-size: 2rem;"></i>
                         <p class="mt-2 mb-0">Aucun fournisseur.
                             {% if current_user.can_edit('contracts') %}
