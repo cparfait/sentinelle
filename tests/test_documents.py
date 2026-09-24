@@ -399,8 +399,7 @@ def test_une_piece_sans_fichier_attend_son_acte(client):
     ct = Contract(name='Marché RH')
     db.session.add(ct)
     db.session.commit()
-    piece = Document(contract_id=ct.id, filename='Bon de commande 2019', amount=1200,
-                     notes='50 postes')
+    piece = Document(contract_id=ct.id, filename='Bon de commande 2019', notes='50 postes')
     db.session.add(piece)
     db.session.commit()
     assert not piece.has_file()
@@ -415,7 +414,7 @@ def test_une_piece_sans_fichier_attend_son_acte(client):
     assert r.status_code == 200
     db.session.refresh(piece)
     assert piece.has_file() and piece.filename == 'bc-2019.pdf'
-    assert piece.amount == 1200 and 'Bon de commande 2019' in piece.notes
+    assert 'Bon de commande 2019' in piece.notes and '50 postes' in piece.notes
     assert client.get(f'/documents/{piece.id}/download').data == b'%PDF-1.4 faux acte'
     # Une seconde fois : refusé, la pièce a déjà son fichier.
     r = client.post(f'/documents/{piece.id}/file', data={'file': _fichier('autre.pdf')},
@@ -452,10 +451,10 @@ def test_modifier_une_piece_corrige_ce_qu_elle_dit_d_elle_meme(client):
     doc = Document.query.one()
     cat = Referential.query.filter_by(kind='doc_category', label='Devis').first()
     client.post(f'/documents/{doc.id}/edit', data={'category_id': str(cat.id), 'doc_date': '2026-03-01',
-                                                   'amount': '2500', 'notes': 'lot 2'},
+                                                   'notes': 'lot 2'},
                 follow_redirects=True)
     db.session.refresh(doc)
-    assert doc.category_id == cat.id and doc.amount == 2500 and doc.notes == 'lot 2'
+    assert doc.category_id == cat.id and doc.notes == 'lot 2'
     assert doc.doc_date.isoformat() == '2026-03-01'
     assert doc.content.data == b'%PDF-1.4 faux acte'          # le fichier ne bouge pas
 

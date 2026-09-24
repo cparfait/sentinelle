@@ -1278,17 +1278,10 @@ class Contract(db.Model):
 
     def documents(self):
         """Les documents du contrat, le plus recent en tete : actes signes,
-        bons de commande, avenants -- avec leur montant quand ils en portent un."""
+        bons de commande, avenants. Ce qu'ils coutent se lit sur le contrat
+        (`cost_yearly`), pas sur eux : un document atteste, il n'engage pas."""
         return (Document.query.filter_by(contract_id=self.id)
                 .order_by(Document.doc_date.desc().nullslast(), Document.created_at.desc()).all())
-
-    def documents_cost(self):
-        """Somme des montants portes par les documents. INDICATIVE : c'est
-        `cost_yearly` qui engage. Un marche couvre souvent plusieurs postes dont
-        la somme ne vaut pas le montant de l'acte."""
-        from sqlalchemy import func
-        return float(db.session.query(func.coalesce(func.sum(Document.amount), 0))
-                     .filter(Document.contract_id == self.id).scalar() or 0)
 
     def action_deadline(self):
         """Date limite pour agir : echeance moins le preavis de resiliation."""
@@ -1702,9 +1695,9 @@ class Document(db.Model):
     # acte, ou dont l'acte est attendu. La fiche propose de le deposer.
     size = db.Column(db.Integer)
     # Ce que portait une « piece du marche » : la date de l'acte (signature,
-    # notification) et le montant qu'il engage, quand il y en a un.
+    # notification) et des notes. Pas de montant : c'est le contrat qui engage,
+    # un document ne fait qu'attester.
     doc_date = db.Column(db.Date, index=True)
-    amount = db.Column(db.Float)
     notes = db.Column(db.Text)
     # Deposant DENORMALISE : la trace survit a la suppression du compte.
     uploaded_by = db.Column(db.String(64))

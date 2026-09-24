@@ -1,6 +1,7 @@
 """Les « pièces du marché » d'une base ancienne deviennent des documents du
-contrat au démarrage : leurs fichiers rattachés au contrat avec catégorie,
-date et montant ; sans fichier, un document qui attend l'acte."""
+contrat au démarrage : leurs fichiers rattachés au contrat avec catégorie et
+date, le coût annuel dans les notes ; sans fichier, un document qui attend
+l'acte."""
 from datetime import date
 
 from sqlalchemy import text
@@ -58,10 +59,9 @@ def test_une_piece_avec_fichiers_devient_des_documents_du_contrat(app):
     cat = Referential.query.filter_by(kind='doc_category', label='Licence perpétuelle').one()
     assert a.category_id == cat.id and b.category_id == cat.id
     assert a.doc_date == date(2019, 2, 22) and b.doc_date == date(2019, 2, 22)
-    # Le montant une seule fois : sur le premier fichier.
-    assert a.amount == 4000 and b.amount is None
-    assert ct.documents_cost() == 4000
-    assert a.notes == '50 postes — lot 1'
+    # Le cout annuel passe dans les notes : un document n a pas de montant.
+    assert a.notes == '50 postes — coût annuel 4 000 € — lot 1'
+    assert b.notes == a.notes
     # La ligne de piece est partie : rejouer ne recree rien.
     assert db.session.execute(text("SELECT COUNT(*) FROM contract_item")).scalar() == 0
     _migrate_data()
@@ -79,7 +79,8 @@ def test_une_piece_sans_fichier_devient_un_document_qui_attend_l_acte(app):
     docs = ct.documents()
     assert len(docs) == 2
     paie = next(d for d in docs if d.filename == 'Module paie')
-    assert not paie.has_file() and paie.amount == 1500 and paie.doc_date == date(2020, 1, 1)
+    assert not paie.has_file() and paie.doc_date == date(2020, 1, 1)
+    assert paie.notes == 'coût annuel 1 500 €'
     assert paie.category.label == 'Abonnement' and paie.uploaded_by == 'reprise'
     sans_nom = next(d for d in docs if d.filename != 'Module paie')
     assert sans_nom.filename == 'Autre' and sans_nom.category.label == 'Autre'

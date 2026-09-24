@@ -10,16 +10,13 @@
 {% set pieces = attached_documents(doc_parent_kind, doc_parent_id) %}
 {% set peut_deposer = current_user.can_edit(doc_permission) %}
 {% set peut_retirer = current_user.can_delete(doc_permission) %}
-{# Un marché porte des ACTES : un document y a une date et, souvent, un
-   montant. Ailleurs (guide, délibération, attestation) ces deux colonnes
-   n'auraient rien à dire. #}
-{% set avec_montants = doc_parent_kind == 'contract' %}
-{% set total = pieces | map(attribute='amount') | select | sum %}
+{# Un marché porte des ACTES : un document y a une date. Ailleurs (guide,
+   délibération, attestation) la colonne n'aurait rien à dire. #}
+{% set avec_dates = doc_parent_kind == 'contract' %}
 <div class="data-card mb-3">
     <div class="card-header-custom d-flex justify-content-between align-items-center">
         <h6 class="fw-bold fiche-titre fiche-titre--indigo mb-0">{{ icone('bi-paperclip', 14, 'ico ico-' ~ couleur_icone('bi-paperclip')) }}{{ doc_title | default('Pièces jointes') }}
-            <span class="badge bg-secondary ms-1">{{ pieces | length }}</span>
-            {% if avec_montants and total %}<small class="fw-normal text-muted ms-2">{{ total | montant }} cumulés</small>{% endif %}</h6>
+            <span class="badge bg-secondary ms-1">{{ pieces | length }}</span></h6>
         {% if peut_deposer %}
         <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
                 data-bs-target="#depot{{ doc_parent_kind }}{{ doc_parent_id }}">
@@ -53,18 +50,13 @@
                     <button type="submit" class="btn btn-sm btn-primary w-100">Déposer</button>
                 </div>
             </div>
-            {% if avec_montants %}
+            {% if avec_dates %}
             <div class="row g-2 align-items-end mt-1">
                 <div class="col-md-3">
                     <label class="form-label fw-medium small mb-1">Date de l'acte</label>
                     <input type="date" name="doc_date" class="form-control form-control-sm">
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-medium small mb-1">Montant (€)</label>
-                    <input type="text" name="amount" class="form-control form-control-sm" inputmode="decimal"
-                           placeholder="ex: 4000">
-                </div>
-                <div class="col-md-6">
+                <div class="col-md-9">
                     <label class="form-label fw-medium small mb-1">Notes</label>
                     <input type="text" name="notes" class="form-control form-control-sm"
                            placeholder="ex: 50 postes, module RH">
@@ -79,7 +71,7 @@
 
     <div class="table-responsive">
         <table class="table table-hover mb-0">
-            <thead><tr><th>Fichier</th><th>Catégorie</th>{% if avec_montants %}<th>Date</th><th class="text-end">Montant</th>{% endif %}<th>Taille</th><th>Déposé</th><th></th></tr></thead>
+            <thead><tr><th>Fichier</th><th>Catégorie</th>{% if avec_dates %}<th>Date</th>{% endif %}<th>Taille</th><th>Déposé</th><th></th></tr></thead>
             <tbody>
                 {% for d in pieces %}
                 <tr>
@@ -122,9 +114,8 @@
                         {% if peut_deposer %}{% with next='' %}{% include '_document_edit.html' %}{% endwith %}{% endif %}
                     </td>
                     <td class="small">{{ d.category.label if d.category else '—' }}</td>
-                    {% if avec_montants %}
+                    {% if avec_dates %}
                     <td class="small text-nowrap">{{ d.doc_date.strftime('%d/%m/%Y') if d.doc_date else '—' }}</td>
-                    <td class="small text-nowrap text-end">{{ d.amount | montant if d.amount is not none else '—' }}</td>
                     {% endif %}
                     <td class="small text-nowrap">{{ d.size_label() if d.has_file() else '—' }}</td>
                     <td class="small text-nowrap">{{ d.created_at.strftime('%d/%m/%Y') }}
@@ -150,7 +141,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="{{ 7 if avec_montants else 5 }}" class="text-center py-3 text-muted">Aucune pièce jointe</td></tr>
+                <tr><td colspan="{{ 6 if avec_dates else 5 }}" class="text-center py-3 text-muted">Aucune pièce jointe</td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -67,35 +67,22 @@ def _depose(client, ct, nom, **champs):
                        content_type='multipart/form-data', follow_redirects=True)
 
 
-def test_les_documents_du_marche_portent_date_et_montant(client):
-    """Une piece de marche est un DOCUMENT du contrat : son acte, avec la date
-    et le montant qu'il engage. Le cumul est INDICATIF : c'est le montant
-    annuel du contrat qui engage."""
+def test_les_documents_du_marche_portent_une_date_et_des_notes(client):
+    """Une piece de marche est un DOCUMENT du contrat : son acte, avec sa date
+    et ses notes. Pas de montant : c'est le contrat qui engage."""
     ct = Contract(name='Marché RH', cost_yearly=10000)
     db.session.add(ct)
     db.session.commit()
-    _depose(client, ct, 'bon-de-commande.pdf', amount='4000', doc_date='2026-02-10',
-            notes='50 postes')
-    _depose(client, ct, 'avenant.pdf', amount='1500')
+    _depose(client, ct, 'bon-de-commande.pdf', doc_date='2026-02-10', notes='50 postes')
+    _depose(client, ct, 'avenant.pdf')
     docs = ct.documents()
     assert {d.filename for d in docs} == {'bon-de-commande.pdf', 'avenant.pdf'}
     bon = next(d for d in docs if d.filename == 'bon-de-commande.pdf')
-    assert bon.amount == 4000 and bon.notes == '50 postes'
-    assert bon.doc_date.isoformat() == '2026-02-10'
-    assert ct.documents_cost() == 5500
-    assert ct.cost_yearly == 10000
+    assert bon.notes == '50 postes' and bon.doc_date.isoformat() == '2026-02-10'
+    assert not hasattr(Document, 'amount')
     html = client.get(f'/contracts/{ct.id}').get_data(as_text=True)
     assert 'ong-pieces-du' not in html                    # plus d onglet a part
-    assert '5\u202f500\u00a0€ cumulés' in html
-    assert 'name="amount"' in html and 'name="doc_date"' in html
-
-
-def test_un_document_sans_montant_ne_pese_pas(client):
-    ct = Contract(name='Marché RH')
-    db.session.add(ct)
-    db.session.commit()
-    _depose(client, ct, 'guide.pdf')
-    assert Document.query.count() == 1 and ct.documents_cost() == 0
+    assert 'name="doc_date"' in html and 'name="amount"' not in html
 
 
 def test_consultation_et_devis_retenu(client):
@@ -239,17 +226,17 @@ def test_les_marches_proposes_sont_ceux_de_l_editeur_et_les_orphelins(client):
 def test_la_fiche_logiciel_liste_les_documents_du_marche(client):
     """Sur la fiche logiciel, un marché se lit comme dans SoftInventory : ses
     documents en dessous, coiffés de leur nombre, chacun avec sa catégorie, sa
-    taille et sa date ; le montant en français."""
+    taille et sa date ; le montant annuel du marché en français."""
     sw = Software(name='Paie')
     ct = Contract(name='Marché RH', reference='M26-01', cost_yearly=10000)
     db.session.add_all([sw, ct])
     db.session.commit()
     ct.software.append(sw)
     db.session.commit()
-    _depose(client, ct, 'marche-signe.pdf', amount='4000', doc_date='2026-02-10')
+    _depose(client, ct, 'marche-signe.pdf', doc_date='2026-02-10')
     _depose(client, ct, 'avenant.pdf')
     html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
     assert '2 Documents' in html
     assert 'marche-signe.pdf' in html and 'avenant.pdf' in html
-    assert '10/02/2026' in html and '4 000 €' in html
+    assert '10/02/2026' in html
     assert 'M26-01' in html and 'Mnt annuel : 10 000 €' in html

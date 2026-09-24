@@ -47,7 +47,7 @@ from werkzeug.utils import secure_filename
 
 from app import db
 from app.models import Document, DocumentContent, DOCUMENT_PARENTS
-from app.forms_util import parse_int, parse_date, parse_float
+from app.forms_util import parse_int, parse_date
 from app.audit import record as audit_record
 
 bp = Blueprint('documents', __name__)
@@ -221,7 +221,6 @@ def upload():
                    # Ce qu'une piece de marche portait : facultatif, et sans
                    # objet sur un guide ou une deliberation.
                    doc_date=parse_date(request.form.get('doc_date')),
-                   amount=parse_float(request.form.get('amount')),
                    notes=(request.form.get('notes') or '').strip() or None)
     setattr(doc, col, parent_id)
     doc.content = DocumentContent(data=octets)
@@ -259,8 +258,8 @@ def _lire_fichier(fichier):
 @login_required
 def attach_file(id):
     """Apporte son fichier a une piece qui n'en a pas : une piece de marche
-    reprise sans son acte. La ligne garde sa categorie, sa date, son montant et
-    ses notes ; seul le fichier arrive."""
+    reprise sans son acte. La ligne garde sa categorie, sa date et ses notes ;
+    seul le fichier arrive."""
     if not enabled():
         abort(404)
     doc = Document.query.get_or_404(id)
@@ -356,9 +355,9 @@ def _suite(kind, parent_id):
 @bp.route('/documents/<int:id>/edit', methods=['POST'])
 @login_required
 def edit(id):
-    """Corrige ce qu'une piece dit d'elle-meme : categorie, date, montant,
-    notes. Le fichier, lui, ne se remplace pas : on retire la piece et on
-    depose la bonne, pour que l'historique ne mente pas."""
+    """Corrige ce qu'une piece dit d'elle-meme : categorie, date, notes. Le
+    fichier, lui, ne se remplace pas : on retire la piece et on depose la
+    bonne, pour que l'historique ne mente pas."""
     if not enabled():
         abort(404)
     doc = Document.query.get_or_404(id)
@@ -370,7 +369,6 @@ def edit(id):
         return redirect(_suite(kind, parent_id))
     doc.category_id = parse_int(request.form.get('category_id'))
     doc.doc_date = parse_date(request.form.get('doc_date'))
-    doc.amount = parse_float(request.form.get('amount'))
     doc.notes = (request.form.get('notes') or '').strip() or None
     db.session.commit()
     audit_record('modification piece jointe', detail=doc.filename, category=categorie)

@@ -102,9 +102,9 @@
 
         {# Les documents du marché : l'acte signé, le bon de commande,
            l'avenant — chacun avec sa catégorie, sa taille et sa date. Ils se
-           déposent et se retirent sur la fiche du marché ; ici on les lit et
-           on les ouvre. Une pièce reprise sans son fichier se voit aussi :
-           elle attend l'acte. #}
+           déposent sur la fiche du marché ; ici on les lit, on les ouvre, on
+           les corrige ou on les retire. Une pièce reprise sans son fichier se
+           voit aussi : elle attend l'acte. #}
         {% set docs = c.documents() if documents_enabled else [] %}
         {% set peut_modifier_doc = current_user.can_edit('contracts') %}
         {% set peut_retirer_doc = current_user.can_delete('contracts') %}
@@ -124,7 +124,6 @@
                         {% else %}
                         <span class="badge bg-light text-dark border">fichier à déposer</span>
                         {% endif %}
-                        {% if d.amount is not none %}<span class="ms-auto small text-muted text-nowrap">{{ d.amount | montant }}</span>{% endif %}
                     </div>
                     <small class="text-muted">
                         {{- d.category.label if d.category else 'Non classée' -}}
@@ -133,7 +132,7 @@
                         {%- if d.notes %} · {{ d.notes }}{% endif -%}
                     </small>
                     {% if peut_modifier_doc %}
-                    {% with avec_montants=True, next=retour_ici %}{% include '_document_edit.html' %}{% endwith %}
+                    {% with avec_dates=True, next=retour_ici %}{% include '_document_edit.html' %}{% endwith %}
                     {% endif %}
                 </div>
                 {% if peut_modifier_doc or peut_retirer_doc %}

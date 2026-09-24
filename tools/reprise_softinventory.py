@@ -91,6 +91,11 @@ _NATURES_DE_PIECE = {'abonnement': 'Abonnement', 'perpetuelle': 'Licence perpét
                      'libre': 'Libre / gratuit', 'autre': 'Autre'}
 
 
+def _montant(v):
+    from app.libelles import montant
+    return montant(v)
+
+
 class Reprise:
     def __init__(self, cur, db, ecrire=True, creer_serveurs=True):
         self.cur = cur
@@ -437,9 +442,10 @@ class Reprise:
     def pieces(self):
         """Les pieces de marche de SoftInventory (type, cout annuel, date) sont
         des DOCUMENTS du contrat dans Sentinelle : leurs fichiers, rattaches au
-        contrat avec la categorie, la date et le montant de la piece ; ou, sans
-        fichier, un document qui attend l'acte. On memorise ici ce que chaque
-        piece portait ; `documents()` s'en sert, puis cree ce qui reste."""
+        contrat avec la categorie et la date de la piece, son cout annuel dans
+        les notes ; ou, sans fichier, un document qui attend l'acte. On
+        memorise ici ce que chaque piece portait ; `documents()` s'en sert,
+        puis cree ce qui reste."""
         contrats = self._lire_map('contrat')
         # Les pieces reprises AVANT la fusion (kind « piece ») comptent comme
         # reprises : leurs fichiers ont ete migres avec elles au demarrage.
@@ -455,7 +461,9 @@ class Reprise:
             self.pieces_meta[r['id']] = {
                 'contract_id': cid, 'kind': nature,
                 'label': _NATURES_DE_PIECE.get(nature, nature)[:128],
-                'amount': _dec(r.get('cout_annuel')), 'doc_date': r.get('date_piece'),
+                'notes': (f"coût annuel {_montant(_dec(r.get('cout_annuel')))}"
+                          if _dec(r.get('cout_annuel')) else None),
+                'doc_date': r.get('date_piece'),
                 'fichiers': 0,
             }
             self._compte('pièces de marché')
@@ -476,7 +484,7 @@ class Reprise:
     def _pieces_sans_fichier(self):
         """Apres les documents : une piece dont aucun fichier n'est arrive
         devient un document sans fichier, qui garde sa categorie, sa date et
-        son montant et attend l'acte."""
+        ses notes et attend l'acte."""
         from app.models import Document
         for meta in getattr(self, 'pieces_meta', {}).values():
             if meta['fichiers']:
@@ -485,7 +493,7 @@ class Reprise:
                 self.db.session.add(Document(
                     contract_id=meta['contract_id'], filename=meta['label'],
                     category_id=self._categorie_de_piece(meta['kind']),
-                    doc_date=meta['doc_date'], amount=meta['amount'],
+                    doc_date=meta['doc_date'], notes=meta['notes'],
                     uploaded_by='reprise'))
             self._compte('pièces de marché sans fichier')
 
@@ -667,12 +675,11 @@ class Reprise:
             meta = pieces_meta.get(r.get('piece_contrat_id')) if r.get('piece_contrat_id') else None
             if meta is not None:
                 # Ce que la piece portait passe sur son fichier : la categorie
-                # si le document n'en a pas, la date, et le montant UNE fois.
+                # si le document n'en a pas, la date, le cout annuel en notes.
                 if doc.category_id is None:
                     doc.category_id = self._categorie_de_piece(meta['kind'])
                 doc.doc_date = meta['doc_date']
-                if meta['fichiers'] == 0:
-                    doc.amount = meta['amount']
+                doc.notes = meta['notes']
                 meta['fichiers'] += 1
             if avec_contenu and self.ecrire:
                 # Le contenu se lit à la ligne, pas en bloc : 630 Mo de pièces

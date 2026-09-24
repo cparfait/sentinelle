@@ -1,6 +1,6 @@
 {# ═══ Modifier une pièce ═══
-   Replié derrière le crayon. Variables : `d` (la pièce), `avec_montants`
-   (date et montant : un acte de marché, pas un guide), `next` (où revenir). #}
+   Replié derrière le crayon. Variables : `d` (la pièce), `avec_dates`
+   (la date de l'acte : un marché, pas un guide), `next` (où revenir). #}
 <div class="collapse" id="docEdit{{ d.id }}">
     <form method="POST" action="{{ url_for('documents.edit', id=d.id) }}"
           class="p-2 mt-1 rounded border bg-body-tertiary">
@@ -16,16 +16,11 @@
                     {% endfor %}
                 </select>
             </div>
-            {% if avec_montants %}
+            {% if avec_dates %}
             <div class="col-md-2">
                 <label class="form-label fw-medium small mb-1">Date de l'acte</label>
                 <input type="date" name="doc_date" class="form-control form-control-sm"
                        value="{{ d.doc_date.strftime('%Y-%m-%d') if d.doc_date else '' }}">
-            </div>
-            <div class="col-md-2">
-                <label class="form-label fw-medium small mb-1">Montant (€)</label>
-                <input type="text" name="amount" class="form-control form-control-sm" inputmode="decimal"
-                       value="{{ d.amount if d.amount is not none else '' }}">
             </div>
             {% endif %}
             <div class="col-md">

@@ -92,10 +92,10 @@ collectivité) vivent désormais dans Sentinelle, et ses données y ont été re
 - ✅ **Droits propres aux logiciels et aux fournisseurs** — catégories `software` et `suppliers`, héritées
   une fois de `inventory` et `contracts` dans les rôles existants (`_migrate_roles`).
 - ✅ **Pièces du marché et Documents, une seule notion** — la reprise avait fait deux onglets de ce qui
-  n'en faisait qu'un dans SoftInventory. Un document de contrat porte une date, un montant et des notes ;
-  l'onglet « Pièces du marché » disparaît, l'onglet Documents affiche le cumul. Au démarrage, chaque pièce
-  devient un document du contrat (ses fichiers, avec catégorie, date et montant) ou, sans fichier, un
-  document qui attend l'acte et que la fiche propose de compléter. Sur la fiche logiciel, un marché liste
+  n'en faisait qu'un dans SoftInventory. Un document de contrat porte une date et des notes, pas de
+  montant (c'est le contrat qui engage) ; l'onglet « Pièces du marché » disparaît. Au démarrage, chaque
+  pièce devient un document du contrat (ses fichiers, avec catégorie et date, son coût annuel en notes)
+  ou, sans fichier, un document qui attend l'acte et que la fiche propose de compléter. Sur la fiche logiciel, un marché liste
   ses documents à la SoftInventory : nom, catégorie, taille, date.
 
 ## Inventaire du parc
