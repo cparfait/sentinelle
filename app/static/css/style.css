@@ -2418,7 +2418,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    SoftInventory (--faint), en 12 px. */
 .marche-entete.marche-sous, .marche-docs small { font-size: 12px; color: var(--faint) !important; }
 .marche-docs-titre { font-size: 12px; font-weight: 600; color: var(--faint); }
-.marche-docs-entete { border-bottom: 1px dotted var(--faint); }
+.marche-docs-entete { border-bottom: 1px dotted var(--line); }
 .marche-entete.marche-sous .marche-droite { font-variant-numeric: tabular-nums; }
 @media (max-width: 767.98px) {
     .marche-entete { grid-template-columns: 1fr; }
