@@ -2421,6 +2421,16 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .marche-docs-entete { border-bottom: 1px dotted var(--line); }
 .marche-docs-vide { font-size: 14px; color: var(--faint); }
 .doc-aide { font-size: 12px; color: var(--faint); margin-top: 4px; }
+/* Les services utilisateurs d'un logiciel : la grille de cases de
+   SoftInventory, quatre colonnes qui se replient avec la largeur. */
+.services-grille { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 1rem; }
+@media (max-width: 1199.98px) { .services-grille { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 767.98px) { .services-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 575.98px) { .services-grille { grid-template-columns: 1fr; } }
+.serveurs-liste a, .flux-liste a { color: var(--text); }
+.serveurs-liste a:hover, .flux-liste a:hover { color: var(--primary); }
+.flux-liste .flux-sens { color: var(--primary); }
+.flux-liste .flux-desc { font-size: 12px; color: var(--muted); }
 /* Le telechargement d'un document : une fleche Lucide de 14 px, en gris
    leger, qui prend la couleur du lien au survol. */
 .marche-doc-ico { color: var(--faint); margin-top: 3px; }

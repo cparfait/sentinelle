@@ -218,8 +218,13 @@ def detail(id):
               .order_by(Software.name).all())
     revues = item.access_reviews.filter_by(is_active=True).all()
     comptes = item.accounts.filter_by(is_active=True).all()
+    deja = {e.id for e in item.equipments}
+    serveurs_disponibles = [e for e in Equipment.query.filter_by(is_active=True)
+                            .order_by(Equipment.name).all() if e.id not in deja]
     return render_template('software/detail.html', item=item, updates=updates,
                            revues=revues, comptes=comptes,
+                           tous_les_services=UserService.options(),
+                           serveurs_disponibles=serveurs_disponibles,
                            consultations=consultations, marches=marches,
                            marches_rattachables=_marches_rattachables(item),
                            sortants=item.links_out.all(), entrants=item.links_in.all(),
@@ -228,6 +233,60 @@ def detail(id):
                            taches=item.tasks.filter_by(is_active=True).all(),
                            suppliers=Supplier.query.filter_by(is_active=True)
                                                    .order_by(Supplier.name).all())
+
+
+@bp.route('/<int:id>/services', methods=['POST'])
+@login_required
+@require_edit
+def services_update(id):
+    """Les services qui se servent du logiciel, depuis la grille de cases de
+    la fiche : ce qui est coche est la liste, ni plus ni moins."""
+    item = Software.query.get_or_404(id)
+    ids = [parse_int(v) for v in request.form.getlist('user_service_ids')]
+    ids = [i for i in ids if i]
+    item.user_services = (UserService.query.filter(UserService.id.in_(ids),
+                                                   UserService.is_active.is_(True)).all()
+                          if ids else [])
+    db.session.commit()
+    audit_record('services utilisateurs', detail=f'{item.name} : {len(item.user_services)} service(s)',
+                 category='inventory')
+    return redirect(url_for('software.detail', id=id) + '#liaisons')
+
+
+@bp.route('/<int:id>/servers', methods=['POST'])
+@login_required
+@require_edit
+def server_attach(id):
+    """Associe un serveur au logiciel depuis la fiche. Un serveur associe
+    contredit « aucun serveur » : la case se decoche d'elle-meme."""
+    item = Software.query.get_or_404(id)
+    e = db.session.get(Equipment, parse_int(request.form.get('equipment_id')) or 0)
+    if e is None or not e.is_active:
+        flash('Choisissez un serveur.', 'danger')
+    elif e in item.equipments:
+        flash('Ce serveur est déjà associé.', 'warning')
+    else:
+        item.equipments.append(e)
+        item.no_server = False
+        db.session.commit()
+        audit_record('serveur associe', detail=f'{item.name} <- {e.name}', category='inventory')
+        flash('Serveur associé', 'success')
+    return redirect(url_for('software.detail', id=id) + '#liaisons')
+
+
+@bp.route('/<int:id>/servers/<int:equipment_id>/detach', methods=['POST'])
+@login_required
+@require_edit
+def server_detach(id, equipment_id):
+    """Retire le LIEN entre le logiciel et un serveur ; le serveur reste."""
+    item = Software.query.get_or_404(id)
+    e = db.session.get(Equipment, equipment_id)
+    if e is not None and e in item.equipments:
+        item.equipments.remove(e)
+        db.session.commit()
+        audit_record('serveur retire', detail=f'{item.name} -/- {e.name}', category='inventory')
+        flash('Serveur retiré', 'success')
+    return redirect(url_for('software.detail', id=id) + '#liaisons')
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
@@ -293,6 +352,23 @@ def link_add(id):
                  category='inventory')
     flash('Flux ajouté', 'success')
     return redirect(url_for('software.detail', id=id))
+
+
+@bp.route('/links/<int:link_id>/edit', methods=['POST'])
+@login_required
+@require_edit
+def link_edit(link_id):
+    """Corrige la description d'un flux, depuis l'une ou l'autre des deux
+    fiches qu'il relie."""
+    features.require('links')
+    lien = SoftwareLink.query.get_or_404(link_id)
+    retour = parse_int(request.form.get('from_id')) or lien.source_id
+    lien.description = (request.form.get('description', '') or '').strip() or None
+    db.session.commit()
+    audit_record('modification interconnexion', detail=f'{lien.source.name} -> {lien.target.name}',
+                 category='inventory')
+    flash('Flux modifié', 'success')
+    return redirect(url_for('software.detail', id=retour) + '#liaisons')
 
 
 @bp.route('/links/<int:link_id>/delete', methods=['POST'])

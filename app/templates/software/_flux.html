@@ -1,89 +1,85 @@
-{% from '_icones.html' import icone %}
-{# ═══ Flux ═══
-   Par ou passent les donnees : ce que ce logiciel alimente, ce dont il se
-   nourrit. Le sens est porte par la ligne, jamais saisi deux fois. #}
+{% from '_icones.html' import icone, lucide %}
+{# ═══ Interconnexions ═══
+   Par où passent les données : ce que ce logiciel alimente (→), ce dont il se
+   nourrit (←). Le sens est porté par la ligne, jamais saisi deux fois. Comme
+   dans SoftInventory : la liste d'abord, chaque flux avec son crayon (la
+   description se corrige en place) et sa corbeille, puis la ligne d'ajout,
+   toujours visible : le logiciel d'en face, la description, « Ajouter ». #}
 {% set peut_editer = current_user.can_edit('software') %}
 {% set peut_supprimer = current_user.can_delete('software') %}
+{% set flux = [] %}
+{% for lien in sortants %}{% set _ = flux.append((lien, 'sortant', lien.target)) %}{% endfor %}
+{% for lien in entrants %}{% set _ = flux.append((lien, 'entrant', lien.source)) %}{% endfor %}
 
-<div class="data-card h-100">
-    <div class="card-header-custom d-flex justify-content-between align-items-center">
-        <h6 class="fw-bold fiche-titre fiche-titre--violet mb-0">{{ icone('bi-diagram-3', 14, 'ico ico-' ~ couleur_icone('bi-diagram-3')) }}Flux avec d'autres logiciels
-            <span class="badge bg-secondary ms-1">{{ (sortants | length) + (entrants | length) }}</span></h6>
+<div class="data-card mb-3">
+    <div class="card-header-custom">
+        <h6 class="fw-bold fiche-titre fiche-titre--violet mb-0">{{ icone('bi-diagram-3', 14, 'ico ico-' ~ couleur_icone('bi-diagram-3')) }}Interconnexions
+            <span class="badge bg-secondary ms-1">{{ flux | length }}</span></h6>
+    </div>
+    <div class="p-3">
+        {% if flux %}
+        <ul class="list-unstyled mb-3 flux-liste">
+            {% for lien, sens, autre in flux %}
+            <li class="py-1">
+                <div class="d-flex align-items-center justify-content-between gap-3">
+                    <span class="d-flex align-items-center gap-2 min-w-0">
+                        {{ lucide('arrow-right' if sens == 'sortant' else 'arrow-left', 16, 'flux-sens flex-shrink-0') }}
+                        <a href="{{ url_for('software.detail', id=autre.id) }}" class="fw-medium text-decoration-none"
+                           title="{{ 'Flux sortant vers' if sens == 'sortant' else 'Flux entrant depuis' }} {{ autre.name }}">{{ autre.name }}</a>
+                        {% if lien.description %}<span class="flux-desc text-truncate">— {{ lien.description }}</span>{% endif %}
+                    </span>
+                    {% if peut_editer or peut_supprimer %}
+                    <span class="d-flex align-items-center gap-1 flex-shrink-0">
+                        {% if peut_editer %}
+                        <button type="button" class="btn btn-sm btn-ghost btn-icone" data-bs-toggle="collapse"
+                                data-bs-target="#fluxEdit{{ lien.id }}" title="Modifier la description du flux"
+                                aria-label="Modifier la description du flux">{{ lucide('pencil', 16) }}</button>
+                        {% endif %}
+                        {% if peut_supprimer %}
+                        <form method="POST" action="{{ url_for('software.link_delete', link_id=lien.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="from_id" value="{{ item.id }}">
+                            <button type="submit" class="btn btn-sm btn-ghost btn-icone btn-ghost-danger"
+                                    title="Supprimer l'interconnexion" aria-label="Supprimer l'interconnexion"
+                                    data-confirm="Supprimer ce flux avec « {{ autre.name }} » ?">{{ lucide('trash-2', 16) }}</button>
+                        </form>
+                        {% endif %}
+                    </span>
+                    {% endif %}
+                </div>
+                {% if peut_editer %}
+                <div class="collapse" id="fluxEdit{{ lien.id }}">
+                    <form method="POST" action="{{ url_for('software.link_edit', link_id=lien.id) }}"
+                          class="d-flex flex-wrap align-items-center gap-2 p-2 mt-1 rounded border bg-body-tertiary">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="from_id" value="{{ item.id }}">
+                        <input type="text" name="description" class="form-control form-control-sm flex-grow-1"
+                               style="max-width:32rem" value="{{ lien.description or '' }}"
+                               placeholder="Description du flux (ex : export paie mensuel)">
+                        <button type="submit" class="btn btn-sm btn-primary">Enregistrer</button>
+                    </form>
+                </div>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted mb-3">Aucun flux déclaré.</p>
+        {% endif %}
         {% if peut_editer and autres_logiciels %}
-        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
-                data-bs-target="#nouveauFlux"><i class="bi bi-plus-lg me-1"></i> Flux</button>
-        {% endif %}
-    </div>
-
-    {% if peut_editer and autres_logiciels %}
-    <div class="collapse" id="nouveauFlux">
         <form method="POST" action="{{ url_for('software.link_add', id=item.id) }}"
-              class="p-3 border-bottom bg-body-tertiary">
+              class="d-flex flex-wrap align-items-center gap-2">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="row g-2 align-items-end">
-                <div class="col-md-4">
-                    <label class="form-label fw-medium small mb-1">{{ item.name }} alimente…</label>
-                    <select name="target_id" class="form-select form-select-sm" required>
-                        <option value="">— Logiciel destinataire —</option>
-                        {% for sw in autres_logiciels %}
-                        <option value="{{ sw.id }}">{{ sw.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-7">
-                    <label class="form-label fw-medium small mb-1">Nature du flux</label>
-                    <input type="text" name="description" class="form-control form-control-sm"
-                           placeholder="ex: export paie mensuel, interface comptable quotidienne">
-                </div>
-                <div class="col-md-1">
-                    <button type="submit" class="btn btn-sm btn-primary w-100" title="Ajouter le flux"
-                            aria-label="Ajouter le flux"><i class="bi bi-plus-lg"></i></button>
-                </div>
-            </div>
-            <div class="form-text mt-2">Le sens est porté par la ligne : la fiche d'en face le verra
-                comme entrant, sans qu'on ait à le saisir deux fois.</div>
+            <select name="target_id" class="form-select form-select-sm w-auto" aria-label="Vers le logiciel" required>
+                <option value="">Vers le logiciel…</option>
+                {% for sw in autres_logiciels %}
+                <option value="{{ sw.id }}">{{ sw.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" name="description" class="form-control form-control-sm" style="max-width:20rem"
+                   placeholder="Description du flux (ex : export paie mensuel)">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">{{ lucide('plus', 14, 'me-1') }}Ajouter</button>
         </form>
-    </div>
-    {% endif %}
-
-    <ul class="list-group list-group-flush">
-        {% for lien in sortants %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span>
-                <i class="bi bi-arrow-right-circle text-primary me-2" title="Flux sortant"></i>
-                vers <a href="{{ url_for('software.detail', id=lien.target_id) }}" class="fw-medium">{{ lien.target.name }}</a>
-                {% if lien.description %}<small class="text-muted">— {{ lien.description }}</small>{% endif %}
-            </span>
-            {% if peut_supprimer %}
-            <form method="POST" action="{{ url_for('software.link_delete', link_id=lien.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="from_id" value="{{ item.id }}">
-                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer le flux"
-                        aria-label="Supprimer le flux" data-confirm="Supprimer ce flux ?"><i class="bi bi-trash"></i></button>
-            </form>
-            {% endif %}
-        </li>
-        {% endfor %}
-        {% for lien in entrants %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span>
-                <i class="bi bi-arrow-left-circle text-success me-2" title="Flux entrant"></i>
-                depuis <a href="{{ url_for('software.detail', id=lien.source_id) }}" class="fw-medium">{{ lien.source.name }}</a>
-                {% if lien.description %}<small class="text-muted">— {{ lien.description }}</small>{% endif %}
-            </span>
-            {% if peut_supprimer %}
-            <form method="POST" action="{{ url_for('software.link_delete', link_id=lien.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="from_id" value="{{ item.id }}">
-                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer le flux"
-                        aria-label="Supprimer le flux" data-confirm="Supprimer ce flux ?"><i class="bi bi-trash"></i></button>
-            </form>
-            {% endif %}
-        </li>
-        {% endfor %}
-        {% if not sortants and not entrants %}
-        <li class="list-group-item text-center text-muted py-3">Aucun flux déclaré.</li>
         {% endif %}
-    </ul>
+    </div>
 </div>
-

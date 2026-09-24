@@ -1,5 +1,6 @@
 {% extends "base.html" %}
-{% from '_icones.html' import icone %}
+{% from '_icones.html' import icone, lucide %}
+{% from '_quick_add.html' import qa_button, qa_modal_equipment %}
 {% block title %}{{ item.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
@@ -224,46 +225,87 @@
        Avec quoi cette application parle : les directions qui s'en servent, les
        serveurs qui la portent, les flux qu'elle échange. #}
     {% call volet('liaisons') %}
-    <div class="row g-3">
-        <div class="col-xl-6">
-            <div class="data-card p-3 h-100">
-                <div class="fiche-sections">
-                    <div class="fiche-bloc fiche-bloc--emerald fiche-bloc--libre">
-                        {{ titre_section('Services utilisateurs', 'bi-people', 'emerald', 'mb-0') }}
-                        {# Le titre de la rubrique dit deja ce que c'est : pas
-                           d'intitule de champ en plus, les valeurs viennent tout de suite. #}
-                        <div class="pt-2">
-                        {% for sv in item.user_services %}
-                        <span class="badge bg-light text-dark border me-1"
-                              title="{{ sv.contact_name or '' }}{% if sv.contact_email %} — {{ sv.contact_email }}{% endif %}">
-                            <i class="bi bi-people me-1"></i>{{ sv.name }}</span>
-                        {% else %}
-                        <span class="text-muted">Aucun service renseigné.</span>
-                        {% endfor %}
-                        </div>
-                    </div>
-
-                    <div class="fiche-bloc fiche-bloc--slate fiche-bloc--libre">
-                        {{ titre_section('Serveurs', 'bi-hdd-stack', 'slate', 'mb-0') }}
-                        <div class="pt-2">
-                        {% if item.no_server %}
-                        <span class="text-muted">Aucun serveur : le logiciel tourne chez l'éditeur ou sur les postes des agents.</span>
-                        {% else %}
-                            {% for e in item.equipments %}
-                            <a href="{{ url_for('inventory.detail', id=e.id) }}" class="badge bg-light text-dark border text-decoration-none me-1">
-                                <i class="bi bi-hdd-network me-1"></i>{{ e.name }}</a>
-                            {% else %}
-                            <span class="text-muted">Aucun serveur renseigné.</span>
-                            {% endfor %}
-                        {% endif %}
-                        </div>
-                    </div>
-                    {% with entity_type='software', entity_id=item.id %}{% include '_snooze_card.html' %}{% endwith %}
-                </div>
-            </div>
+    {# ═══ Services utilisateurs ═══
+       Comme dans SoftInventory : TOUS les services de la collectivité, en
+       grille de cases, les cochés étant ceux qui s'en servent. La case se
+       coche ici même et enregistre aussitôt ; sans droit d'écriture, elle se
+       lit seulement. #}
+    {% set services_lies = item.user_services | map(attribute='id') | list %}
+    {% set peut_lier = current_user.can_edit('software') %}
+    <div class="data-card mb-3">
+        <div class="card-header-custom">
+            <h6 class="fw-bold fiche-titre fiche-titre--emerald mb-0">{{ icone('bi-people', 14, 'ico ico-' ~ couleur_icone('bi-people')) }}Services utilisateurs
+                <span class="badge bg-secondary ms-1">{{ services_lies | length }}</span></h6>
         </div>
-        {% if features.links %}<div class="col-xl-6">{% include 'software/_flux.html' %}</div>{% endif %}
+        <form method="POST" action="{{ url_for('software.services_update', id=item.id) }}" class="p-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% if tous_les_services %}
+            <div class="services-grille">
+                {% for sv in tous_les_services %}
+                <label class="d-flex align-items-center gap-2 mb-1 small"
+                       title="{{ sv.contact_name or '' }}{% if sv.contact_email %} — {{ sv.contact_email }}{% endif %}">
+                    <input type="checkbox" class="form-check-input mt-0" name="user_service_ids" value="{{ sv.id }}"{{ ' checked' if sv.id in services_lies }}{{ '' if peut_lier else ' disabled' }}
+                           onchange="this.form.requestSubmit()">
+                    <span>{{ sv.name }}</span>
+                </label>
+                {% endfor %}
+            </div>
+            {% else %}
+            <span class="text-muted">Aucun service utilisateur dans les Référentiels.</span>
+            {% endif %}
+        </form>
     </div>
+
+    {# ═══ Serveurs ═══
+       La liste des serveurs qui portent le logiciel, chacun avec sa corbeille
+       pour le retirer, puis une ligne pour en associer un autre : le choix,
+       l'ajout rapide d'un équipement, « Associer ». Comme dans SoftInventory. #}
+    <div class="data-card mb-3">
+        <div class="card-header-custom">
+            <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0">{{ icone('bi-hdd-stack', 14, 'ico ico-' ~ couleur_icone('bi-hdd-stack')) }}Serveurs
+                <span class="badge bg-secondary ms-1">{{ item.equipments | length }}</span></h6>
+        </div>
+        <div class="p-3">
+            {% if item.equipments %}
+            <ul class="list-unstyled mb-3 serveurs-liste">
+                {% for e in item.equipments %}
+                <li class="d-flex align-items-center justify-content-between gap-3 py-1">
+                    <a href="{{ url_for('inventory.detail', id=e.id) }}" class="fw-medium text-decoration-none">{{ e.name }}</a>
+                    {% if peut_lier %}
+                    <form method="POST" action="{{ url_for('software.server_detach', id=item.id, equipment_id=e.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-ghost btn-icone btn-ghost-danger" title="Retirer"
+                                aria-label="Retirer {{ e.name }}"
+                                data-confirm="Retirer « {{ e.name }} » des serveurs de ce logiciel ?">{{ lucide('trash-2', 16) }}</button>
+                    </form>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% elif item.no_server %}
+            <p class="text-muted mb-3">Aucun serveur : le logiciel tourne chez l'éditeur ou sur les postes des agents.</p>
+            {% else %}
+            <p class="text-muted mb-3">Aucun serveur renseigné.</p>
+            {% endif %}
+            {% if peut_lier %}
+            <form method="POST" action="{{ url_for('software.server_attach', id=item.id) }}"
+                  class="d-flex flex-wrap align-items-center gap-2">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <select name="equipment_id" id="swServeur" class="form-select form-select-sm w-auto" aria-label="Serveur" required>
+                    <option value="">Choisir un serveur…</option>
+                    {% for e in serveurs_disponibles %}
+                    <option value="{{ e.id }}">{{ e.name }}</option>
+                    {% endfor %}
+                </select>
+                {% if current_user.can_edit('inventory') %}{{ qa_button('qaModalEquipment', 'swServeur', 'Nouvel équipement') }}{% endif %}
+                <button type="submit" class="btn btn-sm btn-outline-secondary">{{ lucide('plus', 14, 'me-1') }}Associer</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if features.links %}{% include 'software/_flux.html' %}{% endif %}
+    {% with entity_type='software', entity_id=item.id %}{% include '_snooze_card.html' %}{% endwith %}
     {% endcall %}
 
     {% if current_user.can_view('contracts') %}
@@ -438,3 +480,4 @@
     {% endif %}
 {% endcall %}
 {% endblock %}
+{% if current_user.can_edit('inventory') %}{{ qa_modal_equipment() }}{% endif %}

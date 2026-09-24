@@ -85,9 +85,9 @@ def test_flux_coupes_plus_de_bloc_ni_de_route(client, app):
     autre = Software(name='Paie')
     db.session.add(autre)
     db.session.commit()
-    assert 'Flux avec' in client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    assert 'Interconnexions' in client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
     app.config['SOFTWARE_LINKS_ENABLED'] = False
-    assert 'Flux avec' not in client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    assert 'Interconnexions' not in client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
     r = client.post(f'/inventory/logiciels/{sw.id}/links/add', data={'target_id': str(autre.id)})
     assert r.status_code == 404
 

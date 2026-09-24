@@ -312,7 +312,7 @@ def test_la_fiche_affiche_tout_ce_qu_elle_porte(client):
                     '2FA', 'Marché 2026', 'Ressources humaines',
                     'Éditeur', 'CLI-42', 'Jean Commercial',   # colonne de droite
                     'État civil', 'REG-12', 'dpo@edi.fr',     # volet RGPD
-                    'Flux avec', 'Dossiers du partage',       # cartes du bas
+                    'Interconnexions', 'Dossiers du partage',  # cartes du bas
                     'Mises à jour liées', 'Tâches récurrentes'):
         assert attendu in html, f'« {attendu} » a disparu de la fiche'
 
@@ -329,3 +329,65 @@ def test_la_fiche_sans_editeur_prend_toute_la_largeur(client):
     # Le volet RGPD parait meme quand il n'y a rien a declarer : « non » est une
     # reponse, et la rubrique absente se lirait comme un oubli de saisie.
     assert 'Aucune donnée personnelle' in html
+
+
+def test_les_services_se_cochent_depuis_la_fiche(client):
+    """La fiche montre TOUS les services en cases, coche ceux qui s'en servent,
+    et une case cochée ou décochée enregistre la liste telle quelle."""
+    from app.models import UserService
+    a = UserService(name='Finances / Comptabilité')
+    b = UserService(name='Urbanisme')
+    sw = Software(name='GED')
+    db.session.add_all([a, b, sw])
+    db.session.commit()
+    sw.user_services = [a]
+    db.session.commit()
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    assert 'Urbanisme' in html and f'value="{a.id}" checked' in html
+    client.post(f'/inventory/logiciels/{sw.id}/services', data={'user_service_ids': [str(b.id)]},
+                follow_redirects=True)
+    assert [x.name for x in sw.user_services] == ['Urbanisme']
+    client.post(f'/inventory/logiciels/{sw.id}/services', data={}, follow_redirects=True)
+    assert sw.user_services == []
+
+
+def test_les_serveurs_s_associent_et_se_retirent_depuis_la_fiche(client):
+    e1 = Equipment(name='SRV-CIRIL', kind='vm')
+    e2 = Equipment(name='SRV-TEST', kind='vm')
+    sw = Software(name='GED', no_server=True)
+    db.session.add_all([e1, e2, sw])
+    db.session.commit()
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    assert 'Choisir un serveur' in html and f'<option value="{e1.id}">SRV-CIRIL</option>' in html
+    client.post(f'/inventory/logiciels/{sw.id}/servers', data={'equipment_id': str(e1.id)},
+                follow_redirects=True)
+    assert [e.name for e in sw.equipments] == ['SRV-CIRIL'] and sw.no_server is False
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    assert '>SRV-CIRIL</a>' in html and f'<option value="{e1.id}">' not in html   # deja associe : plus propose
+    client.post(f'/inventory/logiciels/{sw.id}/servers/{e1.id}/detach', follow_redirects=True)
+    assert sw.equipments == []
+    assert db.session.get(Equipment, e1.id) is not None                              # le serveur reste
+
+
+def test_un_flux_se_lit_se_corrige_et_se_supprime_depuis_la_fiche(client):
+    from app.models import SoftwareLink
+    a = Software(name='Finances')
+    b = Software(name='iParapheur')
+    db.session.add_all([a, b])
+    db.session.commit()
+    client.post(f'/inventory/logiciels/{a.id}/links/add',
+                data={'target_id': str(b.id), 'description': 'Flux PES'}, follow_redirects=True)
+    lien = SoftwareLink.query.one()
+    html = client.get(f'/inventory/logiciels/{a.id}').get_data(as_text=True)
+    assert 'Interconnexions' in html and 'lucide-arrow-right' in html and '— Flux PES' in html
+    # La fiche d en face le voit entrant.
+    assert 'lucide-arrow-left' in client.get(f'/inventory/logiciels/{b.id}').get_data(as_text=True)
+    # La description se corrige en place, et l on revient sur la fiche de depart.
+    r = client.post(f'/inventory/logiciels/links/{lien.id}/edit',
+                    data={'description': 'Flux PES - Bons de commande', 'from_id': str(b.id)})
+    assert r.status_code == 302 and r.headers['Location'].endswith(f'/inventory/logiciels/{b.id}#liaisons')
+    assert lien.description == 'Flux PES - Bons de commande'
+    client.post(f'/inventory/logiciels/links/{lien.id}/delete', data={'from_id': str(a.id)},
+                follow_redirects=True)
+    assert SoftwareLink.query.count() == 0
+
