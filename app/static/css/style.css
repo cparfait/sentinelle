@@ -2409,6 +2409,10 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 }
 .marche-entete > * { min-width: 0; }
 .marche-entete .marche-droite { text-align: right; }
+/* Les trois noms de la premiere ligne sont des liens, mais se lisent comme
+   du texte : la couleur du lien ne vient qu'au survol. */
+.marche-entete a { color: var(--text); }
+.marche-entete a:hover { color: var(--primary); }
 .marche-entete .marche-tronque { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .marche-entete.marche-sous { font-size: .8rem; color: var(--bs-secondary-color, #64748b); }
 .marche-entete.marche-sous .marche-droite { font-variant-numeric: tabular-nums; }
