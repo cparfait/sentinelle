@@ -230,8 +230,9 @@
                 <div class="fiche-sections">
                     <div class="fiche-bloc fiche-bloc--emerald">
                         {{ titre_section('Services utilisateurs', 'bi-people', 'emerald', 'mb-0') }}
-                        <div class="fiche-grille">
-                        {% call champ_bloc('Services utilisateurs', large=True) %}
+                        {# Le titre de la rubrique dit deja ce que c'est : pas
+                           d'intitule de champ en plus, les valeurs viennent tout de suite. #}
+                        <div class="pt-2">
                         {% for sv in item.user_services %}
                         <span class="badge bg-light text-dark border me-1"
                               title="{{ sv.contact_name or '' }}{% if sv.contact_email %} — {{ sv.contact_email }}{% endif %}">
@@ -239,14 +240,12 @@
                         {% else %}
                         <span class="text-muted">Aucun service renseigné.</span>
                         {% endfor %}
-                        {% endcall %}
                         </div>
                     </div>
 
                     <div class="fiche-bloc fiche-bloc--slate">
                         {{ titre_section('Serveurs', 'bi-hdd-stack', 'slate', 'mb-0') }}
-                        <div class="fiche-grille">
-                        {% call champ_bloc("Serveur(s)", large=True) %}
+                        <div class="pt-2">
                         {% if item.no_server %}
                         <span class="text-muted">Aucun serveur : le logiciel tourne chez l'éditeur ou sur les postes des agents.</span>
                         {% else %}
@@ -257,7 +256,6 @@
                             <span class="text-muted">Aucun serveur renseigné.</span>
                             {% endfor %}
                         {% endif %}
-                        {% endcall %}
                         </div>
                     </div>
                     {% with entity_type='software', entity_id=item.id %}{% include '_snooze_card.html' %}{% endwith %}
