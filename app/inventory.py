@@ -239,6 +239,12 @@ def quick_create():
     if kind not in EQUIPMENT_KIND_LABELS:
         kind = 'vm'
     eq = Equipment(name=name, kind=kind)
+    # Ce que la modale « Nouveau serveur » ajoute, tout optionnel : le systeme
+    # (sa famille si l'on n'en sait pas plus), l'emplacement, des observations.
+    systeme = (request.form.get('os', '') or '').strip() or (request.form.get('os_family', '') or '').strip()
+    eq.os = systeme[:128] or None
+    eq.location = ((request.form.get('location', '') or '').strip() or None)
+    eq.observations = ((request.form.get('observations', '') or '').strip() or None)
     db.session.add(eq)
     db.session.commit()
     audit_record('creation inventaire', detail=f'{eq.name} ({eq.kind_label()}, ajout rapide)',

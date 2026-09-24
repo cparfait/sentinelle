@@ -391,3 +391,23 @@ def test_un_flux_se_lit_se_corrige_et_se_supprime_depuis_la_fiche(client):
                 follow_redirects=True)
     assert SoftwareLink.query.count() == 0
 
+
+def test_la_modale_nouveau_serveur_cree_un_equipement_complet(client):
+    r = client.post('/inventory/quick-create', data={
+        'name': 'SRV-AFFGE', 'kind': 'physical', 'os_family': 'Windows',
+        'os': 'Windows Server 2022', 'location': 'salle serveur', 'observations': 'Sauvegarde Veeam'})
+    assert r.status_code == 200 and r.get_json()['ok']
+    eq = Equipment.query.filter_by(name='SRV-AFFGE').one()
+    assert eq.kind == 'physical' and eq.os == 'Windows Server 2022'
+    assert eq.location == 'salle serveur' and eq.observations == 'Sauvegarde Veeam'
+    # Sans nom de systeme, la famille en tient lieu ; sans rien, rien.
+    client.post('/inventory/quick-create', data={'name': 'SRV-LNX', 'kind': 'vm', 'os_family': 'Linux'})
+    assert Equipment.query.filter_by(name='SRV-LNX').one().os == 'Linux'
+    client.post('/inventory/quick-create', data={'name': 'SRV-VIDE', 'kind': 'vm'})
+    assert Equipment.query.filter_by(name='SRV-VIDE').one().os is None
+    sw = Software(name='GED')
+    db.session.add(sw)
+    db.session.commit()
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    assert 'qaModalServer' in html and 'Nouveau serveur' in html and 'Créer un serveur absent du parc' in html
+

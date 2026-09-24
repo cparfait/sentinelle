@@ -158,3 +158,64 @@
     </div>
 </div>
 {% endmacro %}
+
+{# ═══ Nouveau serveur ═══
+   La modale de SoftInventory, pour un serveur absent du parc : le nom, virtuel
+   ou non, la famille et le nom du systeme, l'emplacement, des observations.
+   Le reste (reseau, garantie, supervision) se complete sur la fiche. #}
+{% macro qa_modal_server() %}
+<div class="modal fade" id="qaModalServer" tabindex="-1" aria-hidden="true"
+     data-qa-endpoint="{{ url_for('inventory.quick_create') }}">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-hdd-stack me-2"></i>Nouveau serveur</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" data-qa-csrf value="{{ csrf_token() }}">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label small">Nom du serveur *</label>
+                        <input type="text" data-qa-field="name" data-qa-required class="form-control form-control-sm" placeholder="Ex : SRV-AFFGE" maxlength="120">
+                    </div>
+                    <div class="col-auto text-center">
+                        <label class="form-label small d-block" for="qaSrvVirtuel">Virtuel</label>
+                        {# La case pilote le champ envoye : une VM ou un serveur physique. #}
+                        <input type="checkbox" class="form-check-input" id="qaSrvVirtuel" checked
+                               onchange="this.nextElementSibling.value = this.checked ? 'vm' : 'physical'">
+                        <input type="hidden" data-qa-field="kind" value="vm">
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label small">Type</label>
+                        <select data-qa-field="os_family" class="form-select form-select-sm">
+                            <option value="">— inconnu —</option>
+                            <option value="Windows">Windows</option>
+                            <option value="Linux">Linux</option>
+                        </select>
+                    </div>
+                    <div class="col-md">
+                        <label class="form-label small">Système</label>
+                        <input type="text" data-qa-field="os" class="form-control form-control-sm" placeholder="Ex : Windows Server 2022">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Emplacement</label>
+                        <input type="text" data-qa-field="location" class="form-control form-control-sm" placeholder="Ex : salle serveur">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small">Observations</label>
+                        <textarea data-qa-field="observations" class="form-control form-control-sm" rows="3"
+                                  placeholder="Informations libres : sauvegarde, exploitant, particularités…"></textarea>
+                    </div>
+                </div>
+                <div data-qa-error class="text-danger small mt-2 d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary btn-sm" data-qa-save>Créer le serveur</button>
+                <button type="button" class="btn btn-warn btn-sm" data-bs-dismiss="modal">Annuler</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from '_icones.html' import icone, lucide %}
-{% from '_quick_add.html' import qa_button, qa_modal_equipment %}
+{% from '_quick_add.html' import qa_modal_server %}
 {% block title %}{{ item.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
@@ -300,7 +300,11 @@
                     <option value="{{ e.id }}">{{ e.name }}</option>
                     {% endfor %}
                 </select>
-                {% if current_user.can_edit('inventory') %}{{ qa_button('qaModalEquipment', 'swServeur', 'Nouvel équipement') }}{% endif %}
+                {% if current_user.can_edit('inventory') %}
+                <button type="button" class="btn btn-sm btn-outline-secondary btn-carre" title="Créer un serveur absent du parc"
+                        aria-label="Créer un serveur absent du parc" data-bs-toggle="modal" data-bs-target="#qaModalServer"
+                        data-qa-open="qaModalServer" data-qa-target="swServeur">{{ lucide('plus', 16) }}</button>
+                {% endif %}
                 <button type="submit" class="btn btn-sm btn-outline-secondary">{{ lucide('plus', 14, 'me-1') }}Associer</button>
             </form>
             {% endif %}
@@ -482,5 +486,5 @@
     {% endcall %}
     {% endif %}
 {% endcall %}
+{% if current_user.can_edit('inventory') %}{{ qa_modal_server() }}{% endif %}
 {% endblock %}
-{% if current_user.can_edit('inventory') %}{{ qa_modal_equipment() }}{% endif %}
