@@ -1696,10 +1696,9 @@ class Document(db.Model):
     # acte, ou dont l'acte est attendu. La fiche propose de le deposer.
     size = db.Column(db.Integer)
     # Ce que portait une « piece du marche » : la date de l'acte (signature,
-    # notification) et des notes. Pas de montant : c'est le contrat qui engage,
-    # un document ne fait qu'attester.
+    # notification). Ni montant ni notes : c'est le contrat qui engage et qui
+    # se commente, un document ne fait qu'attester.
     doc_date = db.Column(db.Date, index=True)
-    notes = db.Column(db.Text)
     # Deposant DENORMALISE : la trace survit a la suppression du compte.
     uploaded_by = db.Column(db.String(64))
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))

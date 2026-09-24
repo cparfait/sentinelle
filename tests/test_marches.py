@@ -67,19 +67,19 @@ def _depose(client, ct, nom, **champs):
                        content_type='multipart/form-data', follow_redirects=True)
 
 
-def test_les_documents_du_marche_portent_une_date_et_des_notes(client):
-    """Une piece de marche est un DOCUMENT du contrat : son acte, avec sa date
-    et ses notes. Pas de montant : c'est le contrat qui engage."""
+def test_les_documents_du_marche_portent_une_date(client):
+    """Une piece de marche est un DOCUMENT du contrat : son acte, avec sa date.
+    Ni montant ni notes : c'est le contrat qui engage et qui se commente."""
     ct = Contract(name='Marché RH', cost_yearly=10000)
     db.session.add(ct)
     db.session.commit()
-    _depose(client, ct, 'bon-de-commande.pdf', doc_date='2026-02-10', notes='50 postes')
+    _depose(client, ct, 'bon-de-commande.pdf', doc_date='2026-02-10')
     _depose(client, ct, 'avenant.pdf')
     docs = ct.documents()
     assert {d.filename for d in docs} == {'bon-de-commande.pdf', 'avenant.pdf'}
     bon = next(d for d in docs if d.filename == 'bon-de-commande.pdf')
-    assert bon.notes == '50 postes' and bon.doc_date.isoformat() == '2026-02-10'
-    assert not hasattr(Document, 'amount')
+    assert bon.doc_date.isoformat() == '2026-02-10'
+    assert not hasattr(Document, 'amount') and not hasattr(Document, 'notes')
     html = client.get(f'/contracts/{ct.id}').get_data(as_text=True)
     assert 'ong-pieces-du' not in html                    # plus d onglet a part
     assert 'name="doc_date"' in html and 'name="amount"' not in html

@@ -70,8 +70,8 @@ pytest dans `requirements-dev.txt`). Toute évolution de la logique de statut
   et rapprocher l'existant une fois dans `_migrate_data()` sans toucher un lien déjà posé.
   Références : `AccessReview.software_id`, `Certificate.domain_id`, `Domain.registrar_id`.
 - **Documents** : un fichier accroché à une fiche (`Document`, octets à part dans `DocumentContent`).
-  Un document de contrat porte en plus une date et des notes, jamais de montant (c'est le contrat
-  qui engage) : il n'existe pas de notion séparée de « pièce de marché ». Une ligne peut être **sans fichier** (`size` NULL,
+  Un document de contrat porte en plus une date, jamais de montant ni de notes (c'est le contrat
+  qui engage et qui se commente) : il n'existe pas de notion séparée de « pièce de marché ». Une ligne peut être **sans fichier** (`size` NULL,
   `has_file()` faux) quand l'acte est attendu : les routes de lecture répondent 404 et la fiche
   propose `documents.attach_file`.
 - **Scheduler** : ne PAS appeler `create_app()` dans un job. `start_scheduler(app)` reçoit

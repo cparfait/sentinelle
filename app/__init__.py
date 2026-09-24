@@ -685,13 +685,12 @@ def _migrer_pieces_de_marche():
     """Une « piece du marche » (poste, nature, cout, date, notes) et le
     document qui l'atteste etaient deux notions ; ce sont des DOCUMENTS du
     contrat. Chaque piece devient : ses fichiers, rattaches au contrat avec sa
-    categorie et sa date ; ou, sans fichier, un document « sans fichier » qui
-    garde tout et attend l'acte. Le cout annuel qu'elle portait passe dans les
-    notes : un document n'a pas de montant, c'est le contrat qui engage. La
-    ligne de piece est ensuite retiree : c'est ce qui rend le passage
-    rejouable sans rien recreer."""
+    categorie et sa date ; ou, sans fichier, un document « sans fichier »,
+    nomme comme la piece, qui attend l'acte. Un document ne porte ni montant
+    ni notes : le cout annuel et les notes de la piece ne sont pas repris
+    (c'est le contrat qui engage et qui se commente). La ligne de piece est
+    ensuite retiree : c'est ce qui rend le passage rejouable sans rien recreer."""
     from sqlalchemy import text, inspect as _inspect
-    from app.libelles import montant as _montant
     rows = db.session.execute(text(
         "SELECT id, contract_id, label, kind, cost_yearly, doc_date, notes "
         "FROM contract_item ORDER BY id")).mappings().all()
@@ -715,8 +714,6 @@ def _migrer_pieces_de_marche():
 
     for it in rows:
         cat = categorie(it['kind'])
-        cout = f"coût annuel {_montant(it['cost_yearly'])}" if it['cost_yearly'] else None
-        notes = ' — '.join(x for x in (it['label'], cout, it['notes']) if x) or None
         docs = []
         if 'contract_item_id' in dcols:
             docs = db.session.execute(text(
@@ -726,20 +723,17 @@ def _migrer_pieces_de_marche():
             for (doc_id,) in docs:
                 db.session.execute(text(
                     "UPDATE document SET contract_id=:c, contract_item_id=NULL, "
-                    " category_id=COALESCE(category_id, :cat), doc_date=COALESCE(doc_date, :dd), "
-                    " notes=COALESCE(notes, :notes) "
+                    " category_id=COALESCE(category_id, :cat), doc_date=COALESCE(doc_date, :dd) "
                     "WHERE id=:id"),
-                    {'c': it['contract_id'], 'cat': cat, 'dd': it['doc_date'],
-                     'notes': notes, 'id': doc_id})
+                    {'c': it['contract_id'], 'cat': cat, 'dd': it['doc_date'], 'id': doc_id})
         else:
-            notes_seule = ' — '.join(x for x in (cout, it['notes']) if x) or None
             db.session.execute(text(
                 "INSERT INTO document (contract_id, category_id, filename, size, uploaded_by, "
-                " created_at, doc_date, notes) "
-                "VALUES (:c, :cat, :fn, NULL, 'reprise', CURRENT_TIMESTAMP, :dd, :notes)"),
+                " created_at, doc_date) "
+                "VALUES (:c, :cat, :fn, NULL, 'reprise', CURRENT_TIMESTAMP, :dd)"),
                 {'c': it['contract_id'], 'cat': cat,
                  'fn': (it['label'] or _NATURES_DE_PIECE.get(it['kind'] or '', 'Pièce'))[:256],
-                 'dd': it['doc_date'], 'notes': notes_seule})
+                 'dd': it['doc_date']})
         db.session.execute(text("DELETE FROM contract_item WHERE id=:id"), {'id': it['id']})
     db.session.commit()
 

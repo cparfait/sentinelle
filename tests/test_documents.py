@@ -399,7 +399,7 @@ def test_une_piece_sans_fichier_attend_son_acte(client):
     ct = Contract(name='Marché RH')
     db.session.add(ct)
     db.session.commit()
-    piece = Document(contract_id=ct.id, filename='Bon de commande 2019', notes='50 postes')
+    piece = Document(contract_id=ct.id, filename='Bon de commande 2019')
     db.session.add(piece)
     db.session.commit()
     assert not piece.has_file()
@@ -413,8 +413,7 @@ def test_une_piece_sans_fichier_attend_son_acte(client):
                     content_type='multipart/form-data', follow_redirects=True)
     assert r.status_code == 200
     db.session.refresh(piece)
-    assert piece.has_file() and piece.filename == 'bc-2019.pdf'
-    assert 'Bon de commande 2019' in piece.notes and '50 postes' in piece.notes
+    assert piece.has_file() and piece.filename == 'Bon de commande 2019'   # le nom donne reste
     assert client.get(f'/documents/{piece.id}/download').data == b'%PDF-1.4 faux acte'
     # Une seconde fois : refusé, la pièce a déjà son fichier.
     r = client.post(f'/documents/{piece.id}/file', data={'file': _fichier('autre.pdf')},
@@ -450,11 +449,10 @@ def test_modifier_une_piece_corrige_ce_qu_elle_dit_d_elle_meme(client):
     _depose(client, 'contract', ct.id, 'acte.pdf')
     doc = Document.query.one()
     cat = Referential.query.filter_by(kind='doc_category', label='Devis').first()
-    client.post(f'/documents/{doc.id}/edit', data={'category_id': str(cat.id), 'doc_date': '2026-03-01',
-                                                   'notes': 'lot 2'},
+    client.post(f'/documents/{doc.id}/edit', data={'category_id': str(cat.id), 'doc_date': '2026-03-01'},
                 follow_redirects=True)
     db.session.refresh(doc)
-    assert doc.category_id == cat.id and doc.notes == 'lot 2'
+    assert doc.category_id == cat.id and not hasattr(Document, 'notes')
     assert doc.doc_date.isoformat() == '2026-03-01'
     assert doc.content.data == b'%PDF-1.4 faux acte'          # le fichier ne bouge pas
 
@@ -469,7 +467,7 @@ def test_le_retour_suit_next_mais_jamais_ailleurs(client):
     _depose(client, 'contract', ct.id, 'acte.pdf')
     doc = Document.query.one()
     # Depuis la fiche logiciel : on y revient.
-    r = client.post(f'/documents/{doc.id}/edit', data={'notes': 'x', 'next': f'/inventory/logiciels/{sw.id}#contrats'})
+    r = client.post(f'/documents/{doc.id}/edit', data={'next': f'/inventory/logiciels/{sw.id}#contrats'})
     assert r.status_code == 302 and r.headers['Location'].endswith(f'/inventory/logiciels/{sw.id}#contrats')
     # Une adresse externe est ignorée : retour à la fiche du marché.
     r = client.post(f'/documents/{doc.id}/delete', data={'next': 'https://ailleurs.example/'})
@@ -504,9 +502,9 @@ def test_un_lecteur_ne_modifie_pas_une_piece(app):
     db.session.commit()
     c = app.test_client()
     c.post('/login', data={'username': 'lecteur', 'password': 'Lecteur-2026!'})
-    c.post(f'/documents/{doc.id}/edit', data={'notes': 'intrus'})
+    c.post(f'/documents/{doc.id}/edit', data={'doc_date': '2030-01-01'})
     db.session.refresh(doc)
-    assert doc.notes is None
+    assert doc.doc_date is None
 
 
 def test_renommer_une_piece_et_remplacer_son_fichier(client):

@@ -220,8 +220,7 @@ def upload():
                    category_id=parse_int(request.form.get('category_id')),
                    # Ce qu'une piece de marche portait : facultatif, et sans
                    # objet sur un guide ou une deliberation.
-                   doc_date=parse_date(request.form.get('doc_date')),
-                   notes=(request.form.get('notes') or '').strip() or None)
+                   doc_date=parse_date(request.form.get('doc_date')))
     setattr(doc, col, parent_id)
     doc.content = DocumentContent(data=octets)
     db.session.add(doc)
@@ -258,8 +257,8 @@ def _lire_fichier(fichier):
 @login_required
 def attach_file(id):
     """Apporte son fichier a une piece qui n'en a pas : une piece de marche
-    reprise sans son acte. La ligne garde sa categorie, sa date et ses notes ;
-    seul le fichier arrive."""
+    reprise sans son acte. La ligne garde sa categorie et sa date ; seul le
+    fichier arrive."""
     if not enabled():
         abort(404)
     doc = Document.query.get_or_404(id)
@@ -277,11 +276,9 @@ def attach_file(id):
         flash(lu, 'danger')
         return redirect(_retour(kind, parent_id))
     nom, mime, octets = lu
-    # L'intitule de la piece ne se perd pas : il passe dans les notes si le
-    # nom du fichier le remplace.
-    if doc.filename and doc.filename != nom and doc.filename not in (doc.notes or ''):
-        doc.notes = ' — '.join(x for x in (doc.filename, doc.notes) if x)
-    doc.filename, doc.mime, doc.size = nom, mime, len(octets)
+    # La piece garde son nom : c'est celui qu'on lui avait donne, le fichier
+    # vient dessous. Le formulaire de modification permet de le changer.
+    doc.mime, doc.size = mime, len(octets)
     doc.uploaded_by = current_user.username
     doc.content = DocumentContent(data=octets)
     db.session.commit()
@@ -356,8 +353,8 @@ def _suite(kind, parent_id):
 @login_required
 def edit(id):
     """Corrige une piece : son nom, son fichier (remplace, ou apporte s'il
-    manquait), sa categorie, sa date, ses notes. Comme dans SoftInventory, le
-    nom affiche se choisit ; le fichier d'origine ne dicte rien."""
+    manquait), sa categorie, sa date. Comme dans SoftInventory, le nom affiche
+    se choisit ; le fichier d'origine ne dicte rien."""
     if not enabled():
         abort(404)
     doc = Document.query.get_or_404(id)
@@ -389,7 +386,6 @@ def edit(id):
         doc.filename = nom
     doc.category_id = parse_int(request.form.get('category_id'))
     doc.doc_date = parse_date(request.form.get('doc_date'))
-    doc.notes = (request.form.get('notes') or '').strip() or None
     db.session.commit()
     audit_record('modification piece jointe', detail=doc.filename, category=categorie)
     flash('Pièce modifiée', 'success')

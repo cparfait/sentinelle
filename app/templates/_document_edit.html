@@ -1,7 +1,7 @@
 {# ═══ Modifier une pièce ═══
    Replié derrière le crayon, comme le formulaire de pièce de SoftInventory :
    le nom affiché, le fichier (à remplacer, ou à apporter s'il manque), la
-   catégorie, la date de l'acte, les notes. Variables : `d` (la pièce),
+   catégorie, la date de l'acte. Variables : `d` (la pièce),
    `avec_dates` (la date de l'acte : un marché, pas un guide), `next` (où
    revenir). #}
 {% from '_icones.html' import lucide %}
@@ -46,10 +46,6 @@
                        value="{{ d.doc_date.strftime('%Y-%m-%d') if d.doc_date else '' }}">
             </div>
             {% endif %}
-            <div class="col-md">
-                <label class="form-label fw-medium small mb-1">Notes</label>
-                <input type="text" name="notes" class="form-control form-control-sm" value="{{ d.notes or '' }}">
-            </div>
             <div class="col-auto">
                 <label class="form-label small mb-1 d-block">&nbsp;</label>
                 <button type="submit" class="btn btn-sm btn-primary">Enregistrer</button>
