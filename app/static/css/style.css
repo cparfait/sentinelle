@@ -2432,6 +2432,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .flux-liste .flux-sens { color: var(--primary); }
 .serveurs-liste .serveur-ico { color: var(--primary); }
 .btn-carre { width: 1.85rem; height: 1.85rem; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.btn-carre-plus { font-size: 14px; line-height: 1; }
 .flux-liste .flux-desc { font-size: 12px; color: var(--muted); }
 /* Le telechargement d'un document : une fleche Lucide de 14 px, en gris
    leger, qui prend la couleur du lien au survol. */

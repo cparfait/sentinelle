@@ -303,7 +303,7 @@
                 {% if current_user.can_edit('inventory') %}
                 <button type="button" class="btn btn-sm btn-outline-secondary btn-carre" title="Créer un serveur absent du parc"
                         aria-label="Créer un serveur absent du parc" data-bs-toggle="modal" data-bs-target="#qaModalServer"
-                        data-qa-open="qaModalServer" data-qa-target="swServeur">{{ lucide('plus', 16) }}</button>
+                        data-qa-open="qaModalServer" data-qa-target="swServeur"><span aria-hidden="true" class="btn-carre-plus">➕</span></button>
                 {% endif %}
                 <button type="submit" class="btn btn-sm btn-outline-secondary">{{ lucide('plus', 14, 'me-1') }}Associer</button>
             </form>
