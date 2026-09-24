@@ -229,7 +229,7 @@
             <div class="data-card p-3 h-100">
                 <div class="fiche-sections">
                     <div class="fiche-bloc fiche-bloc--emerald">
-                        {{ titre_section("Qui s'en sert", 'bi-people', 'emerald', 'mb-0') }}
+                        {{ titre_section('Services utilisateurs', 'bi-people', 'emerald', 'mb-0') }}
                         <div class="fiche-grille">
                         {% call champ_bloc('Services utilisateurs', large=True) %}
                         {% for sv in item.user_services %}
@@ -244,7 +244,7 @@
                     </div>
 
                     <div class="fiche-bloc fiche-bloc--slate">
-                        {{ titre_section("Serveurs d'installation", 'bi-hdd-stack', 'slate', 'mb-0') }}
+                        {{ titre_section('Serveurs', 'bi-hdd-stack', 'slate', 'mb-0') }}
                         <div class="fiche-grille">
                         {% call champ_bloc("Serveur(s)", large=True) %}
                         {% if item.no_server %}
