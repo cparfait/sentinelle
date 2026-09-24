@@ -240,3 +240,20 @@ def test_la_fiche_logiciel_liste_les_documents_du_marche(client):
     assert 'marche-signe.pdf' in html and 'avenant.pdf' in html
     assert '10/02/2026' in html
     assert 'M26-01' in html and 'Mnt annuel : 10 000 €' in html
+
+
+def test_deposer_une_piece_depuis_la_fiche_logiciel_y_revient(client):
+    sw = Software(name='Paie')
+    ct = Contract(name='Marché RH')
+    db.session.add_all([sw, ct])
+    db.session.commit()
+    ct.software.append(sw)
+    db.session.commit()
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    assert f'docDepot{ct.id}' in html and '0 Document' in html      # le bouton « + Pièce » et son formulaire
+    r = client.post('/documents/upload', data={
+        'parent_kind': 'contract', 'parent_id': str(ct.id), 'next': f'/inventory/logiciels/{sw.id}#contrats',
+        'file': (io.BytesIO(b'%PDF-1.4 acte'), 'acte.pdf')}, content_type='multipart/form-data')
+    assert r.status_code == 302 and r.headers['Location'].endswith(f'/inventory/logiciels/{sw.id}#contrats')
+    assert ct.documents()[0].filename == 'acte.pdf'
+

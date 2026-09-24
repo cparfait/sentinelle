@@ -207,12 +207,12 @@ def upload():
     # Déposer une pièce, c'est modifier la fiche : même droit.
     if not current_user.can_edit(categorie):
         flash("Vous n'avez pas les droits pour déposer une pièce ici.", 'danger')
-        return redirect(_retour(kind, parent_id))
+        return redirect(_suite(kind, parent_id))
 
     lu = _lire_fichier(request.files.get('file'))
     if isinstance(lu, str):
         flash(lu, 'danger')
-        return redirect(_retour(kind, parent_id))
+        return redirect(_suite(kind, parent_id))
     nom, mime, octets = lu
 
     doc = Document(filename=nom, mime=mime, size=len(octets),
@@ -229,7 +229,7 @@ def upload():
     audit_record('depot piece jointe', detail=f'{nom} ({kind} #{parent_id})',
                  category=categorie)
     flash('Pièce jointe ajoutée', 'success')
-    return redirect(_retour(kind, parent_id))
+    return redirect(_suite(kind, parent_id))
 
 
 def _lire_fichier(fichier):

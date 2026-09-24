@@ -109,8 +109,55 @@
         {% set peut_modifier_doc = current_user.can_edit('contracts') %}
         {% set peut_retirer_doc = current_user.can_delete('contracts') %}
         {% set retour_ici = url_for('software.detail', id=item.id) ~ '#contrats' %}
+        {% if documents_enabled and (docs or peut_modifier_doc) %}
+        {# Le nombre de documents a gauche, « + Pièce » a droite, un filet dessous,
+           comme dans SoftInventory. Le depot se fait ici meme et revient ici. #}
+        <div class="d-flex align-items-end justify-content-between gap-3 mt-3 mb-2 pb-1 border-bottom">
+            <span class="marche-docs-titre">{{ docs | length }} Document{{ 's' if docs | length > 1 }}</span>
+            {% if peut_modifier_doc %}
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse"
+                    data-bs-target="#docDepot{{ c.id }}"><i class="bi bi-plus-lg me-1"></i>Pièce</button>
+            {% endif %}
+        </div>
+        {% if peut_modifier_doc %}
+        <div class="collapse" id="docDepot{{ c.id }}">
+            <form method="POST" action="{{ url_for('documents.upload') }}" enctype="multipart/form-data"
+                  class="p-2 mb-2 rounded border bg-body-tertiary">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="parent_kind" value="contract">
+                <input type="hidden" name="parent_id" value="{{ c.id }}">
+                <input type="hidden" name="next" value="{{ retour_ici }}">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label fw-medium small mb-1">Fichier</label>
+                        <input type="file" name="file" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium small mb-1">Catégorie</label>
+                        <select name="category_id" class="form-select form-select-sm">
+                            <option value="">— Non classée —</option>
+                            {% for cat in doc_categories %}
+                            <option value="{{ cat.id }}">{{ cat.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-medium small mb-1">Date de l'acte</label>
+                        <input type="date" name="doc_date" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md">
+                        <label class="form-label fw-medium small mb-1">Notes</label>
+                        <input type="text" name="notes" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-sm btn-primary">Déposer</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+        {% endif %}
         {% if docs %}
-        <div class="small fw-semibold text-muted mt-3 mb-1">{{ docs | length }} Document{{ 's' if docs | length > 1 }}</div>
         <ul class="list-unstyled mb-0 marche-docs">
             {% for d in docs %}
             <li class="d-flex align-items-start gap-2 py-1">
