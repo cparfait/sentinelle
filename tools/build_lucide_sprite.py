@@ -42,7 +42,7 @@ ICONES = [
     'coins', 'receipt', 'cpu', 'cloud', 'life-buoy', 'wrench', 'settings',
     # Actions en ligne sur une fiche : modifier, retirer une liaison.
     'pencil', 'unlink', 'download', 'file-text', 'plus', 'upload',
-    'arrow-right', 'arrow-left',
+    'arrow-right', 'arrow-left', 'copy', 'check',
 ]
 
 

@@ -1,4 +1,4 @@
-{% from '_icones.html' import icone %}
+{% from '_icones.html' import icone, lucide %}
 {# ═══ Pièces jointes ═══
    Partial réutilisable : le fichier qui atteste ce que la fiche affirme.
    Attend `doc_parent_kind`, `doc_parent_id` et `doc_permission` (la catégorie
@@ -64,81 +64,75 @@
     </div>
     {% endif %}
 
-    <div class="table-responsive">
-        <table class="table table-hover mb-0">
-            <thead><tr><th>Fichier</th><th>Catégorie</th>{% if avec_dates %}<th>Date</th>{% endif %}<th>Taille</th><th>Déposé</th><th></th></tr></thead>
-            <tbody>
-                {% for d in pieces %}
-                <tr>
-                    <td>
+    {# ═══ La liste ═══
+       Comme dans SoftInventory : une ligne par pièce, l'icône de fichier, le
+       nom (qui s'ouvre dans un nouvel onglet quand le type s'y prête, sinon
+       se télécharge) et la flèche de téléchargement ; dessous, en petit et en
+       gris léger, la catégorie, la taille, le déposant et la date. À droite,
+       le crayon et la corbeille. Une pièce sans fichier attend son acte. #}
+    <div class="px-3 pb-3">
+        {% if pieces %}
+        <ul class="list-unstyled mb-0 docs-liste">
+            {% for d in pieces %}
+            <li class="d-flex align-items-start gap-2 py-2{{ '' if loop.first else ' border-top' }}">
+                {{ lucide('file-text', 16, 'doc-ico flex-shrink-0') }}
+                <div class="min-w-0 flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 min-w-0">
                         {% if not d.has_file() %}
-                        {# Une pièce reprise sans son acte : elle garde ce qu'on
-                           savait d'elle, et attend le fichier. #}
-                        <span class="fw-medium">{{ d.filename }}</span>
-                        <span class="badge bg-light text-dark border ms-1">fichier à déposer</span>
-                        {% if peut_deposer %}
-                        <form method="POST" action="{{ url_for('documents.attach_file', id=d.id) }}"
-                              enctype="multipart/form-data" class="d-flex gap-1 mt-1" style="max-width:24rem">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="file" name="file" class="form-control form-control-sm" required>
-                            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Déposer</button>
-                        </form>
-                        {% endif %}
+                        <span class="fw-medium text-truncate">{{ d.filename }}</span>
+                        <span class="badge bg-light text-dark border">fichier à déposer</span>
+                        {% elif document_viewable(d) %}
+                        <a href="{{ url_for('documents.view', id=d.id) }}" target="_blank" rel="noopener"
+                           class="fw-medium text-decoration-none text-truncate" title="Ouvrir {{ d.filename }}">{{ d.filename }}</a>
+                        <a href="{{ url_for('documents.download', id=d.id) }}" class="doc-dl flex-shrink-0"
+                           title="Télécharger {{ d.filename }}" aria-label="Télécharger {{ d.filename }}">{{ lucide('download', 14) }}</a>
                         {% else %}
-                        {# Le nom OUVRE la pièce quand le type s'y prête — un acte
-                           se lit, il ne s'enregistre pas d'abord. Sinon il
-                           télécharge, comme avant. Dans les deux cas l'accès se
-                           fait par identifiant : aucun chemin ne vient du client.
-
-                           Dans un NOUVEL ONGLET : la fiche reste ouverte derrière,
-                           et le document dispose de toute la page — un acte scanné
-                           dans une boîte modale se lit à la loupe. Le navigateur y
-                           apporte en prime sa visionneuse complète : zoom,
-                           recherche, impression, pagination. #}
-                        {% if document_viewable(d) %}
-                        <a href="{{ url_for('documents.view', id=d.id) }}"
-                           target="_blank" rel="noopener" title="Ouvrir dans un nouvel onglet">
-                            <i class="bi bi-file-earmark-text me-1"></i>{{ d.filename }}
-                            <i class="bi bi-box-arrow-up-right small text-muted ms-1"></i></a>
-                        {% else %}
-                        <a href="{{ url_for('documents.download', id=d.id) }}">
-                            <i class="bi bi-file-earmark-arrow-down me-1"></i>{{ d.filename }}</a>
+                        <a href="{{ url_for('documents.download', id=d.id) }}" class="fw-medium text-decoration-none text-truncate"
+                           title="Télécharger {{ d.filename }}">{{ d.filename }}</a>
+                        <a href="{{ url_for('documents.download', id=d.id) }}" class="doc-dl flex-shrink-0"
+                           title="Télécharger {{ d.filename }}" aria-label="Télécharger {{ d.filename }}">{{ lucide('download', 14) }}</a>
                         {% endif %}
-                        {% endif %}
-                        {% if peut_deposer %}{% with next='' %}{% include '_document_edit.html' %}{% endwith %}{% endif %}
-                    </td>
-                    <td class="small">{{ d.category.label if d.category else '—' }}</td>
-                    {% if avec_dates %}
-                    <td class="small text-nowrap">{{ d.doc_date.strftime('%d/%m/%Y') if d.doc_date else '—' }}</td>
+                    </div>
+                    <div class="doc-sous">
+                        {{- d.category.label if d.category else 'Non classée' -}}
+                        {%- if d.has_file() %} · {{ d.size_label() }}{% endif -%}
+                        {%- if d.uploaded_by %} · déposé par {{ d.uploaded_by }}{% endif -%}
+                        {%- if avec_dates and d.doc_date %} · acte du {{ d.doc_date.strftime('%d/%m/%Y') }}{% endif -%}
+                        {%- if d.created_at %} · {{ d.created_at.strftime('%d/%m/%Y') }}{% endif -%}
+                    </div>
+                    {% if not d.has_file() and peut_deposer %}
+                    <form method="POST" action="{{ url_for('documents.attach_file', id=d.id) }}"
+                          enctype="multipart/form-data" class="d-flex gap-1 mt-1" style="max-width:24rem">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="file" name="file" class="form-control form-control-sm" required>
+                        <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Déposer</button>
+                    </form>
                     {% endif %}
-                    <td class="small text-nowrap">{{ d.size_label() if d.has_file() else '—' }}</td>
-                    <td class="small text-nowrap">{{ d.created_at.strftime('%d/%m/%Y') }}
-                        {%- if d.uploaded_by %} <span class="text-muted">par {{ d.uploaded_by }}</span>{% endif %}</td>
-                    <td class="text-end">
-                        {% if peut_deposer %}
-                        <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="collapse"
-                                data-bs-target="#docEdit{{ d.id }}" title="Modifier la pièce"
-                                aria-label="Modifier la pièce"><i class="bi bi-pencil"></i></button>
-                        {% endif %}
-                        {% if d.has_file() and document_viewable(d) %}
-                        <a href="{{ url_for('documents.download', id=d.id) }}"
-                           class="btn btn-sm btn-outline-secondary me-1" title="Télécharger"
-                           aria-label="Télécharger"><i class="bi bi-download"></i></a>
-                        {% endif %}
-                        {% if peut_retirer %}
-                        <form method="POST" action="{{ url_for('documents.delete', id=d.id) }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer la pièce"
-                                    aria-label="Supprimer la pièce" data-confirm="Supprimer cette pièce jointe ?"><i class="bi bi-trash"></i></button>
-                        </form>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="{{ 6 if avec_dates else 5 }}" class="text-center py-3 text-muted">Aucune pièce jointe</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    {% if peut_deposer %}{% with next='' %}{% include '_document_edit.html' %}{% endwith %}{% endif %}
+                </div>
+                {% if peut_deposer or peut_retirer %}
+                <div class="d-flex gap-1 flex-shrink-0">
+                    {% if peut_deposer %}
+                    <button type="button" class="btn btn-sm btn-ghost btn-icone" data-bs-toggle="collapse"
+                            data-bs-target="#docEdit{{ d.id }}" title="Modifier la pièce"
+                            aria-label="Modifier la pièce">{{ lucide('pencil', 16) }}</button>
+                    {% endif %}
+                    {% if peut_retirer %}
+                    <form method="POST" action="{{ url_for('documents.delete', id=d.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-ghost btn-icone btn-ghost-danger"
+                                title="Supprimer la pièce et son fichier" aria-label="Supprimer la pièce et son fichier"
+                                data-confirm="Supprimer « {{ d.filename }} » et son fichier ?">{{ lucide('trash-2', 16) }}</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted mb-0 pt-2">Aucune pièce jointe</p>
+        {% endif %}
     </div>
 </div>
 

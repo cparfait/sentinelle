@@ -2421,6 +2421,23 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .marche-docs-entete { border-bottom: 1px dotted var(--line); }
 .marche-docs-vide { font-size: 14px; color: var(--faint); }
 .doc-aide { font-size: 12px; color: var(--faint); margin-top: 4px; }
+/* La liste des pieces jointes, a la SoftInventory : icone de fichier et
+   fleche de telechargement en gris leger, sous-ligne en 12 px. */
+.docs-liste .doc-ico { color: var(--faint); margin-top: 3px; }
+.docs-liste .doc-dl { color: var(--faint); display: inline-flex; align-items: center; }
+.docs-liste .doc-dl:hover { color: var(--primary); }
+.docs-liste .doc-sous { font-size: 12px; color: var(--faint); }
+.docs-liste a { color: var(--text); }
+.docs-liste a:hover { color: var(--primary); }
+.docs-liste .border-top { border-color: var(--line) !important; }
+/* Les dossiers du partage reseau, memes lignes que les pieces jointes ; le
+   chemin en chasse fixe, 12 px, et un bouton de copie sans cadre. */
+.dossiers-liste .doc-ico { color: var(--faint); margin-top: 3px; }
+.dossiers-liste .doc-dl { color: var(--faint); display: inline-flex; align-items: center; background: none; border: 0; padding: 0; }
+.dossiers-liste .doc-dl:hover { color: var(--primary); }
+.dossiers-liste .doc-sous { font-size: 12px; color: var(--faint); }
+.dossiers-liste .dossier-chemin { font-size: 12px; color: var(--strong); word-break: break-all; }
+.dossiers-liste .border-top { border-color: var(--line) !important; }
 /* Les services utilisateurs d'un logiciel : la grille de cases de
    SoftInventory, quatre colonnes qui se replient avec la largeur. */
 .services-grille { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 1rem; }

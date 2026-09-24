@@ -312,7 +312,7 @@ def test_la_fiche_affiche_tout_ce_qu_elle_porte(client):
                     '2FA', 'Marché 2026', 'Ressources humaines',
                     'Éditeur', 'CLI-42', 'Jean Commercial',   # colonne de droite
                     'État civil', 'REG-12', 'dpo@edi.fr',     # volet RGPD
-                    'Interconnexions', 'Dossiers du partage',  # cartes du bas
+                    'Interconnexions', 'Dossiers',  # cartes du bas
                     'Mises à jour liées', 'Tâches récurrentes'):
         assert attendu in html, f'« {attendu} » a disparu de la fiche'
 

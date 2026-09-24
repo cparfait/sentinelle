@@ -1,17 +1,22 @@
-{% from '_icones.html' import icone %}
-{# ═══ Partage reseau ═══
-   Ou vivent les installeurs, les outils, les notes de version — tout ce qui
-   est trop lourd ou trop vivant pour une piece jointe. #}
+{% from '_icones.html' import icone, lucide %}
+{# ═══ Dossiers ═══
+   Où vivent les installeurs, les outils, les notes de version — tout ce qui
+   est trop lourd ou trop vivant pour une pièce jointe. Comme dans
+   SoftInventory : le chemin en police à chasse fixe, un bouton pour le
+   copier, et le rappel qu'il se colle dans l'Explorateur. Un navigateur
+   refuse de suivre un lien file:// posé par une page servie en http(s) : le
+   chemin se COPIE, il ne s'ouvre pas d'ici. #}
 {% set peut_editer = current_user.can_edit('software') %}
 {% set peut_supprimer = current_user.can_delete('software') %}
 
-<div class="data-card h-100">
+<div class="data-card mb-3">
     <div class="card-header-custom d-flex justify-content-between align-items-center">
-        <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0">{{ icone('bi-folder2-open', 14, 'ico ico-' ~ couleur_icone('bi-folder2-open')) }}Dossiers du partage réseau
+        <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0">{{ icone('bi-folder2-open', 14, 'ico ico-' ~ couleur_icone('bi-folder2-open')) }}Dossiers
             <span class="badge bg-secondary ms-1">{{ partages | length }}</span></h6>
         {% if peut_editer %}
-        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
-                data-bs-target="#nouveauPartage"><i class="bi bi-plus-lg me-1"></i> Dossier</button>
+        <button class="btn btn-sm btn-ghost btn-icone" type="button" data-bs-toggle="collapse"
+                data-bs-target="#nouveauPartage" title="Ajouter un dossier"
+                aria-label="Ajouter un dossier">{{ lucide('plus', 16) }}</button>
         {% endif %}
     </div>
 
@@ -33,7 +38,7 @@
                 </div>
                 <div class="col-md-1">
                     <button type="submit" class="btn btn-sm btn-primary w-100" title="Ajouter le dossier"
-                            aria-label="Ajouter le dossier"><i class="bi bi-plus-lg"></i></button>
+                            aria-label="Ajouter le dossier">{{ lucide('plus', 14) }}</button>
                 </div>
             </div>
             <div class="form-text mt-2">Les installeurs, les outils, les notes de version — tout ce qui
@@ -42,33 +47,37 @@
     </div>
     {% endif %}
 
-    <ul class="list-group list-group-flush">
-        {% for p in partages %}
-        <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
-            <span class="text-truncate">
-                {% if p.label %}<span class="fw-medium">{{ p.label }}</span><br>{% endif %}
-                <code class="small js-chemin">{{ p.path }}</code>
-            </span>
-            <span class="d-flex gap-1 flex-shrink-0">
-                {# Le chemin se COPIE, il ne s'ouvre pas : un navigateur refuse de
-                   suivre un lien file:// posé par une page servie en http(s), et
-                   le clic ne ferait rien — sans même un message. C'est à
-                   l'Explorateur de l'ouvrir. #}
-                <button type="button" class="btn btn-sm btn-outline-secondary js-copier"
-                        title="Copier le chemin" aria-label="Copier le chemin"><i class="bi bi-clipboard"></i></button>
+    <div class="px-3 pb-3">
+        {% if partages %}
+        <ul class="list-unstyled mb-0 dossiers-liste">
+            {% for p in partages %}
+            <li class="d-flex align-items-start gap-2 py-2{{ '' if loop.first else ' border-top' }}">
+                {{ lucide('folder-open', 16, 'doc-ico flex-shrink-0') }}
+                <div class="min-w-0 flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 min-w-0">
+                        <code class="dossier-chemin js-chemin">{{ p.path }}</code>
+                        <button type="button" class="doc-dl js-copier flex-shrink-0" title="Copier {{ p.path }}"
+                                aria-label="Copier le chemin {{ p.path }}">{{ lucide('copy', 14) }}</button>
+                    </div>
+                    <div class="doc-sous">
+                        {%- if p.label %}{{ p.label }} · {% endif -%}
+                        À coller dans la barre d'adresse de l'Explorateur.
+                    </div>
+                </div>
                 {% if peut_supprimer %}
-                <form method="POST" action="{{ url_for('software.share_delete', share_id=p.id) }}">
+                <form method="POST" action="{{ url_for('software.share_delete', share_id=p.id) }}" class="flex-shrink-0">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer le dossier"
-                            aria-label="Retirer le dossier" data-confirm="Retirer ce dossier ?"><i class="bi bi-trash"></i></button>
+                    <button type="submit" class="btn btn-sm btn-ghost btn-icone btn-ghost-danger" title="Retirer le dossier"
+                            aria-label="Retirer le dossier" data-confirm="Retirer ce dossier ?">{{ lucide('trash-2', 16) }}</button>
                 </form>
                 {% endif %}
-            </span>
-        </li>
+            </li>
+            {% endfor %}
+        </ul>
         {% else %}
-        <li class="list-group-item text-center text-muted py-3">Aucun dossier rattaché.</li>
-        {% endfor %}
-    </ul>
+        <p class="text-muted mb-0 pt-2">Aucun dossier rattaché.</p>
+        {% endif %}
+    </div>
 </div>
 
 <script>
@@ -81,9 +90,10 @@
             var ligne = btn.closest('li');
             var code = ligne && ligne.querySelector('.js-chemin');
             if (!code || !navigator.clipboard) return;
+            var origine = btn.innerHTML;
             navigator.clipboard.writeText(code.textContent.trim()).then(function () {
-                btn.innerHTML = '<i class="bi bi-check-lg"></i>';
-                setTimeout(function () { btn.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 1500);
+                btn.innerHTML = origine.replace('#copy', '#check').replace('lucide-copy', 'lucide-check');
+                setTimeout(function () { btn.innerHTML = origine; }, 1500);
             });
         });
     });
