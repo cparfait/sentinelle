@@ -102,7 +102,8 @@
            marché — ici on les lit et on les ouvre. #}
         {% set postes = c.items.all() %}
         {% if postes %}
-        <table class="table table-sm mt-2 mb-0">
+        <div class="small fw-semibold text-muted mt-3 mb-1">{{ postes | length }} Pièce{{ 's' if postes | length > 1 }}</div>
+        <table class="table table-sm mb-0">
             <thead><tr><th>Pièce du marché</th><th>Nature</th><th class="text-end">Coût annuel</th><th>Date</th><th>Fichier</th></tr></thead>
             <tbody>
                 {% for p in postes %}

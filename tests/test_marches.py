@@ -224,3 +224,20 @@ def test_les_marches_proposes_sont_ceux_de_l_editeur_et_les_orphelins(client):
     famille.software = [sw]
     db.session.commit()
     assert {c.name for c in _marches_rattachables(sw)} == {'Marché sans logiciel'}
+
+
+def test_la_fiche_logiciel_compte_les_pieces_du_marche(client):
+    """Sur la fiche logiciel, un marché se lit comme dans SoftInventory : le
+    nombre de pièces en tête de leur liste, le montant en français."""
+    sw = Software(name='Paie')
+    ct = Contract(name='Marché RH', reference='M26-01', cost_yearly=10000)
+    db.session.add_all([sw, ct])
+    db.session.commit()
+    ct.software.append(sw)
+    db.session.add_all([ContractItem(contract_id=ct.id, label='50 postes'),
+                        ContractItem(contract_id=ct.id, label='Module paie')])
+    db.session.commit()
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    assert '2 Pièces' in html
+    assert 'M26-01' in html and 'Mnt annuel : 10 000 €' in html
+
