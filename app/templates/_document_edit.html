@@ -17,12 +17,14 @@
                        value="{{ d.filename }}" maxlength="180" required>
                 <div class="form-text doc-aide">Renomme le fichier déposé</div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label fw-medium small mb-1">Fichier</label>
                 <input type="file" name="file" id="docFichier{{ d.id }}" class="d-none"
                        onchange="this.nextElementSibling.nextElementSibling.textContent = this.files.length ? 'Choisi : ' + this.files[0].name : this.nextElementSibling.nextElementSibling.dataset.actuel">
-                <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-nowrap"
-                        onclick="this.previousElementSibling.click()">{{ lucide('upload', 14, 'me-1') }}{{ 'Remplacer le fichier' if d.has_file() else 'Déposer le fichier' }}</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary btn-icone d-block"
+                        title="{{ 'Remplacer le fichier' if d.has_file() else 'Déposer le fichier' }}"
+                        aria-label="{{ 'Remplacer le fichier' if d.has_file() else 'Déposer le fichier' }}"
+                        onclick="this.previousElementSibling.click()">{{ lucide('upload', 16) }}</button>
                 <div class="form-text doc-aide text-truncate" data-actuel="{{ ('Actuel : ' ~ d.filename) if d.has_file() else 'Aucun fichier pour l’instant' }}"
                      title="{{ d.filename if d.has_file() else '' }}">{{ ('Actuel : ' ~ d.filename) if d.has_file() else 'Aucun fichier pour l’instant' }}</div>
             </div>

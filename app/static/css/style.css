@@ -1545,7 +1545,7 @@ a.badge-status:hover { filter: brightness(0.96); }
 .btn-ghost:hover, .btn-link:hover { background: var(--inset); color: var(--strong); }
 /* Icone seule (34 px), et la variante qui rougit au survol pour un geste
    qui defait quelque chose : retirer une liaison. */
-.btn-ghost.btn-icone { padding: 6px 8px; line-height: 1; display: inline-flex; align-items: center; }
+.btn-ghost.btn-icone, .btn-outline-secondary.btn-icone { padding: 6px 8px; line-height: 1; display: inline-flex; align-items: center; }
 .btn-ghost.btn-ghost-danger:hover { color: #dc2626; background: rgba(220, 38, 38, 0.08); }
 
 /* Compact (tableaux, barres d'outils) : 26 px. */
