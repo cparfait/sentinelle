@@ -1,7 +1,7 @@
 {% from '_icones.html' import icone %}
 {# ═══ Pièces héritées ═══
    Ce que la fiche ne porte pas elle-même, mais qui la documente : l'acte versé
-   sous le marché, la pièce d'un poste, le devis d'une consultation.
+   sous le marché, le devis d'une consultation.
 
    L'onglet Documents restait vide alors que tout l'écrit concernant le logiciel
    existait — rangé là où il a été signé. Les y chercher supposait de savoir
@@ -28,10 +28,11 @@
                         <i class="bi bi-paperclip me-1 text-muted"></i>{{ d.filename }}</td>
                     <td class="small"><a href="{{ ligne.url }}" class="text-decoration-none">{{ ligne.origine }}</a></td>
                     <td class="small text-muted">{{ d.category.label if d.category else '—' }}</td>
-                    <td class="small text-nowrap">{{ d.size_label() }}</td>
+                    <td class="small text-nowrap">{% if d.has_file() %}{{ d.size_label() }}{% else %}<span class="badge bg-light text-dark border">fichier à déposer</span>{% endif %}</td>
                     <td class="small text-nowrap">{{ d.created_at.strftime('%d/%m/%Y') if d.created_at else '—' }}</td>
                     <td class="text-end">
                         <div class="d-flex gap-1 justify-content-end">
+                            {% if d.has_file() %}
                             {% if document_inline_view and document_viewable(d) %}
                             <a href="{{ url_for('documents.view', id=d.id) }}" target="_blank" rel="noopener"
                                class="btn btn-sm btn-outline-secondary" title="Ouvrir dans le navigateur"
@@ -40,6 +41,7 @@
                             <a href="{{ url_for('documents.download', id=d.id) }}"
                                class="btn btn-sm btn-outline-secondary" title="Télécharger"
                                aria-label="Télécharger"><i class="bi bi-download"></i></a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>

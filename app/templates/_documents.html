@@ -10,10 +10,16 @@
 {% set pieces = attached_documents(doc_parent_kind, doc_parent_id) %}
 {% set peut_deposer = current_user.can_edit(doc_permission) %}
 {% set peut_retirer = current_user.can_delete(doc_permission) %}
+{# Un marché porte des ACTES : un document y a une date et, souvent, un
+   montant. Ailleurs (guide, délibération, attestation) ces deux colonnes
+   n'auraient rien à dire. #}
+{% set avec_montants = doc_parent_kind == 'contract' %}
+{% set total = pieces | map(attribute='amount') | select | sum %}
 <div class="data-card mb-3">
     <div class="card-header-custom d-flex justify-content-between align-items-center">
         <h6 class="fw-bold fiche-titre fiche-titre--indigo mb-0">{{ icone('bi-paperclip', 14, 'ico ico-' ~ couleur_icone('bi-paperclip')) }}{{ doc_title | default('Pièces jointes') }}
-            <span class="badge bg-secondary ms-1">{{ pieces | length }}</span></h6>
+            <span class="badge bg-secondary ms-1">{{ pieces | length }}</span>
+            {% if avec_montants and total %}<small class="fw-normal text-muted ms-2">{{ total | montant }} cumulés</small>{% endif %}</h6>
         {% if peut_deposer %}
         <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
                 data-bs-target="#depot{{ doc_parent_kind }}{{ doc_parent_id }}">
@@ -47,6 +53,24 @@
                     <button type="submit" class="btn btn-sm btn-primary w-100">Déposer</button>
                 </div>
             </div>
+            {% if avec_montants %}
+            <div class="row g-2 align-items-end mt-1">
+                <div class="col-md-3">
+                    <label class="form-label fw-medium small mb-1">Date de l'acte</label>
+                    <input type="date" name="doc_date" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-medium small mb-1">Montant (€)</label>
+                    <input type="text" name="amount" class="form-control form-control-sm" inputmode="decimal"
+                           placeholder="ex: 4000">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-medium small mb-1">Notes</label>
+                    <input type="text" name="notes" class="form-control form-control-sm"
+                           placeholder="ex: 50 postes, module RH">
+                </div>
+            </div>
+            {% endif %}
             <div class="form-text mt-2">{{ document_max_mb }} Mo maximum. Actes scannés, guides,
                 tableurs, images — pas une image disque : au-delà, c'est le partage réseau qu'il faut.</div>
         </form>
@@ -55,11 +79,25 @@
 
     <div class="table-responsive">
         <table class="table table-hover mb-0">
-            <thead><tr><th>Fichier</th><th>Catégorie</th><th>Taille</th><th>Déposé</th><th></th></tr></thead>
+            <thead><tr><th>Fichier</th><th>Catégorie</th>{% if avec_montants %}<th>Date</th><th class="text-end">Montant</th>{% endif %}<th>Taille</th><th>Déposé</th><th></th></tr></thead>
             <tbody>
                 {% for d in pieces %}
                 <tr>
                     <td>
+                        {% if not d.has_file() %}
+                        {# Une pièce reprise sans son acte : elle garde ce qu'on
+                           savait d'elle, et attend le fichier. #}
+                        <span class="fw-medium">{{ d.filename }}</span>
+                        <span class="badge bg-light text-dark border ms-1">fichier à déposer</span>
+                        {% if peut_deposer %}
+                        <form method="POST" action="{{ url_for('documents.attach_file', id=d.id) }}"
+                              enctype="multipart/form-data" class="d-flex gap-1 mt-1" style="max-width:24rem">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="file" name="file" class="form-control form-control-sm" required>
+                            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Déposer</button>
+                        </form>
+                        {% endif %}
+                        {% else %}
                         {# Le nom OUVRE la pièce quand le type s'y prête — un acte
                            se lit, il ne s'enregistre pas d'abord. Sinon il
                            télécharge, comme avant. Dans les deux cas l'accès se
@@ -79,13 +117,19 @@
                         <a href="{{ url_for('documents.download', id=d.id) }}">
                             <i class="bi bi-file-earmark-arrow-down me-1"></i>{{ d.filename }}</a>
                         {% endif %}
+                        {% endif %}
+                        {% if d.notes %}<small class="d-block text-muted">{{ d.notes }}</small>{% endif %}
                     </td>
                     <td class="small">{{ d.category.label if d.category else '—' }}</td>
-                    <td class="small text-nowrap">{{ d.size_label() }}</td>
+                    {% if avec_montants %}
+                    <td class="small text-nowrap">{{ d.doc_date.strftime('%d/%m/%Y') if d.doc_date else '—' }}</td>
+                    <td class="small text-nowrap text-end">{{ d.amount | montant if d.amount is not none else '—' }}</td>
+                    {% endif %}
+                    <td class="small text-nowrap">{{ d.size_label() if d.has_file() else '—' }}</td>
                     <td class="small text-nowrap">{{ d.created_at.strftime('%d/%m/%Y') }}
                         {%- if d.uploaded_by %} <span class="text-muted">par {{ d.uploaded_by }}</span>{% endif %}</td>
                     <td class="text-end">
-                        {% if document_viewable(d) %}
+                        {% if d.has_file() and document_viewable(d) %}
                         <a href="{{ url_for('documents.download', id=d.id) }}"
                            class="btn btn-sm btn-outline-secondary me-1" title="Télécharger"
                            aria-label="Télécharger"><i class="bi bi-download"></i></a>
@@ -100,7 +144,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="text-center py-3 text-muted">Aucune pièce jointe</td></tr>
+                <tr><td colspan="{{ 7 if avec_montants else 5 }}" class="text-center py-3 text-muted">Aucune pièce jointe</td></tr>
                 {% endfor %}
             </tbody>
         </table>

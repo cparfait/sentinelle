@@ -69,6 +69,11 @@ pytest dans `requirements-dev.txt`). Toute évolution de la logique de statut
   `<entité>_id` à côté du texte affiché, poser le lien à la saisie (nom exact, sans homonyme)
   et rapprocher l'existant une fois dans `_migrate_data()` sans toucher un lien déjà posé.
   Références : `AccessReview.software_id`, `Certificate.domain_id`, `Domain.registrar_id`.
+- **Documents** : un fichier accroché à une fiche (`Document`, octets à part dans `DocumentContent`).
+  Un document de contrat porte en plus une date, un montant et des notes : il n'existe pas de
+  notion séparée de « pièce de marché ». Une ligne peut être **sans fichier** (`size` NULL,
+  `has_file()` faux) quand l'acte est attendu : les routes de lecture répondent 404 et la fiche
+  propose `documents.attach_file`.
 - **Scheduler** : ne PAS appeler `create_app()` dans un job. `start_scheduler(app)` reçoit
   l'app et les jobs utilisent `with _app.app_context()`. Les jobs sont enregistrés avec
   `replace_existing=True`.

@@ -100,33 +100,44 @@
             {% endif %}
         </div>
 
-        {# Les pièces du marché : les postes qu'il couvre, et l'acte scanné qui
-           atteste chacun. Elles se déposent et se retirent sur la fiche du
-           marché — ici on les lit et on les ouvre. #}
-        {% set postes = c.items.all() %}
-        {% if postes %}
-        <div class="small fw-semibold text-muted mt-3 mb-1">{{ postes | length }} Pièce{{ 's' if postes | length > 1 }}</div>
-        <table class="table table-sm mb-0">
-            <thead><tr><th>Pièce du marché</th><th>Nature</th><th class="text-end">Coût annuel</th><th>Date</th><th>Fichier</th></tr></thead>
-            <tbody>
-                {% for p in postes %}
-                <tr>
-                    <td>{{ p.label or '—' }}</td>
-                    <td class="small text-muted">{{ p.kind_label() }}</td>
-                    <td class="text-end">{% if p.cost_yearly %}{{ p.cost_yearly | montant }}{% else %}—{% endif %}</td>
-                    <td class="small text-nowrap">{{ p.doc_date.strftime('%d/%m/%Y') if p.doc_date else '—' }}</td>
-                    <td class="small">
-                        {%- if documents_enabled -%}
-                        {% for d in attached_documents('contract_item', p.id) %}
-                        <a href="{{ url_for('documents.download', id=d.id) }}" class="d-block text-truncate">
-                            <i class="bi bi-paperclip me-1"></i>{{ d.filename }}</a>
-                        {% else %}<span class="text-muted">—</span>{% endfor %}
-                        {%- else -%}<span class="text-muted">—</span>{%- endif -%}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {# Les documents du marché : l'acte signé, le bon de commande,
+           l'avenant — chacun avec sa catégorie, sa taille et sa date. Ils se
+           déposent et se retirent sur la fiche du marché ; ici on les lit et
+           on les ouvre. Une pièce reprise sans son fichier se voit aussi :
+           elle attend l'acte. #}
+        {% set docs = c.documents() if documents_enabled else [] %}
+        {% if docs %}
+        <div class="small fw-semibold text-muted mt-3 mb-1">{{ docs | length }} Document{{ 's' if docs | length > 1 }}</div>
+        <ul class="list-unstyled mb-0 marche-docs">
+            {% for d in docs %}
+            <li class="d-flex align-items-start gap-2 py-1">
+                <i class="bi bi-file-earmark-text text-muted mt-1"></i>
+                <div class="min-w-0 flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 min-w-0">
+                        <span class="fw-medium text-truncate">{{ d.filename }}</span>
+                        {% if d.has_file() %}
+                        <a href="{{ url_for('documents.download', id=d.id) }}" class="text-muted" title="Télécharger"
+                           aria-label="Télécharger"><i class="bi bi-download"></i></a>
+                        {% if document_viewable(d) %}
+                        <a href="{{ url_for('documents.view', id=d.id) }}" target="_blank" rel="noopener"
+                           class="text-muted" title="Ouvrir dans un nouvel onglet"
+                           aria-label="Ouvrir dans un nouvel onglet"><i class="bi bi-box-arrow-up-right"></i></a>
+                        {% endif %}
+                        {% else %}
+                        <span class="badge bg-light text-dark border">fichier à déposer</span>
+                        {% endif %}
+                        {% if d.amount is not none %}<span class="ms-auto small text-muted text-nowrap">{{ d.amount | montant }}</span>{% endif %}
+                    </div>
+                    <small class="text-muted">
+                        {{- d.category.label if d.category else 'Non classée' -}}
+                        {%- if d.has_file() %} · {{ d.size_label() }}{% endif -%}
+                        {%- if d.doc_date %} · {{ d.doc_date.strftime('%d/%m/%Y') }}{% elif d.created_at %} · {{ d.created_at.strftime('%d/%m/%Y') }}{% endif -%}
+                        {%- if d.notes %} · {{ d.notes }}{% endif -%}
+                    </small>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
         {% endif %}
     </div>
     {% else %}

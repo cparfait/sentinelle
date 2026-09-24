@@ -8,10 +8,9 @@ from flask import (Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
 from app import features
-from app.models import (Contract, ContractHistory, ContractItem, Consultation,
+from app.models import (Contract, ContractHistory, Consultation,
                         Quote, Supplier, Equipment, Software, UserService,
-                        CONTRACT_KIND_LABELS, CONTRACT_NATURE_LABELS,
-                        CONTRACT_ITEM_KIND_LABELS)
+                        CONTRACT_KIND_LABELS, CONTRACT_NATURE_LABELS)
 from app.forms_util import parse_date, parse_int, parse_float, status_rank
 from app.decorators import require_edit, require_delete, view_guard
 from app.audit import record as audit_record
@@ -143,9 +142,7 @@ def create():
 def detail(id):
     contract = Contract.query.get_or_404(id)
     histories = contract.histories.order_by(ContractHistory.performed_at.desc()).all()
-    return render_template('contracts/detail.html', contract=contract, histories=histories,
-                           items=contract.items.all(),
-                           item_kind_labels=CONTRACT_ITEM_KIND_LABELS)
+    return render_template('contracts/detail.html', contract=contract, histories=histories)
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
@@ -205,50 +202,6 @@ def delete(id):
     db.session.commit()
     flash('Contrat supprimé', 'success')
     return redirect(url_for('contracts.list'))
-
-
-# ===========================================================================
-#  Pieces du marche
-#
-#  Une piece ne decrit qu'elle-meme : un poste, son cout, la date de son
-#  document. Elle ne chiffre pas l'engagement et ne declenche rien -- c'est le
-#  marche qui engage, et c'est sa date de fin qu'on surveille.
-# ===========================================================================
-
-@bp.route('/<int:id>/items/add', methods=['POST'])
-@login_required
-@require_edit
-def item_add(id):
-    contract = Contract.query.get_or_404(id)
-    f = request.form
-    label = (f.get('label', '') or '').strip()
-    if not label:
-        flash('Indiquez le poste couvert par la pièce.', 'danger')
-        return redirect(url_for('contracts.detail', id=id))
-    item = ContractItem(
-        contract_id=contract.id, label=label,
-        kind=f.get('kind') if f.get('kind') in CONTRACT_ITEM_KIND_LABELS else 'abonnement',
-        cost_yearly=parse_float(f.get('cost_yearly')),
-        doc_date=parse_date(f.get('doc_date')),
-        notes=(f.get('notes') or None))
-    db.session.add(item)
-    db.session.commit()
-    audit_record('ajout piece', detail=f'{contract.name} : {label}', category='contrats')
-    flash('Pièce ajoutée', 'success')
-    return redirect(url_for('contracts.detail', id=id))
-
-
-@bp.route('/items/<int:item_id>/delete', methods=['POST'])
-@login_required
-@require_delete
-def item_delete(item_id):
-    item = ContractItem.query.get_or_404(item_id)
-    cid, nom = item.contract_id, item.label
-    db.session.delete(item)
-    db.session.commit()
-    audit_record('suppression piece', detail=nom, category='contrats')
-    flash('Pièce supprimée', 'success')
-    return redirect(url_for('contracts.detail', id=cid))
 
 
 # ===========================================================================

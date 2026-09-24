@@ -359,23 +359,22 @@ def test_l_onglet_documents_d_un_logiciel_montre_les_pieces_de_ses_marches(clien
     """L'onglet restait vide alors que tout l'écrit existait : versé sous le
     marché ou sous le devis, là où il a été signé."""
     from app.documents import inherited_for_software
-    from app.models import ContractItem, Consultation, Quote
+    from app.models import Consultation, Quote
 
     sw = Software(name='Concerto Opus')
     ct = Contract(name='Marché M20-23')
     db.session.add_all([sw, ct])
     db.session.commit()
     ct.software = [sw]
-    poste = ContractItem(contract_id=ct.id, label='50 postes')
     cons = Consultation(software_id=sw.id, subject='Renouvellement 2027')
-    db.session.add_all([poste, cons])
+    db.session.add(cons)
     db.session.commit()
     devis = Quote(consultation_id=cons.id, supplier_name='Arpege')
     db.session.add(devis)
     db.session.commit()
 
     _depose(client, 'contract', ct.id, 'acte-signe.pdf')
-    _depose(client, 'contract_item', poste.id, 'bon-de-commande.pdf')
+    _depose(client, 'contract', ct.id, 'bon-de-commande.pdf')
     _depose(client, 'quote', devis.id, 'devis-2027.pdf')
     _depose(client, 'software', sw.id, 'guide.pdf')
 
@@ -386,9 +385,58 @@ def test_l_onglet_documents_d_un_logiciel_montre_les_pieces_de_ses_marches(clien
         'acte-signe.pdf', 'bon-de-commande.pdf', 'devis-2027.pdf'}
     # La pièce PROPRE à la fiche n'y est pas : elle vit déjà dans sa carte.
     origines = {x['piece'].filename: x['origine'] for x in heritees}
-    assert origines['bon-de-commande.pdf'] == 'Marché M20-23 › 50 postes'
+    assert origines['bon-de-commande.pdf'] == 'Marché M20-23'
     assert origines['devis-2027.pdf'].startswith('Devis Arpege —')
 
     # Et la fiche les montre : c'est là qu'on vient les chercher.
     page = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
     assert 'bon-de-commande.pdf' in page and 'devis-2027.pdf' in page
+
+
+# ── Une pièce sans fichier : reprise sans son acte, elle l attend ──
+
+def test_une_piece_sans_fichier_attend_son_acte(client):
+    ct = Contract(name='Marché RH')
+    db.session.add(ct)
+    db.session.commit()
+    piece = Document(contract_id=ct.id, filename='Bon de commande 2019', amount=1200,
+                     notes='50 postes')
+    db.session.add(piece)
+    db.session.commit()
+    assert not piece.has_file()
+    # Ni téléchargement ni aperçu : il n y a rien derrière.
+    assert client.get(f'/documents/{piece.id}/download').status_code == 404
+    assert client.get(f'/documents/{piece.id}/view').status_code == 404
+    html = client.get(f'/contracts/{ct.id}').get_data(as_text=True)
+    assert 'fichier à déposer' in html and f'/documents/{piece.id}/file' in html
+    # Le fichier arrive : la ligne le prend et garde ce qu elle savait.
+    r = client.post(f'/documents/{piece.id}/file', data={'file': _fichier('bc-2019.pdf')},
+                    content_type='multipart/form-data', follow_redirects=True)
+    assert r.status_code == 200
+    db.session.refresh(piece)
+    assert piece.has_file() and piece.filename == 'bc-2019.pdf'
+    assert piece.amount == 1200 and 'Bon de commande 2019' in piece.notes
+    assert client.get(f'/documents/{piece.id}/download').data == b'%PDF-1.4 faux acte'
+    # Une seconde fois : refusé, la pièce a déjà son fichier.
+    r = client.post(f'/documents/{piece.id}/file', data={'file': _fichier('autre.pdf')},
+                    content_type='multipart/form-data', follow_redirects=True)
+    assert 'déjà son fichier' in r.get_data(as_text=True)
+
+
+def test_apporter_un_fichier_demande_le_droit_d_ecriture(app):
+    from app.models import User
+    ct = Contract(name='Marché RH')
+    db.session.add(ct)
+    db.session.commit()
+    piece = Document(contract_id=ct.id, filename='BC')
+    lecteur = User(username='lecteur', email='l@v.fr', role='viewer')
+    lecteur.set_password('Lecteur-2026!')
+    db.session.add_all([piece, lecteur])
+    db.session.commit()
+    c = app.test_client()
+    c.post('/login', data={'username': 'lecteur', 'password': 'Lecteur-2026!'})
+    c.post(f'/documents/{piece.id}/file', data={'file': _fichier('bc.pdf')},
+           content_type='multipart/form-data')
+    db.session.refresh(piece)
+    assert not piece.has_file()
+

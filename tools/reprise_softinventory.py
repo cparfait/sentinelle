@@ -85,6 +85,12 @@ def _txt(v, n=None):
     return v[:n] if n else v
 
 
+# Les natures d'une piece de marche de SoftInventory, et la categorie de
+# document qui les remplace (meme table que _migrer_pieces_de_marche).
+_NATURES_DE_PIECE = {'abonnement': 'Abonnement', 'perpetuelle': 'Licence perpétuelle',
+                     'libre': 'Libre / gratuit', 'autre': 'Autre'}
+
+
 class Reprise:
     def __init__(self, cur, db, ecrire=True, creer_serveurs=True):
         self.cur = cur
@@ -429,9 +435,16 @@ class Reprise:
                 self._compte('logiciels couverts par un marché')
 
     def pieces(self):
-        from app.models import ContractItem, CONTRACT_ITEM_KIND_LABELS
+        """Les pieces de marche de SoftInventory (type, cout annuel, date) sont
+        des DOCUMENTS du contrat dans Sentinelle : leurs fichiers, rattaches au
+        contrat avec la categorie, la date et le montant de la piece ; ou, sans
+        fichier, un document qui attend l'acte. On memorise ici ce que chaque
+        piece portait ; `documents()` s'en sert, puis cree ce qui reste."""
         contrats = self._lire_map('contrat')
-        deja = self._lire_map('piece')
+        # Les pieces reprises AVANT la fusion (kind « piece ») comptent comme
+        # reprises : leurs fichiers ont ete migres avec elles au demarrage.
+        deja = {**self._lire_map('piece'), **self._lire_map('piece_contrat')}
+        self.pieces_meta = {}
         for r in self._rows('pieces_contrat'):
             if r['id'] in deja:
                 continue
@@ -439,18 +452,42 @@ class Reprise:
             if not cid:
                 continue
             nature = r.get('type') or 'abonnement'
-            # SoftInventory ne nommait pas le poste : la nature en tient lieu,
-            # et l'inventer serait pire que de la reprendre telle quelle.
-            item = ContractItem(
-                contract_id=cid, kind=nature,
-                label=CONTRACT_ITEM_KIND_LABELS.get(nature, nature)[:128],
-                cost_yearly=_dec(r.get('cout_annuel')),
-                doc_date=r.get('date_piece'))
-            if self.ecrire:
-                self.db.session.add(item)
-                self.db.session.flush()
+            self.pieces_meta[r['id']] = {
+                'contract_id': cid, 'kind': nature,
+                'label': _NATURES_DE_PIECE.get(nature, nature)[:128],
+                'amount': _dec(r.get('cout_annuel')), 'doc_date': r.get('date_piece'),
+                'fichiers': 0,
+            }
             self._compte('pièces de marché')
-            self._noter('piece', r['id'], item.id if self.ecrire else 0)
+            self._noter('piece_contrat', r['id'], cid if self.ecrire else 0)
+
+    def _categorie_de_piece(self, kind):
+        """La categorie de document qui remplace la nature d'une piece, creee
+        si elle manque (comme le fait la migration au demarrage)."""
+        from app.models import Referential
+        label = _NATURES_DE_PIECE.get(kind or 'abonnement', _NATURES_DE_PIECE['autre'])
+        ref = Referential.query.filter_by(kind='doc_category', label=label).first()
+        if ref is None and self.ecrire:
+            ref = Referential(kind='doc_category', label=label, is_active=True)
+            self.db.session.add(ref)
+            self.db.session.flush()
+        return ref.id if ref is not None else None
+
+    def _pieces_sans_fichier(self):
+        """Apres les documents : une piece dont aucun fichier n'est arrive
+        devient un document sans fichier, qui garde sa categorie, sa date et
+        son montant et attend l'acte."""
+        from app.models import Document
+        for meta in getattr(self, 'pieces_meta', {}).values():
+            if meta['fichiers']:
+                continue
+            if self.ecrire:
+                self.db.session.add(Document(
+                    contract_id=meta['contract_id'], filename=meta['label'],
+                    category_id=self._categorie_de_piece(meta['kind']),
+                    doc_date=meta['doc_date'], amount=meta['amount'],
+                    uploaded_by='reprise'))
+            self._compte('pièces de marché sans fichier')
 
     # ── La mise en concurrence ──
 
@@ -598,10 +635,13 @@ class Reprise:
 
     def documents(self, avec_contenu=True):
         from app.models import Document, DocumentContent
+        # Une piece de marche n'est plus un parent : son fichier se rattache au
+        # CONTRAT, avec ce que la piece portait (voir pieces()).
+        pieces_meta = getattr(self, 'pieces_meta', {})
         parents = {
             'logiciel_id': ('software_id', self._lire_map('software')),
             'editeur_id': ('supplier_id', self._lire_map('supplier')),
-            'piece_contrat_id': ('contract_item_id', self._lire_map('piece')),
+            'piece_contrat_id': ('contract_id', {k: m['contract_id'] for k, m in pieces_meta.items()}),
             'devis_id': ('quote_id', self._lire_map('devis')),
             'certificat_id': ('certificate_id', self._lire_map('certificat')),
         }
@@ -624,6 +664,16 @@ class Reprise:
                            uploaded_by=_txt(r.get('depose_par_label'), 64),
                            category_id=categories.get(r.get('categorie_id')))
             setattr(doc, champ, valeur)
+            meta = pieces_meta.get(r.get('piece_contrat_id')) if r.get('piece_contrat_id') else None
+            if meta is not None:
+                # Ce que la piece portait passe sur son fichier : la categorie
+                # si le document n'en a pas, la date, et le montant UNE fois.
+                if doc.category_id is None:
+                    doc.category_id = self._categorie_de_piece(meta['kind'])
+                doc.doc_date = meta['doc_date']
+                if meta['fichiers'] == 0:
+                    doc.amount = meta['amount']
+                meta['fichiers'] += 1
             if avec_contenu and self.ecrire:
                 # Le contenu se lit à la ligne, pas en bloc : 630 Mo de pièces
                 # jointes chargés d'un coup n'ont aucune raison de tenir en
@@ -644,6 +694,7 @@ class Reprise:
                     self.db.session.commit()
             self._compte('pièces jointes')
             self._noter('document', r['id'], doc.id if self.ecrire else 0)
+        self._pieces_sans_fichier()
         if orphelins:
             self.avertissements.append(
                 'Pièces jointes dont la fiche parente n\'a pas été reprise : '

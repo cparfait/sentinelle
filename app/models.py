@@ -1141,10 +1141,6 @@ CONTRACT_KIND_LABELS = {'maintenance': 'Maintenance', 'licence': 'Licence',
 CONTRACT_NATURE_LABELS = {'marche': 'Marché public', 'contrat': 'Contrat de gré à gré'}
 
 # Nature d'une PIECE du marche : le mode de licence de ce poste-la.
-CONTRACT_ITEM_KIND_LABELS = {'abonnement': 'Abonnement', 'perpetuelle': 'Licence perpétuelle',
-                             'libre': 'Libre / gratuit', 'autre': 'Autre'}
-
-
 # Equipements couverts par un contrat (relation N:N). Premiere table
 # d'association du projet ; alimentee au demarrage depuis l'ancien equipment_id.
 contract_equipment = db.Table(
@@ -1220,9 +1216,9 @@ class Contract(db.Model):
     # savait pas dire qu'un marche en couvre plusieurs.
     software = db.relationship('Software', secondary=contract_software,
                                backref=db.backref('contracts', lazy='dynamic'))
-    items = db.relationship('ContractItem', backref='contract', lazy='dynamic',
-                            cascade='all, delete-orphan',
-                            order_by='ContractItem.doc_date.desc()')
+    # Les « pieces du marche » d'autrefois (poste, cout, date, fichier) sont
+    # des DOCUMENTS du contrat depuis le 24/09/2026 : un seul endroit pour ce
+    # qui atteste l'acte. Voir _migrer_pieces_de_marche() dans app/__init__.py.
     # Imputation budgetaire (« 6156 », « 65818 ») : la ligne du budget sur
     # laquelle la depense tombe. Meme champ que sur un certificat, ou il rend
     # deja le meme service -- la comptabilite pose la question pour les deux.
@@ -1280,11 +1276,19 @@ class Contract(db.Model):
             return f'renouvelable {self.renewals} {fois} par période de {self.renewal_years} {an}'
         return f'renouvelable {self.renewals} {fois}'
 
-    def items_cost(self):
-        """Somme des couts des pieces. INDICATIVE : c'est `cost_yearly` qui
-        engage. Un marche couvre souvent plusieurs postes dont la somme ne vaut
-        pas le montant de l'acte."""
-        return sum(i.cost_yearly or 0 for i in self.items)
+    def documents(self):
+        """Les documents du contrat, le plus recent en tete : actes signes,
+        bons de commande, avenants -- avec leur montant quand ils en portent un."""
+        return (Document.query.filter_by(contract_id=self.id)
+                .order_by(Document.doc_date.desc().nullslast(), Document.created_at.desc()).all())
+
+    def documents_cost(self):
+        """Somme des montants portes par les documents. INDICATIVE : c'est
+        `cost_yearly` qui engage. Un marche couvre souvent plusieurs postes dont
+        la somme ne vaut pas le montant de l'acte."""
+        from sqlalchemy import func
+        return float(db.session.query(func.coalesce(func.sum(Document.amount), 0))
+                     .filter(Document.contract_id == self.id).scalar() or 0)
 
     def action_deadline(self):
         """Date limite pour agir : echeance moins le preavis de resiliation."""
@@ -1313,31 +1317,6 @@ class ContractHistory(db.Model):
     comment = db.Column(db.Text)
     performed_by = db.Column(db.String(64))
     performed_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-
-
-class ContractItem(db.Model):
-    """Une PIECE du marche : un poste, son cout annuel, et la date de son
-    document (signature, notification).
-
-    Elle ne decrit qu'elle-meme. Elle ne porte PAS d'echeance : c'est le marche
-    qui engage, et c'est sa date de fin qu'on surveille. Un meme marche couvre
-    souvent plusieurs postes aux couts et aux termes distincts, sans que leur
-    somme ni leur echeance la plus lointaine vaillent engagement -- d'ou la
-    separation.
-    """
-    id = db.Column(db.Integer, primary_key=True)
-    contract_id = db.Column(db.Integer, db.ForeignKey('contract.id'), nullable=False, index=True)
-    label = db.Column(db.String(128))     # ex. « 50 postes », « module RH »
-    kind = db.Column(db.String(16), default='abonnement')
-    cost_yearly = db.Column(db.Float)
-    # La date du DOCUMENT, presque toujours passee : aucun rappel n'y est
-    # accroche.
-    doc_date = db.Column(db.Date, index=True)
-    notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-
-    def kind_label(self):
-        return CONTRACT_ITEM_KIND_LABELS.get(self.kind, self.kind or '')
 
 
 class Consultation(db.Model):
@@ -1684,7 +1663,6 @@ DOCUMENT_PARENTS = {
     'software': ('software_id', 'software'),
     'supplier': ('supplier_id', 'suppliers'),
     'contract': ('contract_id', 'contracts'),
-    'contract_item': ('contract_item_id', 'contracts'),
     'quote': ('quote_id', 'contracts'),
     'certificate': ('certificate_id', 'certificates'),
     'equipment': ('equipment_id', 'inventory'),
@@ -1710,7 +1688,6 @@ class Document(db.Model):
     software_id = db.Column(db.Integer, db.ForeignKey('software.id'), index=True)
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), index=True)
     contract_id = db.Column(db.Integer, db.ForeignKey('contract.id'), index=True)
-    contract_item_id = db.Column(db.Integer, db.ForeignKey('contract_item.id'), index=True)
     quote_id = db.Column(db.Integer, db.ForeignKey('quote.id'), index=True)
     certificate_id = db.Column(db.Integer, db.ForeignKey('certificate.id'), index=True)
     equipment_id = db.Column(db.Integer, db.ForeignKey('equipment.id'), index=True)
@@ -1721,7 +1698,14 @@ class Document(db.Model):
 
     filename = db.Column(db.String(256), nullable=False)   # nom d'origine
     mime = db.Column(db.String(128))
+    # NULL = pas de fichier (encore) : une piece de marche reprise sans son
+    # acte, ou dont l'acte est attendu. La fiche propose de le deposer.
     size = db.Column(db.Integer)
+    # Ce que portait une « piece du marche » : la date de l'acte (signature,
+    # notification) et le montant qu'il engage, quand il y en a un.
+    doc_date = db.Column(db.Date, index=True)
+    amount = db.Column(db.Float)
+    notes = db.Column(db.Text)
     # Deposant DENORMALISE : la trace survit a la suppression du compte.
     uploaded_by = db.Column(db.String(64))
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -1743,6 +1727,11 @@ class Document(db.Model):
         venu."""
         kind = self.parent_kind()
         return DOCUMENT_PARENTS[kind][1] if kind else 'contracts'
+
+    def has_file(self):
+        """Un fichier est-il derriere la ligne ? Se lit sur la taille, pour ne
+        pas charger les octets rien que pour le savoir."""
+        return bool(self.size)
 
     def size_label(self):
         """La taille dans l'unite ou on la lit : « 1,2 Mo » et non 1258291."""

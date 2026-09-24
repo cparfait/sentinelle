@@ -4,7 +4,7 @@ from sqlalchemy import or_
 from app import db
 from app.models import (Account, Certificate, Backup, TestTask, Domain,
                         AccessReview, SystemUpdate, Equipment, Supplier, Contract,
-                        ContractItem, Software, Consultation, Quote, Document, Referential)
+                        Software, Consultation, Quote, Document, Referential)
 
 bp = Blueprint('search', __name__)
 
@@ -297,10 +297,6 @@ def _document_target(doc):
         ct = db.session.get(Contract, doc.contract_id)
         if ct and ct.is_active:
             return f'Contrat {ct.name}', f'/contracts/{ct.id}#documents'
-    elif doc.contract_item_id:
-        item = db.session.get(ContractItem, doc.contract_item_id)
-        if item and item.contract and item.contract.is_active:
-            return f'Contrat {item.contract.name}', f'/contracts/{item.contract_id}#documents'
     elif doc.quote_id:
         qt = db.session.get(Quote, doc.quote_id)
         if qt and qt.consultation.software.is_active:

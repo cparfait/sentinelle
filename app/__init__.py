@@ -476,6 +476,9 @@ def _migrate_data():
         "UPDATE certificate SET service_id = NULL WHERE service_id IN "
         "(SELECT id FROM referential WHERE kind = 'user_service')"))
     db.session.execute(text("DELETE FROM referential WHERE kind = 'user_service'"))
+    # Pieces de marche -> documents du contrat (voir _migrer_pieces_de_marche).
+    if 'contract_item' in _tables:
+        _migrer_pieces_de_marche()
     # Ancien catalogue « applications » des Preferences (table asset) ->
     # inventaire Logiciels. Le modele n'existe plus ; une base neuve n'a pas la
     # table, une base ancienne la garde, dormante, et la migration reste
@@ -670,6 +673,71 @@ def _seed_referentials():
         changed = True
     if changed:
         db.session.commit()
+
+
+# Les natures qu'une « piece du marche » pouvait porter, et la categorie de
+# document qui les remplace.
+_NATURES_DE_PIECE = {'abonnement': 'Abonnement', 'perpetuelle': 'Licence perpétuelle',
+                     'libre': 'Libre / gratuit', 'autre': 'Autre'}
+
+
+def _migrer_pieces_de_marche():
+    """Une « piece du marche » (poste, nature, cout, date, notes) et le
+    document qui l'atteste etaient deux notions ; ce sont des DOCUMENTS du
+    contrat. Chaque piece devient : ses fichiers, rattaches au contrat avec sa
+    categorie, sa date et son montant (le montant sur le premier fichier, pour
+    ne pas le compter deux fois) ; ou, sans fichier, un document « sans
+    fichier » qui garde tout et attend l'acte. La ligne de piece est ensuite
+    retiree : c'est ce qui rend le passage rejouable sans rien recreer."""
+    from sqlalchemy import text, inspect as _inspect
+    rows = db.session.execute(text(
+        "SELECT id, contract_id, label, kind, cost_yearly, doc_date, notes "
+        "FROM contract_item ORDER BY id")).mappings().all()
+    if not rows:
+        return
+    dcols = {c['name'] for c in _inspect(db.engine).get_columns('document')}
+
+    def categorie(kind):
+        label = _NATURES_DE_PIECE.get(kind or 'abonnement', _NATURES_DE_PIECE['autre'])
+        ligne = db.session.execute(text(
+            "SELECT id FROM referential WHERE kind='doc_category' AND label=:l"), {'l': label}).first()
+        if ligne:
+            return ligne[0]
+        position = db.session.execute(text(
+            "SELECT COALESCE(MAX(position), 0) + 1 FROM referential WHERE kind='doc_category'")).scalar()
+        db.session.execute(text(
+            "INSERT INTO referential (kind, label, position, is_active) VALUES ('doc_category', :l, :p, 1)"),
+            {'l': label, 'p': position})
+        return db.session.execute(text(
+            "SELECT id FROM referential WHERE kind='doc_category' AND label=:l"), {'l': label}).first()[0]
+
+    for it in rows:
+        cat = categorie(it['kind'])
+        notes = ' — '.join(x for x in (it['label'], it['notes']) if x) or None
+        docs = []
+        if 'contract_item_id' in dcols:
+            docs = db.session.execute(text(
+                "SELECT id FROM document WHERE contract_item_id=:i ORDER BY id"),
+                {'i': it['id']}).all()
+        if docs:
+            for n, (doc_id,) in enumerate(docs):
+                db.session.execute(text(
+                    "UPDATE document SET contract_id=:c, contract_item_id=NULL, "
+                    " category_id=COALESCE(category_id, :cat), doc_date=COALESCE(doc_date, :dd), "
+                    " amount=CASE WHEN :n = 0 THEN :amt ELSE amount END, notes=COALESCE(notes, :notes) "
+                    "WHERE id=:id"),
+                    {'c': it['contract_id'], 'cat': cat, 'dd': it['doc_date'], 'n': n,
+                     'amt': it['cost_yearly'], 'notes': notes, 'id': doc_id})
+        else:
+            db.session.execute(text(
+                "INSERT INTO document (contract_id, category_id, filename, size, uploaded_by, "
+                " created_at, doc_date, amount, notes) "
+                "VALUES (:c, :cat, :fn, NULL, 'reprise', CURRENT_TIMESTAMP, :dd, :amt, :notes)"),
+                {'c': it['contract_id'], 'cat': cat,
+                 'fn': (it['label'] or _NATURES_DE_PIECE.get(it['kind'] or '', 'Pièce'))[:256],
+                 'dd': it['doc_date'], 'amt': it['cost_yearly'], 'notes': it['notes']})
+        db.session.execute(text("DELETE FROM contract_item WHERE id=:id"), {'id': it['id']})
+    db.session.commit()
 
 
 def _migrate_roles():

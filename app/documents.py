@@ -47,7 +47,7 @@ from werkzeug.utils import secure_filename
 
 from app import db
 from app.models import Document, DocumentContent, DOCUMENT_PARENTS
-from app.forms_util import parse_int
+from app.forms_util import parse_int, parse_date, parse_float
 from app.audit import record as audit_record
 
 bp = Blueprint('documents', __name__)
@@ -143,7 +143,7 @@ def inherited_for_software(software):
     elle vit. Elle ne se retire QUE de là — une pièce reprise ici ne s'y modifie
     pas, sans quoi la même ligne s'effacerait depuis deux écrans.
     """
-    from app.models import Consultation, ContractItem, Quote
+    from app.models import Consultation, Quote
     marches = software.contracts.filter_by(is_active=True).all()
     cids = [c.id for c in marches]
     par_marche = {c.id: c for c in marches}
@@ -154,17 +154,6 @@ def inherited_for_software(software):
             c = par_marche.get(d.contract_id)
             lignes.append({'piece': d, 'origine': c.name if c else 'Marché',
                            'url': url_for('contracts.detail', id=d.contract_id)})
-        postes = ContractItem.query.filter(ContractItem.contract_id.in_(cids)).all()
-        par_poste = {i.id: i for i in postes}
-        if par_poste:
-            for d in Document.query.filter(
-                    Document.contract_item_id.in_(list(par_poste))).all():
-                poste = par_poste[d.contract_item_id]
-                c = par_marche.get(poste.contract_id)
-                titre = ' › '.join(x for x in (c.name if c else 'Marché',
-                                               poste.label) if x)
-                lignes.append({'piece': d, 'origine': titre,
-                               'url': url_for('contracts.detail', id=poste.contract_id)})
 
     devis = (Quote.query.join(Consultation)
              .filter(Consultation.software_id == software.id).all())
@@ -182,9 +171,8 @@ def inherited_for_software(software):
     return lignes
 
 
-# La fiche qui PORTE la piece, et donc l'ecran ou l'on revient. Une piece de
-# marche et un devis n'ont pas d'ecran a eux : ils vivent dans celui de leur
-# marche et dans celui du logiciel consulte.
+# La fiche qui PORTE la piece, et donc l'ecran ou l'on revient. Un devis n'a
+# pas d'ecran a lui : il vit dans celui du logiciel consulte.
 _ECRANS = {
     'software': 'software.detail',
     'supplier': 'suppliers.detail',
@@ -197,11 +185,7 @@ _ECRANS = {
 def _retour(kind, parent_id):
     """Là d'où l'on vient. Un parent disparu ramène au tableau de bord plutôt
     qu'à une page qui n'existe plus."""
-    from app.models import ContractItem, Quote
-    if kind == 'contract_item':
-        piece = ContractItem.query.get(parent_id) if parent_id else None
-        return (url_for('contracts.detail', id=piece.contract_id) if piece
-                else url_for('dashboard.index'))
+    from app.models import Quote
     if kind == 'quote':
         devis = Quote.query.get(parent_id) if parent_id else None
         return (url_for('software.detail', id=devis.consultation.software_id) if devis
@@ -225,32 +209,20 @@ def upload():
         flash("Vous n'avez pas les droits pour déposer une pièce ici.", 'danger')
         return redirect(_retour(kind, parent_id))
 
-    fichier = request.files.get('file')
-    if fichier is None or not (fichier.filename or '').strip():
-        flash('Choisissez un fichier.', 'danger')
+    lu = _lire_fichier(request.files.get('file'))
+    if isinstance(lu, str):
+        flash(lu, 'danger')
         return redirect(_retour(kind, parent_id))
+    nom, mime, octets = lu
 
-    nom = secure_filename(fichier.filename) or 'piece-jointe'
-    ext = _extension(nom)
-    if ext not in ALLOWED_EXTENSIONS:
-        flash(f"Type de fichier non accepté (.{ext or '?'}). "
-              f"Acceptés : {', '.join(sorted(ALLOWED_EXTENSIONS))}.", 'danger')
-        return redirect(_retour(kind, parent_id))
-
-    octets = fichier.read()
-    # La taille se mesure sur les OCTETS LUS, pas sur l'en-tête annoncé : c'est
-    # le seul chiffre que le client ne choisit pas.
-    if not octets:
-        flash('Le fichier est vide.', 'danger')
-        return redirect(_retour(kind, parent_id))
-    if len(octets) > max_bytes():
-        flash(f'Fichier trop volumineux ({len(octets) // (1024 * 1024)} Mo) : '
-              f'maximum {max_bytes() // (1024 * 1024)} Mo.', 'danger')
-        return redirect(_retour(kind, parent_id))
-
-    doc = Document(filename=nom, mime=(fichier.mimetype or '')[:128],
-                   size=len(octets), uploaded_by=current_user.username,
-                   category_id=parse_int(request.form.get('category_id')))
+    doc = Document(filename=nom, mime=mime, size=len(octets),
+                   uploaded_by=current_user.username,
+                   category_id=parse_int(request.form.get('category_id')),
+                   # Ce qu'une piece de marche portait : facultatif, et sans
+                   # objet sur un guide ou une deliberation.
+                   doc_date=parse_date(request.form.get('doc_date')),
+                   amount=parse_float(request.form.get('amount')),
+                   notes=(request.form.get('notes') or '').strip() or None)
     setattr(doc, col, parent_id)
     doc.content = DocumentContent(data=octets)
     db.session.add(doc)
@@ -258,6 +230,65 @@ def upload():
     audit_record('depot piece jointe', detail=f'{nom} ({kind} #{parent_id})',
                  category=categorie)
     flash('Pièce jointe ajoutée', 'success')
+    return redirect(_retour(kind, parent_id))
+
+
+def _lire_fichier(fichier):
+    """(nom, mime, octets) du fichier envoye, ou le message qui explique le
+    refus. Les memes gardes pour un depot et pour un fichier apporte apres coup
+    a une piece qui l'attendait."""
+    if fichier is None or not (fichier.filename or '').strip():
+        return 'Choisissez un fichier.'
+    nom = secure_filename(fichier.filename) or 'piece-jointe'
+    ext = _extension(nom)
+    if ext not in ALLOWED_EXTENSIONS:
+        return (f"Type de fichier non accepté (.{ext or '?'}). "
+                f"Acceptés : {', '.join(sorted(ALLOWED_EXTENSIONS))}.")
+    octets = fichier.read()
+    # La taille se mesure sur les OCTETS LUS, pas sur l'en-tête annoncé : c'est
+    # le seul chiffre que le client ne choisit pas.
+    if not octets:
+        return 'Le fichier est vide.'
+    if len(octets) > max_bytes():
+        return (f'Fichier trop volumineux ({len(octets) // (1024 * 1024)} Mo) : '
+                f'maximum {max_bytes() // (1024 * 1024)} Mo.')
+    return nom, (fichier.mimetype or '')[:128], octets
+
+
+@bp.route('/documents/<int:id>/file', methods=['POST'])
+@login_required
+def attach_file(id):
+    """Apporte son fichier a une piece qui n'en a pas : une piece de marche
+    reprise sans son acte. La ligne garde sa categorie, sa date, son montant et
+    ses notes ; seul le fichier arrive."""
+    if not enabled():
+        abort(404)
+    doc = Document.query.get_or_404(id)
+    categorie = doc.permission_category()
+    kind = doc.parent_kind()
+    parent_id = getattr(doc, DOCUMENT_PARENTS[kind][0]) if kind else None
+    if not current_user.can_edit(categorie):
+        flash("Vous n'avez pas les droits pour déposer une pièce ici.", 'danger')
+        return redirect(_retour(kind, parent_id))
+    if doc.has_file():
+        flash('Cette pièce a déjà son fichier.', 'warning')
+        return redirect(_retour(kind, parent_id))
+    lu = _lire_fichier(request.files.get('file'))
+    if isinstance(lu, str):
+        flash(lu, 'danger')
+        return redirect(_retour(kind, parent_id))
+    nom, mime, octets = lu
+    # L'intitule de la piece ne se perd pas : il passe dans les notes si le
+    # nom du fichier le remplace.
+    if doc.filename and doc.filename != nom and doc.filename not in (doc.notes or ''):
+        doc.notes = ' — '.join(x for x in (doc.filename, doc.notes) if x)
+    doc.filename, doc.mime, doc.size = nom, mime, len(octets)
+    doc.uploaded_by = current_user.username
+    doc.content = DocumentContent(data=octets)
+    db.session.commit()
+    audit_record('fichier apporte a une piece', detail=f'{nom} ({kind} #{parent_id})',
+                 category=categorie)
+    flash('Fichier déposé', 'success')
     return redirect(_retour(kind, parent_id))
 
 
@@ -269,7 +300,7 @@ def download(id):
     doc = Document.query.get_or_404(id)
     if not current_user.can_view(doc.permission_category()):
         abort(403)
-    if doc.content is None:       # ligne sans contenu : ne devrait pas arriver
+    if not doc.has_file() or doc.content is None:   # piece sans fichier
         abort(404)
     # TOUJOURS en pièce jointe, et jamais avec le type annoncé par le déposant :
     # un HTML ou un SVG rendu dans la page s'exécuterait sur l'origine de
@@ -300,7 +331,7 @@ def view(id):
     if not current_user.can_view(doc.permission_category()):
         abort(403)
     mime = INLINE_TYPES.get(_extension(doc.filename or ''))
-    if mime is None or doc.content is None:
+    if mime is None or not doc.has_file() or doc.content is None:
         abort(404)
     reponse = send_file(io.BytesIO(doc.content.data), mimetype=mime,
                         as_attachment=False, download_name=doc.filename)

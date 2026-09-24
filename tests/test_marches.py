@@ -1,7 +1,9 @@
 """Marchés : rattachement N-N aux logiciels, pièces contractuelles, et mise en
 concurrence (consultations + devis)."""
 from app import db, _migrate_data
-from app.models import Contract, ContractItem, Consultation, Quote, Software, Supplier
+import io
+
+from app.models import Contract, Consultation, Quote, Software, Supplier, Document
 
 
 # ── Un marché couvre autant de logiciels qu'il en couvre réellement ──
@@ -57,36 +59,44 @@ def test_periode_et_reconductions_se_lisent_en_francais(client):
 
 # ── Les pièces ne décrivent qu'elles-mêmes ──
 
-def test_pieces_du_marche(client):
+def _depose(client, ct, nom, **champs):
+    data = {'parent_kind': 'contract', 'parent_id': str(ct.id),
+            'file': (io.BytesIO(b'%PDF-1.4 acte'), nom)}
+    data.update(champs)
+    return client.post('/documents/upload', data=data,
+                       content_type='multipart/form-data', follow_redirects=True)
+
+
+def test_les_documents_du_marche_portent_date_et_montant(client):
+    """Une piece de marche est un DOCUMENT du contrat : son acte, avec la date
+    et le montant qu'il engage. Le cumul est INDICATIF : c'est le montant
+    annuel du contrat qui engage."""
     ct = Contract(name='Marché RH', cost_yearly=10000)
     db.session.add(ct)
     db.session.commit()
-    client.post(f'/contracts/{ct.id}/items/add', data={
-        'label': '50 postes', 'kind': 'abonnement', 'cost_yearly': '4000',
-        'doc_date': '2026-02-10'}, follow_redirects=True)
-    client.post(f'/contracts/{ct.id}/items/add', data={
-        'label': 'Module paie', 'kind': 'perpetuelle', 'cost_yearly': '1500'},
-        follow_redirects=True)
-    assert ct.items.count() == 2
-    # Le cumul des pièces est INDICATIF : c'est le montant annuel qui engage.
-    assert ct.items_cost() == 5500
+    _depose(client, ct, 'bon-de-commande.pdf', amount='4000', doc_date='2026-02-10',
+            notes='50 postes')
+    _depose(client, ct, 'avenant.pdf', amount='1500')
+    docs = ct.documents()
+    assert {d.filename for d in docs} == {'bon-de-commande.pdf', 'avenant.pdf'}
+    bon = next(d for d in docs if d.filename == 'bon-de-commande.pdf')
+    assert bon.amount == 4000 and bon.notes == '50 postes'
+    assert bon.doc_date.isoformat() == '2026-02-10'
+    assert ct.documents_cost() == 5500
     assert ct.cost_yearly == 10000
+    html = client.get(f'/contracts/{ct.id}').get_data(as_text=True)
+    assert 'ong-pieces-du' not in html                    # plus d onglet a part
+    assert '5\u202f500\u00a0€ cumulés' in html
+    assert 'name="amount"' in html and 'name="doc_date"' in html
 
-    piece = ContractItem.query.filter_by(label='Module paie').one()
-    client.post(f'/contracts/items/{piece.id}/delete', follow_redirects=True)
-    assert ct.items.count() == 1
 
-
-def test_une_piece_sans_poste_est_refusee(client):
-    ct = Contract(name='M')
+def test_un_document_sans_montant_ne_pese_pas(client):
+    ct = Contract(name='Marché RH')
     db.session.add(ct)
     db.session.commit()
-    client.post(f'/contracts/{ct.id}/items/add', data={'cost_yearly': '100'},
-                follow_redirects=True)
-    assert ct.items.count() == 0
+    _depose(client, ct, 'guide.pdf')
+    assert Document.query.count() == 1 and ct.documents_cost() == 0
 
-
-# ── Mise en concurrence ──
 
 def test_consultation_et_devis_retenu(client):
     sw = Software(name='GED')
@@ -226,18 +236,20 @@ def test_les_marches_proposes_sont_ceux_de_l_editeur_et_les_orphelins(client):
     assert {c.name for c in _marches_rattachables(sw)} == {'Marché sans logiciel'}
 
 
-def test_la_fiche_logiciel_compte_les_pieces_du_marche(client):
-    """Sur la fiche logiciel, un marché se lit comme dans SoftInventory : le
-    nombre de pièces en tête de leur liste, le montant en français."""
+def test_la_fiche_logiciel_liste_les_documents_du_marche(client):
+    """Sur la fiche logiciel, un marché se lit comme dans SoftInventory : ses
+    documents en dessous, coiffés de leur nombre, chacun avec sa catégorie, sa
+    taille et sa date ; le montant en français."""
     sw = Software(name='Paie')
     ct = Contract(name='Marché RH', reference='M26-01', cost_yearly=10000)
     db.session.add_all([sw, ct])
     db.session.commit()
     ct.software.append(sw)
-    db.session.add_all([ContractItem(contract_id=ct.id, label='50 postes'),
-                        ContractItem(contract_id=ct.id, label='Module paie')])
     db.session.commit()
+    _depose(client, ct, 'marche-signe.pdf', amount='4000', doc_date='2026-02-10')
+    _depose(client, ct, 'avenant.pdf')
     html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
-    assert '2 Pièces' in html
+    assert '2 Documents' in html
+    assert 'marche-signe.pdf' in html and 'avenant.pdf' in html
+    assert '10/02/2026' in html and '4 000 €' in html
     assert 'M26-01' in html and 'Mnt annuel : 10 000 €' in html
-
