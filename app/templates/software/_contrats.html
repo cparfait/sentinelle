@@ -68,7 +68,7 @@
                    sous sa référence, comme dans SoftInventory ; le type de
                    contrat (maintenance, abonnement) ouvre la ligne du milieu. #}
                 <div class="marche-entete marche-sous">
-                    <span>{{ c.nature_label() or c.kind_label() }}</span>
+                    <span class="marche-tronque" title="{{ c.nature_label() or c.kind_label() }}">{{ c.nature_label() or c.kind_label() }}</span>
                     <span>
                         {%- if c.nature_label() %}{{ c.kind_label() }}{% if c.period_label() %} · {% endif %}{% endif -%}
                         {{- c.period_label() | capitalize -}}
