@@ -2434,7 +2434,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .serveurs-liste > li, .flux-liste > li > .d-flex { min-height: 20px; line-height: 20px; font-size: 14px; }
 .serveurs-liste .btn-icone, .flux-liste .btn-icone { width: 20px; height: 20px; padding: 2px; }
 .flux-liste .flux-sens { color: var(--primary); }
-.serveurs-liste .serveur-ico { color: var(--primary); }
+.serveurs-liste .serveur-ico { color: rgb(var(--ico-rgb, var(--sec))); }
 .btn-carre { width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
 .btn-carre-plus { font-size: 14px; line-height: 1; }
 .flux-liste .flux-desc { font-size: 12px; color: var(--muted); }
