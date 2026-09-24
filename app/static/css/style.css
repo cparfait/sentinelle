@@ -2420,6 +2420,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .marche-docs-titre { font-size: 12px; font-weight: 600; color: var(--faint); }
 .marche-docs-entete { border-bottom: 1px dotted var(--line); }
 .marche-docs-vide { font-size: 14px; color: var(--faint); }
+.doc-aide { font-size: 12px; color: var(--faint); margin-top: 4px; }
 /* Le telechargement d'un document : une fleche Lucide de 14 px, en gris
    leger, qui prend la couleur du lien au survol. */
 .marche-doc-ico { color: var(--faint); margin-top: 3px; }

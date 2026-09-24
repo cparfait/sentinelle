@@ -508,3 +508,58 @@ def test_un_lecteur_ne_modifie_pas_une_piece(app):
     db.session.refresh(doc)
     assert doc.notes is None
 
+
+def test_renommer_une_piece_et_remplacer_son_fichier(client):
+    ct = Contract(name='Marché RH')
+    db.session.add(ct)
+    db.session.commit()
+    _depose(client, 'contract', ct.id, 'acte.pdf', b'%PDF-1.4 v1')
+    doc = Document.query.one()
+    # Renommer seulement : le fichier ne bouge pas, le nom garde accents et espaces.
+    client.post(f'/documents/{doc.id}/edit', data={'filename': 'M19-14 Marché signé.pdf'},
+                follow_redirects=True)
+    db.session.refresh(doc)
+    assert doc.filename == 'M19-14 Marché signé.pdf' and doc.content.data == b'%PDF-1.4 v1'
+    # Remplacer le fichier en gardant le nom.
+    client.post(f'/documents/{doc.id}/edit',
+                data={'filename': 'M19-14 Marché signé.pdf', 'file': _fichier('nouveau.pdf', b'%PDF-1.4 v2')},
+                content_type='multipart/form-data', follow_redirects=True)
+    db.session.refresh(doc)
+    assert doc.filename == 'M19-14 Marché signé.pdf' and doc.content.data == b'%PDF-1.4 v2'
+    assert doc.size == len(b'%PDF-1.4 v2')
+    from app.models import DocumentContent
+    assert DocumentContent.query.count() == 1                 # l ancien contenu est parti
+    # Un nom vide avec un nouveau fichier : la piece prend le nom du fichier.
+    client.post(f'/documents/{doc.id}/edit',
+                data={'filename': '', 'file': _fichier('v3.pdf', b'%PDF-1.4 v3')},
+                content_type='multipart/form-data', follow_redirects=True)
+    db.session.refresh(doc)
+    assert doc.filename == 'v3.pdf'
+
+
+def test_le_nom_d_une_piece_n_est_jamais_un_chemin(client):
+    ct = Contract(name='Marché RH')
+    db.session.add(ct)
+    db.session.commit()
+    _depose(client, 'contract', ct.id, 'acte.pdf')
+    doc = Document.query.one()
+    client.post(f'/documents/{doc.id}/edit', data={'filename': '../../etc/passwd'},
+                follow_redirects=True)
+    db.session.refresh(doc)
+    assert '/' not in doc.filename and '..' not in doc.filename
+    assert doc.filename == 'etc' + 'passwd' or doc.filename == 'etcpasswd'
+
+
+def test_un_fichier_refuse_n_altere_pas_la_piece(client):
+    ct = Contract(name='Marché RH')
+    db.session.add(ct)
+    db.session.commit()
+    _depose(client, 'contract', ct.id, 'acte.pdf', b'%PDF-1.4 v1')
+    doc = Document.query.one()
+    r = client.post(f'/documents/{doc.id}/edit',
+                    data={'filename': 'renomme.pdf', 'file': _fichier('piege.html', b'<script>')},
+                    content_type='multipart/form-data', follow_redirects=True)
+    assert 'non accept' in r.get_data(as_text=True)
+    db.session.refresh(doc)
+    assert doc.filename == 'acte.pdf' and doc.content.data == b'%PDF-1.4 v1'
+

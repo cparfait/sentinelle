@@ -1,13 +1,32 @@
 {# ═══ Modifier une pièce ═══
-   Replié derrière le crayon. Variables : `d` (la pièce), `avec_dates`
-   (la date de l'acte : un marché, pas un guide), `next` (où revenir). #}
+   Replié derrière le crayon, comme le formulaire de pièce de SoftInventory :
+   le nom affiché, le fichier (à remplacer, ou à apporter s'il manque), la
+   catégorie, la date de l'acte, les notes. Variables : `d` (la pièce),
+   `avec_dates` (la date de l'acte : un marché, pas un guide), `next` (où
+   revenir). #}
+{% from '_icones.html' import lucide %}
 <div class="collapse" id="docEdit{{ d.id }}">
-    <form method="POST" action="{{ url_for('documents.edit', id=d.id) }}"
+    <form method="POST" action="{{ url_for('documents.edit', id=d.id) }}" enctype="multipart/form-data"
           class="p-2 mt-1 rounded border bg-body-tertiary">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="next" value="{{ next }}">
-        <div class="row g-2 align-items-end">
+        <div class="row g-2 align-items-start">
             <div class="col-md-3">
+                <label class="form-label fw-medium small mb-1" for="docNom{{ d.id }}">Nom du fichier</label>
+                <input type="text" name="filename" id="docNom{{ d.id }}" class="form-control form-control-sm"
+                       value="{{ d.filename }}" maxlength="180" required>
+                <div class="form-text doc-aide">Renomme le fichier déposé</div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-medium small mb-1">Fichier</label>
+                <input type="file" name="file" id="docFichier{{ d.id }}" class="d-none"
+                       onchange="this.nextElementSibling.nextElementSibling.textContent = this.files.length ? 'Choisi : ' + this.files[0].name : this.nextElementSibling.nextElementSibling.dataset.actuel">
+                <button type="button" class="btn btn-sm btn-outline-secondary w-100 text-nowrap"
+                        onclick="this.previousElementSibling.click()">{{ lucide('upload', 14, 'me-1') }}{{ 'Remplacer le fichier' if d.has_file() else 'Déposer le fichier' }}</button>
+                <div class="form-text doc-aide text-truncate" data-actuel="{{ ('Actuel : ' ~ d.filename) if d.has_file() else 'Aucun fichier pour l’instant' }}"
+                     title="{{ d.filename if d.has_file() else '' }}">{{ ('Actuel : ' ~ d.filename) if d.has_file() else 'Aucun fichier pour l’instant' }}</div>
+            </div>
+            <div class="col-md-2 col-lg">
                 <label class="form-label fw-medium small mb-1">Catégorie</label>
                 <select name="category_id" class="form-select form-select-sm">
                     <option value="">— Non classée —</option>
@@ -28,6 +47,7 @@
                 <input type="text" name="notes" class="form-control form-control-sm" value="{{ d.notes or '' }}">
             </div>
             <div class="col-auto">
+                <label class="form-label small mb-1 d-block">&nbsp;</label>
                 <button type="submit" class="btn btn-sm btn-primary">Enregistrer</button>
             </div>
         </div>

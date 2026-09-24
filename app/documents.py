@@ -355,9 +355,9 @@ def _suite(kind, parent_id):
 @bp.route('/documents/<int:id>/edit', methods=['POST'])
 @login_required
 def edit(id):
-    """Corrige ce qu'une piece dit d'elle-meme : categorie, date, notes. Le
-    fichier, lui, ne se remplace pas : on retire la piece et on depose la
-    bonne, pour que l'historique ne mente pas."""
+    """Corrige une piece : son nom, son fichier (remplace, ou apporte s'il
+    manquait), sa categorie, sa date, ses notes. Comme dans SoftInventory, le
+    nom affiche se choisit ; le fichier d'origine ne dicte rien."""
     if not enabled():
         abort(404)
     doc = Document.query.get_or_404(id)
@@ -367,6 +367,26 @@ def edit(id):
     if not current_user.can_edit(categorie):
         flash("Vous n'avez pas les droits pour modifier cette pièce.", 'danger')
         return redirect(_suite(kind, parent_id))
+
+    fichier = request.files.get('file')
+    if fichier is not None and (fichier.filename or '').strip():
+        lu = _lire_fichier(fichier)
+        if isinstance(lu, str):
+            flash(lu, 'danger')
+            return redirect(_suite(kind, parent_id))
+        nom_fichier, mime, octets = lu
+        if doc.content is not None:
+            db.session.delete(doc.content)
+        doc.content = DocumentContent(data=octets)
+        doc.mime, doc.size = mime, len(octets)
+        doc.uploaded_by = current_user.username
+        # Sans nom choisi, la piece prend celui du nouveau fichier.
+        if not (request.form.get('filename') or '').strip():
+            doc.filename = nom_fichier
+
+    nom = _nom_affiche(request.form.get('filename'))
+    if nom:
+        doc.filename = nom
     doc.category_id = parse_int(request.form.get('category_id'))
     doc.doc_date = parse_date(request.form.get('doc_date'))
     doc.notes = (request.form.get('notes') or '').strip() or None
@@ -374,6 +394,16 @@ def edit(id):
     audit_record('modification piece jointe', detail=doc.filename, category=categorie)
     flash('Pièce modifiée', 'success')
     return redirect(_suite(kind, parent_id))
+
+
+def _nom_affiche(valeur):
+    """Le nom qu'on donne a une piece : libre (accents, espaces), mais jamais
+    un chemin ni un caractere de controle -- il nomme la copie que le navigateur
+    enregistre, et rien d'autre. Vide si rien d'utilisable."""
+    nom = (valeur or '').strip()
+    nom = ''.join(ch for ch in nom if ch not in '/\\' and ord(ch) >= 32)
+    nom = nom.strip(' .')
+    return nom[:256]
 
 
 @bp.route('/documents/<int:id>/delete', methods=['POST'])
