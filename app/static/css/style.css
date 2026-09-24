@@ -2429,6 +2429,10 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 @media (max-width: 575.98px) { .services-grille { grid-template-columns: 1fr; } }
 .serveurs-liste a, .flux-liste a { color: var(--text); }
 .serveurs-liste a:hover, .flux-liste a:hover { color: var(--primary); }
+/* Lignes serrees, comme dans SoftInventory : 20 px de haut, texte en 14 px,
+   et des icones d'action de 20 px qui ne font pas grandir la ligne. */
+.serveurs-liste > li, .flux-liste > li > .d-flex { min-height: 20px; line-height: 20px; font-size: 14px; }
+.serveurs-liste .btn-icone, .flux-liste .btn-icone { width: 20px; height: 20px; padding: 2px; }
 .flux-liste .flux-sens { color: var(--primary); }
 .serveurs-liste .serveur-ico { color: var(--primary); }
 .btn-carre { width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
