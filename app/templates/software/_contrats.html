@@ -45,23 +45,41 @@
 
     {% for c in marches %}
     <div class="p-3 {{ '' if loop.last else 'border-bottom' }}">
-        {# La ligne de titre : ce qui NOMME le marché — sa référence, son
-           libellé, la société engagée. Les trois mènent à la fiche du marché
-           ou à celle de la société : ce sont des objets de l'inventaire. #}
-        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
-            <div class="min-w-0">
-                <span class="fw-semibold">
-                    <a href="{{ url_for('contracts.detail', id=c.id) }}" class="text-decoration-none">
-                        {%- if c.reference %}{{ c.reference }} — {% endif -%}{{ c.name }}</a>
-                </span>
-                {{ status_badge(c.status()) }}
-                {% if c.nature_label() %}<span class="badge bg-light text-dark border">{{ c.nature_label() }}</span>{% endif %}
-                <small class="d-block text-muted">
-                    {{ c.kind_label() }}
-                    {%- if c.supplier %} · <a href="{{ url_for('suppliers.detail', id=c.supplier_id) }}"
-                                              class="text-decoration-none">{{ c.supplier.name }}</a>{% endif %}
-                    {%- if c.supplier_reference %} · réf. fournisseur {{ c.supplier_reference }}{% endif %}
-                </small>
+        {# Deux lignes, trois colonnes, comme dans SoftInventory. La première
+           NOMME l'acte : sa référence, son libellé, la société engagée — les
+           trois mènent à leur fiche. La seconde dit ce qu'il engage : sa
+           nature, jusqu'à quand, pour combien. #}
+        <div class="d-flex justify-content-between align-items-start gap-3">
+            <div class="flex-grow-1 min-w-0">
+                <div class="marche-entete fw-semibold">
+                    <a href="{{ url_for('contracts.detail', id=c.id) }}" class="text-decoration-none marche-tronque"
+                       title="{{ c.reference or '' }}">{{ c.reference or '' }}</a>
+                    <span class="d-flex align-items-baseline gap-2 min-w-0">
+                        <a href="{{ url_for('contracts.detail', id=c.id) }}" class="text-decoration-none marche-tronque"
+                           title="{{ c.name }}">{{ c.name }}</a>
+                        {{ status_badge(c.status()) }}
+                        {% if c.nature_label() %}<span class="badge bg-light text-dark border">{{ c.nature_label() }}</span>{% endif %}
+                    </span>
+                    <span class="marche-droite marche-tronque">
+                        {%- if c.supplier %}<a href="{{ url_for('suppliers.detail', id=c.supplier_id) }}"
+                                               class="text-decoration-none" title="{{ c.supplier.name }}">{{ c.supplier.name }}</a>{% endif -%}
+                    </span>
+                </div>
+                <div class="marche-entete marche-sous">
+                    <span>{{ c.kind_label() }}</span>
+                    <span>
+                        {{- c.period_label() | capitalize -}}
+                        {%- set jours = c.days_left() -%}
+                        {%- if jours is not none %} · agir avant le {{ c.action_deadline().strftime('%d/%m/%Y') }} ({{ jours }} j){% endif -%}
+                        {%- if c.auto_renew %} · tacite reconduction{% elif c.renewal_label() %} · {{ c.renewal_label() }}{% endif -%}
+                        {%- if c.supplier_reference %} · réf. fournisseur {{ c.supplier_reference }}{% endif -%}
+                    </span>
+                    <span class="marche-droite marche-tronque">
+                        {%- if c.cost_yearly %}Mnt annuel : {{ c.cost_yearly | montant }}{% endif -%}
+                        {%- if c.cost_max_yearly %}{{ ' · ' if c.cost_yearly }}Maxi : {{ c.cost_max_yearly | montant }}{% endif -%}
+                        {%- if c.cost_total and not c.cost_yearly %}Total : {{ c.cost_total | montant }}{% endif -%}
+                    </span>
+                </div>
             </div>
             <div class="d-flex gap-2">
                 <a href="{{ url_for('contracts.detail', id=c.id) }}" class="btn btn-sm btn-outline-secondary"
@@ -79,37 +97,6 @@
             </div>
         </div>
 
-        {# Ce que l'acte engage : jusqu'à quand, pour combien, et la date avant
-           laquelle il faut avoir décidé. Une case vide ne paraît pas : sur une
-           reprise d'historique, la moitié des marchés n'a pas été dépouillée,
-           et une rangée de tirets ne dit rien qu'un blanc ne dise mieux. #}
-        <div class="fiche-grille mt-2">
-            {% if c.period_label() %}
-            <div class="fiche-champ">
-                <span class="fiche-label">Période</span>
-                <div class="fiche-valeur">{{ c.period_label() | capitalize }}
-                    {%- if c.renewal_label() %}<small class="d-block text-muted">{{ c.renewal_label() }}</small>{% endif %}</div>
-            </div>
-            {% endif %}
-            {% set jours = c.days_left() %}
-            {% if jours is not none %}
-            <div class="fiche-champ">
-                <span class="fiche-label">Agir avant</span>
-                <div class="fiche-valeur">{{ c.action_deadline().strftime('%d/%m/%Y') }}
-                    <small class="text-muted">({{ jours }} j)</small>
-                    {%- if c.auto_renew %}<small class="d-block text-muted">tacite reconduction</small>{% endif %}</div>
-            </div>
-            {% endif %}
-            {% if c.cost_yearly %}
-            <div class="fiche-champ">
-                <span class="fiche-label">Montant annuel</span>
-                <div class="fiche-valeur">{{ '%.0f' | format(c.cost_yearly) }} €
-                    {%- if c.cost_max_yearly %}<small class="d-block text-muted">maximum : {{ '%.0f' | format(c.cost_max_yearly) }} €</small>{% endif %}
-                    {%- if c.cost_total %}<small class="d-block text-muted">total sur la durée : {{ '%.0f' | format(c.cost_total) }} €</small>{% endif %}</div>
-            </div>
-            {% endif %}
-        </div>
-
         {# Les pièces du marché : les postes qu'il couvre, et l'acte scanné qui
            atteste chacun. Elles se déposent et se retirent sur la fiche du
            marché — ici on les lit et on les ouvre. #}
@@ -122,7 +109,7 @@
                 <tr>
                     <td>{{ p.label or '—' }}</td>
                     <td class="small text-muted">{{ p.kind_label() }}</td>
-                    <td class="text-end">{% if p.cost_yearly %}{{ '%.0f' | format(p.cost_yearly) }} €{% else %}—{% endif %}</td>
+                    <td class="text-end">{% if p.cost_yearly %}{{ p.cost_yearly | montant }}{% else %}—{% endif %}</td>
                     <td class="small text-nowrap">{{ p.doc_date.strftime('%d/%m/%Y') if p.doc_date else '—' }}</td>
                     <td class="small">
                         {%- if documents_enabled -%}

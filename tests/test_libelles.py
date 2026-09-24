@@ -2,7 +2,15 @@
 from datetime import date, datetime, timedelta
 
 from app.libelles import (status_label, status_label_plural, priority_label,
-                          delai, jours, compte, date_longue, STATUS_LABELS)
+                          delai, jours, compte, date_longue, montant, STATUS_LABELS)
+
+
+def test_un_montant_en_francais():
+    assert montant(32000) == '32\u202f000\u00a0€'
+    assert montant(1191.64) == '1\u202f191,64\u00a0€'
+    assert montant(0.5) == '0,50\u00a0€'
+    assert montant(None) == '' and montant('') == ''
+    assert montant(12, unite='') == '12'
 
 
 def test_un_mot_par_couleur():

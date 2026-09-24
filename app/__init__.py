@@ -277,6 +277,7 @@ def create_app(config_class=Config):
     from app import libelles
     app.jinja_env.filters['delai'] = libelles.delai
     app.jinja_env.filters['date_longue'] = libelles.date_longue
+    app.jinja_env.filters['montant'] = libelles.montant
     app.jinja_env.globals.update(
         status_label=libelles.status_label,
         status_label_plural=libelles.status_label_plural,

@@ -79,6 +79,21 @@ _MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'aoû
          'septembre', 'octobre', 'novembre', 'décembre']
 
 
+def montant(value, unite='€'):
+    """Un montant en français : « 1 191,64 € », « 32 000 € ». Les centimes ne
+    paraissent que s'il y en a ; None ou vide → ''."""
+    if value is None or value == '':
+        return ''
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    entier = abs(v) == int(abs(v))
+    texte = f'{v:,.0f}' if entier else f'{v:,.2f}'
+    texte = texte.replace(',', '\u202f').replace('.', ',')
+    return f'{texte}\u00a0{unite}' if unite else texte
+
+
 def date_longue(d):
     """« mercredi 17 septembre 2026 », sans dépendre de la locale du serveur."""
     if d is None:

@@ -2391,6 +2391,28 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    il dit ou commence la rubrique sans tracer de cadre autour d'elle. */
 .data-card .fiche-bloc > h6.fiche-titre::after { display: none; }
 
+/* ---- L'en-tete d'un marche sur la fiche logiciel ----
+   Deux lignes, trois colonnes : ce qui NOMME l'acte (reference, intitule,
+   societe) puis ce qu'il engage (nature, periode, montant). La disposition de
+   SoftInventory, que les yeux connaissent. Sur un ecran etroit, les colonnes
+   s'empilent. ---- */
+.marche-entete {
+    display: grid;
+    grid-template-columns: minmax(3rem, 6.25rem) minmax(8rem, 1fr) minmax(6rem, 15.625rem);
+    column-gap: .5rem;
+    align-items: baseline;
+    min-width: 0;
+}
+.marche-entete > * { min-width: 0; }
+.marche-entete .marche-droite { text-align: right; }
+.marche-entete .marche-tronque { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.marche-entete.marche-sous { font-size: .8rem; color: var(--bs-secondary-color, #64748b); }
+.marche-entete.marche-sous .marche-droite { font-variant-numeric: tabular-nums; }
+@media (max-width: 767.98px) {
+    .marche-entete { grid-template-columns: 1fr; }
+    .marche-entete .marche-droite { text-align: left; }
+}
+
 /* ---- La ligne : intitule a gauche, valeur a droite ----
    C'est la correction qui compte le plus : l'intitule pose au-dessus de sa
    valeur doublait la hauteur de chaque champ, et la fiche defilait sur deux
