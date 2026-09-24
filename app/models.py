@@ -1138,9 +1138,10 @@ CONTRACT_KIND_LABELS = {'maintenance': 'Maintenance', 'licence': 'Licence',
 # Ce qu'EST l'acte : un marche public passe apres publicite et mise en
 # concurrence, ou un contrat de gre a gre. Distinct de CONTRACT_KIND_LABELS,
 # qui dit de QUOI il s'agit (maintenance, licence, abonnement).
-CONTRACT_NATURE_LABELS = {'marche': 'Marché public', 'contrat': 'Contrat de gré à gré'}
+# La nature de l'acte, en un mot : c'est ainsi qu'elle se lit sous la
+# reference du marche, et un mot suffit a distinguer les deux.
+CONTRACT_NATURE_LABELS = {'marche': 'Marché', 'contrat': 'Contrat'}
 
-# Nature d'une PIECE du marche : le mode de licence de ce poste-la.
 # Equipements couverts par un contrat (relation N:N). Premiere table
 # d'association du projet ; alimentee au demarrage depuis l'ancien equipment_id.
 contract_equipment = db.Table(
