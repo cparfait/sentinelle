@@ -40,6 +40,8 @@ ICONES = [
     'lock-keyhole', 'badge-check', 'user-lock', 'id-card', 'user-cog', 'contact-round',
     'network', 'git-fork', 'calendar-check', 'calendar-range', 'refresh-cw',
     'coins', 'receipt', 'cpu', 'cloud', 'life-buoy', 'wrench', 'settings',
+    # Actions en ligne sur une fiche : modifier, retirer une liaison.
+    'pencil', 'unlink',
 ]
 
 

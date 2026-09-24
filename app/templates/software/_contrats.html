@@ -1,4 +1,4 @@
-{% from '_icones.html' import icone %}
+{% from '_icones.html' import icone, lucide %}
 {# ═══ Contrats et marchés ═══
    Les marchés ont été saisis au nom de la SOCIÉTÉ qui les signe, pas de
    l'application qu'ils couvrent : la fiche logiciel annonçait « Aucun contrat »
@@ -81,20 +81,23 @@
                     </span>
                 </div>
             </div>
-            <div class="d-flex gap-2">
-                <a href="{{ url_for('contracts.detail', id=c.id) }}" class="btn btn-sm btn-outline-secondary"
-                   title="Ouvrir la fiche du marché" aria-label="Ouvrir la fiche du marché"><i class="bi bi-box-arrow-up-right"></i></a>
-                {% if peut_editer %}
-                {# Détacher retire le LIEN, pas l'acte : le marché reste, il ne
-                   couvre simplement plus cette application. #}
+            {% if peut_editer %}
+            {# Deux gestes discrets, comme dans SoftInventory : modifier l'acte
+               (sur sa fiche, puisqu'il couvre souvent plusieurs logiciels) et
+               retirer le LIEN -- pas l'acte : le marché reste, il ne couvre
+               simplement plus cette application. #}
+            <div class="d-flex gap-1 flex-shrink-0">
+                <a href="{{ url_for('contracts.edit', id=c.id) }}" class="btn btn-sm btn-ghost btn-icone"
+                   title="Modifier le contrat" aria-label="Modifier le contrat">{{ lucide('pencil', 16) }}</a>
                 <form method="POST" action="{{ url_for('contracts.software_detach', id=c.id, software_id=item.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Détacher ce marché de ce logiciel"
-                            aria-label="Détacher ce marché"
-                            data-confirm="Détacher « {{ c.name }} » de ce logiciel ? Le marché n'est pas supprimé."><i class="bi bi-x-lg"></i></button>
+                    <button type="submit" class="btn btn-sm btn-ghost btn-icone btn-ghost-danger"
+                            title="Retirer ce marché du logiciel (le marché n'est pas supprimé)"
+                            aria-label="Retirer ce marché du logiciel"
+                            data-confirm="Retirer « {{ c.name }} » de ce logiciel ? Le marché n'est pas supprimé.">{{ lucide('unlink', 16) }}</button>
                 </form>
-                {% endif %}
             </div>
+            {% endif %}
         </div>
 
         {# Les pièces du marché : les postes qu'il couvre, et l'acte scanné qui
