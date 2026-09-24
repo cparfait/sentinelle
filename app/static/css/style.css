@@ -2478,6 +2478,9 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    se lisait comme une panne d'affichage. `:has()` evite d'avoir a compter les
    champs dans chacun des onze gabarits de fiche. */
 .fiche-bloc:not(:has(.fiche-champ)) { display: none; }
+/* Sauf la rubrique « libre », qui ne passe pas par des champs : ses valeurs
+   (badges, liens) viennent directement sous le titre, et « aucun » s'y dit. */
+.fiche-bloc.fiche-bloc--libre:not(:has(.fiche-champ)) { display: block; }
 
 /* ---- Les titres des cartes autonomes : la barre d'accent, teintee ---- */
 .fiche-titre { --sec: var(--sec-indigo); }
