@@ -251,6 +251,7 @@ def test_deposer_une_piece_depuis_la_fiche_logiciel_y_revient(client):
     db.session.commit()
     html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
     assert f'docDepot{ct.id}' in html and '0 Document' in html      # le bouton « + Pièce » et son formulaire
+    assert 'Aucun document pour ce contrat.' in html
     r = client.post('/documents/upload', data={
         'parent_kind': 'contract', 'parent_id': str(ct.id), 'next': f'/inventory/logiciels/{sw.id}#contrats',
         'file': (io.BytesIO(b'%PDF-1.4 acte'), 'acte.pdf')}, content_type='multipart/form-data')

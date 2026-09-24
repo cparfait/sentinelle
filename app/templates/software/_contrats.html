@@ -157,6 +157,9 @@
         </div>
         {% endif %}
         {% endif %}
+        {% if documents_enabled and not docs %}
+        <p class="marche-docs-vide mb-0">Aucun document pour ce contrat.</p>
+        {% endif %}
         {% if docs %}
         <ul class="list-unstyled mb-0 marche-docs">
             {% for d in docs %}
