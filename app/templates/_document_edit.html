@@ -1,0 +1,40 @@
+{# ═══ Modifier une pièce ═══
+   Replié derrière le crayon. Variables : `d` (la pièce), `avec_montants`
+   (date et montant : un acte de marché, pas un guide), `next` (où revenir). #}
+<div class="collapse" id="docEdit{{ d.id }}">
+    <form method="POST" action="{{ url_for('documents.edit', id=d.id) }}"
+          class="p-2 mt-1 rounded border bg-body-tertiary">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ next }}">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-medium small mb-1">Catégorie</label>
+                <select name="category_id" class="form-select form-select-sm">
+                    <option value="">— Non classée —</option>
+                    {% for cat in doc_categories %}
+                    <option value="{{ cat.id }}" {{ 'selected' if d.category_id == cat.id }}>{{ cat.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if avec_montants %}
+            <div class="col-md-2">
+                <label class="form-label fw-medium small mb-1">Date de l'acte</label>
+                <input type="date" name="doc_date" class="form-control form-control-sm"
+                       value="{{ d.doc_date.strftime('%Y-%m-%d') if d.doc_date else '' }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-medium small mb-1">Montant (€)</label>
+                <input type="text" name="amount" class="form-control form-control-sm" inputmode="decimal"
+                       value="{{ d.amount if d.amount is not none else '' }}">
+            </div>
+            {% endif %}
+            <div class="col-md">
+                <label class="form-label fw-medium small mb-1">Notes</label>
+                <input type="text" name="notes" class="form-control form-control-sm" value="{{ d.notes or '' }}">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">Enregistrer</button>
+            </div>
+        </div>
+    </form>
+</div>

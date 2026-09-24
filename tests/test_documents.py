@@ -440,3 +440,72 @@ def test_apporter_un_fichier_demande_le_droit_d_ecriture(app):
     db.session.refresh(piece)
     assert not piece.has_file()
 
+
+# ── Corriger une pièce, la retirer depuis la fiche logiciel ──
+
+def test_modifier_une_piece_corrige_ce_qu_elle_dit_d_elle_meme(client):
+    from app.models import Referential
+    ct = Contract(name='Marché RH')
+    db.session.add(ct)
+    db.session.commit()
+    _depose(client, 'contract', ct.id, 'acte.pdf')
+    doc = Document.query.one()
+    cat = Referential.query.filter_by(kind='doc_category', label='Devis').first()
+    client.post(f'/documents/{doc.id}/edit', data={'category_id': str(cat.id), 'doc_date': '2026-03-01',
+                                                   'amount': '2500', 'notes': 'lot 2'},
+                follow_redirects=True)
+    db.session.refresh(doc)
+    assert doc.category_id == cat.id and doc.amount == 2500 and doc.notes == 'lot 2'
+    assert doc.doc_date.isoformat() == '2026-03-01'
+    assert doc.content.data == b'%PDF-1.4 faux acte'          # le fichier ne bouge pas
+
+
+def test_le_retour_suit_next_mais_jamais_ailleurs(client):
+    sw = Software(name='Paie')
+    ct = Contract(name='Marché RH')
+    db.session.add_all([sw, ct])
+    db.session.commit()
+    ct.software = [sw]
+    db.session.commit()
+    _depose(client, 'contract', ct.id, 'acte.pdf')
+    doc = Document.query.one()
+    # Depuis la fiche logiciel : on y revient.
+    r = client.post(f'/documents/{doc.id}/edit', data={'notes': 'x', 'next': f'/inventory/logiciels/{sw.id}#contrats'})
+    assert r.status_code == 302 and r.headers['Location'].endswith(f'/inventory/logiciels/{sw.id}#contrats')
+    # Une adresse externe est ignorée : retour à la fiche du marché.
+    r = client.post(f'/documents/{doc.id}/delete', data={'next': 'https://ailleurs.example/'})
+    assert r.status_code == 302 and r.headers['Location'].endswith(f'/contracts/{ct.id}')
+    assert Document.query.count() == 0
+
+
+def test_la_fiche_logiciel_propose_crayon_et_corbeille(client):
+    sw = Software(name='Paie')
+    ct = Contract(name='Marché RH')
+    db.session.add_all([sw, ct])
+    db.session.commit()
+    ct.software = [sw]
+    db.session.commit()
+    _depose(client, 'contract', ct.id, 'acte.pdf')
+    doc = Document.query.one()
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    assert f'/documents/{doc.id}/edit' in html and f'/documents/{doc.id}/delete' in html
+    assert 'Supprimer la pièce et son fichier' in html
+
+
+def test_un_lecteur_ne_modifie_pas_une_piece(app):
+    from app.models import User
+    ct = Contract(name='Marché RH')
+    doc = Document(contract_id=None, filename='acte.pdf', size=3)
+    db.session.add(ct)
+    db.session.commit()
+    doc.contract_id = ct.id
+    lecteur = User(username='lecteur', email='l@v.fr', role='viewer')
+    lecteur.set_password('Lecteur-2026!')
+    db.session.add_all([doc, lecteur])
+    db.session.commit()
+    c = app.test_client()
+    c.post('/login', data={'username': 'lecteur', 'password': 'Lecteur-2026!'})
+    c.post(f'/documents/{doc.id}/edit', data={'notes': 'intrus'})
+    db.session.refresh(doc)
+    assert doc.notes is None
+

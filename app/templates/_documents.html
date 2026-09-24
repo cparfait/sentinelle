@@ -119,6 +119,7 @@
                         {% endif %}
                         {% endif %}
                         {% if d.notes %}<small class="d-block text-muted">{{ d.notes }}</small>{% endif %}
+                        {% if peut_deposer %}{% with next='' %}{% include '_document_edit.html' %}{% endwith %}{% endif %}
                     </td>
                     <td class="small">{{ d.category.label if d.category else '—' }}</td>
                     {% if avec_montants %}
@@ -129,6 +130,11 @@
                     <td class="small text-nowrap">{{ d.created_at.strftime('%d/%m/%Y') }}
                         {%- if d.uploaded_by %} <span class="text-muted">par {{ d.uploaded_by }}</span>{% endif %}</td>
                     <td class="text-end">
+                        {% if peut_deposer %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="collapse"
+                                data-bs-target="#docEdit{{ d.id }}" title="Modifier la pièce"
+                                aria-label="Modifier la pièce"><i class="bi bi-pencil"></i></button>
+                        {% endif %}
                         {% if d.has_file() and document_viewable(d) %}
                         <a href="{{ url_for('documents.download', id=d.id) }}"
                            class="btn btn-sm btn-outline-secondary me-1" title="Télécharger"

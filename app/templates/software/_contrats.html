@@ -106,6 +106,9 @@
            on les ouvre. Une pièce reprise sans son fichier se voit aussi :
            elle attend l'acte. #}
         {% set docs = c.documents() if documents_enabled else [] %}
+        {% set peut_modifier_doc = current_user.can_edit('contracts') %}
+        {% set peut_retirer_doc = current_user.can_delete('contracts') %}
+        {% set retour_ici = url_for('software.detail', id=item.id) ~ '#contrats' %}
         {% if docs %}
         <div class="small fw-semibold text-muted mt-3 mb-1">{{ docs | length }} Document{{ 's' if docs | length > 1 }}</div>
         <ul class="list-unstyled mb-0 marche-docs">
@@ -129,7 +132,31 @@
                         {%- if d.doc_date %} · {{ d.doc_date.strftime('%d/%m/%Y') }}{% elif d.created_at %} · {{ d.created_at.strftime('%d/%m/%Y') }}{% endif -%}
                         {%- if d.notes %} · {{ d.notes }}{% endif -%}
                     </small>
+                    {% if peut_modifier_doc %}
+                    {% with avec_montants=True, next=retour_ici %}{% include '_document_edit.html' %}{% endwith %}
+                    {% endif %}
                 </div>
+                {% if peut_modifier_doc or peut_retirer_doc %}
+                {# Les deux gestes de SoftInventory sur une pièce : la corriger,
+                   la retirer avec son fichier. Le retour se fait ici, pas sur
+                   la fiche du marché. #}
+                <div class="d-flex gap-1 flex-shrink-0">
+                    {% if peut_modifier_doc %}
+                    <button type="button" class="btn btn-sm btn-ghost btn-icone" data-bs-toggle="collapse"
+                            data-bs-target="#docEdit{{ d.id }}" title="Modifier la pièce"
+                            aria-label="Modifier la pièce">{{ lucide('pencil', 16) }}</button>
+                    {% endif %}
+                    {% if peut_retirer_doc %}
+                    <form method="POST" action="{{ url_for('documents.delete', id=d.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="next" value="{{ retour_ici }}">
+                        <button type="submit" class="btn btn-sm btn-ghost btn-icone btn-ghost-danger"
+                                title="Supprimer la pièce et son fichier" aria-label="Supprimer la pièce et son fichier"
+                                data-confirm="Supprimer « {{ d.filename }} » et son fichier ?">{{ lucide('trash-2', 16) }}</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endif %}
             </li>
             {% endfor %}
         </ul>

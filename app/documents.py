@@ -343,6 +343,41 @@ def view(id):
     return reponse
 
 
+def _suite(kind, parent_id):
+    """La page ou revenir : celle d'ou le geste est parti quand le formulaire
+    le dit (`next`, un chemin relatif seulement -- jamais une adresse externe
+    qui ferait de nous un rebond), sinon la fiche qui porte la piece."""
+    suivant = request.form.get('next', '')
+    if suivant.startswith('/') and not suivant.startswith('//'):
+        return suivant
+    return _retour(kind, parent_id) if kind else url_for('dashboard.index')
+
+
+@bp.route('/documents/<int:id>/edit', methods=['POST'])
+@login_required
+def edit(id):
+    """Corrige ce qu'une piece dit d'elle-meme : categorie, date, montant,
+    notes. Le fichier, lui, ne se remplace pas : on retire la piece et on
+    depose la bonne, pour que l'historique ne mente pas."""
+    if not enabled():
+        abort(404)
+    doc = Document.query.get_or_404(id)
+    categorie = doc.permission_category()
+    kind = doc.parent_kind()
+    parent_id = getattr(doc, DOCUMENT_PARENTS[kind][0]) if kind else None
+    if not current_user.can_edit(categorie):
+        flash("Vous n'avez pas les droits pour modifier cette pièce.", 'danger')
+        return redirect(_suite(kind, parent_id))
+    doc.category_id = parse_int(request.form.get('category_id'))
+    doc.doc_date = parse_date(request.form.get('doc_date'))
+    doc.amount = parse_float(request.form.get('amount'))
+    doc.notes = (request.form.get('notes') or '').strip() or None
+    db.session.commit()
+    audit_record('modification piece jointe', detail=doc.filename, category=categorie)
+    flash('Pièce modifiée', 'success')
+    return redirect(_suite(kind, parent_id))
+
+
 @bp.route('/documents/<int:id>/delete', methods=['POST'])
 @login_required
 def delete(id):
@@ -360,4 +395,4 @@ def delete(id):
     db.session.commit()
     audit_record('suppression piece jointe', detail=nom, category=categorie)
     flash('Pièce jointe supprimée', 'success')
-    return redirect(_retour(kind, parent_id) if kind else url_for('dashboard.index'))
+    return redirect(_suite(kind, parent_id))
