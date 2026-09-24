@@ -355,10 +355,9 @@ def test_la_rotation_applique_le_reglage(client, app, tmp_path):
     assert len(list_backups(app)) == 2
 
 
-def test_l_onglet_documents_d_un_logiciel_montre_les_pieces_de_ses_marches(client):
-    """L'onglet restait vide alors que tout l'écrit existait : versé sous le
-    marché ou sous le devis, là où il a été signé."""
-    from app.documents import inherited_for_software
+def test_l_onglet_documents_d_un_logiciel_ne_montre_que_ses_pieces(client):
+    """Les pièces d'un marché se lisent sous le marché, dans l'onglet Contrats ;
+    l'onglet Documents du logiciel ne porte que ce qui est déposé sur lui."""
     from app.models import Consultation, Quote
 
     sw = Software(name='Concerto Opus')
@@ -374,23 +373,16 @@ def test_l_onglet_documents_d_un_logiciel_montre_les_pieces_de_ses_marches(clien
     db.session.commit()
 
     _depose(client, 'contract', ct.id, 'acte-signe.pdf')
-    _depose(client, 'contract', ct.id, 'bon-de-commande.pdf')
     _depose(client, 'quote', devis.id, 'devis-2027.pdf')
     _depose(client, 'software', sw.id, 'guide.pdf')
 
-    from flask import current_app
-    with current_app.test_request_context():
-        heritees = inherited_for_software(sw)
-    assert {x['piece'].filename for x in heritees} == {
-        'acte-signe.pdf', 'bon-de-commande.pdf', 'devis-2027.pdf'}
-    # La pièce PROPRE à la fiche n'y est pas : elle vit déjà dans sa carte.
-    origines = {x['piece'].filename: x['origine'] for x in heritees}
-    assert origines['bon-de-commande.pdf'] == 'Marché M20-23'
-    assert origines['devis-2027.pdf'].startswith('Devis Arpege —')
-
-    # Et la fiche les montre : c'est là qu'on vient les chercher.
     page = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
-    assert 'bon-de-commande.pdf' in page and 'devis-2027.pdf' in page
+    volet = page.split('id="vol-documents"')[1].split('id="vol-rgpd"')[0]
+    assert 'guide.pdf' in volet
+    assert 'acte-signe.pdf' not in volet and 'devis-2027.pdf' not in volet
+    assert 'Pièces des marchés et des devis' not in page
+    # L'acte du marché se lit dans l'onglet Contrats.
+    assert 'acte-signe.pdf' in page.split('id="vol-contrats"')[1].split('id="vol-devis"')[0]
 
 
 # ── Une pièce sans fichier : reprise sans son acte, elle l attend ──

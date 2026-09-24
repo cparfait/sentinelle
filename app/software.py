@@ -216,15 +216,12 @@ def detail(id):
     autres = (Software.query.filter(Software.is_active.is_(True),
                                     Software.id != item.id)
               .order_by(Software.name).all())
-    from app.documents import enabled as documents_actifs, inherited_for_software
     revues = item.access_reviews.filter_by(is_active=True).all()
     comptes = item.accounts.filter_by(is_active=True).all()
     return render_template('software/detail.html', item=item, updates=updates,
                            revues=revues, comptes=comptes,
                            consultations=consultations, marches=marches,
                            marches_rattachables=_marches_rattachables(item),
-                           pieces_heritees=(inherited_for_software(item)
-                                            if documents_actifs() else []),
                            sortants=item.links_out.all(), entrants=item.links_in.all(),
                            partages=item.shares.order_by(SoftwareShare.label).all(),
                            autres_logiciels=autres,

@@ -129,48 +129,6 @@ def for_parent(kind, parent_id):
             .order_by(Document.created_at.desc()).all())
 
 
-def inherited_for_software(software):
-    """Les pièces qu'une fiche logiciel ne porte pas elle-même, mais qui la
-    documentent : celles de ses marchés, des pièces de ces marchés, et des devis
-    de ses consultations.
-
-    L'onglet Documents d'un logiciel restait vide alors que TOUT l'écrit le
-    concernant existait — versé sous le marché ou sous le devis, là où il a été
-    signé. Les y chercher supposait de savoir sous quel acte il dort, ce qui est
-    précisément la question qu'on vient poser à la fiche.
-
-    Renvoie des dictionnaires `{piece, origine, url}` : d'où elle vient, et où
-    elle vit. Elle ne se retire QUE de là — une pièce reprise ici ne s'y modifie
-    pas, sans quoi la même ligne s'effacerait depuis deux écrans.
-    """
-    from app.models import Consultation, Quote
-    marches = software.contracts.filter_by(is_active=True).all()
-    cids = [c.id for c in marches]
-    par_marche = {c.id: c for c in marches}
-    lignes = []
-
-    if cids:
-        for d in Document.query.filter(Document.contract_id.in_(cids)).all():
-            c = par_marche.get(d.contract_id)
-            lignes.append({'piece': d, 'origine': c.name if c else 'Marché',
-                           'url': url_for('contracts.detail', id=d.contract_id)})
-
-    devis = (Quote.query.join(Consultation)
-             .filter(Consultation.software_id == software.id).all())
-    par_devis = {q.id: q for q in devis}
-    if par_devis:
-        for d in Document.query.filter(Document.quote_id.in_(list(par_devis))).all():
-            q = par_devis[d.quote_id]
-            lignes.append({'piece': d, 'origine': f'Devis {q.who()} — {q.consultation.subject}',
-                           'url': url_for('software.detail', id=software.id)})
-
-    # La plus récente en tête, comme les pièces propres à la fiche : c'est le
-    # dernier acte versé qu'on vient chercher.
-    lignes.sort(key=lambda x: (x['piece'].created_at.timestamp()
-                               if x['piece'].created_at else 0), reverse=True)
-    return lignes
-
-
 # La fiche qui PORTE la piece, et donc l'ecran ou l'on revient. Un devis n'a
 # pas d'ecran a lui : il vit dans celui du logiciel consulte.
 _ECRANS = {

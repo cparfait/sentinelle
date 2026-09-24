@@ -91,7 +91,7 @@
     {% endif %}
     {{ onglet('suivi', 'Suivi', 'bi-activity', compteur=(updates|length) + (taches|length) + (revues|length) + (comptes|length)) }}
     {% if documents_enabled %}
-    {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=(pieces|length) + (pieces_heritees|length)) }}
+    {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=pieces|length) }}
     {% endif %}
     {% if features.gdpr %}{{ onglet('rgpd', 'RGPD', 'bi-shield-lock') }}{% endif %}
 {% endcall %}
@@ -403,7 +403,6 @@
     {% if documents_enabled %}
     {% call volet('documents') %}
         {% with doc_parent_kind='software', doc_parent_id=item.id, doc_permission='software', doc_title='Documents' %}{% include '_documents.html' %}{% endwith %}
-        {% include 'software/_pieces_heritees.html' %}
         {% include 'software/_partages.html' %}
     {% endcall %}
     {% endif %}
