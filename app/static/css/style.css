@@ -2420,6 +2420,10 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .marche-docs-titre { font-size: 12px; font-weight: 600; color: var(--faint); }
 .marche-docs-entete { border-bottom: 1px dotted var(--line); }
 .marche-docs-vide { font-size: 14px; color: var(--faint); }
+/* Le telechargement d'un document : une fleche Lucide de 14 px, en gris
+   leger, qui prend la couleur du lien au survol. */
+.marche-doc-dl { color: var(--faint); display: inline-flex; align-items: center; }
+.marche-doc-dl:hover { color: var(--primary); }
 .marche-entete.marche-sous .marche-droite { font-variant-numeric: tabular-nums; }
 @media (max-width: 767.98px) {
     .marche-entete { grid-template-columns: 1fr; }

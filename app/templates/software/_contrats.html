@@ -169,8 +169,8 @@
                     <div class="d-flex align-items-center gap-2 min-w-0">
                         <span class="fw-medium text-truncate">{{ d.filename }}</span>
                         {% if d.has_file() %}
-                        <a href="{{ url_for('documents.download', id=d.id) }}" class="text-muted" title="Télécharger"
-                           aria-label="Télécharger"><i class="bi bi-download"></i></a>
+                        <a href="{{ url_for('documents.download', id=d.id) }}" class="marche-doc-dl flex-shrink-0" title="Télécharger"
+                           aria-label="Télécharger">{{ lucide('download', 14) }}</a>
                         {% else %}
                         <span class="badge bg-light text-dark border">fichier à déposer</span>
                         {% endif %}

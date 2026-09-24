@@ -41,7 +41,7 @@ ICONES = [
     'network', 'git-fork', 'calendar-check', 'calendar-range', 'refresh-cw',
     'coins', 'receipt', 'cpu', 'cloud', 'life-buoy', 'wrench', 'settings',
     # Actions en ligne sur une fiche : modifier, retirer une liaison.
-    'pencil', 'unlink',
+    'pencil', 'unlink', 'download',
 ]
 
 
