@@ -112,7 +112,7 @@
         {% if documents_enabled and (docs or peut_modifier_doc) %}
         {# Le nombre de documents a gauche, « + Pièce » a droite, un filet dessous,
            comme dans SoftInventory. Le depot se fait ici meme et revient ici. #}
-        <div class="d-flex align-items-end justify-content-between gap-3 mt-3 mb-2 pb-1 border-bottom">
+        <div class="marche-docs-entete d-flex align-items-end justify-content-between gap-3 mt-3 mb-2 pb-1">
             <span class="marche-docs-titre">{{ docs | length }} Document{{ 's' if docs | length > 1 }}</span>
             {% if peut_modifier_doc %}
             <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse"
