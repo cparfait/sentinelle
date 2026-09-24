@@ -58,16 +58,19 @@
                         <a href="{{ url_for('contracts.detail', id=c.id) }}" class="text-decoration-none marche-tronque"
                            title="{{ c.name }}">{{ c.name }}</a>
                         {{ status_badge(c.status()) }}
-                        {% if c.nature_label() %}<span class="badge bg-light text-dark border">{{ c.nature_label() }}</span>{% endif %}
                     </span>
                     <span class="marche-droite marche-tronque">
                         {%- if c.supplier %}<a href="{{ url_for('suppliers.detail', id=c.supplier_id) }}"
                                                class="text-decoration-none" title="{{ c.supplier.name }}">{{ c.supplier.name }}</a>{% endif -%}
                     </span>
                 </div>
+                {# La nature de l'acte (marché public, convention, devis accepté)
+                   sous sa référence, comme dans SoftInventory ; le type de
+                   contrat (maintenance, abonnement) ouvre la ligne du milieu. #}
                 <div class="marche-entete marche-sous">
-                    <span>{{ c.kind_label() }}</span>
+                    <span>{{ c.nature_label() or c.kind_label() }}</span>
                     <span>
+                        {%- if c.nature_label() %}{{ c.kind_label() }}{% if c.period_label() %} · {% endif %}{% endif -%}
                         {{- c.period_label() | capitalize -}}
                         {%- set jours = c.days_left() -%}
                         {%- if jours is not none %} · agir avant le {{ c.action_deadline().strftime('%d/%m/%Y') }} ({{ jours }} j){% endif -%}
