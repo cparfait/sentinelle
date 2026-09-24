@@ -269,7 +269,7 @@
             {% if item.equipments %}
             <ul class="list-unstyled mb-3 serveurs-liste">
                 {% for e in item.equipments %}
-                <li class="d-flex align-items-center justify-content-between gap-3 py-1">
+                <li class="d-flex align-items-center justify-content-between gap-3">
                     <span class="d-flex align-items-center gap-2 min-w-0">
                         {{ lucide('server', 16, 'serveur-ico flex-shrink-0') }}
                         <a href="{{ url_for('inventory.detail', id=e.id) }}" class="fw-medium text-decoration-none">{{ e.name }}</a>
