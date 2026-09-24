@@ -2422,6 +2422,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .marche-docs-vide { font-size: 14px; color: var(--faint); }
 /* Le telechargement d'un document : une fleche Lucide de 14 px, en gris
    leger, qui prend la couleur du lien au survol. */
+.marche-doc-ico { color: var(--faint); margin-top: 3px; }
 .marche-doc-dl { color: var(--faint); display: inline-flex; align-items: center; }
 .marche-doc-dl:hover { color: var(--primary); }
 .marche-entete.marche-sous .marche-droite { font-variant-numeric: tabular-nums; }

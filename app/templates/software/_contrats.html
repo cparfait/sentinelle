@@ -164,7 +164,7 @@
         <ul class="list-unstyled mb-0 marche-docs">
             {% for d in docs %}
             <li class="d-flex align-items-start gap-2 py-1">
-                <i class="bi bi-file-earmark-text text-muted mt-1"></i>
+                {{ lucide('file-text', 16, 'marche-doc-ico flex-shrink-0') }}
                 <div class="min-w-0 flex-grow-1">
                     <div class="d-flex align-items-center gap-2 min-w-0">
                         <span class="fw-medium text-truncate">{{ d.filename }}</span>
