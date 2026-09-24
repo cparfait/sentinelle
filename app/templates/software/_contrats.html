@@ -118,8 +118,9 @@
         <div class="marche-docs-entete d-flex align-items-end justify-content-between gap-3 mt-3 mb-2 pb-1">
             <span class="marche-docs-titre">{{ docs | length }} Document{{ 's' if docs | length > 1 }}</span>
             {% if peut_modifier_doc %}
-            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse"
-                    data-bs-target="#docDepot{{ c.id }}"><i class="bi bi-plus-lg me-1"></i>Pièce</button>
+            <button type="button" class="btn btn-sm btn-ghost btn-icone" data-bs-toggle="collapse"
+                    data-bs-target="#docDepot{{ c.id }}" title="Ajouter une pièce"
+                    aria-label="Ajouter une pièce">{{ lucide('plus', 16) }}</button>
             {% endif %}
         </div>
         {% if peut_modifier_doc %}
