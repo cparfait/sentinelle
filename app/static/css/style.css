@@ -2432,13 +2432,10 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 /* Ouvert, le formulaire de piece prend la place de la ligne qu'il modifie :
    on corrige ce qu'on lit, on ne le lit pas deux fois au-dessus des champs.
    Les voisins du volet disparaissent des le debut de l'animation (.collapsing)
-   et reviennent a la fin de la fermeture. L'icone de fichier, qui centrait
-   deux lignes, se cale alors en haut, a hauteur de l'intitule des champs. */
+   et reviennent a la fin de la fermeture. L'icone de fichier et les boutons
+   restent centres sur la hauteur du formulaire, comme sur celle de la ligne. */
 :has(> .doc-edit-volet.show) > :not(.doc-edit-volet),
 :has(> .doc-edit-volet.collapsing) > :not(.doc-edit-volet) { display: none !important; }
-.marche-doc:has(.doc-edit-volet.show), .marche-doc:has(.doc-edit-volet.collapsing) { align-items: flex-start !important; }
-.marche-doc:has(.doc-edit-volet.show) > .marche-doc-ico,
-.marche-doc:has(.doc-edit-volet.collapsing) > .marche-doc-ico { margin-top: 10px; }
 /* La liste des pieces jointes, a la SoftInventory : icone de fichier et
    fleche de telechargement en gris leger, sous-ligne en 12 px. */
 .docs-liste .doc-ico { color: var(--faint); margin-top: 3px; }
