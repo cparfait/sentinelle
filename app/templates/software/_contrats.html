@@ -40,7 +40,7 @@
             </form>
             {% endif %}
             <a href="{{ url_for('contracts.create') }}" class="btn btn-sm btn-ghost btn-icone" title="Créer un marché"
-               aria-label="Créer un marché">{{ lucide('plus', 16) }}</a>
+               aria-label="Créer un marché" data-modale-formulaire>{{ lucide('plus', 16) }}</a>
         </div>
         {% endif %}
     </div>
@@ -93,7 +93,7 @@
                retirer le LIEN -- pas l'acte : le marché reste, il ne couvre
                simplement plus cette application. #}
             <div class="d-flex gap-1 flex-shrink-0">
-                <a href="{{ url_for('contracts.edit', id=c.id) }}" class="btn btn-sm btn-ghost btn-icone"
+                <a href="{{ url_for('contracts.edit', id=c.id) }}" class="btn btn-sm btn-ghost btn-icone" data-modale-formulaire
                    title="Modifier le contrat" aria-label="Modifier le contrat">{{ lucide('pencil', 16) }}</a>
                 <form method="POST" action="{{ url_for('contracts.software_detach', id=c.id, software_id=item.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

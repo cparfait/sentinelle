@@ -214,8 +214,8 @@
     // [data-choix-select] désigne le select, [data-choix-groupe] l'<optgroup>
     // dont on propose les options pas encore choisies ; « Ajouter » les coche
     // dans le select, dont les puces suivent.
-    function initModalesChoix() {
-        document.querySelectorAll('[data-choix-select]').forEach(function (modal) {
+    function initModalesChoix(racine) {
+        (racine || document).querySelectorAll('[data-choix-select]').forEach(function (modal) {
             var select = document.getElementById(modal.getAttribute('data-choix-select'));
             var groupe = modal.getAttribute('data-choix-groupe');
             var liste = modal.querySelector('[data-choix-liste]');
@@ -282,4 +282,14 @@
         initPuces(form);
         initModalesChoix();
     });
+
+    // Un formulaire chargé après coup (modale-formulaire.js) s'initialise de
+    // la même façon : aide repliée, puces, modales de choix — sans sommaire.
+    window.Formulaire = {
+        init: function (form, racine) {
+            initAide(form);
+            initPuces(form);
+            initModalesChoix(racine || form);
+        }
+    };
 })();
