@@ -2452,6 +2452,10 @@ li:has(.doc-edit-volet.show) > .d-flex.flex-shrink-0,
 li:has(.doc-edit-volet.collapsing) > .d-flex.flex-shrink-0 { display: none !important; }
 /* La liste des pieces jointes, a la SoftInventory : icone de fichier et
    fleche de telechargement en gris leger, sous-ligne en 12 px. */
+/* Au survol, la piece se teinte comme dans la liste des marches : meme fond,
+   arrondi, 8 px de debord de chaque cote ; pas quand son formulaire est ouvert. */
+.docs-liste > li { padding-left: 8px; padding-right: 8px; margin: 0 -8px; border-radius: 6px; }
+.docs-liste > li:hover:not(:has(.doc-edit-volet.show)) { background: var(--inset); }
 .docs-liste .doc-ico { color: var(--faint); }
 .docs-liste .doc-dl { color: var(--faint); display: inline-flex; align-items: center; }
 .docs-liste .doc-dl:hover { color: var(--primary); }
