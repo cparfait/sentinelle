@@ -10,8 +10,11 @@
           class="p-2 mt-1 rounded border bg-body-tertiary">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="next" value="{{ next }}">
+        {# Le nom du fichier prend la place que les autres champs laissent :
+           la catégorie se dimensionne sur son libellé le plus long, pas sur la
+           largeur qui reste. #}
         <div class="row g-2 align-items-start">
-            <div class="col-md-3">
+            <div class="col">
                 <label class="form-label fw-medium small mb-1" for="docNom{{ d.id }}">Nom du fichier</label>
                 <input type="text" name="filename" id="docNom{{ d.id }}" class="form-control form-control-sm"
                        value="{{ d.filename }}" maxlength="180" required>
@@ -30,7 +33,7 @@
                         aria-label="{{ 'Remplacer le fichier' if d.has_file() else 'Déposer le fichier' }}"
                         onclick="this.previousElementSibling.click()">{{ lucide('upload', 16) }}</button>
             </div>
-            <div class="col-md-2 col-lg">
+            <div class="col-auto">
                 <label class="form-label fw-medium small mb-1">Catégorie</label>
                 <select name="category_id" class="form-select form-select-sm">
                     <option value="">— Non classée —</option>
