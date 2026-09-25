@@ -36,7 +36,8 @@
                remplit et qu'on peut corriger, le bouton de dépôt à côté, la
                catégorie sur son libellé le plus long, et la paire coche verte /
                croix grise qui enregistre ou replie. Le champ fichier est caché ;
-               sans fichier, c'est le serveur qui le dit. #}
+               sans fichier, c'est le serveur qui le dit. Le bouton ne change pas
+               de couleur : le nom inscrit dit déjà qu'un fichier est choisi. #}
             <div class="row g-2 align-items-end">
                 <div class="col">
                     <label class="form-label fw-medium small mb-1" for="depotNom{{ doc_parent_kind }}{{ doc_parent_id }}">Nom du fichier</label>
@@ -45,7 +46,7 @@
                 </div>
                 <div class="col-auto">
                     <input type="file" name="file" id="depotFichier{{ doc_parent_kind }}{{ doc_parent_id }}" class="d-none"
-                           onchange="var t = this.form.elements.filename; t.value = this.files.length ? this.files[0].name : ''; this.nextElementSibling.title = this.files.length ? 'Choisi : ' + this.files[0].name : this.nextElementSibling.dataset.titre; this.nextElementSibling.classList.toggle('btn-primary', !!this.files.length); this.nextElementSibling.classList.toggle('btn-outline-secondary', !this.files.length)">
+                           onchange="var t = this.form.elements.filename; t.value = this.files.length ? this.files[0].name : ''; this.nextElementSibling.title = this.files.length ? 'Choisi : ' + this.files[0].name : this.nextElementSibling.dataset.titre">
                     <button type="button" class="btn btn-sm btn-outline-secondary btn-icone" data-titre="Choisir le fichier"
                             title="Choisir le fichier" aria-label="Choisir le fichier"
                             onclick="this.previousElementSibling.click()">{{ lucide('upload', 16) }}</button>
