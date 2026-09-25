@@ -2489,7 +2489,10 @@ li:has(.doc-edit-volet.collapsing) > .d-flex.flex-shrink-0 { display: none !impo
    l'icone en gris leger a 12 px du texte, le nom en 14 px sur 20 px, le detail
    en 12 px sur 16 px juste dessous ; la fleche de telechargement (14 px)
    a 6 px du nom, en gris leger, prend la couleur du lien au survol. */
-.marche-doc { padding: 5px 0; gap: 12px; font-size: 14px; }
+.marche-doc { padding: 5px 8px; margin: 0 -8px; gap: 12px; font-size: 14px; border-radius: 6px; }
+/* Au survol, la ligne se teinte comme un lien du rail ; le formulaire ouvert
+   ne bouge pas, il a deja son propre fond. */
+.marche-doc:hover:not(:has(.doc-edit-volet.show)) { background: var(--inset); }
 .marche-doc-ico { color: var(--faint); }
 .marche-doc-ligne { gap: 6px; line-height: 20px; }
 .marche-doc-nom { font-weight: 500; color: var(--strong); }
