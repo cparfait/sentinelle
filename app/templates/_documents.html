@@ -18,10 +18,10 @@
         <h6 class="fw-bold fiche-titre fiche-titre--indigo mb-0">{{ icone('bi-paperclip', 14, 'ico ico-' ~ couleur_icone('bi-paperclip')) }}{{ doc_title | default('Pièces jointes') }}
             <span class="badge bg-secondary ms-1">{{ pieces | length }}</span></h6>
         {% if peut_deposer %}
-        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
-                data-bs-target="#depot{{ doc_parent_kind }}{{ doc_parent_id }}">
-            <i class="bi bi-upload me-1"></i> Déposer
-        </button>
+        {# Le + de l'en-tête « Dossiers » : un bouton fantôme, l'infobulle dit le geste. #}
+        <button class="btn btn-sm btn-ghost btn-icone" type="button" data-bs-toggle="collapse"
+                data-bs-target="#depot{{ doc_parent_kind }}{{ doc_parent_id }}" title="Déposer une pièce"
+                aria-label="Déposer une pièce">{{ lucide('plus', 16) }}</button>
         {% endif %}
     </div>
 
@@ -32,12 +32,15 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="parent_kind" value="{{ doc_parent_kind }}">
             <input type="hidden" name="parent_id" value="{{ doc_parent_id }}">
+            {# Comme le formulaire de pièce : le fichier prend la place, la catégorie
+               se dimensionne sur son libellé le plus long, et la paire coche verte /
+               croix grise enregistre ou replie. #}
             <div class="row g-2 align-items-end">
-                <div class="col-md-6">
+                <div class="col">
                     <label class="form-label fw-medium small mb-1">Fichier</label>
                     <input type="file" name="file" class="form-control form-control-sm" required>
                 </div>
-                <div class="col-md-4">
+                <div class="col-auto">
                     <label class="form-label fw-medium small mb-1">Catégorie</label>
                     <select name="category_id" class="form-select form-select-sm">
                         <option value="">— Non classée —</option>
@@ -46,8 +49,12 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-sm btn-primary w-100">Déposer</button>
+                <div class="col-auto d-flex gap-1">
+                    <button type="submit" class="btn btn-sm btn-ghost btn-icone btn-valider" title="Enregistrer"
+                            aria-label="Enregistrer">{{ lucide('check', 16) }}</button>
+                    <button type="button" class="btn btn-sm btn-ghost btn-icone btn-annuler" title="Annuler"
+                            aria-label="Annuler" data-bs-toggle="collapse"
+                            data-bs-target="#depot{{ doc_parent_kind }}{{ doc_parent_id }}">{{ lucide('x', 16) }}</button>
                 </div>
             </div>
             {% if avec_dates %}
