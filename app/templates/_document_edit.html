@@ -3,11 +3,14 @@
    le nom affiché, le fichier (à remplacer, ou à apporter s'il manque), la
    catégorie, la date de l'acte. Variables : `d` (la pièce),
    `avec_dates` (la date de l'acte : un marché, pas un guide), `next` (où
-   revenir). #}
+   revenir).
+   Ouvert, le formulaire PREND LA PLACE de la ligne qu'il modifie (nom,
+   flèche, détail) : les règles .doc-edit-volet de style.css masquent ses
+   voisins tant qu'il est déplié. #}
 {% from '_icones.html' import lucide %}
-<div class="collapse" id="docEdit{{ d.id }}">
+<div class="collapse doc-edit-volet" id="docEdit{{ d.id }}">
     <form method="POST" action="{{ url_for('documents.edit', id=d.id) }}" enctype="multipart/form-data"
-          class="doc-edit p-2 mt-1 rounded border bg-body-tertiary">
+          class="doc-edit p-2 rounded border bg-body-tertiary">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="next" value="{{ next }}">
         {# Le nom du fichier prend la place que les autres champs laissent :
