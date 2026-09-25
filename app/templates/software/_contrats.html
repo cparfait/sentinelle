@@ -17,7 +17,7 @@
         <h6 class="fw-bold fiche-titre fiche-titre--amber mb-0">{{ icone('bi-file-earmark-text', 14, 'ico ico-' ~ couleur_icone('bi-file-earmark-text')) }}Contrats
             <span class="badge bg-secondary ms-1">{{ marches | length }}</span></h6>
         {% if peut_editer %}
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 marches-actions">
             {% if marches_rattachables %}
             {# Récupérer un marché plutôt que le ressaisir. La liste se tait
                quand elle n'a rien à proposer : elle ne montre que les marchés
