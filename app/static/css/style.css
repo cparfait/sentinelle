@@ -2432,10 +2432,12 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 /* Le bouton de depot du fichier, dans la ligne du formulaire de piece : un
    carre de 26 px, la hauteur des champs qui l'entourent. */
 .doc-edit .btn-sm.btn-icone { padding: 4px; }
-/* La coche qui enregistre est verte ; la croix qui annule garde le gris des
-   boutons fantomes. */
-.doc-edit .doc-edit-ok, .doc-edit .doc-edit-ok:hover { color: var(--success); }
-.doc-edit .doc-edit-ok:hover { background: var(--success-dim); }
+/* La paire qui clot une saisie en ligne (piece, dossier partage) : la coche
+   qui enregistre est verte, la croix qui annule garde le gris des boutons
+   fantomes ; toutes deux font 26 px, la hauteur des champs. */
+.btn-sm.btn-icone.btn-valider, .btn-sm.btn-icone.btn-annuler { padding: 4px; }
+.btn-ghost.btn-valider, .btn-ghost.btn-valider:hover { color: var(--success); }
+.btn-ghost.btn-valider:hover { background: var(--success-dim); }
 /* Ouvert, le formulaire de piece prend la place de la ligne qu'il modifie :
    on corrige ce qu'on lit, on ne le lit pas deux fois au-dessus des champs.
    Les voisins du volet disparaissent des le debut de l'animation (.collapsing)
