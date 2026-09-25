@@ -52,9 +52,19 @@
                        value="{{ d.doc_date.strftime('%Y-%m-%d') if d.doc_date else '' }}">
             </div>
             {% endif %}
-            <div class="col-auto">
-                <label class="form-label small mb-1 d-block">&nbsp;</label>
-                <button type="submit" class="btn btn-sm btn-primary">Enregistrer</button>
+            {# La paire de SoftInventory : une coche verte qui enregistre, une croix
+               grise qui replie le formulaire sans rien changer. #}
+            <div class="col-auto d-flex gap-1">
+                <div>
+                    <label class="form-label small mb-1 d-block">&nbsp;</label>
+                    <button type="submit" class="btn btn-sm btn-ghost btn-icone doc-edit-ok" title="Enregistrer"
+                            aria-label="Enregistrer">{{ lucide('check', 16) }}</button>
+                </div>
+                <div>
+                    <label class="form-label small mb-1 d-block">&nbsp;</label>
+                    <button type="button" class="btn btn-sm btn-ghost btn-icone" title="Annuler" aria-label="Annuler"
+                            data-bs-toggle="collapse" data-bs-target="#docEdit{{ d.id }}">{{ lucide('x', 16) }}</button>
+                </div>
             </div>
         </div>
     </form>
