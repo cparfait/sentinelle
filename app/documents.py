@@ -172,6 +172,9 @@ def upload():
         flash(lu, 'danger')
         return redirect(_suite(kind, parent_id))
     nom, mime, octets = lu
+    # Le nom se choisit des le depot, comme a la modification ; sans rien de
+    # saisi, la piece prend celui du fichier.
+    nom = _nom_affiche(request.form.get('filename')) or nom
 
     doc = Document(filename=nom, mime=mime, size=len(octets),
                    uploaded_by=current_user.username,

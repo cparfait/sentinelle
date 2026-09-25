@@ -2431,7 +2431,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .doc-aide { font-size: 12px; color: var(--faint); margin-top: 4px; }
 /* Le bouton de depot du fichier, dans la ligne du formulaire de piece : un
    carre de 26 px, la hauteur des champs qui l'entourent. */
-.doc-edit .btn-sm.btn-icone { padding: 4px; }
+.doc-edit .btn-sm.btn-icone, .doc-depot .btn-sm.btn-icone { padding: 4px; }
 /* La paire qui clot une saisie en ligne (piece, dossier partage) : la coche
    qui enregistre est verte, la croix qui annule garde le gris des boutons
    fantomes ; toutes deux font 26 px, la hauteur des champs. */

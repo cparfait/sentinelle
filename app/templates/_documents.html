@@ -28,17 +28,27 @@
     {% if peut_deposer %}
     <div class="collapse" id="depot{{ doc_parent_kind }}{{ doc_parent_id }}">
         <form method="POST" action="{{ url_for('documents.upload') }}"
-              enctype="multipart/form-data" class="p-3 border-bottom bg-body-tertiary">
+              enctype="multipart/form-data" class="doc-depot p-3 border-bottom bg-body-tertiary">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="parent_kind" value="{{ doc_parent_kind }}">
             <input type="hidden" name="parent_id" value="{{ doc_parent_id }}">
-            {# Comme le formulaire de pièce : le fichier prend la place, la catégorie
-               se dimensionne sur son libellé le plus long, et la paire coche verte /
-               croix grise enregistre ou replie. #}
+            {# Comme le formulaire de pièce : le nom à gauche, que le fichier choisi
+               remplit et qu'on peut corriger, le bouton de dépôt à côté, la
+               catégorie sur son libellé le plus long, et la paire coche verte /
+               croix grise qui enregistre ou replie. Le champ fichier est caché ;
+               sans fichier, c'est le serveur qui le dit. #}
             <div class="row g-2 align-items-end">
                 <div class="col">
-                    <label class="form-label fw-medium small mb-1">Fichier</label>
-                    <input type="file" name="file" class="form-control form-control-sm" required>
+                    <label class="form-label fw-medium small mb-1" for="depotNom{{ doc_parent_kind }}{{ doc_parent_id }}">Nom du fichier</label>
+                    <input type="text" name="filename" id="depotNom{{ doc_parent_kind }}{{ doc_parent_id }}"
+                           class="form-control form-control-sm" maxlength="180" placeholder="Aucun fichier choisi">
+                </div>
+                <div class="col-auto">
+                    <input type="file" name="file" id="depotFichier{{ doc_parent_kind }}{{ doc_parent_id }}" class="d-none"
+                           onchange="var t = this.form.elements.filename; t.value = this.files.length ? this.files[0].name : ''; this.nextElementSibling.title = this.files.length ? 'Choisi : ' + this.files[0].name : this.nextElementSibling.dataset.titre; this.nextElementSibling.classList.toggle('btn-primary', !!this.files.length); this.nextElementSibling.classList.toggle('btn-outline-secondary', !this.files.length)">
+                    <button type="button" class="btn btn-sm btn-outline-secondary btn-icone" data-titre="Choisir le fichier"
+                            title="Choisir le fichier" aria-label="Choisir le fichier"
+                            onclick="this.previousElementSibling.click()">{{ lucide('upload', 16) }}</button>
                 </div>
                 <div class="col-auto">
                     <label class="form-label fw-medium small mb-1">Catégorie</label>

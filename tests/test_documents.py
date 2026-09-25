@@ -553,3 +553,21 @@ def test_un_fichier_refuse_n_altere_pas_la_piece(client):
     db.session.refresh(doc)
     assert doc.filename == 'acte.pdf' and doc.content.data == b'%PDF-1.4 v1'
 
+
+
+def test_le_nom_se_choisit_des_le_depot(client):
+    """Le formulaire de dépôt porte le nom, comme celui de modification : saisi,
+    il nomme la pièce ; vide, la pièce prend le nom du fichier."""
+    ct = Contract(name='Marché UGAP')
+    db.session.add(ct)
+    db.session.commit()
+    client.post('/documents/upload', data={
+        'parent_kind': 'contract', 'parent_id': str(ct.id),
+        'filename': 'Acte signé 2026', 'file': _fichier('scan0001.pdf')},
+        content_type='multipart/form-data', follow_redirects=True)
+    assert Document.query.one().filename == 'Acte signé 2026'
+    client.post('/documents/upload', data={
+        'parent_kind': 'contract', 'parent_id': str(ct.id),
+        'filename': '   ', 'file': _fichier('scan0002.pdf')},
+        content_type='multipart/form-data', follow_redirects=True)
+    assert sorted(d.filename for d in Document.query.all()) == ['Acte signé 2026', 'scan0002.pdf']
