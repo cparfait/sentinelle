@@ -74,12 +74,13 @@
         {% if pieces %}
         <ul class="list-unstyled mb-0 docs-liste">
             {% for d in pieces %}
-            {# L'icône et les boutons se centrent sur la hauteur de la ligne, formulaire
-               de modification ouvert compris, comme dans la liste des marchés. #}
-            <li class="d-flex align-items-center gap-2 py-2{{ '' if loop.first else ' border-top' }}">
+            {# La ligne des pièces d'un marché (software/_contrats.html) : mêmes
+               mesures, posées par .docs-liste dans style.css ; l'icône et les
+               boutons se centrent sur la hauteur, formulaire ouvert compris. #}
+            <li class="d-flex align-items-center">
                 {{ lucide('file-text', 16, 'doc-ico flex-shrink-0') }}
                 <div class="min-w-0 flex-grow-1">
-                    <div class="d-flex align-items-center gap-2 min-w-0">
+                    <div class="docs-ligne d-flex align-items-center min-w-0">
                         {% if not d.has_file() %}
                         <span class="fw-medium text-truncate">{{ d.filename }}</span>
                         <span class="badge bg-light text-dark border">fichier à déposer</span>

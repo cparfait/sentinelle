@@ -2452,17 +2452,21 @@ li:has(.doc-edit-volet.show) > .d-flex.flex-shrink-0,
 li:has(.doc-edit-volet.collapsing) > .d-flex.flex-shrink-0 { display: none !important; }
 /* La liste des pieces jointes, a la SoftInventory : icone de fichier et
    fleche de telechargement en gris leger, sous-ligne en 12 px. */
-/* Au survol, la piece se teinte comme dans la liste des marches : meme fond,
-   arrondi, 8 px de debord de chaque cote ; pas quand son formulaire est ouvert. */
-.docs-liste > li { padding-left: 8px; padding-right: 8px; margin: 0 -8px; border-radius: 6px; }
+/* Les pieces de l'onglet Documents : la ligne des pieces d'un marche (voir
+   .marche-doc plus bas) — 5 px de marge, l'icone a 12 px du texte, le nom en
+   14 px sur 20 px, le detail en 12 px sur 16 px, 46 px par ligne. Au survol,
+   la ligne se teinte (8 px de debord de chaque cote), sauf formulaire ouvert. */
+.docs-liste > li { padding: 5px 8px; margin: 0 -8px; gap: 12px; font-size: 14px; border-radius: 6px; }
 .docs-liste > li:hover:not(:has(.doc-edit-volet.show)) { background: var(--inset); }
+.docs-liste .docs-ligne { gap: 6px; line-height: 20px; }
+.docs-liste .docs-ligne > a, .docs-liste .docs-ligne > .fw-medium { font-weight: 500; color: var(--strong); }
+.docs-liste .docs-ligne > a:hover { color: var(--primary); }
 .docs-liste .doc-ico { color: var(--faint); }
 .docs-liste .doc-dl { color: var(--faint); display: inline-flex; align-items: center; }
 .docs-liste .doc-dl:hover { color: var(--primary); }
-.docs-liste .doc-sous { font-size: 12px; color: var(--faint); }
+.docs-liste .doc-sous { font-size: 12px; line-height: 16px; color: var(--faint); }
 .docs-liste a { color: var(--text); }
 .docs-liste a:hover { color: var(--primary); }
-.docs-liste .border-top { border-color: var(--line) !important; }
 /* Les dossiers du partage reseau, memes lignes que les pieces jointes ; le
    chemin en chasse fixe, 12 px, et un bouton de copie sans cadre. */
 .dossiers-liste .doc-ico { color: var(--faint); margin-top: 3px; }
