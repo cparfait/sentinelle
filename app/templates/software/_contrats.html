@@ -166,19 +166,27 @@
         {% if docs %}
         <ul class="list-unstyled mb-0 marche-docs">
             {% for d in docs %}
-            <li class="d-flex align-items-start gap-2 py-1">
+            {# La ligne de SoftInventory : l'icône centrée sur les deux lignes de
+               texte, le nom qui ouvre le fichier (ou le télécharge quand le
+               navigateur ne sait pas l'afficher), la flèche de téléchargement à
+               côté, et le détail en petit dessous. #}
+            <li class="marche-doc d-flex align-items-center">
                 {{ lucide('file-text', 16, 'marche-doc-ico flex-shrink-0') }}
                 <div class="min-w-0 flex-grow-1">
-                    <div class="d-flex align-items-center gap-2 min-w-0">
-                        <span class="fw-medium text-truncate">{{ d.filename }}</span>
-                        {% if d.has_file() %}
-                        <a href="{{ url_for('documents.download', id=d.id) }}" class="marche-doc-dl flex-shrink-0" title="Télécharger"
-                           aria-label="Télécharger">{{ lucide('download', 14) }}</a>
-                        {% else %}
+                    <div class="marche-doc-ligne d-flex align-items-center min-w-0">
+                        {% if not d.has_file() %}
+                        <span class="marche-doc-nom text-truncate">{{ d.filename }}</span>
                         <span class="badge bg-light text-dark border">fichier à déposer</span>
+                        {% else %}
+                        <a href="{{ url_for('documents.view' if document_viewable(d) else 'documents.download', id=d.id) }}"
+                           {% if document_viewable(d) %}target="_blank" rel="noopener"{% endif %}
+                           class="marche-doc-nom text-decoration-none text-truncate"
+                           title="{{ 'Ouvrir' if document_viewable(d) else 'Télécharger' }} {{ d.filename }}">{{ d.filename }}</a>
+                        <a href="{{ url_for('documents.download', id=d.id) }}" class="marche-doc-dl flex-shrink-0"
+                           title="Télécharger {{ d.filename }}" aria-label="Télécharger {{ d.filename }}">{{ lucide('download', 14) }}</a>
                         {% endif %}
                     </div>
-                    <small class="text-muted">
+                    <small class="marche-doc-sous d-block">
                         {{- d.category.label if d.category else 'Non classée' -}}
                         {%- if d.has_file() %} · {{ d.size_label() }}{% endif -%}
                         {%- if d.doc_date %} · {{ d.doc_date.strftime('%d/%m/%Y') }}{% elif d.created_at %} · {{ d.created_at.strftime('%d/%m/%Y') }}{% endif -%}
