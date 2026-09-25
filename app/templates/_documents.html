@@ -28,7 +28,7 @@
     {% if peut_deposer %}
     <div class="collapse" id="depot{{ doc_parent_kind }}{{ doc_parent_id }}">
         <form method="POST" action="{{ url_for('documents.upload') }}"
-              enctype="multipart/form-data" class="doc-depot p-3 border-bottom bg-body-tertiary">
+              enctype="multipart/form-data" class="doc-depot p-2 border-bottom bg-body-tertiary">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="parent_kind" value="{{ doc_parent_kind }}">
             <input type="hidden" name="parent_id" value="{{ doc_parent_id }}">
@@ -37,14 +37,19 @@
                catégorie sur son libellé le plus long, et la paire coche verte /
                croix grise qui enregistre ou replie. Le champ fichier est caché ;
                sans fichier, c'est le serveur qui le dit. Le bouton ne change pas
-               de couleur : le nom inscrit dit déjà qu'un fichier est choisi. #}
-            <div class="row g-2 align-items-end">
-                <div class="col">
+               de couleur : le nom inscrit dit déjà qu'un fichier est choisi.
+               Même marge, même rangée et même aide sous le nom que le formulaire
+               de modification : les deux font la même hauteur. #}
+            <div class="row g-2 align-items-start">
+                <div class="col min-w-0">
                     <label class="form-label fw-medium small mb-1" for="depotNom{{ doc_parent_kind }}{{ doc_parent_id }}">Nom du fichier</label>
                     <input type="text" name="filename" id="depotNom{{ doc_parent_kind }}{{ doc_parent_id }}"
                            class="form-control form-control-sm" maxlength="180" placeholder="Aucun fichier choisi">
+                    {% set aide_depot = document_max_mb ~ " Mo maximum. Actes scannés, guides, tableurs, images — pas une image disque : au-delà, c'est le partage réseau qu'il faut." %}
+                    <div class="form-text doc-aide text-truncate" title="{{ aide_depot }}">{{ aide_depot }}</div>
                 </div>
                 <div class="col-auto">
+                    <label class="form-label small mb-1 d-block">&nbsp;</label>
                     <input type="file" name="file" id="depotFichier{{ doc_parent_kind }}{{ doc_parent_id }}" class="d-none"
                            onchange="var t = this.form.elements.filename; t.value = this.files.length ? this.files[0].name : ''; this.nextElementSibling.title = this.files.length ? 'Choisi : ' + this.files[0].name : this.nextElementSibling.dataset.titre">
                     <button type="button" class="btn btn-sm btn-outline-secondary btn-icone" data-titre="Choisir le fichier"
@@ -60,24 +65,26 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-auto d-flex gap-1">
-                    <button type="submit" class="btn btn-sm btn-ghost btn-icone btn-valider" title="Enregistrer"
-                            aria-label="Enregistrer">{{ lucide('check', 16) }}</button>
-                    <button type="button" class="btn btn-sm btn-ghost btn-icone btn-annuler" title="Annuler"
-                            aria-label="Annuler" data-bs-toggle="collapse"
-                            data-bs-target="#depot{{ doc_parent_kind }}{{ doc_parent_id }}">{{ lucide('x', 16) }}</button>
-                </div>
-            </div>
-            {% if avec_dates %}
-            <div class="row g-2 align-items-end mt-1">
-                <div class="col-md-3">
+                {% if avec_dates %}
+                <div class="col-auto">
                     <label class="form-label fw-medium small mb-1">Date de l'acte</label>
                     <input type="date" name="doc_date" class="form-control form-control-sm">
                 </div>
+                {% endif %}
+                <div class="col-auto d-flex gap-1">
+                    <div>
+                        <label class="form-label small mb-1 d-block">&nbsp;</label>
+                        <button type="submit" class="btn btn-sm btn-ghost btn-icone btn-valider" title="Enregistrer"
+                                aria-label="Enregistrer">{{ lucide('check', 16) }}</button>
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1 d-block">&nbsp;</label>
+                        <button type="button" class="btn btn-sm btn-ghost btn-icone btn-annuler" title="Annuler"
+                                aria-label="Annuler" data-bs-toggle="collapse"
+                                data-bs-target="#depot{{ doc_parent_kind }}{{ doc_parent_id }}">{{ lucide('x', 16) }}</button>
+                    </div>
+                </div>
             </div>
-            {% endif %}
-            <div class="form-text mt-2">{{ document_max_mb }} Mo maximum. Actes scannés, guides,
-                tableurs, images — pas une image disque : au-delà, c'est le partage réseau qu'il faut.</div>
         </form>
     </div>
     {% endif %}
