@@ -2475,7 +2475,7 @@ li:has(.doc-edit-volet.collapsing) > .d-flex.flex-shrink-0 { display: none !impo
 .dossiers-liste .doc-dl { color: var(--faint); display: inline-flex; align-items: center; background: none; border: 0; padding: 0; }
 .dossiers-liste .doc-dl:hover { color: var(--primary); }
 .dossiers-liste .doc-sous { font-size: 12px; color: var(--faint); }
-.dossiers-liste .dossier-chemin { font-size: 12px; color: var(--strong); word-break: break-all; }
+.dossiers-liste .dossier-chemin { font-size: 12px; color: var(--strong); word-break: break-all; border: 0; }
 .dossiers-liste .border-top { border-color: var(--line) !important; }
 /* Les services utilisateurs d'un logiciel : la grille de cases de
    SoftInventory, quatre colonnes qui se replient avec la largeur. */
