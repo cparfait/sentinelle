@@ -2440,6 +2440,10 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    restent centres sur la hauteur du formulaire, comme sur celle de la ligne. */
 :has(> .doc-edit-volet.show) > :not(.doc-edit-volet),
 :has(> .doc-edit-volet.collapsing) > :not(.doc-edit-volet) { display: none !important; }
+/* L'icone de fichier, a gauche de la ligne, s'efface aussi : le formulaire
+   prend toute la largeur, de l'icone aux boutons. */
+li:has(.doc-edit-volet.show) > .marche-doc-ico, li:has(.doc-edit-volet.collapsing) > .marche-doc-ico,
+li:has(.doc-edit-volet.show) > .doc-ico, li:has(.doc-edit-volet.collapsing) > .doc-ico { display: none; }
 /* La liste des pieces jointes, a la SoftInventory : icone de fichier et
    fleche de telechargement en gris leger, sous-ligne en 12 px. */
 .docs-liste .doc-ico { color: var(--faint); }
