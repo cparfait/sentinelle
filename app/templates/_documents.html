@@ -70,7 +70,8 @@
        se télécharge) et la flèche de téléchargement ; dessous, en petit et en
        gris léger, la catégorie, la taille, le déposant et la date. À droite,
        le crayon et la corbeille. Une pièce sans fichier attend son acte. #}
-    <div class="px-3 pb-3">
+    {# 8 px au-dessus de la première pièce, comme sous le filet des marchés. #}
+    <div class="px-3 pt-2 pb-3">
         {% if pieces %}
         <ul class="list-unstyled mb-0 docs-liste">
             {% for d in pieces %}
