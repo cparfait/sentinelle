@@ -68,9 +68,19 @@
                 // Certains selects stockent le nom (ex. revue de droits) plutot que l'id.
                 var valField = sel.getAttribute('data-qa-value-field');
                 opt.value = (valField && j[valField] != null) ? j[valField] : j.id;
+                // Une liste qui mele plusieurs familles (elements couverts d'un
+                // marche) prefixe ses valeurs et range l'option dans son groupe.
+                var prefixe = sel.getAttribute('data-qa-value-prefix');
+                if (prefixe) opt.value = prefixe + opt.value;
                 opt.textContent = j.label || j.name;
                 opt.selected = true;
-                sel.appendChild(opt);
+                var groupe = sel.getAttribute('data-qa-group');
+                var cible = sel;
+                if (groupe) {
+                    cible = Array.prototype.find.call(sel.querySelectorAll('optgroup'), function (g) { return g.label === groupe; });
+                    if (!cible) { cible = document.createElement('optgroup'); cible.label = groupe; sel.appendChild(cible); }
+                }
+                cible.appendChild(opt);
                 sel.dispatchEvent(new Event('change', {bubbles: true}));
             }
             var inst = window.bootstrap && bootstrap.Modal.getInstance(modal);

@@ -93,6 +93,19 @@
             select.insertAdjacentElement('afterend', boite);
 
             function options() { return Array.prototype.slice.call(select.options); }
+            // Le groupe d'une option (<optgroup label>) : la famille de l'élément,
+            // quand la liste en mêle plusieurs (logiciels et matériel couverts).
+            function groupe(o) { return o.parentElement && o.parentElement.tagName === 'OPTGROUP' ? o.parentElement.label : ''; }
+            function libelle(cible, o) {
+                cible.textContent = '';
+                if (groupe(o)) {
+                    var tag = document.createElement('span');
+                    tag.className = 'puce-groupe';
+                    tag.textContent = groupe(o);
+                    cible.appendChild(tag);
+                }
+                cible.appendChild(document.createTextNode(o.text));
+            }
 
             function rendreListe() {
                 liste.innerHTML = '';
@@ -100,7 +113,7 @@
                     var puce = document.createElement('span');
                     puce.className = 'puce';
                     puce.innerHTML = '<span></span><button type="button" aria-label="Retirer">&times;</button>';
-                    puce.firstChild.textContent = o.text;
+                    libelle(puce.firstChild, o);
                     puce.lastChild.addEventListener('click', function () {
                         o.selected = false;
                         select.dispatchEvent(new Event('change', { bubbles: true }));
@@ -134,7 +147,7 @@
                     var b = document.createElement('button');
                     b.type = 'button';
                     b.className = 'puces-option' + (i === 0 ? ' est-cible' : '');
-                    b.textContent = o.text;
+                    libelle(b, o);
                     b.addEventListener('mousedown', function (e) { e.preventDefault(); });
                     b.addEventListener('click', function () { choisir(o); });
                     menu.appendChild(b);

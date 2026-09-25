@@ -258,3 +258,25 @@ def test_deposer_une_piece_depuis_la_fiche_logiciel_y_revient(client):
     assert r.status_code == 302 and r.headers['Location'].endswith(f'/inventory/logiciels/{sw.id}#contrats')
     assert ct.documents()[0].filename == 'acte.pdf'
 
+
+
+def test_les_elements_couverts_dans_une_seule_liste(client):
+    """Le formulaire envoie logiciels et matériel dans une seule liste
+    « famille:id » ; les deux listes historiques restent lues."""
+    from app.models import Equipment
+    a = Software(name='Concerto')
+    e = Equipment(name='SRV-CONCERTO', kind='vm')
+    db.session.add_all([a, e])
+    db.session.commit()
+    client.post('/contracts/create', data={
+        'name': 'Maintenance Concerto',
+        'covered_ids': [f'software:{a.id}', f'equipment:{e.id}', 'bidon:9', 'software:']},
+        follow_redirects=True)
+    ct = Contract.query.filter_by(name='Maintenance Concerto').one()
+    assert [s.name for s in ct.software] == ['Concerto']
+    assert [q.name for q in ct.equipments] == ['SRV-CONCERTO']
+    # Le formulaire de modification rend les deux, cochés, dans leur groupe.
+    html = client.get(f'/contracts/{ct.id}/edit').get_data(as_text=True)
+    assert f'value="software:{a.id}" selected' in html
+    assert f'value="equipment:{e.id}" selected' in html
+    assert '<optgroup label="Matériel">' in html and '<optgroup label="Logiciel">' in html

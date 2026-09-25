@@ -203,24 +203,27 @@
         </div>
         {% endcall %}
 
-        {% call carte('Logiciels couverts', 'bi-window-stack', 'teal') %}
-        <select name="software_ids" id="contractSoftware" class="form-select form-select-sm" multiple size="6"
-                aria-label="Logiciels couverts">
-            {% for sw in software_list %}
-            <option value="{{ sw.id }}" {{ 'selected' if contract and sw in contract.software }}>{{ sw.name }}{% if sw.supplier %} — {{ sw.supplier.name }}{% endif %}</option>
-            {% endfor %}
-        </select>
-        {% endcall %}
-
-        {% call carte('Équipements couverts', 'bi-hdd-stack', 'rose') %}
+        {# Les logiciels et le matériel que l'acte couvre, dans UNE zone : un
+           marché de maintenance couvre souvent les deux, et l'on cherche « ce
+           que couvre cet acte » sans savoir d'avance dans quelle famille il
+           tombe. Un seul champ à puces, deux groupes ; la puce porte sa famille.
+           Le + crée un équipement dans le groupe Matériel sans quitter la page. #}
+        {% call carte('Éléments couverts', 'bi-window-stack', 'teal') %}
         {% if current_user.can_edit('inventory') %}
-        <div class="d-flex justify-content-end mb-1">{{ qa_add_link('qaModalEquipment', 'contractEquipment', 'Nouvel équipement') }}</div>
+        <div class="d-flex justify-content-end mb-1">{{ qa_add_link('qaModalEquipment', 'contractCovered', 'Nouvel équipement') }}</div>
         {% endif %}
-        <select name="equipment_ids" id="contractEquipment" class="form-select form-select-sm" multiple size="6"
-                aria-label="Équipements couverts">
-            {% for e in equipments %}
-            <option value="{{ e.id }}" {{ 'selected' if contract and e in contract.equipments }}>{{ e.name }} ({{ e.kind_label() }}{% if e.environment %} · {{ e.env_label() }}{% endif %})</option>
-            {% endfor %}
+        <select name="covered_ids" id="contractCovered" class="form-select form-select-sm" multiple size="6"
+                aria-label="Éléments couverts" data-qa-value-prefix="equipment:" data-qa-group="Matériel">
+            <optgroup label="Logiciel">
+                {% for sw in software_list %}
+                <option value="software:{{ sw.id }}" {{ 'selected' if contract and sw in contract.software }}>{{ sw.name }}{% if sw.supplier %} — {{ sw.supplier.name }}{% endif %}</option>
+                {% endfor %}
+            </optgroup>
+            <optgroup label="Matériel">
+                {% for e in equipments %}
+                <option value="equipment:{{ e.id }}" {{ 'selected' if contract and e in contract.equipments }}>{{ e.name }} ({{ e.kind_label() }}{% if e.environment %} · {{ e.env_label() }}{% endif %})</option>
+                {% endfor %}
+            </optgroup>
         </select>
         {% endcall %}
 

@@ -42,8 +42,16 @@ def _fill(c, f):
     c.renewal_years = parse_int(f.get('renewal_years'), minimum=0)
     c.notice_days = parse_int(f.get('notice_days'), 0, minimum=0)
     c.auto_renew = f.get('auto_renew') == 'on'
+    # Elements couverts : le formulaire envoie une seule liste « famille:id »
+    # (covered_ids) ; les deux listes historiques (equipment_ids, software_ids)
+    # restent lues, pour l'onglet Contrats d'un logiciel et les anciens appels.
+    couverts = {'software': [], 'equipment': []}
+    for v in f.getlist('covered_ids'):
+        famille, _, num = (v or '').partition(':')
+        if famille in couverts and parse_int(num):
+            couverts[famille].append(parse_int(num))
     # Equipements couverts (multi-selection) : on ne garde que des equipements actifs.
-    ids = [parse_int(v) for v in f.getlist('equipment_ids')]
+    ids = [parse_int(v) for v in f.getlist('equipment_ids')] + couverts['equipment']
     ids = [i for i in ids if i]
     c.equipments = (Equipment.query.filter(Equipment.id.in_(ids),
                                            Equipment.is_active.is_(True)).all()
@@ -51,7 +59,7 @@ def _fill(c, f):
     # Logiciels couverts (multi-selection). Un marche couvre AUTANT de logiciels
     # qu'il en couvre reellement -- UGAP, marches communs a deux applications :
     # c'est ici que se pose le rattachement.
-    sids = [parse_int(v) for v in f.getlist('software_ids')]
+    sids = [parse_int(v) for v in f.getlist('software_ids')] + couverts['software']
     sids = [i for i in sids if i]
     c.software = (Software.query.filter(Software.id.in_(sids),
                                         Software.is_active.is_(True)).all()
