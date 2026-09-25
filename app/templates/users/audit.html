@@ -15,6 +15,7 @@
 <form method="GET" action="{{ url_for('users.audit') }}" class="mb-3">
     <div class="input-group" style="max-width: 480px;">
         <span class="input-group-text"><i class="bi bi-search"></i></span>
+        {% if request.args.get('per_page') %}<input type="hidden" name="per_page" value="{{ request.args.get('per_page') }}">{% endif %}
         <input type="text" name="q" value="{{ q }}" class="form-control"
                placeholder="Rechercher (action, détail, utilisateur, catégorie)...">
         <button type="submit" class="btn btn-primary">Rechercher</button>
@@ -54,21 +55,5 @@
     </div>
 </div>
 
-{% if pages > 1 %}
-<div class="d-flex justify-content-between align-items-center mt-3">
-    <small class="text-muted">Page {{ page }} / {{ pages }}</small>
-    <div class="btn-group">
-        {% if page > 1 %}
-        <a href="{{ url_for('users.audit', q=q, page=page-1) }}" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-chevron-left"></i> Précédent
-        </a>
-        {% endif %}
-        {% if page < pages %}
-        <a href="{{ url_for('users.audit', q=q, page=page+1) }}" class="btn btn-sm btn-outline-secondary">
-            Suivant <i class="bi bi-chevron-right"></i>
-        </a>
-        {% endif %}
-    </div>
-</div>
-{% endif %}
+{% include '_pagination.html' %}
 {% endblock %}

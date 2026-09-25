@@ -64,17 +64,9 @@ def audit():
 
     rows.sort(key=lambda r: r['when'], reverse=True)
 
-    # Pagination
-    per_page = 50
-    try:
-        page = max(1, int(request.args.get('page', 1)))
-    except (TypeError, ValueError):
-        page = 1
-    total = len(rows)
-    pages = max(1, (total + per_page - 1) // per_page)
-    page = min(page, pages)
-    start = (page - 1) * per_page
-    page_rows = rows[start:start + per_page]
+    # Pagination : la commune, avec son selecteur de lignes par page.
+    from app.paging import paginate
+    page_rows, page, pages, total = paginate(rows)
     return render_template('users/audit.html', rows=page_rows, q=q,
                            page=page, pages=pages, total=total)
 

@@ -1,11 +1,10 @@
 """Pagination simple en mémoire pour les listes (après tri par criticité)."""
-from flask import request
+from flask import g, request
 
-PER_PAGE = 25
+# Dix lignes par defaut sur toutes les listes, le selecteur sous le tableau
+# permettant de voir plus large (Dom 2026-09-25).
+PER_PAGE = 10
 PER_PAGE_CHOICES = (10, 25, 50, 100, 200)
-# Le materiel se lit par petites pages : dix lignes par defaut, le selecteur
-# sous le tableau permettant de voir plus large (Dom 2026-09-23).
-INVENTORY_PER_PAGE = 10
 
 
 def resolve_per_page(default=PER_PAGE):
@@ -37,9 +36,21 @@ def text_search(items, q, fields):
     return out
 
 
-def paginate(items, per_page=PER_PAGE):
+# Valeur par defaut de paginate() : « lis ?per_page, sinon PER_PAGE ». Un
+# objet a part, parce que None veut deja dire « tout afficher ».
+AUTO = object()
+
+
+def paginate(items, per_page=AUTO):
     """Retourne (page_items, page, pages, total) selon ?page=N.
-    per_page=None => tout afficher sur une seule page."""
+    per_page=None => tout afficher sur une seule page ; par defaut, la taille
+    vient de ?per_page (voir resolve_per_page), et chaque liste porte ainsi
+    le selecteur « lignes par page » sans rien passer a son gabarit :
+    la taille retenue est deposee dans g pour _pagination.html."""
+    if per_page is AUTO:
+        per_page = resolve_per_page()
+    g.per_page = per_page
+    g.per_page_choices = PER_PAGE_CHOICES
     total = len(items)
     if per_page in (None, 0):
         return items, 1, 1, total

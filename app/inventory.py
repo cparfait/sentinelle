@@ -148,7 +148,7 @@ def list():
     }
     if kind:
         items = [e for e in items if e.kind == kind]
-    from app.paging import paginate, text_search, resolve_per_page, INVENTORY_PER_PAGE
+    from app.paging import paginate, text_search, resolve_per_page
 
     items = text_search(items, q, SEARCH_FIELDS)
 
@@ -210,11 +210,10 @@ def list():
         sort = ''
         items.sort(key=lambda e: status_rank(e.computed_status()))
 
-    per_page = resolve_per_page(default=INVENTORY_PER_PAGE)
+    per_page = resolve_per_page()
     items, page, pages, total = paginate(items, per_page)
     counts = {k: Equipment.query.filter_by(is_active=True, kind=k).count()
               for k in natures}
-    from app.paging import PER_PAGE_CHOICES
     return render_template('inventory/list.html', items=items, q=q, kind=kind, counts=counts,
                            famille=famille, natures=natures,
                            famille_labels=EQUIPMENT_FAMILY_LABELS,
@@ -222,8 +221,7 @@ def list():
                            filters=f, active_filters=active_filters,
                            env_choices=ENV_CHOICES, crit_labels_dict=CRITICALITY_LABELS,
                            page=page, pages=pages, total=total,
-                           sort=sort, dir=direction, per_page=per_page,
-                           per_page_choices=PER_PAGE_CHOICES)
+                           sort=sort, dir=direction, per_page=per_page)
 
 
 @bp.route('/quick-create', methods=['POST'])

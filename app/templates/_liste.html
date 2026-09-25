@@ -4,7 +4,7 @@
      [recherche] [segments de type] [pastilles d'état] ............ [droite]
 
    - la recherche soumet en GET (Entrée suffit) et préserve les paramètres
-     passés dans `hidden` (onglet courant, tri...) ;
+     passés dans `hidden` (onglet courant, tri...) et la taille de page ;
    - `segments` : les onglets de type (Tous / TLS / Électroniques), passés
      comme bloc capturé : {% set segments %}...{% endset %} ;
    - les pastilles d'état (Critique / Urgent / À prévoir / OK) sont posées
@@ -25,6 +25,7 @@
 {% macro barre(q='', hidden={}, segments='', droite='', placeholder='Rechercher…') %}
 {% set keep = {} %}
 {% for k, v in (hidden or {}).items() %}{% if v %}{% set _ = keep.update({k: v}) %}{% endif %}{% endfor %}
+{% if request.args.get('per_page') %}{% set _ = keep.update({'per_page': request.args.get('per_page')}) %}{% endif %}
 <div class="list-toolbar">
     <form method="GET" class="list-search" role="search">
         {% for k, v in keep.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}

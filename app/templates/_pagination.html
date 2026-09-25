@@ -1,10 +1,15 @@
 {# Contrôles de pagination. Variables : page, pages, et si la vue les fournit
-   total (nombre d'éléments) et per_page. Préserve les filtres (ex. q).
+   total (nombre d'éléments) et per_page — sinon la taille vient de g, où
+   paginate() l'a déposée. Préserve les filtres (ex. q).
    La barre s'affiche même sur une seule page (Dom 2026-09-23) : le compteur
    « 1–8 sur 8 » dit combien la liste contient, ce que rien d'autre ne disait.
-   `pagination_droite` : un bloc capturé rendu à droite (ex. lignes par page). #}
+   À droite, le sélecteur « lignes par page » (Dom 2026-09-25) : chaque choix
+   est une adresse qui garde les filtres et le tri et revient en page 1.
+   `pagination_droite` : un bloc capturé qui le remplace. #}
 {% if pages %}
 {% set base_args = request.args.to_dict() %}
+{% set per_page = per_page if per_page is defined else g.get('per_page') %}
+{% set per_page_choices = per_page_choices if per_page_choices is defined else g.get('per_page_choices') %}
 <nav class="pagination-bar" aria-label="Pagination">
     <span class="pagination-info">
         {%- if total is defined and total and per_page is defined and per_page -%}
@@ -28,6 +33,18 @@
         <span class="btn btn-outline-secondary btn-icon disabled" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
         {% endif %}
     </span>
-    <span class="pagination-droite">{{ pagination_droite if pagination_droite is defined }}</span>
+    <span class="pagination-droite">
+        {%- if pagination_droite is defined -%}
+            {{ pagination_droite }}
+        {%- elif per_page_choices -%}
+            {% set _ = base_args.pop('page', None) %}
+            <select class="form-select pagination-perpage" onchange="location.href = this.value" title="Lignes par page" aria-label="Lignes par page">
+                {% for n in per_page_choices %}{% set _ = base_args.update({'per_page': n}) -%}
+                <option value="{{ url_for(request.endpoint, **base_args) }}" {{ 'selected' if per_page == n }}>{{ n }} / page</option>
+                {% endfor %}{% set _ = base_args.update({'per_page': 'all'}) -%}
+                <option value="{{ url_for(request.endpoint, **base_args) }}" {{ 'selected' if per_page is none }}>Tous</option>
+            </select>
+        {%- endif -%}
+    </span>
 </nav>
 {% endif %}

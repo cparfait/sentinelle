@@ -1139,8 +1139,8 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 #invTable tbody tr.inv-decommissioned td .badge,
 #invTable tbody tr.inv-decommissioned td .badge-status { filter: grayscale(0.7); }
 
-/* Selecteur « lignes par page » : compact, aligne sur les boutons btn-sm */
-.inv-perpage {
+/* Selecteur « lignes par page » (toutes les listes) : compact, aligne sur les boutons btn-sm */
+.pagination-perpage {
     width: auto;
     font-size: 0.8rem;
     padding: 4px 28px 4px 10px;
@@ -1149,7 +1149,7 @@ body.dash-editing .stat-toggle { display: inline-flex; }
     background-color: transparent;
     border-color: var(--border-strong);
 }
-.inv-perpage:focus { color: var(--text); }
+.pagination-perpage:focus { color: var(--text); }
 
 /* Filtre type Excel par colonne */
 .colfiltre-btn {
@@ -2748,7 +2748,7 @@ a.marche-doc-nom:hover { color: var(--primary); }
 /* Le selecteur de lignes par page se fond dans la barre : meme 12 px et meme
    gris que les compteurs qui l'entourent, boite plus basse. Selecteur appuye :
    les regles generales des .form-select, plus loin dans le fichier, l'emportaient. */
-.pagination-bar .pagination-droite .form-select.inv-perpage {
+.pagination-bar .pagination-droite .form-select.pagination-perpage {
     font-size: 0.75rem;
     color: var(--muted);
     padding: 2px 24px 2px 8px;
