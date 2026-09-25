@@ -2158,6 +2158,13 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    l'icône Lucide du groupe, en gris, à 6 px du nom ; l'étiquette de texte
    reste pour un groupe sans icône. */
 .puce-icone { color: var(--muted); margin-right: 6px; vertical-align: -2px; flex-shrink: 0; }
+/* La modale de choix d'une famille : une ligne a cocher par element, 32 px,
+   teintee au survol ; la liste defile dans la modale. */
+.choix-liste { max-height: 320px; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.choix-ligne { display: flex; align-items: center; gap: 10px; padding: 6px 10px; margin: 0; font-size: 0.875rem; cursor: pointer; }
+.choix-ligne + .choix-ligne { border-top: 1px solid var(--line); }
+.choix-ligne:hover { background: var(--inset); }
+.choix-ligne .form-check-input { margin: 0; flex-shrink: 0; }
 .puce-groupe { display: inline-block; margin-right: 6px; padding: 0 5px; border-radius: 4px; background: var(--surface); border: 1px solid var(--line); font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); vertical-align: 1px; }
 .puce button { border: 0; background: none; color: var(--muted); font-size: 1rem; line-height: 1; padding: 0 4px; cursor: pointer; border-radius: 4px; }
 .puce button:hover { color: var(--danger); background: var(--danger-dim); }

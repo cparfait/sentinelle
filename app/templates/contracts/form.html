@@ -210,12 +210,12 @@
            que couvre cet acte » sans savoir d'avance dans quelle famille il
            tombe. Un seul champ à puces, deux groupes ; la puce porte sa famille.
            Le + crée un équipement dans le groupe Matériel sans quitter la page. #}
-        {# Les deux boutons de l'en-tête ouvrent la recherche du champ, limitée
-           à une famille : un logiciel du catalogue, un matériel de l'inventaire. #}
+        {# Les deux boutons de l'en-tête ouvrent chacun une modale de choix dans
+           sa famille : un logiciel du catalogue, un matériel de l'inventaire. #}
         {% set boutons_couverts %}
-        <button type="button" class="btn btn-sm btn-ghost btn-icone" data-puces-cible="contractCovered" data-puces-groupe="Logiciel"
+        <button type="button" class="btn btn-sm btn-ghost btn-icone" data-bs-toggle="modal" data-bs-target="#choixLogiciel"
                 title="Ajouter un logiciel du catalogue" aria-label="Ajouter un logiciel du catalogue">{{ lucide('package', 16) }}</button>
-        <button type="button" class="btn btn-sm btn-ghost btn-icone" data-puces-cible="contractCovered" data-puces-groupe="Matériel"
+        <button type="button" class="btn btn-sm btn-ghost btn-icone" data-bs-toggle="modal" data-bs-target="#choixMateriel"
                 title="Ajouter un matériel de l'inventaire" aria-label="Ajouter un matériel de l'inventaire">{{ lucide('server', 16) }}</button>
         {% endset %}
         {% call carte('Éléments couverts', 'bi-window-stack', 'teal', droite=boutons_couverts) %}
@@ -240,6 +240,38 @@
         {{ pied_form(retour, 'Enregistrer' if contract else 'Ajouter') }}
     </form>
 </div>
+
+{# ---- La modale de choix d'une famille d'éléments couverts ----
+   Elle se remplit depuis le groupe du champ à puces (formulaire.js) : les
+   éléments pas encore rattachés, cochables, avec une recherche ; « Ajouter »
+   les coche dans le champ, qui les montre en puces. #}
+{% macro modale_choix(id, titre, nom_icone, groupe, aide) %}
+<div class="modal fade" id="{{ id }}" tabindex="-1" aria-hidden="true" aria-labelledby="{{ id }}-titre"
+     data-choix-select="contractCovered" data-choix-groupe="{{ groupe }}">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title d-flex align-items-center gap-2" id="{{ id }}-titre">{{ lucide(nom_icone, 18, 'text-muted') }}{{ titre }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <input type="search" class="form-control form-control-sm mb-2" placeholder="Rechercher…"
+                       aria-label="Rechercher" data-choix-recherche autocomplete="off">
+                <div class="choix-liste" data-choix-liste></div>
+                <div class="form-text">{{ aide }}</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-sm btn-primary" data-choix-valider>Ajouter</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+{{ modale_choix('choixLogiciel', 'Logiciels du catalogue', 'package', 'Logiciel',
+                "Les logiciels que cet acte couvre. Un marché en couvre autant qu'il en couvre réellement.") }}
+{{ modale_choix('choixMateriel', "Matériel de l'inventaire", 'server', 'Matériel',
+                "Les serveurs, NAS et équipements réseau que cet acte couvre.") }}
 
 {% if current_user.can_edit('suppliers') %}{{ qa_modal_supplier() }}{% endif %}
 {% if current_user.can_edit('inventory') %}{{ qa_modal_equipment() }}{% endif %}

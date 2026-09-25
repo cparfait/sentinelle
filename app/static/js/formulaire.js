@@ -148,30 +148,11 @@
                 }
             }
 
-            // Un bouton [data-puces-groupe] limite la recherche à une famille
-            // (Logiciel, Matériel) et ouvre le menu ; la limite tombe quand le
-            // champ se quitte.
-            var filtreGroupe = '';
-            var placeholderInitial = champ.placeholder;
-            document.querySelectorAll('[data-puces-cible="' + select.id + '"]').forEach(function (b) {
-                b.addEventListener('click', function () {
-                    filtreGroupe = b.getAttribute('data-puces-groupe') || '';
-                    champ.placeholder = filtreGroupe ? 'Ajouter — ' + filtreGroupe.toLowerCase() + '…' : placeholderInitial;
-                    champ.value = '';
-                    champ.focus();
-                    // Le menu s'ouvre ici même : focus() ne déclenche pas d'événement
-                    // quand la fenêtre n'a pas le focus.
-                    rendreMenu();
-                    menu.hidden = false;
-                });
-            });
-
             function rendreMenu() {
                 var q = champ.value.trim().toLowerCase();
                 menu.innerHTML = '';
                 var candidats = options().filter(function (o) {
-                    return !o.selected && o.value !== '' && (!filtreGroupe || groupe(o) === filtreGroupe)
-                        && (!q || o.text.toLowerCase().indexOf(q) !== -1);
+                    return !o.selected && o.value !== '' && (!q || o.text.toLowerCase().indexOf(q) !== -1);
                 }).slice(0, 12);
                 if (!candidats.length) {
                     var rien = document.createElement('div');
@@ -202,9 +183,7 @@
 
             champ.addEventListener('focus', function () { rendreMenu(); menu.hidden = false; });
             champ.addEventListener('input', rendreMenu);
-            champ.addEventListener('blur', function () {
-                setTimeout(function () { if (document.activeElement === champ) return; menu.hidden = true; filtreGroupe = ''; champ.placeholder = placeholderInitial; }, 120);
-            });
+            champ.addEventListener('blur', function () { setTimeout(function () { menu.hidden = true; }, 120); });
             champ.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -231,11 +210,76 @@
         });
     }
 
+    // ---- Modale de choix : une famille d'un select à puces, à cocher ----
+    // [data-choix-select] désigne le select, [data-choix-groupe] l'<optgroup>
+    // dont on propose les options pas encore choisies ; « Ajouter » les coche
+    // dans le select, dont les puces suivent.
+    function initModalesChoix() {
+        document.querySelectorAll('[data-choix-select]').forEach(function (modal) {
+            var select = document.getElementById(modal.getAttribute('data-choix-select'));
+            var groupe = modal.getAttribute('data-choix-groupe');
+            var liste = modal.querySelector('[data-choix-liste]');
+            var recherche = modal.querySelector('[data-choix-recherche]');
+            if (!select || !liste) return;
+
+            function candidats() {
+                return Array.prototype.slice.call(select.options).filter(function (o) {
+                    return !o.selected && o.value !== '' && o.parentElement && o.parentElement.label === groupe;
+                });
+            }
+            function rendre() {
+                var q = (recherche ? recherche.value : '').trim().toLowerCase();
+                var coches = {};
+                liste.querySelectorAll('input:checked').forEach(function (c) { coches[c.value] = true; });
+                liste.innerHTML = '';
+                var lignes = candidats().filter(function (o) { return !q || o.text.toLowerCase().indexOf(q) !== -1; });
+                if (!lignes.length) {
+                    var rien = document.createElement('div');
+                    rien.className = 'text-muted small py-2';
+                    rien.textContent = q ? 'Aucun résultat' : 'Tout est déjà rattaché';
+                    liste.appendChild(rien);
+                    return;
+                }
+                lignes.forEach(function (o, i) {
+                    var id = modal.id + '-' + i;
+                    var ligne = document.createElement('label');
+                    ligne.className = 'choix-ligne';
+                    ligne.setAttribute('for', id);
+                    var case_ = document.createElement('input');
+                    case_.type = 'checkbox';
+                    case_.className = 'form-check-input';
+                    case_.id = id;
+                    case_.value = o.value;
+                    case_.checked = !!coches[o.value];
+                    ligne.appendChild(case_);
+                    ligne.appendChild(document.createTextNode(o.text));
+                    liste.appendChild(ligne);
+                });
+            }
+            modal.addEventListener('show.bs.modal', function () {
+                if (recherche) recherche.value = '';
+                rendre();
+            });
+            modal.addEventListener('shown.bs.modal', function () { if (recherche) recherche.focus(); });
+            if (recherche) recherche.addEventListener('input', rendre);
+            var valider = modal.querySelector('[data-choix-valider]');
+            if (valider) valider.addEventListener('click', function () {
+                var choisis = {};
+                liste.querySelectorAll('input:checked').forEach(function (c) { choisis[c.value] = true; });
+                Array.prototype.forEach.call(select.options, function (o) { if (choisis[o.value]) o.selected = true; });
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                var inst = window.bootstrap && bootstrap.Modal.getInstance(modal);
+                if (inst) inst.hide();
+            });
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         var form = document.getElementById('form-principal');
         if (!form) return;
         initSommaire(form);
         initAide(form);
         initPuces(form);
+        initModalesChoix();
     });
 })();
