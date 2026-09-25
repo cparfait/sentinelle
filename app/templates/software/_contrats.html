@@ -33,12 +33,14 @@
                     <option value="{{ c.id }}">{% if c.reference %}{{ c.reference }} — {% endif %}{{ c.name }}{% if c.supplier %} ({{ c.supplier.name }}){% endif %}</option>
                     {% endfor %}
                 </select>
-                <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">
-                    <i class="bi bi-link-45deg me-1"></i>Rattacher</button>
+                {# Deux boutons-icônes fantômes, comme le + des pièces : le maillon
+                   rattache le marché choisi, le + en crée un. #}
+                <button type="submit" class="btn btn-sm btn-ghost btn-icone" title="Rattacher le marché choisi"
+                        aria-label="Rattacher le marché choisi">{{ lucide('link', 16) }}</button>
             </form>
             {% endif %}
-            <a href="{{ url_for('contracts.create') }}" class="btn btn-sm btn-outline-secondary text-nowrap">
-                <i class="bi bi-plus-lg me-1"></i>Créer</a>
+            <a href="{{ url_for('contracts.create') }}" class="btn btn-sm btn-ghost btn-icone" title="Créer un marché"
+               aria-label="Créer un marché">{{ lucide('plus', 16) }}</a>
         </div>
         {% endif %}
     </div>
