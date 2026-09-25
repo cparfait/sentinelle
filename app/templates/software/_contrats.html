@@ -112,6 +112,9 @@
         {% set peut_modifier_doc = current_user.can_edit('contracts') %}
         {% set peut_retirer_doc = current_user.can_delete('contracts') %}
         {% set retour_ici = url_for('software.detail', id=item.id) ~ '#contrats' %}
+        {# La zone des documents est en retrait des deux cotes : elle se lit
+           comme le detail du marche, pas comme une troisieme ligne de celui-ci. #}
+        <div class="marche-docs-zone">
         {% if documents_enabled and (docs or peut_modifier_doc) %}
         {# Le nombre de documents a gauche, « + Pièce » a droite, un filet dessous,
            comme dans SoftInventory. Le depot se fait ici meme et revient ici. #}
@@ -209,6 +212,7 @@
             {% endfor %}
         </ul>
         {% endif %}
+        </div>
     </div>
     {% else %}
     <div class="p-4 text-center text-muted">
