@@ -20,14 +20,14 @@
     {% endif %}
 {% endset %}
 {{ entete(test.name, sous_titre, statut=test.computed_status(), primaire=primaire,
-          modifier=url_for('tests.edit', id=test.id) if peut_editer else None, menu=menu) }}
+          menu=menu) }}
 
 {{ bandeau_echeance('Prochaine échéance', test.next_due, test.computed_status(), passe='en retard de',
                     debut=test.last_performed,
                     complement=('dernière exécution le ' ~ test.last_performed.strftime('%d/%m/%Y')) if test.last_performed else 'jamais exécuté',
                     sans_date='à planifier') }}
 
-{% call barre('ficheTest') %}
+{% call barre('ficheTest', modifier=url_for('tests.edit', id=test.id) if peut_editer else None) %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
     {{ onglet('historique', 'Historique', 'bi-clock-history', compteur=histories|length) }}
 {% endcall %}

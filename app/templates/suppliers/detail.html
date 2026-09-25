@@ -29,9 +29,9 @@
     {% endif %}
 {% endset %}
 {{ entete(supplier.name, sous_titre, primaire=primaire,
-          modifier=url_for('suppliers.edit', id=supplier.id) if current_user.can_edit('suppliers') else None, menu=menu) }}
+          menu=menu) }}
 
-{% call barre('ficheSupplier') %}
+{% call barre('ficheSupplier', modifier=url_for('suppliers.edit', id=supplier.id) if current_user.can_edit('suppliers') else None) %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
     {% if supplier.has_contacts() %}
     {{ onglet('contacts', 'Contacts', 'bi-person-lines-fill') }}

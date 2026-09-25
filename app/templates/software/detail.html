@@ -60,7 +60,7 @@
     {% endif %}
 {% endset %}
 {{ entete(item.name, sous_titre, statut=item.computed_status(), primaire=primaire,
-          modifier=url_for('software.edit', id=item.id) if current_user.can_edit('software') else None, menu=menu) }}
+          menu=menu) }}
 
 {% if item.over_licence() %}
 <div class="alert alert-warning py-2 px-3 small">
@@ -82,7 +82,7 @@
         {% endcall %}
 
 {% set pieces = attached_documents('software', item.id) if documents_enabled else [] %}
-{% call barre('ficheLogiciel') %}
+{% call barre('ficheLogiciel', modifier=url_for('software.edit', id=item.id) if current_user.can_edit('software') else None) %}
     {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}
     {{ onglet('liaisons', 'Liaisons', 'bi-diagram-3', compteur=((sortants|length) + (entrants|length) if features.links else 0)
                                                               + (item.equipments|length) + (item.user_services|length)) }}

@@ -17,7 +17,7 @@
     {% endif %}
 {% endset %}
 {{ entete(update.name, sous_titre, primaire=primaire, badges=badges,
-          modifier=url_for('updates.edit', id=update.id) if peut_editer else None, menu=menu) }}
+          menu=menu) }}
 
 <div class="data-card fiche-bandeau fiche-bandeau--{{ update.status_color() }}">
     {% call faits() %}
@@ -27,7 +27,7 @@
     {% endcall %}
 </div>
 
-{% call barre('ficheUpdate') %}
+{% call barre('ficheUpdate', modifier=url_for('updates.edit', id=update.id) if peut_editer else None) %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
     {{ onglet('historique', 'Historique', 'bi-clock-history', compteur=histories|length) }}
 {% endcall %}

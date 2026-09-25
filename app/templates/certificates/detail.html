@@ -26,7 +26,7 @@
     {% endif %}
 {% endset %}
 {{ entete(certificate.service_name, sous_titre, statut=certificate.status(), primaire=primaire,
-          modifier=url_for('certificates.edit', id=certificate.id) if peut_editer else None, menu=menu) }}
+          menu=menu) }}
 
 {% set complement %}
     {%- if certificate.issued_at %}émis le {{ certificate.issued_at.strftime('%d/%m/%Y') }}{% endif -%}
@@ -37,7 +37,7 @@
                     debut=certificate.issued_at, complement=(complement if certificate.monitored() else 'hors surveillance : ' ~ (certificate.validity_label() | lower)),
                     sans_date='date d\'expiration à renseigner') }}
 
-{% call barre('ficheCertificate') %}
+{% call barre('ficheCertificate', modifier=url_for('certificates.edit', id=certificate.id) if peut_editer else None) %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
     {% if documents_enabled %}
     {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=attached_documents('certificate', certificate.id)|length) }}

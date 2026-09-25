@@ -56,9 +56,9 @@
     {% endif %}
 {% endset %}
 {{ entete(item.name, sous_titre, statut=item.computed_status(),
-          modifier=url_for('inventory.edit', id=item.id) if current_user.can_edit('inventory') else None, menu=menu) }}
+          menu=menu) }}
 
-{% call barre('ficheItem') %}
+{% call barre('ficheItem', modifier=url_for('inventory.edit', id=item.id) if current_user.can_edit('inventory') else None) %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
     {{ onglet('elements', 'Éléments liés', 'bi-diagram-3') }}
     {{ onglet('logiciels', 'Logiciels installés', 'bi-window-stack') }}

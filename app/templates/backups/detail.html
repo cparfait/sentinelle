@@ -19,7 +19,7 @@
     {% endif %}
 {% endset %}
 {{ entete(backup.service_name, sous_titre, statut=backup.computed_status(), primaire=primaire,
-          modifier=url_for('backups.edit', id=backup.id) if peut_editer else None, menu=menu) }}
+          menu=menu) }}
 
 {# Pas d'échéance ici : ce qu'on vient vérifier, c'est le check du jour, la
    série en cours et le taux de réussite. #}
@@ -45,7 +45,7 @@
     {% endcall %}
 </div>
 
-{% call barre('ficheBackup') %}
+{% call barre('ficheBackup', modifier=url_for('backups.edit', id=backup.id) if peut_editer else None) %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
     {{ onglet('historique-des', 'Historique des checks', 'bi-clock-history', compteur=check_events|length) }}
 {% endcall %}

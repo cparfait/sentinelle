@@ -2,9 +2,9 @@
    Toutes les fiches se lisent de la même façon :
 
      fil d'Ariane (base.html)
-     TITRE + badge de statut · sous-titre d'identité      [Action métier] [Modifier] [⋯]
+     TITRE + badge de statut · sous-titre d'identité      [Action métier] [⋯]
      ┌ bandeau : la prochaine échéance, son délai, sa frise ────────────────┐
-     onglets
+     onglets                                      [crayon Modifier]
      rubriques (sans rien répéter de l'en-tête ni du bandeau) │ Lié à · Activité · Alertes
 
    - Une info, une place : l'identité dans l'en-tête, l'échéance dans le
@@ -13,6 +13,8 @@
      fenêtre depuis le bouton principal ; le rail droit ne porte plus de
      formulaire.
    - Le menu ⋯ regroupe ce qu'on fait rarement : PDF, vérifications, suppression.
+   - Modifier est un crayon au bout de la rangée d'onglets (`barre(modifier=…)`
+     dans _onglets.html), comme dans SoftInventory.
 
    Usage :
      {% from '_fiche.html' import entete, bandeau_echeance, modal_action, bouton_modal,
@@ -21,9 +23,8 @@
 {% from '_macros.html' import status_badge, delai_badge %}
 
 {# ---- L'en-tête ----
-   `primaire` et `menu` sont des blocs capturés ({% set x %}...{% endset %}).
-   `modifier` : l'URL du formulaire (None = pas de bouton). #}
-{% macro entete(titre, sous_titre='', statut=None, primaire='', modifier=None, menu='', badges='') %}
+   `primaire` et `menu` sont des blocs capturés ({% set x %}...{% endset %}). #}
+{% macro entete(titre, sous_titre='', statut=None, primaire='', menu='', badges='') %}
 <div class="page-header fiche-entete">
     <div class="fiche-entete-titre">
         <h1 class="page-title">{{ titre }}{% if statut %} {{ status_badge(statut) }}{% endif %}{{ badges }}</h1>
@@ -31,7 +32,6 @@
     </div>
     <div class="page-actions">
         {{ primaire }}
-        {% if modifier %}<a href="{{ modifier }}" class="btn btn-outline-secondary js-modifier"><i class="bi bi-pencil me-1"></i> Modifier</a>{% endif %}
         {% if menu | trim %}
         <div class="dropdown">
             <button class="btn btn-outline-secondary btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Autres actions" aria-label="Autres actions"><i class="bi bi-three-dots"></i></button>

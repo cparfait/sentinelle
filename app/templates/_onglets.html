@@ -11,9 +11,13 @@
    Le bandeau de faits reste AU-DESSUS des onglets : c'est le résumé de la
    fiche entière, il ne dépend pas de l'onglet ouvert.
 
+   Le crayon « Modifier » vit au bout de la rangee, comme dans SoftInventory :
+   une icone seule, fantome, a la hauteur des onglets — pas un bouton de plus
+   dans l'en-tete a cote de l'action metier.
+
    Usage :
      {% from '_onglets.html' import barre, onglet, volets, volet %}
-     {% call barre('ficheLogiciel') %}
+     {% call barre('ficheLogiciel', modifier=url_for('software.edit', id=item.id)) %}
          {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
          {{ onglet('docs', 'Documents', 'bi-paperclip', compteur=pieces|length) }}
      {% endcall %}
@@ -23,9 +27,19 @@
      {% endcall %}
 #}
 
-{% macro barre(id) %}
+{% from '_icones.html' import lucide %}
+
+{# `modifier` : l'URL du formulaire de modification (None = pas de crayon).
+   Le lien porte `js-modifier` : onglets.js lui fait emporter l'onglet ouvert. #}
+{% macro barre(id, modifier=None) %}
 <ul class="nav fiche-onglets" id="{{ id }}" role="tablist" data-onglets="{{ id }}">
     {{ caller() }}
+    {% if modifier %}
+    <li class="nav-item fiche-onglets-commandes" role="presentation">
+        <a href="{{ modifier }}" class="btn btn-ghost btn-icone js-modifier" title="Modifier cette fiche"
+           aria-label="Modifier cette fiche">{{ lucide('square-pen', 16) }}</a>
+    </li>
+    {% endif %}
 </ul>
 {% endmacro %}
 

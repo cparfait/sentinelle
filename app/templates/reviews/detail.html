@@ -14,13 +14,13 @@
     {% endif %}
 {% endset %}
 {{ entete(review.application, sous_titre, statut=review.computed_status(), primaire=primaire,
-          modifier=url_for('reviews.edit', id=review.id) if peut_editer else None, menu=menu) }}
+          menu=menu) }}
 
 {{ bandeau_echeance('Prochaine revue', review.next_review, review.computed_status(), debut=review.last_review,
                     complement=('dernière revue le ' ~ review.last_review.strftime('%d/%m/%Y')) if review.last_review else 'jamais revue',
                     sans_date='à planifier') }}
 
-{% call barre('ficheReview') %}
+{% call barre('ficheReview', modifier=url_for('reviews.edit', id=review.id) if peut_editer else None) %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
     {{ onglet('historique', 'Historique', 'bi-clock-history', compteur=histories|length) }}
 {% endcall %}

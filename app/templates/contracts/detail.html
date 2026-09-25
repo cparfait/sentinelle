@@ -14,7 +14,7 @@
     {% endif %}
 {% endset %}
 {{ entete(contract.name, sous_titre, statut=contract.status(), primaire=primaire,
-          modifier=url_for('contracts.edit', id=contract.id) if peut_editer else None, menu=menu) }}
+          menu=menu) }}
 
 {# La date qui compte pour AGIR n'est pas l'échéance mais l'échéance moins le
    préavis : au-delà, on subit la tacite reconduction ou la coupure. #}
@@ -26,7 +26,7 @@
 {{ bandeau_echeance('Agir avant', contract.action_deadline(), contract.status(), passe='préavis dépassé de',
                     debut=contract.start_date, complement=complement, sans_date='échéance à renseigner') }}
 
-{% call barre('ficheContract') %}
+{% call barre('ficheContract', modifier=url_for('contracts.edit', id=contract.id) if peut_editer else None) %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
     {% if documents_enabled %}
     {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=attached_documents('contract', contract.id)|length) }}

@@ -16,14 +16,14 @@
     {% endif %}
 {% endset %}
 {{ entete(account.service_name, sous_titre, statut=account.status(), primaire=primaire,
-          modifier=url_for('accounts.edit', id=account.id) if peut_editer else None, menu=menu) }}
+          menu=menu) }}
 
 {{ bandeau_echeance('Prochain changement', account.next_password_change, account.status(),
                     debut=account.last_password_change,
                     complement=('rotation tous les %d j' % account.rotation_days if account.rotation_days else '') ~ (' · dernier changement le ' ~ account.last_password_change.strftime('%d/%m/%Y') if account.last_password_change else ''),
                     sans_date='date de rotation à renseigner') }}
 
-{% call barre('ficheAccount') %}
+{% call barre('ficheAccount', modifier=url_for('accounts.edit', id=account.id) if peut_editer else None) %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
     {{ onglet('historique', 'Historique', 'bi-clock-history', compteur=histories|length) }}
 {% endcall %}

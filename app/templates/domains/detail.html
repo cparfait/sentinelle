@@ -26,13 +26,13 @@
     {% endif %}
 {% endset %}
 {{ entete(domain.name, sous_titre, statut=domain.status(), primaire=primaire,
-          modifier=url_for('domains.edit', id=domain.id) if peut_editer else None, menu=menu) }}
+          menu=menu) }}
 
 {{ bandeau_echeance('Expiration', domain.expiry_date, domain.status(), passe='expiré depuis',
                     complement=('renouvellement automatique chez ' ~ domain.registrar) if (domain.auto_renew and domain.registrar) else ('renouvellement automatique' if domain.auto_renew else 'renouvellement manuel'),
                     sans_date='date d\'expiration à renseigner (ou lancez la vérification au registre)') }}
 
-{% call barre('ficheDomain') %}
+{% call barre('ficheDomain', modifier=url_for('domains.edit', id=domain.id) if peut_editer else None) %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
     {% if current_user.can_view('certificates') %}{{ onglet('certificats', 'Certificats', 'bi-award', compteur=certificats|length) }}{% endif %}
     {{ onglet('certificate-transparency', 'Certificate Transparency', 'bi-search', compteur=ct_entries|length) }}

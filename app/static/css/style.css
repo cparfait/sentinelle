@@ -2662,6 +2662,12 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     background: none;
 }
 .fiche-onglets .nav-link i { font-size: 0.95rem; color: var(--ong-icon, currentColor); -webkit-text-stroke: 0.4px currentColor; }
+/* Le crayon « Modifier », au bout de la rangee (SoftInventory) : une icone
+   seule de 34 px, fantome, calee sur le texte des onglets par un retrait bas
+   de 3 px ; elle prend la couleur d'accent au survol. */
+.fiche-onglets .fiche-onglets-commandes { margin-left: auto; align-self: flex-end; padding-bottom: 3px; }
+.fiche-onglets .fiche-onglets-commandes .btn-icone { padding: 8px; border-radius: 8px; }
+.fiche-onglets .fiche-onglets-commandes .btn-icone:hover { color: var(--primary); }
 
 /* Une couleur par onglet, la meme d'une fiche a l'autre : les documents sont
    bleus partout, les contrats orange partout (comme dans le menu). */
