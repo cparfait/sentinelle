@@ -49,7 +49,8 @@
            NOMME l'acte : sa référence, son libellé, la société engagée — les
            trois mènent à leur fiche. La seconde dit ce qu'il engage : sa
            nature, jusqu'à quand, pour combien. #}
-        <div class="d-flex justify-content-between align-items-start gap-3">
+        {# Le crayon et le bouton de retrait se centrent sur les deux lignes. #}
+        <div class="d-flex justify-content-between align-items-center gap-3">
             <div class="flex-grow-1 min-w-0">
                 <div class="marche-entete fw-semibold">
                     <a href="{{ url_for('contracts.detail', id=c.id) }}" class="text-decoration-none marche-tronque"
