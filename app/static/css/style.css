@@ -2624,6 +2624,9 @@ a.marche-doc-nom:hover { color: var(--primary); }
 .fiche-lie:hover { background: var(--inset); color: inherit; }
 .fiche-lie > i { color: var(--muted); font-size: 1rem; flex: 0 0 auto; }
 .fiche-lie strong { font-weight: 600; color: var(--primary); }
+/* Le sous-titre d'un lien (« Logiciel · v2024.2 ») : le meme petit gris leger
+   que le detail d'une piece de marche (12 px sur 16 px). */
+.fiche-lie .cell2 small { font-size: 12px; line-height: 16px; color: var(--faint); }
 .fiche-activite { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; font-size: 0.85rem; }
 .fiche-alertes { padding: 10px 14px; font-size: 0.85rem; }
 .fiche-alertes summary { list-style: none; cursor: pointer; }
