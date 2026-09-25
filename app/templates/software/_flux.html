@@ -20,7 +20,7 @@
         {% if flux %}
         <ul class="list-unstyled mb-3 flux-liste">
             {% for lien, sens, autre in flux %}
-            <li class="py-1">
+            <li>
                 <div class="d-flex align-items-center justify-content-between gap-3">
                     <span class="d-flex align-items-center gap-2 min-w-0">
                         {{ lucide('arrow-right' if sens == 'sortant' else 'arrow-left', 16, 'flux-sens flex-shrink-0') }}

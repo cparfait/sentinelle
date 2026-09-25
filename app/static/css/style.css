@@ -2450,6 +2450,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    et des icones d'action de 20 px qui ne font pas grandir la ligne. */
 .serveurs-liste > li, .flux-liste > li > .d-flex { min-height: 20px; line-height: 20px; font-size: 14px; }
 .serveurs-liste .btn-icone, .flux-liste .btn-icone { width: 20px; height: 20px; padding: 2px; }
+.serveurs-liste form, .flux-liste form { display: flex; }
 .flux-liste .flux-sens { color: var(--primary); }
 .serveurs-liste .serveur-ico { color: rgb(var(--ico-rgb, var(--sec))); }
 .btn-carre { width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
