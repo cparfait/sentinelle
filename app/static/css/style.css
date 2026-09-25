@@ -2625,6 +2625,9 @@ a.marche-doc-nom:hover { color: var(--primary); }
 .fiche-lie { display: flex; align-items: center; gap: 10px; padding: 4px 16px; color: inherit; text-decoration: none; }
 .fiche-lie:hover { background: var(--inset); color: inherit; }
 .fiche-lie > i { color: var(--muted); font-size: 1rem; flex: 0 0 auto; }
+/* Titre et sous-titre serres : pas d'ecart entre les deux, et un interligne
+   de titre reduit (la regle generale .cell2 en met 1,3). */
+.fiche-lie .cell2 { gap: 0; line-height: 1.15; }
 .fiche-lie strong { font-weight: 600; color: var(--primary); }
 /* Le sous-titre d'un lien (« Logiciel · v2024.2 ») : le meme petit gris leger
    que le detail d'une piece de marche (12 px sur 16 px). */
