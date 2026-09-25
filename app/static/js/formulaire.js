@@ -130,11 +130,30 @@
                 }
             }
 
+            // Un bouton [data-puces-groupe] limite la recherche à une famille
+            // (Logiciel, Matériel) et ouvre le menu ; la limite tombe quand le
+            // champ se quitte.
+            var filtreGroupe = '';
+            var placeholderInitial = champ.placeholder;
+            document.querySelectorAll('[data-puces-cible="' + select.id + '"]').forEach(function (b) {
+                b.addEventListener('click', function () {
+                    filtreGroupe = b.getAttribute('data-puces-groupe') || '';
+                    champ.placeholder = filtreGroupe ? 'Ajouter — ' + filtreGroupe.toLowerCase() + '…' : placeholderInitial;
+                    champ.value = '';
+                    champ.focus();
+                    // Le menu s'ouvre ici même : focus() ne déclenche pas d'événement
+                    // quand la fenêtre n'a pas le focus.
+                    rendreMenu();
+                    menu.hidden = false;
+                });
+            });
+
             function rendreMenu() {
                 var q = champ.value.trim().toLowerCase();
                 menu.innerHTML = '';
                 var candidats = options().filter(function (o) {
-                    return !o.selected && o.value !== '' && (!q || o.text.toLowerCase().indexOf(q) !== -1);
+                    return !o.selected && o.value !== '' && (!filtreGroupe || groupe(o) === filtreGroupe)
+                        && (!q || o.text.toLowerCase().indexOf(q) !== -1);
                 }).slice(0, 12);
                 if (!candidats.length) {
                     var rien = document.createElement('div');
@@ -165,7 +184,9 @@
 
             champ.addEventListener('focus', function () { rendreMenu(); menu.hidden = false; });
             champ.addEventListener('input', rendreMenu);
-            champ.addEventListener('blur', function () { setTimeout(function () { menu.hidden = true; }, 120); });
+            champ.addEventListener('blur', function () {
+                setTimeout(function () { if (document.activeElement === champ) return; menu.hidden = true; filtreGroupe = ''; champ.placeholder = placeholderInitial; }, 120);
+            });
             champ.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();

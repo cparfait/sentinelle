@@ -19,10 +19,12 @@
 {% set retour = url_for('contracts.detail', id=contract.id) if contract else url_for('contracts.list') %}
 {{ entete_form(titre_form, retour) }}
 
-{% macro carte(titre, bi, couleur) %}
+{% from '_icones.html' import lucide %}
+{% macro carte(titre, bi, couleur, droite='') %}
 <div class="data-card mb-3">
-    <div class="card-header-custom">
+    <div class="card-header-custom d-flex justify-content-between align-items-center">
         <h6 class="fw-bold fiche-titre fiche-titre--{{ couleur }} mb-0">{{ icone(bi, 14, 'ico ico-' ~ couleur) }}{{ titre }}</h6>
+        {% if droite %}<div class="d-flex gap-1 marches-actions">{{ droite }}</div>{% endif %}
     </div>
     <div class="p-3">{{ caller() }}</div>
 </div>
@@ -208,7 +210,15 @@
            que couvre cet acte » sans savoir d'avance dans quelle famille il
            tombe. Un seul champ à puces, deux groupes ; la puce porte sa famille.
            Le + crée un équipement dans le groupe Matériel sans quitter la page. #}
-        {% call carte('Éléments couverts', 'bi-window-stack', 'teal') %}
+        {# Les deux boutons de l'en-tête ouvrent la recherche du champ, limitée
+           à une famille : un logiciel du catalogue, un matériel de l'inventaire. #}
+        {% set boutons_couverts %}
+        <button type="button" class="btn btn-sm btn-ghost btn-icone" data-puces-cible="contractCovered" data-puces-groupe="Logiciel"
+                title="Ajouter un logiciel du catalogue" aria-label="Ajouter un logiciel du catalogue">{{ lucide('package', 16) }}</button>
+        <button type="button" class="btn btn-sm btn-ghost btn-icone" data-puces-cible="contractCovered" data-puces-groupe="Matériel"
+                title="Ajouter un matériel de l'inventaire" aria-label="Ajouter un matériel de l'inventaire">{{ lucide('server', 16) }}</button>
+        {% endset %}
+        {% call carte('Éléments couverts', 'bi-window-stack', 'teal', droite=boutons_couverts) %}
         {% if current_user.can_edit('inventory') %}
         <div class="d-flex justify-content-end mb-1">{{ qa_add_link('qaModalEquipment', 'contractCovered', 'Nouvel équipement') }}</div>
         {% endif %}
