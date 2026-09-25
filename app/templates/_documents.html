@@ -74,7 +74,9 @@
         {% if pieces %}
         <ul class="list-unstyled mb-0 docs-liste">
             {% for d in pieces %}
-            <li class="d-flex align-items-start gap-2 py-2{{ '' if loop.first else ' border-top' }}">
+            {# L'icône et les boutons se centrent sur la hauteur de la ligne, formulaire
+               de modification ouvert compris, comme dans la liste des marchés. #}
+            <li class="d-flex align-items-center gap-2 py-2{{ '' if loop.first else ' border-top' }}">
                 {{ lucide('file-text', 16, 'doc-ico flex-shrink-0') }}
                 <div class="min-w-0 flex-grow-1">
                     <div class="d-flex align-items-center gap-2 min-w-0">
