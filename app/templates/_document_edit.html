@@ -7,7 +7,7 @@
 {% from '_icones.html' import lucide %}
 <div class="collapse" id="docEdit{{ d.id }}">
     <form method="POST" action="{{ url_for('documents.edit', id=d.id) }}" enctype="multipart/form-data"
-          class="p-2 mt-1 rounded border bg-body-tertiary">
+          class="doc-edit p-2 mt-1 rounded border bg-body-tertiary">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="next" value="{{ next }}">
         {# Le nom du fichier prend la place que les autres champs laissent :

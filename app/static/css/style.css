@@ -1588,6 +1588,10 @@ a.badge-status:hover { filter: brightness(0.96); }
     font-size: 0.8rem;
     line-height: 20px;
     border-radius: var(--radius-sm);
+    /* Bootstrap donne aux champs (pas aux listes) une hauteur minimale de
+       29 px : sans ceci, un champ et une liste cote a cote n'etaient pas
+       de la meme hauteur. */
+    min-height: 26px;
 }
 .form-control-lg, .form-select-lg { padding: 8px 14px; font-size: 1rem; }
 
@@ -2422,6 +2426,9 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .marche-docs-vide { font-size: 14px; color: var(--faint); }
 .marche-docs-zone { padding: 0 16px; }
 .doc-aide { font-size: 12px; color: var(--faint); margin-top: 4px; }
+/* Le bouton de depot du fichier, dans la ligne du formulaire de piece : un
+   carre de 26 px, la hauteur des champs qui l'entourent. */
+.doc-edit .btn-sm.btn-icone { padding: 4px; }
 /* La liste des pieces jointes, a la SoftInventory : icone de fichier et
    fleche de telechargement en gris leger, sous-ligne en 12 px. */
 .docs-liste .doc-ico { color: var(--faint); margin-top: 3px; }
