@@ -2619,8 +2619,10 @@ a.marche-doc-nom:hover { color: var(--primary); }
 .fiche-frise-legende { display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.72rem; color: var(--faint); font-variant-numeric: tabular-nums; }
 
 /* Le rail droit : « Lie a », activite, alertes. */
-.fiche-lies { display: flex; flex-direction: column; padding: 6px 0; }
-.fiche-lie { display: flex; align-items: center; gap: 10px; padding: 7px 16px; color: inherit; text-decoration: none; }
+/* Les liens se suivent a 8 px (4 px de marge chacun) : deux lignes de texte
+   par lien suffisent a les separer, le bloc garde son air aux deux bouts. */
+.fiche-lies { display: flex; flex-direction: column; padding: 8px 0; }
+.fiche-lie { display: flex; align-items: center; gap: 10px; padding: 4px 16px; color: inherit; text-decoration: none; }
 .fiche-lie:hover { background: var(--inset); color: inherit; }
 .fiche-lie > i { color: var(--muted); font-size: 1rem; flex: 0 0 auto; }
 .fiche-lie strong { font-weight: 600; color: var(--primary); }
