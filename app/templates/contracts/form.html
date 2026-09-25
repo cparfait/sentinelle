@@ -224,12 +224,12 @@
         {% endif %}
         <select name="covered_ids" id="contractCovered" class="form-select form-select-sm" multiple size="6"
                 aria-label="Éléments couverts" data-qa-value-prefix="equipment:" data-qa-group="Matériel">
-            <optgroup label="Logiciel">
+            <optgroup label="Logiciel" data-icone="package">
                 {% for sw in software_list %}
                 <option value="software:{{ sw.id }}" {{ 'selected' if contract and sw in contract.software }}>{{ sw.name }}{% if sw.supplier %} — {{ sw.supplier.name }}{% endif %}</option>
                 {% endfor %}
             </optgroup>
-            <optgroup label="Matériel">
+            <optgroup label="Matériel" data-icone="server">
                 {% for e in equipments %}
                 <option value="equipment:{{ e.id }}" {{ 'selected' if contract and e in contract.equipments }}>{{ e.name }} ({{ e.kind_label() }}{% if e.environment %} · {{ e.env_label() }}{% endif %})</option>
                 {% endfor %}

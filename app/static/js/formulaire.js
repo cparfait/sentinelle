@@ -96,12 +96,30 @@
             // Le groupe d'une option (<optgroup label>) : la famille de l'élément,
             // quand la liste en mêle plusieurs (logiciels et matériel couverts).
             function groupe(o) { return o.parentElement && o.parentElement.tagName === 'OPTGROUP' ? o.parentElement.label : ''; }
+            // Le sprite Lucide de la page, pour dessiner l'icône d'un groupe
+            // (<optgroup data-icone>) : la même que partout, même version.
+            var sprite = (function () {
+                var u = document.querySelector('use[href*="lucide.svg"]');
+                return u ? u.getAttribute('href').split('#')[0] : '';
+            })();
             function libelle(cible, o) {
                 cible.textContent = '';
-                if (groupe(o)) {
+                var g = o.parentElement && o.parentElement.tagName === 'OPTGROUP' ? o.parentElement : null;
+                if (g && g.dataset.icone && sprite) {
+                    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.setAttribute('class', 'lucide puce-icone');
+                    svg.setAttribute('width', '14');
+                    svg.setAttribute('height', '14');
+                    svg.setAttribute('aria-hidden', 'true');
+                    var use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                    use.setAttribute('href', sprite + '#' + g.dataset.icone);
+                    svg.appendChild(use);
+                    cible.appendChild(svg);
+                    cible.title = g.label;
+                } else if (g) {
                     var tag = document.createElement('span');
                     tag.className = 'puce-groupe';
-                    tag.textContent = groupe(o);
+                    tag.textContent = g.label;
                     cible.appendChild(tag);
                 }
                 cible.appendChild(document.createTextNode(o.text));
