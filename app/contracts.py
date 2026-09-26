@@ -38,7 +38,9 @@ def _fill(c, f):
     c.cost_total = parse_float(f.get('cost_total'))
     c.start_date = parse_date(f.get('start_date'))
     c.end_date = parse_date(f.get('end_date'))
-    c.firm_years = parse_int(f.get('firm_years'), minimum=0)
+    # La duree ferme va de 1 a 4 ans ; au-dela ou a zero, rien.
+    duree = parse_int(f.get('firm_years'), minimum=0)
+    c.firm_years = duree if duree and duree <= 4 else None
     # Zero est une reponse -- « non reconductible » ; l'absence n'en est pas
     # une. parse_int rend None sur une saisie vide, ce qui les distingue.
     c.renewals = parse_int(f.get('renewals'), minimum=0)

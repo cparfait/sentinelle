@@ -335,13 +335,11 @@ def test_l_ancien_type_est_repris_dans_le_referentiel(app):
     assert Contract.query.filter_by(name='Inconnu').one().kind_id is None
 
 
-def test_la_duree_ferme_se_choisit_de_1_a_4_ans(client):
-    """Quatre choix, comme dans SoftInventory ; une durée plus longue déjà en
-    base reste proposée pour ne pas être perdue."""
+def test_la_duree_ferme_va_de_1_a_4_ans(client):
+    """Quatre choix, et le serveur tient le plafond : au-delà, rien."""
     html = client.get('/contracts/create').get_data(as_text=True)
     assert '<option value="4"' in html and '<option value="5"' not in html
-    ct = Contract(name='Long', firm_years=7)
-    db.session.add(ct)
-    db.session.commit()
-    html = client.get(f'/contracts/{ct.id}/edit').get_data(as_text=True)
-    assert '<option value="7" selected>7 ans</option>' in html and '<option value="5"' not in html
+    client.post('/contracts/create', data={'name': 'Court', 'firm_years': '3'}, follow_redirects=True)
+    assert Contract.query.filter_by(name='Court').one().firm_years == 3
+    client.post('/contracts/create', data={'name': 'Trop long', 'firm_years': '7'}, follow_redirects=True)
+    assert Contract.query.filter_by(name='Trop long').one().firm_years is None
