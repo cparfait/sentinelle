@@ -793,6 +793,10 @@ EQUIPMENT_KIND_LABELS = {
     'storage': 'Baie de stockage',
     'network': 'Équipement réseau',   # switch, pare-feu, routeur, borne WiFi
 }
+# L'icone Lucide de chaque type : la meme dans la liste du materiel et dans les
+# puces des elements couverts d'un contrat.
+EQUIPMENT_KIND_ICONS = {'vm': 'monitor', 'physical': 'server', 'nas': 'hard-drive',
+                        'storage': 'database', 'network': 'router'}
 
 # L'inventaire se lit en deux FAMILLES. Un switch n'est pas un serveur : les
 # melanger dans une seule liste obligeait a cinq onglets et a un titre qui
@@ -950,6 +954,9 @@ class Equipment(db.Model):
 
     def kind_label(self):
         return EQUIPMENT_KIND_LABELS.get(self.kind, self.kind)
+
+    def kind_icon(self):
+        return EQUIPMENT_KIND_ICONS.get(self.kind or 'vm', 'server')
 
     def famille(self):
         return equipment_family(self.kind or 'vm')

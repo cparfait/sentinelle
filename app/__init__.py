@@ -287,6 +287,8 @@ def create_app(config_class=Config):
         jours=libelles.jours,
         STATUS_LABELS=libelles.STATUS_LABELS,
     )
+    from app.models import EQUIPMENT_KIND_ICONS
+    app.jinja_env.globals['EQUIPMENT_KIND_ICONS'] = EQUIPMENT_KIND_ICONS
 
     @app.template_global()
     def equipment_kinds():

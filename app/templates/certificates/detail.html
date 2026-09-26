@@ -122,7 +122,7 @@
         </div>
         <div class="col-lg-4">
             {% call lie() %}
-                {% if certificate.equipment %}{{ lien(url_for('inventory.detail', id=certificate.equipment.id), 'bi-hdd-stack', certificate.equipment.name, 'Équipement · ' ~ certificate.equipment.kind_label()) }}{% endif %}
+                {% if certificate.equipment %}{{ lien(url_for('inventory.detail', id=certificate.equipment.id), certificate.equipment.kind_icon(), certificate.equipment.name, 'Équipement · ' ~ certificate.equipment.kind_label()) }}{% endif %}
                 {% if certificate.supplier %}{{ lien(url_for('suppliers.detail', id=certificate.supplier_id), 'bi-building', certificate.supplier.name, 'Autorité de certification') }}{% endif %}
             {% endcall %}
             {{ activite(histories) }}

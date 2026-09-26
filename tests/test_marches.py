@@ -279,6 +279,8 @@ def test_les_elements_couverts_dans_une_seule_liste(client):
     html = client.get(f'/contracts/{ct.id}/edit').get_data(as_text=True)
     assert f'value="software:{a.id}" selected' in html
     assert f'value="equipment:{e.id}" selected' in html
+    # Chaque matériel porte l'icône de son type, qui prime sur celle du groupe.
+    assert f'value="equipment:{e.id}" selected data-icone="monitor" title="VM"' in html
     assert '<optgroup label="Matériel" data-icone="server">' in html
     assert '<optgroup label="Logiciel" data-icone="app-window">' in html
 

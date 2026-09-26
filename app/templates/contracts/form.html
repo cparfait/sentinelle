@@ -229,7 +229,7 @@
             </optgroup>
             <optgroup label="Matériel" data-icone="server">
                 {% for e in equipments %}
-                <option value="equipment:{{ e.id }}" {{ 'selected' if contract and e in contract.equipments }}>{{ e.name }}</option>
+                <option value="equipment:{{ e.id }}" {{ 'selected' if contract and e in contract.equipments }} data-icone="{{ e.kind_icon() }}" title="{{ e.kind_label() }}">{{ e.name }}</option>
                 {% endfor %}
             </optgroup>
         </select>

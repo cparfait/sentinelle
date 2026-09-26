@@ -100,8 +100,8 @@
             {# Le marché vit pour lui-même : il couvre autant de logiciels qu'il en
                couvre réellement, et en perdre le dernier ne le supprime pas. #}
             {% call lie('Couvre') %}
-                {% for sw in contract.software %}{{ lien(url_for('software.detail', id=sw.id), 'bi-window-stack', sw.name, 'Logiciel' ~ (' · v' ~ sw.version if sw.version else '')) }}{% endfor %}
-                {% for e in contract.equipments %}{{ lien(url_for('inventory.detail', id=e.id), 'bi-hdd-stack', e.name, 'Équipement · ' ~ e.kind_label()) }}{% endfor %}
+                {% for sw in contract.software %}{{ lien(url_for('software.detail', id=sw.id), 'app-window', sw.name, 'Logiciel' ~ (' · v' ~ sw.version if sw.version else '')) }}{% endfor %}
+                {% for e in contract.equipments %}{{ lien(url_for('inventory.detail', id=e.id), e.kind_icon(), e.name, e.kind_label()) }}{% endfor %}
             {% endcall %}
             {{ activite(histories) }}
             {% with entity_type='contract', entity_id=contract.id %}{% include '_snooze_card.html' %}{% endwith %}

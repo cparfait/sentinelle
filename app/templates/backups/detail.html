@@ -77,7 +77,7 @@
         </div>
         <div class="col-lg-4">
             {% call lie() %}
-                {% if backup.equipment %}{{ lien(url_for('inventory.detail', id=backup.equipment.id), 'bi-hdd-stack', backup.equipment.name, 'Équipement sauvegardé · ' ~ backup.equipment.kind_label()) }}{% endif %}
+                {% if backup.equipment %}{{ lien(url_for('inventory.detail', id=backup.equipment.id), backup.equipment.kind_icon(), backup.equipment.name, 'Équipement sauvegardé · ' ~ backup.equipment.kind_label()) }}{% endif %}
             {% endcall %}
             {% with entity_type='backup', entity_id=backup.id %}{% include '_snooze_card.html' %}{% endwith %}
         </div>

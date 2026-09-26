@@ -60,7 +60,7 @@
         <div class="col-lg-4">
             {% call lie() %}
                 {% if update.software %}{{ lien(url_for('software.detail', id=update.software.id), 'bi-window-stack', update.software.name, 'Logiciel concerné' ~ (' · v' ~ update.software.version if update.software.version else '')) }}{% endif %}
-                {% if update.equipment %}{{ lien(url_for('inventory.detail', id=update.equipment.id), 'bi-hdd-stack', update.equipment.name, 'Équipement concerné · ' ~ update.equipment.kind_label()) }}{% endif %}
+                {% if update.equipment %}{{ lien(url_for('inventory.detail', id=update.equipment.id), update.equipment.kind_icon(), update.equipment.name, 'Équipement concerné · ' ~ update.equipment.kind_label()) }}{% endif %}
             {% endcall %}
             {{ activite(histories) }}
             {% with entity_type='update', entity_id=update.id %}{% include '_snooze_card.html' %}{% endwith %}

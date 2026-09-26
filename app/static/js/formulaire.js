@@ -111,17 +111,19 @@
             function libelle(cible, o) {
                 cible.textContent = '';
                 var g = o.parentElement && o.parentElement.tagName === 'OPTGROUP' ? o.parentElement : null;
-                if (g && g.dataset.icone && sprite) {
+                // L'icone de l'option (le type d'un materiel) prime sur celle du groupe.
+                var icone = o.dataset.icone || (g && g.dataset.icone);
+                if (icone && sprite) {
                     var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                     svg.setAttribute('class', 'lucide puce-icone');
                     svg.setAttribute('width', '14');
                     svg.setAttribute('height', '14');
                     svg.setAttribute('aria-hidden', 'true');
                     var use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-                    use.setAttribute('href', sprite + '#' + g.dataset.icone);
+                    use.setAttribute('href', sprite + '#' + icone);
                     svg.appendChild(use);
                     cible.appendChild(svg);
-                    cible.title = g.label;
+                    cible.title = o.title || (g ? g.label : '');
                 } else if (g) {
                     var tag = document.createElement('span');
                     tag.className = 'puce-groupe';

@@ -5,8 +5,7 @@
 {% set crit_colors = {1: 'secondary', 2: 'info', 3: 'warning', 4: 'danger'} %}
 {% from '_icones.html' import lucide %}
 {# Icones Lucide (sprite local) : une par nature d'equipement. #}
-{% set kind_icons = {'vm': 'monitor', 'physical': 'server', 'nas': 'hard-drive',
-                     'storage': 'database', 'network': 'router'} %}
+{% set kind_icons = EQUIPMENT_KIND_ICONS %}
 
 {# Colonnes configurables : (clé, libellé). Nom (avec l'OS en dessous) et Statut sont
    toujours affichés — l'OS a quitté les colonnes pour se ranger sous le nom (Dom 2026-09-23). #}

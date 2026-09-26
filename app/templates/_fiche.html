@@ -135,9 +135,12 @@
 {% endif %}
 {% endmacro %}
 
+{# `icone` : une classe Bootstrap (« bi-… ») ou un nom Lucide (le type d'un
+   materiel, « app-window » pour un logiciel). #}
 {% macro lien(url, icone, nom, sous='', cible=None) %}
+{% from '_icones.html' import lucide %}
 <a href="{{ url }}" class="fiche-lie"{% if cible %} target="{{ cible }}" rel="noopener"{% endif %}>
-    <i class="bi {{ icone }}"></i>
+    {% if icone.startswith('bi-') %}<i class="bi {{ icone }}"></i>{% else %}{{ lucide(icone, 16) }}{% endif %}
     <span class="cell2"><strong>{{ nom }}</strong>{% if sous %}<small>{{ sous }}</small>{% endif %}</span>
 </a>
 {% endmacro %}
