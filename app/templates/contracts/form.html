@@ -236,7 +236,8 @@
         <div class="d-flex justify-content-end mb-1">{{ qa_add_link('qaModalEquipment', 'contractCovered', 'Nouvel équipement') }}</div>
         {% endif %}
         <select name="covered_ids" id="contractCovered" class="form-select form-select-sm" multiple size="6"
-                aria-label="Éléments couverts" data-qa-value-prefix="equipment:" data-qa-group="Matériel">
+                aria-label="Éléments couverts" data-qa-value-prefix="equipment:" data-qa-group="Matériel"
+                data-sans-recherche>
             <optgroup label="Logiciel" data-icone="package">
                 {% for sw in software_list %}
                 <option value="software:{{ sw.id }}" {{ 'selected' if contract and sw in contract.software }}>{{ sw.name }}{% if sw.supplier %} — {{ sw.supplier.name }}{% endif %}</option>

@@ -88,8 +88,14 @@
             menu.className = 'puces-menu';
             menu.hidden = true;
             boite.appendChild(liste);
-            boite.appendChild(champ);
-            boite.appendChild(menu);
+            // [data-sans-recherche] : les puces seules, sans champ ni menu --
+            // quand autre chose alimente la liste (les modales de choix des
+            // elements couverts d'un marche).
+            var sansRecherche = select.dataset.sansRecherche !== undefined;
+            if (!sansRecherche) {
+                boite.appendChild(champ);
+                boite.appendChild(menu);
+            }
             select.insertAdjacentElement('afterend', boite);
 
             function options() { return Array.prototype.slice.call(select.options); }
