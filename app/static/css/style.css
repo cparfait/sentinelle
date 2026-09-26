@@ -2152,6 +2152,9 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .puces-source { position: absolute !important; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .puces { position: relative; border: 1px solid var(--sub); border-radius: var(--radius-sm); background: var(--input-bg); padding: 5px 8px; display: flex; flex-direction: column; gap: 6px; }
 .puces:focus-within { border-color: var(--primary); box-shadow: var(--ring); }
+/* Sans recherche (data-sans-recherche), ce n'est plus un champ : les puces
+   seules, sans contour ni fond. */
+.puces-source[data-sans-recherche] + .puces { border: 0; padding: 0; background: none; box-shadow: none; }
 .puces-liste { display: flex; flex-wrap: wrap; gap: 6px; }
 .puce { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 4px 0 10px; border-radius: 6px; background: var(--inset); font-size: 0.82rem; font-weight: 500; }
 /* La famille d'une puce (logiciel, matériel) quand la liste en mêle plusieurs :
