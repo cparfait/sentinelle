@@ -6,7 +6,7 @@ Onglet « Logiciels » de l'inventaire. Partage la categorie de permission
 """
 from flask import (Blueprint, render_template, redirect, url_for, request, flash,
                    jsonify)
-from flask_login import login_required
+from flask_login import login_required, current_user
 from app import db
 from app import features
 from app.models import (Software, Supplier, Contract, Equipment, Referential,
@@ -31,11 +31,16 @@ def _fill(sw, f):
     # Marches couvrant ce logiciel (M:N). Le rattachement se pose des deux
     # cotes -- ici et sur la fiche du marche : c'est la MEME table, et obliger a
     # passer par l'un des deux ecrans n'aurait servi qu'a le faire chercher.
-    cids = [parse_int(v) for v in f.getlist('contract_ids')]
-    cids = [i for i in cids if i]
-    sw.contracts = (Contract.query.filter(Contract.id.in_(cids),
-                                          Contract.is_active.is_(True)).all()
-                    if cids else [])
+    # Les rattachements (marches, serveurs, services, mention « sans contrat »)
+    # ont quitte le formulaire : ils se gerent dans les onglets Contrats et
+    # Liaisons. Ils ne se lisent donc que s'ils sont ENVOYES -- un champ absent
+    # effacerait sinon ce que les onglets ont pose.
+    if 'contract_ids' in f:
+        cids = [parse_int(v) for v in f.getlist('contract_ids')]
+        cids = [i for i in cids if i]
+        sw.contracts = (Contract.query.filter(Contract.id.in_(cids),
+                                              Contract.is_active.is_(True)).all()
+                        if cids else [])
     sw.version = (f.get('version', '') or '').strip() or None
     sw.criticality = parse_int(f.get('criticality'))
     sw.name = (f.get('name', '') or '').strip()
@@ -65,7 +70,8 @@ def _fill(sw, f):
     sw.responsible_email = (f.get('responsible_email', '') or '').strip() or None
     sw.tech_responsible = (f.get('tech_responsible', '') or '').strip() or None
     sw.tech_responsible_email = (f.get('tech_responsible_email', '') or '').strip() or None
-    sw.no_contract_note = (f.get('no_contract_note', '') or '').strip() or None
+    if 'no_contract_note' in f:
+        sw.no_contract_note = (f.get('no_contract_note', '') or '').strip() or None
     sw.description = f.get('description') or None
     # ── Volet RGPD ── Module coupe : le formulaire ne porte pas ces champs,
     # et les lire effacerait ce qui avait ete saisi avant.
@@ -76,18 +82,20 @@ def _fill(sw, f):
         sw.gdpr_location = (f.get('gdpr_location') if f.get('gdpr_location') in DATA_LOCATION_LABELS
                             else 'inconnue')
     # Serveur(s) d'installation (multi-selection), equipements actifs uniquement.
-    ids = [parse_int(v) for v in f.getlist('equipment_ids')]
-    ids = [i for i in ids if i]
-    sw.equipments = (Equipment.query.filter(Equipment.id.in_(ids),
-                                            Equipment.is_active.is_(True)).all()
-                     if ids else [])
+    if 'equipment_ids' in f:
+        ids = [parse_int(v) for v in f.getlist('equipment_ids')]
+        ids = [i for i in ids if i]
+        sw.equipments = (Equipment.query.filter(Equipment.id.in_(ids),
+                                                Equipment.is_active.is_(True)).all()
+                         if ids else [])
     # Services utilisateurs : les directions qui s'en servent. Un logiciel en
     # sert souvent plusieurs, et une direction en utilise plusieurs.
-    svids = [parse_int(v) for v in f.getlist('user_service_ids')]
-    svids = [i for i in svids if i]
-    sw.user_services = (UserService.query.filter(UserService.id.in_(svids),
-                                                 UserService.is_active.is_(True)).all()
-                        if svids else [])
+    if 'user_service_ids' in f:
+        svids = [parse_int(v) for v in f.getlist('user_service_ids')]
+        svids = [i for i in svids if i]
+        sw.user_services = (UserService.query.filter(UserService.id.in_(svids),
+                                                     UserService.is_active.is_(True)).all()
+                            if svids else [])
 
 
 def _form_context():
@@ -221,18 +229,22 @@ def detail(id):
     deja = {e.id for e in item.equipments}
     serveurs_disponibles = [e for e in Equipment.query.filter_by(is_active=True)
                             .order_by(Equipment.name).all() if e.id not in deja]
+    # L'onglet Details porte le formulaire de modification : ses listes ne se
+    # chargent que pour qui peut s'en servir.
+    formulaire = _form_context() if current_user.can_edit('software') else {
+        'suppliers': Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()}
     return render_template('software/detail.html', item=item, updates=updates,
                            revues=revues, comptes=comptes,
                            tous_les_services=UserService.options(),
                            serveurs_disponibles=serveurs_disponibles,
                            consultations=consultations, marches=marches,
+                           marches_en_cours=[c for c in marches if c.en_cours()],
                            marches_rattachables=_marches_rattachables(item),
                            sortants=item.links_out.all(), entrants=item.links_in.all(),
                            partages=item.shares.order_by(SoftwareShare.label).all(),
                            autres_logiciels=autres,
                            taches=item.tasks.filter_by(is_active=True).all(),
-                           suppliers=Supplier.query.filter_by(is_active=True)
-                                                   .order_by(Supplier.name).all())
+                           **formulaire)
 
 
 @bp.route('/<int:id>/services', methods=['POST'])

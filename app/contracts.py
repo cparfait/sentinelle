@@ -159,7 +159,11 @@ def create():
 def detail(id):
     contract = Contract.query.get_or_404(id)
     histories = contract.histories.order_by(ContractHistory.performed_at.desc()).all()
-    return render_template('contracts/detail.html', contract=contract, histories=histories)
+    # L'onglet Details porte le formulaire de modification : ses listes ne se
+    # chargent que pour qui peut s'en servir.
+    formulaire = _form_context() if current_user.can_edit('contracts') else {}
+    return render_template('contracts/detail.html', contract=contract, histories=histories,
+                           **formulaire)
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])

@@ -3,6 +3,7 @@
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
 {% from '_fiche.html' import entete, bandeau_echeance, modal_action, bouton_modal, menu_post, menu_sep, lie, lien, carte_fournisseur, historique, activite %}
 {% from '_onglets.html' import barre, onglet, volets, volet %}
+{% from '_quick_add.html' import qa_modal_supplier %}
 {% set peut_editer = current_user.can_edit('contracts') %}
 
 {% block content %}
@@ -26,8 +27,9 @@
 {{ bandeau_echeance('Agir avant', contract.action_deadline(), contract.status(), passe='préavis dépassé de',
                     debut=contract.start_date, complement=complement, sans_date='échéance à renseigner') }}
 
-{% call barre('ficheContract', modifier=url_for('contracts.edit', id=contract.id) if peut_editer else None) %}
+{% call barre('ficheContract', modifier=url_for('contracts.edit', id=contract.id) if peut_editer else None, sur_place=True) %}
     {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+    {% if peut_editer %}{{ onglet('details', 'Détails', 'bi-pencil-square') }}{% endif %}
     {% if documents_enabled %}
     {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=attached_documents('contract', contract.id)|length) }}
     {% endif %}
@@ -109,6 +111,21 @@
     </div>
     {% endcall %}
 
+    {# ═══ Détails ═══
+       Le formulaire de modification, sur place : le même que la page
+       Modifier. Enregistrer ramène sur cet onglet (onglets.js emporte l'ancre),
+       Annuler recharge la fiche et oublie la saisie. #}
+    {% if peut_editer %}
+    {% call volet('details') %}
+        {% set retour = url_for('contracts.detail', id=contract.id) ~ '#details' %}
+        {% set action_form = url_for('contracts.edit', id=contract.id) %}
+        {% set inline = False %}
+        <fieldset class="edition-verrou" data-edition-verrou disabled>
+        {% include 'contracts/_form_corps.html' %}
+        </fieldset>
+    {% endcall %}
+    {% endif %}
+
     {% if documents_enabled %}
     {% call volet('documents') %}
     {% with doc_parent_kind='contract', doc_parent_id=contract.id, doc_permission='contracts' %}{% include '_documents.html' %}{% endwith %}
@@ -130,5 +147,7 @@
         <input type="text" name="comment" id="renew_comment" class="form-control" placeholder="ex : avenant n° 2 signé">
     </div>
 {% endcall %}
+{# L'ajout rapide d'un fournisseur, pour le formulaire de l'onglet Détails. #}
+{% if current_user.can_edit('suppliers') %}{{ qa_modal_supplier() }}{% endif %}
 {% endif %}
 {% endblock %}

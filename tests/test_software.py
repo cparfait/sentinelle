@@ -326,9 +326,12 @@ def test_la_fiche_sans_editeur_prend_toute_la_largeur(client):
     db.session.commit()
     html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
     assert 'col-lg-4' not in html
-    # Le volet RGPD parait meme quand il n'y a rien a declarer : « non » est une
-    # reponse, et la rubrique absente se lirait comme un oubli de saisie.
-    assert 'Aucune donnée personnelle' in html
+    # Plus d'onglet RGPD : les donnees personnelles se saisissent dans l'onglet
+    # Details et se lisent dans la Synthese -- meme quand il n'y a rien a
+    # declarer : « non » est une reponse, la rubrique absente serait un oubli.
+    assert 'ong-rgpd' not in html and 'name="gdpr_personal_data"' in html
+    synthese = html.split('id="vol-detail"', 1)[1].split('id="vol-details"', 1)[0]
+    assert 'Aucune donnée personnelle' in synthese
 
 
 def test_la_synthese_resume_les_liaisons(client):
@@ -343,6 +346,21 @@ def test_la_synthese_resume_les_liaisons(client):
     assert 'col-lg-4' in html
     assert 'liaisons-resume' in html
     assert '#hard-drive' in html and 'SRV-MAISON' in html
+
+
+def test_l_onglet_details_porte_le_formulaire(client):
+    """Deuxième onglet de la fiche : le formulaire de modification, qui
+    s'envoie à la route de modification et enregistre comme elle."""
+    sw = Software(name='Concerto')
+    db.session.add(sw)
+    db.session.commit()
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    assert html.index('data-bs-target="#vol-detail"') < html.index('data-bs-target="#vol-details"') \
+        < html.index('data-bs-target="#vol-liaisons"')
+    assert f'action="/inventory/logiciels/{sw.id}/edit"' in html
+    assert 'name="lifecycle"' in html
+    client.post(f'/inventory/logiciels/{sw.id}/edit', data={'name': 'Concerto', 'version': '3.2'})
+    assert db.session.get(Software, sw.id).version == '3.2'
 
 
 def test_les_services_se_cochent_depuis_la_fiche(client):
@@ -425,3 +443,52 @@ def test_la_modale_nouveau_serveur_cree_un_equipement_complet(client):
     html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
     assert 'qaModalServer' in html and 'Nouveau serveur' in html and 'Créer un serveur absent du parc' in html
 
+
+
+def test_le_formulaire_n_efface_pas_les_rattachements(client):
+    """Marchés, serveurs, services et mention « sans contrat » ont quitté le
+    formulaire (onglets Contrats et Liaisons) : l'enregistrer ne les vide pas."""
+    from app.models import Equipment, UserService
+    e = Equipment(name='SRV-GARDE', kind='vm')
+    sv = UserService(name='Finances')
+    ct = Contract(name='Marché gardé')
+    sw = Software(name='Garde', equipments=[e], user_services=[sv], contracts=[ct],
+                  no_contract_note='porté par le CCAS')
+    db.session.add_all([e, sv, ct, sw])
+    db.session.commit()
+    html = client.get(f'/inventory/logiciels/{sw.id}/edit').get_data(as_text=True)
+    assert 'name="equipment_ids"' not in html and 'name="contract_ids"' not in html
+    client.post(f'/inventory/logiciels/{sw.id}/edit', data={'name': 'Garde', 'version': '2'})
+    sw = db.session.get(Software, sw.id)
+    assert sw.version == '2'
+    assert [x.name for x in sw.equipments] == ['SRV-GARDE']
+    assert [x.name for x in sw.user_services] == ['Finances']
+    assert [x.name for x in sw.contracts] == ['Marché gardé']
+    assert sw.no_contract_note == 'porté par le CCAS'
+
+
+def test_contrat_en_cours():
+    """En cours : commencé (ou sans début) et pas encore échu (ou sans échéance)."""
+    from datetime import date, timedelta
+    j = date.today()
+    assert Contract(name='a').en_cours()
+    assert Contract(name='b', start_date=j - timedelta(days=10), end_date=j + timedelta(days=10)).en_cours()
+    assert Contract(name='c', end_date=j).en_cours()
+    assert not Contract(name='d', end_date=j - timedelta(days=1)).en_cours()
+    assert not Contract(name='e', start_date=j + timedelta(days=1)).en_cours()
+
+
+def test_la_synthese_ne_resume_que_les_contrats_en_cours(client):
+    """La carte Contrats de la Synthèse ne garde que les actes en cours ;
+    l'onglet Contrats les montre tous."""
+    from datetime import date, timedelta
+    j = date.today()
+    sw = Software(name='Tri')
+    sw.contracts = [Contract(name='Acte courant', reference='COUR-1', end_date=j + timedelta(days=90)),
+                    Contract(name='Acte échu', reference='ECHU-1', end_date=j - timedelta(days=30))]
+    db.session.add(sw)
+    db.session.commit()
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    synthese = html.split('id="vol-detail"', 1)[1].split('id="vol-details"', 1)[0]
+    assert 'COUR-1' in synthese and 'ECHU-1' not in synthese
+    assert 'ECHU-1' in html.split('id="vol-contrats"', 1)[1]

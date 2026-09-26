@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from '_icones.html' import icone, lucide %}
-{% from '_quick_add.html' import qa_modal_server %}
+{% from '_quick_add.html' import qa_modal_server, qa_modal_supplier %}
 {% block title %}{{ item.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
@@ -13,8 +13,8 @@
 
    « Qu'est-ce que c'est » (Synthèse), « avec quoi elle parle » (Liaisons), « ce
    qui nous engage » (Contrats et marchés), « ce qu'on a comparé avant »
-   (Devis), « ce qui revient » (Suivi), « les papiers » (Documents), « les
-   données personnelles » (RGPD).
+   (Devis), « les papiers » (Documents), « ce qui revient » (Suivi). Les
+   données personnelles (RGPD) se lisent et se saisissent dans l'onglet Détails.
 
    Tout tenait auparavant dans un seul onglet « Fiche » qui descendait sur deux
    écrans, les marchés réduits à une ligne de liens au milieu. Or c'est
@@ -84,24 +84,27 @@
 {% set pieces = attached_documents('software', item.id) if documents_enabled else [] %}
 {% set nb_liaisons = ((sortants|length) + (entrants|length) if features.links else 0)
                       + (item.equipments|length) + (item.user_services|length) %}
-{% call barre('ficheLogiciel', modifier=url_for('software.edit', id=item.id) if current_user.can_edit('software') else None) %}
+{% call barre('ficheLogiciel', modifier=url_for('software.edit', id=item.id) if current_user.can_edit('software') else None, sur_place=True) %}
     {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}
-    {{ onglet('liaisons', 'Liaisons', 'bi-diagram-3', compteur=nb_liaisons) }}
+    {% if current_user.can_edit('software') %}{{ onglet('details', 'Détails', 'bi-pencil-square') }}{% endif %}
+    {{ onglet('liaisons', 'Liaisons', 'arrow-right-left', compteur=nb_liaisons) }}
     {% if current_user.can_view('contracts') %}
     {{ onglet('contrats', 'Contrats', 'bi-file-earmark-text', compteur=marches|length) }}
     {% if features.quotes %}{{ onglet('devis', 'Devis', 'bi-cash-coin', compteur=consultations|length) }}{% endif %}
     {% endif %}
-    {{ onglet('suivi', 'Suivi', 'bi-activity', compteur=(updates|length) + (taches|length) + (revues|length) + (comptes|length)) }}
     {% if documents_enabled %}
     {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=pieces|length) }}
     {% endif %}
-    {% if features.gdpr %}{{ onglet('rgpd', 'RGPD', 'bi-shield-lock') }}{% endif %}
+    {{ onglet('suivi', 'Suivi', 'bi-activity', compteur=(updates|length) + (taches|length) + (revues|length) + (comptes|length)) }}
 {% endcall %}
 
 {% call volets() %}
     {% call volet('detail', actif=True) %}
         <div class="row g-3">
-            <div class="{{ 'col-lg-8' if (item.supplier or marches or nb_liaisons) else 'col-12' }}">
+            {# Le récapitulatif ne garde que les contrats EN COURS : un acte échu ou
+               à venir ne dit pas ce que l'application coûte aujourd'hui. Tous se
+               lisent dans l'onglet Contrats. #}
+            <div class="{{ 'col-lg-8' if (item.supplier or marches_en_cours or nb_liaisons) else 'col-12' }}">
                 <div class="data-card p-3 mb-3">
                     <div class="fiche-sections">
                         <div class="fiche-bloc fiche-bloc--indigo">
@@ -171,6 +174,33 @@
                             </div>
                         </div>
 
+                        {# Les données personnelles paraissent MÊME quand le
+                           logiciel n'en traite pas : « non » est une réponse, et
+                           la rubrique absente se lirait comme un oubli de
+                           saisie. Elles se saisissent dans l'onglet Détails. #}
+                        {% if features.gdpr %}
+                        <div class="fiche-bloc fiche-bloc--amber">
+                            {{ titre_section('Données personnelles (RGPD)', 'bi-shield-lock', 'amber', 'mb-0') }}
+                            <div class="fiche-grille">
+                            {% if item.gdpr_personal_data %}
+                            {{ champ('Catégories', item.gdpr_categories) }}
+                            {{ champ('Réf. registre', item.gdpr_registry_ref) }}
+                            {{ champ('Localisation', item.gdpr_location_label()) }}
+                            {% if item.supplier and (item.supplier.dpo_contact or item.supplier.dpo_email) %}
+                            {% call champ_bloc("DPO de l'éditeur") %}
+                            {{ item.supplier.dpo_contact or '' }}
+                            {% if item.supplier.dpo_email %}
+                            <a href="mailto:{{ item.supplier.dpo_email }}" class="d-block small text-truncate">{{ item.supplier.dpo_email }}</a>
+                            {% endif %}
+                            {% endcall %}
+                            {% endif %}
+                            {% else %}
+                            {% call champ_bloc('Traitement') %}<span class="text-muted">Aucune donnée personnelle</span>{% endcall %}
+                            {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+
                         <div class="fiche-bloc fiche-bloc--rose">
                             {{ titre_section('Description', 'bi-journal-text', 'rose', 'mb-0') }}
                             <div class="fiche-grille">
@@ -186,7 +216,7 @@
                de l'éditeur. La question « qui j'appelle ? » se pose devant le logiciel,
                mais la réponse vaut pour tous les logiciels du même éditeur — la recopier
                fiche par fiche garantirait des numéros divergents. #}
-            {% if item.supplier or marches or nb_liaisons %}
+            {% if item.supplier or marches_en_cours or nb_liaisons %}
             <div class="col-lg-4">
                 <div class="fiche-cote">
                     {% if item.supplier %}
@@ -202,34 +232,31 @@
                             {% if sup.hours %}<li class="text-muted"><i class="bi bi-clock me-1"></i>{{ sup.hours }}</li>{% endif %}
                             {% if sup.hours2 %}<li class="text-muted"><i class="bi bi-clock invisible me-1"></i>{{ sup.hours2 }}</li>{% endif %}
                         </ul>
-                    </div>
-                    {% if sup.has_contacts() %}
-                    <div class="data-card p-4 mb-3">
-                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2">{{ icone('bi-person-lines-fill', 14, 'ico ico-' ~ couleur_icone('bi-person-lines-fill')) }}Contacts
-                            <small class="fw-normal text-muted">(de l'éditeur)</small></h6>
-                        <ul class="list-unstyled small mb-0">
+                        {# Les contacts de l'éditeur (commercial, facturation, DPO)
+                           suivent son support, dans la même carte : ils se
+                           modifient sur sa fiche, où mène son nom. #}
+                        {% if sup.has_contacts() %}
+                        <ul class="list-unstyled small mb-0 border-top mt-2 pt-2 contacts-editeur">
                             {{ contact('Commercial', sup.commercial_contact, sup.commercial_phone, sup.commercial_email) }}
                             {{ contact('Commercial (2)', sup.commercial_contact2, sup.commercial_phone2, sup.commercial_email2) }}
                             {{ contact('Administratif / facturation', sup.admin_contact, sup.admin_phone, sup.admin_email) }}
                             {{ contact('DPO', sup.dpo_contact, sup.dpo_phone, sup.dpo_email) }}
                         </ul>
-                        <div class="form-text mt-2">Se modifient sur la <a href="{{ url_for('suppliers.edit', id=sup.id) }}">fiche de l'éditeur</a>.</div>
+                        {% endif %}
                     </div>
-                    {% endif %}
                     {% endif %}
 
                     {# ═══ Contrats : le récapitulatif ═══
                        Ce que l'application coûte et jusqu'à quand : chaque marché
-                       rattaché avec son état, son échéance et son montant annuel,
+                       EN COURS avec son état, son échéance et son montant annuel,
                        puis le total annuel. Le détail vit dans l'onglet Contrats. #}
-                    {% if marches %}
+                    {% if marches_en_cours %}
                     <div class="data-card p-4 mb-3">
-                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2 d-flex align-items-center">{{ icone('bi-file-earmark-text', 14, 'ico ico-' ~ couleur_icone('bi-file-earmark-text')) }}Contrats
-                            <span class="badge bg-secondary ms-1">{{ marches | length }}</span>
-                            <button type="button" class="btn btn-ghost btn-sm ms-auto" onclick="document.getElementById('ong-contrats')?.click()">Tout voir</button></h6>
+                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2 d-flex align-items-center"><i class="bi bi-file-earmark-text ico-onglet ico-onglet--contrats" aria-hidden="true"></i>Contrats
+                            <button type="button" class="btn btn-ghost btn-sm ms-auto text-nowrap" onclick="document.getElementById('ong-contrats')?.click()">Tout voir</button></h6>
                         <ul class="list-unstyled small mb-0 contrats-resume">
                             {% set total = namespace(annuel=0) %}
-                            {% for c in marches %}
+                            {% for c in marches_en_cours %}
                             {% if c.cost_yearly %}{% set total.annuel = total.annuel + c.cost_yearly %}{% endif %}
                             <li class="{{ 'mb-2' if not loop.last }}">
                                 <div class="d-flex justify-content-between align-items-center gap-2">
@@ -261,9 +288,9 @@
                        modifications vivent dans l'onglet Liaisons. #}
                     {% if nb_liaisons %}
                     <div class="data-card p-4 mb-3">
-                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2 d-flex align-items-center">{{ icone('bi-diagram-3', 14, 'ico ico-' ~ couleur_icone('bi-diagram-3')) }}Liaisons
+                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2 d-flex align-items-center">{{ lucide('arrow-right-left', 16, 'ico-onglet ico-onglet--liaisons') }}Liaisons
                             <span class="badge bg-secondary ms-1">{{ nb_liaisons }}</span>
-                            <button type="button" class="btn btn-ghost btn-sm ms-auto" onclick="document.getElementById('ong-liaisons')?.click()">Tout voir</button></h6>
+                            <button type="button" class="btn btn-ghost btn-sm ms-auto text-nowrap" onclick="document.getElementById('ong-liaisons')?.click()">Tout voir</button></h6>
                         <div class="small liaisons-resume">
                             {% if item.user_services %}
                             <div class="liaisons-groupe">
@@ -304,6 +331,19 @@
 
     {% endcall %}
 
+    {# ═══ Détails ═══
+       Le formulaire de modification, sur place : le même que la page
+       Modifier. Enregistrer ramène sur cet onglet (onglets.js emporte l'ancre),
+       Annuler recharge la fiche et oublie la saisie. #}
+    {% if current_user.can_edit('software') %}
+    {% call volet('details') %}
+        {% set retour = url_for('software.detail', id=item.id) ~ '#details' %}
+        <fieldset class="edition-verrou" data-edition-verrou disabled>
+        {% include 'software/_form_corps.html' %}
+        </fieldset>
+    {% endcall %}
+    {% endif %}
+
     {# ═══ Liaisons ═══
        Avec quoi cette application parle : les directions qui s'en servent, les
        serveurs qui la portent, les flux qu'elle échange. #}
@@ -320,7 +360,8 @@
             <h6 class="fw-bold fiche-titre fiche-titre--emerald mb-0">{{ icone('bi-people', 14, 'ico ico-' ~ couleur_icone('bi-people')) }}Services utilisateurs
                 <span class="badge bg-secondary ms-1">{{ services_lies | length }}</span></h6>
         </div>
-        <form method="POST" action="{{ url_for('software.services_update', id=item.id) }}" class="p-3">
+        <form method="POST" action="{{ url_for('software.services_update', id=item.id) }}" class="p-3" data-edition-visible>
+            <fieldset class="edition-verrou" data-edition-verrou disabled>
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             {% if tous_les_services %}
             <div class="services-grille">
@@ -336,6 +377,7 @@
             {% else %}
             <span class="text-muted">Aucun service utilisateur dans les Référentiels.</span>
             {% endif %}
+            </fieldset>
         </form>
     </div>
 
@@ -536,38 +578,10 @@
         {% include 'software/_partages.html' %}
     {% endcall %}
     {% endif %}
-
-    {# Le volet RGPD paraît MÊME quand le logiciel ne traite pas de données
-       personnelles : « non » est une réponse, et la rubrique absente se lirait
-       comme un oubli de saisie. #}
-    {% if features.gdpr %}
-    {% call volet('rgpd') %}
-    <div class="data-card p-3 mb-3">
-        <div class="fiche-sections">
-            <div class="fiche-bloc fiche-bloc--violet">
-                {{ titre_section('Données personnelles (RGPD)', 'bi-shield-lock', 'violet', 'mb-0') }}
-                <div class="fiche-grille">
-                    {% if item.gdpr_personal_data %}
-                    {{ champ('Catégories', item.gdpr_categories) }}
-                    {{ champ('Réf. registre', item.gdpr_registry_ref) }}
-                    {{ champ('Localisation', item.gdpr_location_label()) }}
-                    {% if item.supplier and (item.supplier.dpo_contact or item.supplier.dpo_email) %}
-                    {% call champ_bloc("DPO de l'éditeur") %}
-                    {{ item.supplier.dpo_contact or '' }}
-                    {% if item.supplier.dpo_email %}
-                    <a href="mailto:{{ item.supplier.dpo_email }}" class="d-block small text-truncate">{{ item.supplier.dpo_email }}</a>
-                    {% endif %}
-                    {% endcall %}
-                    {% endif %}
-                    {% else %}
-                    {% call champ_bloc('Traitement') %}<span class="text-muted">Aucune donnée personnelle</span>{% endcall %}
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endcall %}
-    {% endif %}
 {% endcall %}
 {% if current_user.can_edit('inventory') %}{{ qa_modal_server() }}{% endif %}
+{# Les ajouts rapides du formulaire de l'onglet Détails. #}
+{% if current_user.can_edit('software') %}
+{% if current_user.can_edit('suppliers') %}{{ qa_modal_supplier() }}{% endif %}
+{% endif %}
 {% endblock %}

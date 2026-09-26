@@ -1319,6 +1319,14 @@ class Contract(db.Model):
             return 'warning'  # echeance non renseignee : a completer
         return _status_from_days(days, 'THRESHOLD_CONTRACT')
 
+    def en_cours(self):
+        """Le contrat court aujourd'hui : commence (ou sans date de debut) et
+        pas encore echu (ou sans echeance). Un acte echu ou a venir n'engage
+        pas encore -- ou plus -- ce que l'application coute."""
+        today = datetime.now(timezone.utc).date()
+        return ((self.start_date is None or self.start_date <= today)
+                and (self.end_date is None or self.end_date >= today))
+
 
 class ContractHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -1,0 +1,229 @@
+{# ═══ Le formulaire d'un logiciel ═══
+   Partagé par la page de modification (form.html) et l'onglet Détails de la
+   fiche (detail.html). `retour` : où mène « Annuler ».
+   Contexte attendu : item et les listes de _form_context() (software.py).
+
+   La grille de SoftInventory (FicheForm) : une carte « Identité » (nom,
+   version, éditeur, URL ; statut, criticité, utilisateurs, référent métier ;
+   descriptif) et une carte « Technique » (hébergement, technologie, source ;
+   authentification, mise en service, référent technique), chaque champ à sa
+   largeur naturelle. Les champs propres à Sentinelle s'y rangent avec leurs
+   voisins de sens (courriels des référents, nature Docker / interne / sans
+   serveur), puis la carte RGPD.
+
+   Les rattachements (marchés, serveurs, services, mention « sans contrat ») se
+   gèrent dans les onglets Contrats et Liaisons, pas ici. TOUS les autres champs
+   de _fill() (software.py) doivent figurer ici : un champ absent du formulaire
+   se lit vide et efface la valeur enregistrée. #}
+{% from '_quick_add.html' import qa_button %}
+{% from '_formulaire.html' import pied_form %}
+{% from '_icones.html' import icone, lucide %}
+
+{% macro sel(name, labels, current, blank=None, id=None) %}
+<select name="{{ name }}"{% if id %} id="{{ id }}"{% endif %} class="form-select form-select-sm">
+    {% if blank %}<option value="">{{ blank }}</option>{% endif %}
+    {% for value, label in labels.items() %}
+    <option value="{{ value }}" {{ 'selected' if current == value }}>{{ label }}</option>
+    {% endfor %}
+</select>
+{% endmacro %}
+
+{# Une carte du formulaire : son en-tête (barre d'accent, titre) et son corps.
+   `onglet` : la carte reprend l'icône de cet onglet de la fiche, en couleur
+   (.ico-onglet--<onglet>), au lieu de l'icône du module. `bi` : un nom
+   Bootstrap (« bi-… », traduit en Lucide) ou directement un nom Lucide. #}
+{% macro carte(titre, bi, couleur, onglet=None) %}
+<div class="data-card mb-3">
+    <div class="card-header-custom">
+        <h6 class="fw-bold fiche-titre fiche-titre--{{ couleur }} mb-0">
+            {%- if onglet %}<i class="bi {{ bi }} ico-onglet ico-onglet--{{ onglet }}" aria-hidden="true"></i>
+            {%- elif bi.startswith('bi-') %}{{ icone(bi, 14, 'ico ico-' ~ couleur) }}
+            {%- else %}{{ lucide(bi, 14, 'ico ico-' ~ couleur) }}{% endif %}{{ titre }}</h6>
+    </div>
+    <div class="p-3">{{ caller() }}</div>
+</div>
+{% endmacro %}
+
+<div class="form-seul">
+<form method="POST" id="form-principal" class="formulaire logiciel-saisie" data-edition-visible
+      action="{{ url_for('software.edit', id=item.id) if item else url_for('software.create') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    {% call carte('Identité', 'info', 'indigo') %}
+    {# Rangée 1 — ce qu'est le logiciel, qui l'édite, où il s'ouvre. #}
+    <div class="grille grille-identite">
+        <div>
+            <label class="form-label small mb-1" for="swNom">Nom du logiciel <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="swNom" class="form-control form-control-sm" required
+                   value="{{ item.name if item else '' }}" placeholder="ex : GLPI, Office 365…">
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="swVersion">Version</label>
+            <input type="text" name="version" id="swVersion" class="form-control form-control-sm"
+                   value="{{ item.version or '' if item else '' }}">
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="swSupplier">Éditeur</label>
+            <div class="d-flex align-items-center gap-1">
+                <select name="supplier_id" id="swSupplier" class="form-select form-select-sm min-w-0 flex-grow-1">
+                    <option value="">— aucun —</option>
+                    {% for s in suppliers %}
+                    <option value="{{ s.id }}" {{ 'selected' if item and item.supplier_id == s.id }}>{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+                {% if current_user.can_edit('suppliers') %}{{ qa_button('qaModalSupplier', 'swSupplier', 'Ajouter un éditeur') }}{% endif %}
+            </div>
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="swUrl">URL de l'application</label>
+            <input type="url" name="url" id="swUrl" class="form-control form-control-sm"
+                   value="{{ item.url or '' if item else '' }}" placeholder="https://…">
+        </div>
+    </div>
+
+    {# Rangée 2 — où il en est, ce qu'il pèse, qui en répond côté métier. #}
+    <div class="grille grille-usage">
+        <div>
+            <label class="form-label small mb-1" for="swStatut">Statut</label>
+            {{ sel('lifecycle', lifecycle_labels, item.lifecycle if item else 'production', id='swStatut') }}
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="swCriticite">Criticité</label>
+            <select name="criticality" id="swCriticite" class="form-select form-select-sm">
+                {% for value, label in [('', '—'), (1, 'Faible'), (2, 'Moyenne'), (3, 'Élevée'), (4, 'Critique')] %}
+                <option value="{{ value }}" {{ 'selected' if item and item.criticality == value }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="swUtilisateurs">Utilisateurs</label>
+            <input type="number" min="0" name="users_count" id="swUtilisateurs" class="form-control form-control-sm"
+                   value="{{ item.users_count if item and item.users_count is not none else '' }}">
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="swMax" title="Plafond contractuel : au-delà, dépassement de licence">Max</label>
+            <input type="number" min="0" name="users_max" id="swMax" class="form-control form-control-sm"
+                   value="{{ item.users_max if item and item.users_max is not none else '' }}">
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="swRefMetier">Référent métier</label>
+            <input type="text" name="responsible" id="swRefMetier" class="form-control form-control-sm"
+                   value="{{ item.responsible or '' if item else '' }}"
+                   data-ad-search data-ad-email="responsible_email" placeholder="Rechercher dans l'annuaire…">
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="swMailMetier">Courriel métier</label>
+            <input type="email" name="responsible_email" id="swMailMetier" class="form-control form-control-sm"
+                   value="{{ item.responsible_email or '' if item else '' }}">
+        </div>
+    </div>
+
+    <div>
+        <label class="form-label small mb-1" for="swDescriptif">Descriptif</label>
+        <textarea name="description" id="swDescriptif" class="form-control form-control-sm" rows="4"
+                  placeholder="Périmètre fonctionnel, dépendances, particularités…">{{ item.description or '' if item else '' }}</textarea>
+    </div>
+    {% endcall %}
+
+    {% call carte('Technique', 'settings', 'sky') %}
+    <div class="grille grille-technique">
+        <div>
+            <label class="form-label small mb-1" for="swHebergement">Hébergement</label>
+            {{ sel('hosting', hosting_labels, item.hosting if item else 'on_premise', id='swHebergement') }}
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="swTechno">Technologie</label>
+            <select name="technology_id" id="swTechno" class="form-select form-select-sm">
+                <option value="">— non renseignée —</option>
+                {% for t in technologies %}
+                <option value="{{ t.id }}" {{ 'selected' if item and item.technology_id == t.id }}>{{ t.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="swSource">Open source / propriétaire</label>
+            {{ sel('source_type', source_type_labels, item.source_type if item else 'proprietaire', id='swSource') }}
+        </div>
+
+        <div class="d-flex align-items-end gap-3">
+            <div class="flex-grow-1 min-w-0">
+                <label class="form-label small mb-1" for="swAuth">Authentification</label>
+                {{ sel('auth_mode', auth_mode_labels, item.auth_mode if item else None, blank='— inconnue —', id='swAuth') }}
+            </div>
+            <div class="text-center">
+                <label class="form-label small mb-1 d-block" for="authStrong" title="Double authentification">2FA</label>
+                <input type="checkbox" class="form-check-input case-2fa" name="auth_strong" id="authStrong"
+                       {{ 'checked' if item and item.auth_strong }}>
+            </div>
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="swMiseEnService">Date de mise en service</label>
+            <input type="date" name="service_date" id="swMiseEnService" class="form-control form-control-sm"
+                   value="{{ item.service_date.strftime('%Y-%m-%d') if item and item.service_date else '' }}">
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="swRefTech">Référent technique</label>
+            <input type="text" name="tech_responsible" id="swRefTech" class="form-control form-control-sm"
+                   value="{{ item.tech_responsible or '' if item else '' }}"
+                   data-ad-search data-ad-email="tech_responsible_email" placeholder="Rechercher dans l'annuaire…">
+        </div>
+
+        {# La nature : trois cases cumulables avec tout hébergement. « Aucun
+           serveur » distingue un logiciel qui n'en a pas besoin d'une fiche dont
+           le serveur reste à saisir. #}
+        <div class="grille-large">
+            <span class="form-label small mb-1 d-block">Nature</span>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <input type="checkbox" class="btn-check" name="is_docker" id="isDocker"
+                       {{ 'checked' if item and item.is_docker }}>
+                <label class="btn btn-outline-primary btn-sm" for="isDocker"
+                       title="Conteneurisé (Docker) — cumulable avec tout hébergement"><i class="icon-docker me-1"></i>Docker</label>
+                <input type="checkbox" class="btn-check" name="internal_dev" id="internalDev"
+                       {{ 'checked' if item and item.internal_dev }}>
+                <label class="btn btn-outline-primary btn-sm" for="internalDev"
+                       title="Fait et maintenu par la DSI : ni éditeur, ni support, ni contrat"><i class="bi bi-code-slash me-1"></i>Développement interne</label>
+                <input type="checkbox" class="btn-check" name="no_server" id="noServer"
+                       {{ 'checked' if item and item.no_server }}>
+                <label class="btn btn-outline-primary btn-sm" for="noServer"
+                       title="Ne s&rsquo;installe sur aucune machine du parc : SaaS, ou postes des agents"><i class="bi bi-slash-circle me-1"></i>Aucun serveur</label>
+            </div>
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="swMailTech">Courriel technique</label>
+            <input type="email" name="tech_responsible_email" id="swMailTech" class="form-control form-control-sm"
+                   value="{{ item.tech_responsible_email or '' if item else '' }}">
+        </div>
+    </div>
+    {% endcall %}
+
+    {% if features.gdpr %}
+    {% call carte('Données personnelles (RGPD)', 'bi-shield-lock', 'rose', onglet='rgpd') %}
+    <div class="grille grille-rgpd">
+        <div class="d-flex align-items-end">
+            <div class="form-check mb-1">
+                <input type="checkbox" class="form-check-input" name="gdpr_personal_data" id="gdprPd"
+                       {{ 'checked' if item and item.gdpr_personal_data }}>
+                <label class="form-check-label small" for="gdprPd">Traite des données personnelles</label>
+            </div>
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="swRgpdCategories">Catégories de données</label>
+            <input type="text" name="gdpr_categories" id="swRgpdCategories" class="form-control form-control-sm"
+                   value="{{ item.gdpr_categories or '' if item else '' }}" placeholder="état civil, coordonnées, santé, NIR…">
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="swRgpdRegistre">Réf. registre</label>
+            <input type="text" name="gdpr_registry_ref" id="swRgpdRegistre" class="form-control form-control-sm"
+                   value="{{ item.gdpr_registry_ref or '' if item else '' }}" placeholder="n° du traitement">
+        </div>
+        <div>
+            <label class="form-label small mb-1" for="swRgpdLieu">Localisation des données</label>
+            {{ sel('gdpr_location', data_location_labels, item.gdpr_location if item else 'inconnue', id='swRgpdLieu') }}
+        </div>
+    </div>
+    {% endcall %}
+    {% endif %}
+
+    {{ pied_form(retour, 'Enregistrer' if item else 'Ajouter') }}
+</form>
+</div>

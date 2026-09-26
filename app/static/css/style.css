@@ -2296,6 +2296,28 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     .marche-saisie .rangee .l-montant { width: 100%; }
 }
 
+/* Le formulaire d'un logiciel (software/_form_corps.html) : la grille de
+   SoftInventory (FicheForm), une rangée = des colonnes en fractions, chaque
+   champ à sa largeur naturelle. Sous 768 px, une colonne. */
+.logiciel-saisie .grille { display: grid; gap: 8px 12px; align-items: end; margin-bottom: 8px; }
+.logiciel-saisie .grille:last-child { margin-bottom: 0; }
+.logiciel-saisie .grille-identite { grid-template-columns: 25fr 8fr 33fr 33fr; }
+.logiciel-saisie .grille-usage { grid-template-columns: 15fr 12fr 11fr 8fr 27fr 27fr; }
+.logiciel-saisie .grille-technique,
+.logiciel-saisie .grille-rgpd { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.logiciel-saisie .grille-rgpd { grid-template-columns: 1fr 1.3fr 1fr 1fr; }
+.logiciel-saisie .grille-large { grid-column: span 2; }
+.logiciel-saisie .grille > div { min-width: 0; }
+.logiciel-saisie .form-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* La case 2FA a la hauteur d'un champ, centree sous son intitule. */
+.logiciel-saisie .case-2fa { width: 1.1rem; height: 1.1rem; margin: 5px 0; }
+/* Le + de l'editeur : un carre de la hauteur d'un champ. */
+.logiciel-saisie .grille-identite .btn { padding: 4px; line-height: 1; height: 26px; flex: 0 0 26px; display: inline-flex; align-items: center; justify-content: center; }
+@media (max-width: 767.98px) {
+    .logiciel-saisie .grille { grid-template-columns: 1fr !important; }
+    .logiciel-saisie .grille-large { grid-column: auto; }
+}
+
 /* ==========================================================================
    FICHES
    ------------------------------------------------------------------
@@ -2641,7 +2663,7 @@ a.marche-doc-nom:hover { color: var(--primary); }
 .data-card h6.fiche-titre::before { background: rgb(var(--sec)); }
 /* !important : les gabarits posent encore des utilitaires Bootstrap
    (text-primary, text-success) sur ces icones. */
-.data-card h6.fiche-titre > i { color: rgb(var(--sec)) !important; }
+.data-card h6.fiche-titre > i:not(.ico-onglet) { color: rgb(var(--sec)) !important; }
 
 .fiche-titre--indigo  { --sec: var(--sec-indigo); }
 .fiche-titre--sky     { --sec: var(--sec-sky); }
@@ -2796,6 +2818,10 @@ a.marche-doc-nom:hover { color: var(--primary); }
     background: none;
 }
 .fiche-onglets .nav-link i { font-size: 0.95rem; color: var(--ong-icon, currentColor); -webkit-text-stroke: 0.4px currentColor; }
+.fiche-onglets .nav-link > svg.lucide { flex-shrink: 0; color: var(--ong-icon, currentColor); }
+/* L'icone d'un onglet reprise en tete d'une carte qui le resume (« Tout voir ») :
+   meme dessin, meme couleur, 8 px avant le titre. */
+.ico-onglet { font-size: 0.95rem; color: var(--ong-icon, currentColor); -webkit-text-stroke: 0.4px currentColor; margin-right: 8px; }
 /* Le crayon « Modifier », au bout de la rangee (SoftInventory) : une icone
    seule de 34 px, fantome, calee sur le texte des onglets par un retrait bas
    de 3 px ; elle prend la couleur d'accent au survol. */
@@ -2803,29 +2829,58 @@ a.marche-doc-nom:hover { color: var(--primary); }
 .fiche-onglets .fiche-onglets-commandes .btn-icone { padding: 8px; border-radius: 8px; }
 .fiche-onglets .fiche-onglets-commandes .btn-icone:hover { color: var(--primary); }
 
+/* ---- Modification sur place (edition.js, barre(sur_place=True)) ----
+   En LECTURE, une fiche ne montre que des valeurs : tout formulaire d'envoi
+   des onglets (rattacher, retirer, déposer, reporter une alerte), les liens qui
+   ouvrent un formulaire dans la liste, les boutons qui en déplient un, et ce
+   que le gabarit marque [data-edition-seule], disparaissent. Les formulaires
+   [data-edition-visible] (l'onglet Détails, les services cochés) restent, grisés
+   par leur <fieldset disabled>. Le crayon ajoute .en-edition à <main> : tout
+   revient. Le CSS agit seul, sans attendre le script : pas d'éclair au chargement. */
+main:has([data-onglets][data-edition]):not(.en-edition) .fiche-volets :is(
+    form[method="post" i]:not([data-edition-visible]),
+    [data-formulaire-inline],
+    [data-bs-toggle="collapse"],
+    [data-bs-toggle="modal"],
+    [data-edition-seule]) { display: none !important; }
+/* Le formulaire verrouillé : ni pied (Annuler / Enregistrer), ni croix sur les
+   puces, ni champ de recherche, ni boutons d'ajout — des valeurs, sans gestes. */
+fieldset.edition-verrou[disabled] :is(.form-pied, .puce button, .puces-champ, .marches-actions,
+    [data-qa-open], .help-toggle) { display: none !important; }
+fieldset.edition-verrou[disabled] .form-control,
+fieldset.edition-verrou[disabled] .form-select { background-color: var(--inset); }
+/* Le crayon enfoncé et son étiquette, tant que la fiche est en modification. */
+.fiche-onglets .edition-etiquette { display: none; margin-right: 8px; font-size: 12px; font-weight: 600; color: var(--primary); }
+main.en-edition .fiche-onglets .edition-etiquette { display: inline; }
+main.en-edition .fiche-onglets .js-edition { color: var(--primary); background: rgba(79, 70, 229, 0.12); }
+
 /* Une couleur par onglet, la meme d'une fiche a l'autre : les documents sont
    bleus partout, les contrats orange partout (comme dans le menu). */
 #ong-detail     { --ong-icon: #4f46e5; } /* indigo-600 */
 #ong-liaisons,
+.ico-onglet--liaisons,
 #ong-elements   { --ong-icon: #7c3aed; } /* violet-600 */
-#ong-contrats   { --ong-icon: #f97316; } /* orange-500 */
+#ong-contrats,
+.ico-onglet--contrats { --ong-icon: #f97316; } /* orange-500 */
 #ong-devis      { --ong-icon: #059669; } /* emerald-600 */
 #ong-suivi      { --ong-icon: #eab308; } /* yellow-500 */
 #ong-documents,
 #ong-docs       { --ong-icon: #0284c7; } /* sky-600 */
-#ong-rgpd       { --ong-icon: #e11d48; } /* rose-600 */
+.ico-onglet--rgpd { --ong-icon: #e11d48; } /* rose-600 */
 #ong-historique { --ong-icon: #d97706; } /* amber-600 */
 #ong-logiciels  { --ong-icon: #eab308; } /* yellow-500 */
 #ong-contacts   { --ong-icon: #db2777; } /* pink-600 */
 [data-theme="dark"] #ong-detail     { --ong-icon: #818cf8; }
 [data-theme="dark"] #ong-liaisons,
+[data-theme="dark"] .ico-onglet--liaisons,
 [data-theme="dark"] #ong-elements   { --ong-icon: #a78bfa; }
-[data-theme="dark"] #ong-contrats   { --ong-icon: #fb923c; }
+[data-theme="dark"] #ong-contrats,
+[data-theme="dark"] .ico-onglet--contrats { --ong-icon: #fb923c; }
 [data-theme="dark"] #ong-devis      { --ong-icon: #34d399; }
 [data-theme="dark"] #ong-suivi      { --ong-icon: #facc15; }
 [data-theme="dark"] #ong-documents,
 [data-theme="dark"] #ong-docs       { --ong-icon: #38bdf8; }
-[data-theme="dark"] #ong-rgpd       { --ong-icon: #fb7185; }
+[data-theme="dark"] .ico-onglet--rgpd { --ong-icon: #fb7185; }
 [data-theme="dark"] #ong-historique { --ong-icon: #fbbf24; }
 [data-theme="dark"] #ong-logiciels  { --ong-icon: #facc15; }
 [data-theme="dark"] #ong-contacts   { --ong-icon: #f472b6; }
@@ -2965,3 +3020,7 @@ tr:hover .row-actions, tr:focus-within .row-actions { opacity: 1; }
 
 /* Cellule « aucun element » d'un tableau : estompee, aeree, sans cadre. */
 .table td[colspan].text-center { padding: 24px 20px; color: var(--faint); font-size: 0.875rem; }
+
+/* Les contacts de l'editeur, sous son support dans la carte Editeur d'un
+   logiciel : pas de marge sous le dernier. */
+.contacts-editeur > li:last-child { margin-bottom: 0 !important; }

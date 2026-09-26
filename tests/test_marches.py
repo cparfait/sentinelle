@@ -285,6 +285,25 @@ def test_les_elements_couverts_dans_une_seule_liste(client):
     assert '<optgroup label="Logiciel" data-icone="app-window">' in html
 
 
+def test_l_onglet_details_porte_le_formulaire(client):
+    """Deuxième onglet de la fiche : le formulaire de modification, envoyé à
+    la route de modification. Rendu seul (?inline=1), il reste sans action."""
+    ct = Contract(name='Maintenance Concerto')
+    db.session.add(ct)
+    db.session.commit()
+    html = client.get(f'/contracts/{ct.id}').get_data(as_text=True)
+    assert html.index('data-bs-target="#vol-detail"') < html.index('data-bs-target="#vol-details"') \
+        < html.index('data-bs-target="#vol-historique"')
+    assert f'action="/contracts/{ct.id}/edit"' in html
+    assert 'name="covered_ids"' in html
+    # Le crayon bascule la fiche en modification sur place, le formulaire
+    # attend verrouillé.
+    assert 'data-edition' in html and 'js-edition' in html and 'js-modifier' not in html
+    assert '<fieldset class="edition-verrou" data-edition-verrou disabled>' in html
+    fragment = client.get(f'/contracts/{ct.id}/edit?inline=1').get_data(as_text=True)
+    assert 'class="formulaire marche-saisie" data-edition-visible>' in fragment
+
+
 def test_le_formulaire_se_rend_seul_dans_une_liste(client):
     """?inline=1 : le formulaire sans la page autour, avec sa ligne Annuler /
     Ajouter ; une erreur se rend aussi en fragment, message compris."""

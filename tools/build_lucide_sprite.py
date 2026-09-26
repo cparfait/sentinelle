@@ -43,6 +43,8 @@ ICONES = [
     # Actions en ligne sur une fiche : modifier, retirer une liaison.
     'pencil', 'square-pen', 'link', 'unlink', 'download', 'file-text', 'plus', 'upload',
     'arrow-right', 'arrow-left', 'copy', 'check', 'x',
+    # Liaisons d'un logiciel (onglet, carte Interconnexions, recapitulatif).
+    'arrow-right-left',
 ]
 
 
