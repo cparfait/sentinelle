@@ -79,9 +79,12 @@
             </div>
             <div>
                 <label class="form-label small mb-1" for="ctType">Type</label>
-                <select name="kind" id="ctType" class="form-select form-select-sm l-140">
-                    {% for value, label in kind_labels.items() %}
-                    <option value="{{ value }}" {{ 'selected' if contract and contract.kind == value }}>{{ label }}</option>
+                {# La liste vient des référentiels (Types de contrat) ; une création
+                   part sur « Maintenance » s'il y est encore. #}
+                <select name="kind_id" id="ctType" class="form-select form-select-sm l-140">
+                    <option value="">—</option>
+                    {% for t in kind_options %}
+                    <option value="{{ t.id }}" {{ 'selected' if (contract.kind_id == t.id) if contract else (t.label == 'Maintenance') }}>{{ t.label }}</option>
                     {% endfor %}
                 </select>
             </div>

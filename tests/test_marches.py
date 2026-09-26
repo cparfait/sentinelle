@@ -14,7 +14,7 @@ def test_un_marche_couvre_plusieurs_logiciels(client):
     db.session.add_all([a, b])
     db.session.commit()
     client.post('/contracts/create', data={
-        'name': 'Marché UGAP 2027', 'kind': 'market', 'nature': 'marche',
+        'name': 'Marché UGAP 2027', 'nature': 'marche',
         'reference': 'M-2027-04', 'supplier_reference': 'CMD-99812',
         'cost_yearly': '12000', 'cost_max_yearly': '15000', 'cost_total': '48000',
         'start_date': '2027-01-01', 'end_date': '2030-12-31',
@@ -294,3 +294,42 @@ def test_le_formulaire_se_rend_seul_dans_une_liste(client):
     # Sans le paramètre, la page entière, comme toujours.
     page = client.get('/contracts/create').get_data(as_text=True)
     assert '<html' in page and 'form-pied' in page
+
+
+# ── Le type d'un contrat vit dans les référentiels ──
+
+def test_le_type_de_contrat_est_un_referentiel(client):
+    """« Types de contrat » est semé avec les cinq anciennes valeurs, le
+    formulaire les propose, et le contrat en garde une par son identifiant."""
+    from app.models import Referential
+    types = Referential.options('contract_kind')
+    assert [t.label for t in types] == ['Maintenance', 'Licence', 'Abonnement', 'Marché public', 'Autre']
+    html = client.get('/contracts/create').get_data(as_text=True)
+    assert 'name="kind_id"' in html and 'name="kind"' not in html
+    licence = next(t for t in types if t.label == 'Licence')
+    client.post('/contracts/create', data={'name': 'Office 365', 'kind_id': str(licence.id)},
+                follow_redirects=True)
+    ct = Contract.query.filter_by(name='Office 365').one()
+    assert ct.kind_id == licence.id and ct.kind_label() == 'Licence'
+    # Un identifiant qui n'est pas un type de contrat est ignoré.
+    client.post(f'/contracts/{ct.id}/edit', data={'name': 'Office 365', 'kind_id': '999999'},
+                follow_redirects=True)
+    assert Contract.query.get(ct.id).kind_id is None
+
+
+def test_l_ancien_type_est_repris_dans_le_referentiel(app):
+    """Une base d'avant : `kind` porte une clé. Au démarrage, elle devient un
+    lien vers la valeur de la liste, recréée si un administrateur l'a ôtée."""
+    from app import _migrate_contract_kinds
+    from app.models import Referential
+    autre = Referential.query.filter_by(kind='contract_kind', label='Autre').one()
+    db.session.delete(autre)
+    db.session.add_all([Contract(name='Ancien', kind='licence'),
+                        Contract(name='Orphelin', kind='other'),
+                        Contract(name='Inconnu', kind='bidon')])
+    db.session.commit()
+    _migrate_contract_kinds()
+    assert Contract.query.filter_by(name='Ancien').one().kind_label() == 'Licence'
+    orphelin = Contract.query.filter_by(name='Orphelin').one()
+    assert orphelin.kind_label() == 'Autre' and orphelin.kind_ref.kind == 'contract_kind'
+    assert Contract.query.filter_by(name='Inconnu').one().kind_id is None

@@ -10,7 +10,7 @@ from app import db
 from app import features
 from app.models import (Contract, ContractHistory, Consultation,
                         Quote, Supplier, Equipment, Software, UserService,
-                        CONTRACT_KIND_LABELS, CONTRACT_NATURE_LABELS)
+                        CONTRACT_NATURE_LABELS, Referential)
 from app.forms_util import parse_date, parse_int, parse_float, status_rank
 from app.decorators import require_edit, require_delete, view_guard
 from app.audit import record as audit_record
@@ -25,7 +25,10 @@ def _guard_view():
 
 def _fill(c, f):
     c.name = (f.get('name', '') or '').strip()
-    c.kind = f.get('kind') if f.get('kind') in CONTRACT_KIND_LABELS else 'maintenance'
+    # Le type : une valeur de la liste « Types de contrat » des referentiels.
+    type_id = parse_int(f.get('kind_id'))
+    c.kind_id = (type_id if type_id and Referential.query.filter_by(
+        id=type_id, kind='contract_kind').first() else None)
     c.nature = f.get('nature') if f.get('nature') in CONTRACT_NATURE_LABELS else None
     c.supplier_id = parse_int(f.get('supplier_id'))
     c.reference = (f.get('reference', '') or '').strip() or None
@@ -74,7 +77,7 @@ def _fill(c, f):
 
 def _form_context():
     return {
-        'kind_labels': CONTRACT_KIND_LABELS,
+        'kind_options': Referential.options('contract_kind'),
         'nature_labels': CONTRACT_NATURE_LABELS,
         'suppliers': Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all(),
         'equipments': Equipment.query.filter_by(is_active=True).order_by(Equipment.name).all(),
@@ -100,8 +103,7 @@ def list():
     ).filter_by(is_active=True).scalar()
     contracts, page, pages, total = paginate(contracts)
     return render_template('contracts/list.html', contracts=contracts, q=q,
-                           page=page, pages=pages, total=total, total_cost=total_cost,
-                           kind_labels=CONTRACT_KIND_LABELS)
+                           page=page, pages=pages, total=total, total_cost=total_cost)
 
 
 @bp.route('/quick-create', methods=['POST'])
@@ -113,7 +115,11 @@ def quick_create():
     name = (request.form.get('name', '') or '').strip()
     if not name:
         return jsonify(ok=False, error='Le nom est obligatoire.'), 400
-    c = Contract(name=name, kind='maintenance', priority='medium', notice_days=0,
+    # Le type par defaut d'une creation rapide : « Maintenance », s'il est
+    # encore dans la liste.
+    maintenance = Referential.query.filter_by(kind='contract_kind', label='Maintenance').first()
+    c = Contract(name=name, kind_id=maintenance.id if maintenance else None,
+                 priority='medium', notice_days=0,
                  end_date=parse_date(request.form.get('end_date')))
     db.session.add(c)
     db.session.commit()

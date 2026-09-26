@@ -99,9 +99,10 @@ def test_formulaires_affichent_bouton_ajout_rapide(client):
     # Logiciel : fournisseur, contrat, serveur.
     html = client.get('/inventory/logiciels/create').get_data(as_text=True)
     assert 'qaModalSupplier' in html and 'qaModalContract' in html and 'qaModalEquipment' in html
-    # Contrat : fournisseur + equipement.
+    # Contrat : fournisseur seulement -- un materiel absent de l'inventaire se
+    # cree dans l'inventaire, les elements couverts se choisissent en modale.
     html = client.get('/contracts/create').get_data(as_text=True)
-    assert 'qaModalSupplier' in html and 'qaModalEquipment' in html
+    assert 'qaModalSupplier' in html and 'qaModalEquipment' not in html
     # Equipement : fournisseur.
     html = client.get('/inventory/create').get_data(as_text=True)
     assert 'qaModalSupplier' in html

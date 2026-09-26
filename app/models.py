@@ -1131,6 +1131,10 @@ class Supplier(db.Model):
                     self.dpo_contact, self.dpo_phone, self.dpo_email])
 
 
+# Le TYPE d'un contrat (maintenance, licence, abonnement...) vit dans les
+# referentiels (Referential kind='contract_kind') : aucun calcul n'en depend.
+# Ce dictionnaire ne sert plus qu'a la reprise des bases anterieures, ou la
+# colonne `kind` portait l'une de ces cles (cf. _migrate_contract_kinds).
 CONTRACT_KIND_LABELS = {'maintenance': 'Maintenance', 'licence': 'Licence',
                         'subscription': 'Abonnement', 'market': 'Marché public',
                         'other': 'Autre'}
@@ -1168,7 +1172,13 @@ class Contract(db.Model):
     la tacite reconduction ou la coupure du service."""
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), nullable=False)
-    kind = db.Column(db.String(32), default='maintenance')  # cf. CONTRACT_KIND_LABELS
+    # Ancienne colonne du type (cle de CONTRACT_KIND_LABELS) : versee une fois
+    # dans kind_id au demarrage, plus rien ne l'ecrit. SQLite ne sait pas la
+    # retirer sans reconstruire la table.
+    kind = db.Column(db.String(32))
+    # Le type (Referential kind='contract_kind') : maintenance, licence...
+    kind_id = db.Column(db.Integer, db.ForeignKey('referential.id'), index=True)
+    kind_ref = db.relationship('Referential', foreign_keys=[kind_id])
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), index=True)
     supplier = db.relationship('Supplier', backref=db.backref('contracts', lazy='dynamic'))
     # Marche public ou gre a gre. NULL = non renseigne : les lignes reprises de
@@ -1245,6 +1255,8 @@ class Contract(db.Model):
                                 cascade='all, delete-orphan')
 
     def kind_label(self):
+        if self.kind_ref is not None:
+            return self.kind_ref.label
         return CONTRACT_KIND_LABELS.get(self.kind, self.kind or '')
 
     def nature_label(self):
@@ -1390,6 +1402,7 @@ REFERENTIAL_KINDS = {
     'technology': 'Technologies applicatives',
     'doc_category': 'Catégories de pièces jointes',
     'task_type': 'Types de tâches récurrentes',
+    'contract_kind': 'Types de contrat',
 }
 
 # Valeurs de depart, versees au premier demarrage (cf. _seed_referentials).
@@ -1399,6 +1412,7 @@ REFERENTIAL_SEEDS = {
                      'Documentation technique', 'Délibération', 'Arrêté', 'Autre'],
     'task_type': ['Mise à jour', 'Renouvellement de contrat', 'Purge',
                   'Revue des comptes', 'Renouvellement de certificat'],
+    'contract_kind': ['Maintenance', 'Licence', 'Abonnement', 'Marché public', 'Autre'],
 }
 
 # Services utilisateurs d'un logiciel (relation N:N). Un logiciel sert souvent

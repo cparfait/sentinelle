@@ -243,6 +243,7 @@ def create_app(config_class=Config):
         _migrate_roles()
         _seed_roles()
         _seed_referentials()
+        _migrate_contract_kinds()
         _seed_default_user()
         # Configuration applicative persistee en base (messagerie, LDAP, seuils,
         # webhooks...). seed_from_env migre l'existant .env au 1er demarrage,
@@ -673,6 +674,32 @@ def _seed_referentials():
         changed = True
     if changed:
         db.session.commit()
+
+
+def _migrate_contract_kinds():
+    """Verse une fois l'ancien type d'un contrat (colonne `kind`, cle de
+    CONTRACT_KIND_LABELS) dans `kind_id`, vers la liste « Types de contrat »
+    des referentiels. Une valeur absente de la liste y est recreee plutot que
+    perdue : le contrat la portait, elle est une information. Ne touche pas
+    un lien deja pose."""
+    from app.models import Contract, Referential, CONTRACT_KIND_LABELS
+    a_reprendre = Contract.query.filter(Contract.kind_id.is_(None),
+                                        Contract.kind.isnot(None)).all()
+    if not a_reprendre:
+        return
+    par_libelle = {r.label: r for r in Referential.query.filter_by(kind='contract_kind').all()}
+    for c in a_reprendre:
+        libelle = CONTRACT_KIND_LABELS.get(c.kind)
+        if not libelle:
+            continue
+        ref = par_libelle.get(libelle)
+        if ref is None:
+            ref = Referential(kind='contract_kind', label=libelle, position=len(par_libelle))
+            db.session.add(ref)
+            db.session.flush()
+            par_libelle[libelle] = ref
+        c.kind_id = ref.id
+    db.session.commit()
 
 
 # Les natures qu'une « piece du marche » pouvait porter, et la categorie de
