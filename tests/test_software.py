@@ -310,7 +310,7 @@ def test_la_fiche_affiche_tout_ce_qu_elle_porte(client):
     for attendu in ('Dépassement de licence',   # alerte de tête
                     '2.1', 'Rita Métier', 'Théo Technique',   # grille dense
                     '2FA', 'Marché 2026', 'Ressources humaines',
-                    'Éditeur', 'CLI-42', 'Jean Commercial',   # colonne de droite
+                    'Éditeur', 'CLI-42', 'dpo@edi.fr',        # colonne de droite
                     'État civil', 'REG-12', 'dpo@edi.fr',     # volet RGPD
                     'Interconnexions', 'Dossiers',  # cartes du bas
                     'Mises à jour liées', 'Tâches récurrentes'):

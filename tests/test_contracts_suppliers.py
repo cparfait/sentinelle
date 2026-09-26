@@ -128,9 +128,10 @@ def test_fiche_fournisseur_impacts(client):
 # ── L'annuaire tient les contacts, les fiches logiciel les remontent ──
 
 def test_contacts_editeur_enregistres_et_herites(client):
-    """Les coordonnées ne se saisissent QU'ICI : la fiche logiciel les affiche
-    en lecture seule. La recopier fiche par fiche garantirait des numéros
-    divergents."""
+    """Les coordonnées ne se saisissent QU'ICI : la fiche logiciel en reprend,
+    en lecture seule, le support et le courriel du DPO ; les autres contacts
+    restent sur la fiche de l'éditeur. La recopier fiche par fiche garantirait
+    des numéros divergents."""
     from app.models import Software
     client.post('/suppliers/create', data={
         'name': 'Berger-Levrault', 'kind': 'editor',
@@ -154,8 +155,8 @@ def test_contacts_editeur_enregistres_et_herites(client):
     db.session.add(sw)
     db.session.commit()
     html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
-    assert 'MOREAU' in html and 'factu@bl.fr' in html
-    assert 'dpo@bl.fr' in html            # le DPO de l'éditeur, dans le volet RGPD
+    assert 'assistance@bl.fr' in html and 'dpo@bl.fr' in html
+    assert 'MOREAU' not in html and 'factu@bl.fr' not in html
     assert 'CLI-42' in html               # le n° client, cherché juste avant d'appeler
 
 

@@ -3044,10 +3044,6 @@ tr:hover .row-actions, tr:focus-within .row-actions { opacity: 1; }
 /* Cellule « aucun element » d'un tableau : estompee, aeree, sans cadre. */
 .table td[colspan].text-center { padding: 24px 20px; color: var(--faint); font-size: 0.875rem; }
 
-/* Les contacts de l'editeur, sous son support dans la carte Editeur d'un
-   logiciel : pas de marge sous le dernier. */
-.contacts-editeur > li:last-child { margin-bottom: 0 !important; }
-
 /* Des cartes qui n'en font qu'une (onglets Documents et Liaisons d'un logiciel) : collees, les coins arrondis aux seules extremites, un filet
    entre deux. Les cartes viennent de gabarits partages, qui restent des
    cartes ailleurs. */
@@ -3057,3 +3053,13 @@ tr:hover .row-actions, tr:focus-within .row-actions { opacity: 1; }
    gabarit inclus peut laisser un <script> apres sa carte. */
 .cartes-collees > .data-card:not(:first-of-type) { border-top-left-radius: 0; border-top-right-radius: 0; border-top: 0; }
 .cartes-collees > .data-card:not(:last-of-type) { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+
+/* Carte Editeur d'un logiciel : le nom en titre, avec sa casse (le titre de
+   carte est en capitales) ; portail, telephone et courriels sur deux colonnes
+   des que chacune a 160 px (la carte en fait 341), sinon une. Des colonnes de
+   texte et non une grille : elles se remplissent l'une apres l'autre (portail
+   et telephone a gauche, les courriels a droite), l'ordre d'une seule colonne. */
+.editeur-titre a { text-transform: none; letter-spacing: normal; font-size: 0.9rem; min-width: 0; color: var(--text); }
+.editeur-titre a:hover { color: var(--primary); }
+.editeur-coordonnees { columns: 2 160px; column-gap: 12px; }
+.editeur-coordonnees > li { break-inside: avoid; }

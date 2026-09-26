@@ -25,20 +25,6 @@
    Le bandeau de faits et les cartes de l'éditeur restent à leur place : ils
    valent pour la fiche entière, pas pour l'onglet ouvert. #}
 
-{# Un contact de l'éditeur : nom, téléphone, mail. Rien ne s'affiche quand les
-   trois sont vides — une carte de contacts à moitié pleine de tirets ne dit pas
-   qui appeler, elle dit qu'on ne sait pas. #}
-{% macro contact(titre, nom, tel, mail) %}
-{% if nom or tel or mail %}
-<li class="mb-2">
-    <span class="text-muted d-block" style="font-size:.75rem">{{ titre }}</span>
-    {% if nom %}<span class="fw-medium">{{ nom }}</span>{% endif %}
-    {% if tel %}<a href="tel:{{ tel }}" class="d-block text-decoration-none">{{ ico_bi('bi-telephone', '1em', 'me-1') }}{{ tel }}</a>{% endif %}
-    {% if mail %}<a href="mailto:{{ mail }}" class="d-block text-truncate">{{ ico_bi('bi-envelope', '1em', 'me-1') }}{{ mail }}</a>{% endif %}
-</li>
-{% endif %}
-{% endmacro %}
-
 {% block content %}
 {# Le NOM de l'éditeur mène à sa fiche : c'est un objet de l'inventaire,
    comme le serveur d'une installation. Le cycle de vie et la criticité se
@@ -216,27 +202,28 @@
                     {% if item.supplier %}
                     {% set sup = item.supplier %}
                     <div class="data-card p-4 mb-3">
-                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2">{{ icone('bi-building', 14, 'ico ico-' ~ couleur_icone('bi-building')) }}Éditeur</h6>
-                        <div class="fw-medium mb-2"><a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}">{{ sup.name }}</a></div>
-                        <ul class="list-unstyled small mb-0">
-                            {% if sup.customer_ref %}<li class="mb-1"><span class="text-muted">N° client</span> <span class="fw-medium">{{ sup.customer_ref }}</span></li>{% endif %}
-                            {% if sup.support_url %}<li>{{ ico_bi('bi-life-preserver', '1em', 'me-1') }}<a href="{{ sup.support_url }}" target="_blank" rel="noopener">Portail de tickets</a></li>{% endif %}
-                            {% if sup.support_phone or sup.phone %}<li>{{ ico_bi('bi-telephone', '1em', 'me-1') }}{{ sup.support_phone or sup.phone }}</li>{% endif %}
+                        {# Le titre de la carte EST le nom de l'éditeur, lien vers sa fiche. #}
+                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2 editeur-titre">{{ icone('bi-building', 14, 'ico ico-' ~ couleur_icone('bi-building')) }}<a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}" class="text-truncate" title="Éditeur : {{ sup.name }}">{{ sup.name }}</a></h6>
+                        {% if sup.customer_ref %}<div class="small mb-1"><span class="text-muted">N° client</span> <span class="fw-medium">{{ sup.customer_ref }}</span></div>{% endif %}
+                        {# Portail, téléphone, courriels du support et du DPO : sur
+                           deux colonnes quand la carte est assez large (style.css).
+                           Le DPO, c'est à lui qu'on écrit pour une question de
+                           données personnelles. #}
+                        <ul class="list-unstyled small mb-0 editeur-coordonnees">
+                            {% if sup.support_url %}<li class="text-truncate">{{ ico_bi('bi-life-preserver', '1em', 'me-1') }}<a href="{{ sup.support_url }}" target="_blank" rel="noopener">Portail de tickets</a></li>{% endif %}
+                            {% if sup.support_phone or sup.phone %}<li class="text-truncate">{{ ico_bi('bi-telephone', '1em', 'me-1') }}{{ sup.support_phone or sup.phone }}</li>{% endif %}
                             {% if sup.support_email or sup.email %}<li class="text-truncate">{{ ico_bi('bi-envelope', '1em', 'me-1') }}<a href="mailto:{{ sup.support_email or sup.email }}">{{ sup.support_email or sup.email }}</a></li>{% endif %}
+                            {% if sup.dpo_email %}<li class="text-truncate" title="DPO{{ ' — ' ~ sup.dpo_contact if sup.dpo_contact }}">{{ ico_bi('bi-envelope', '1em', 'me-1') }}<a href="mailto:{{ sup.dpo_email }}">{{ sup.dpo_email }}</a></li>{% endif %}
+                        </ul>
+                        {% if sup.hours or sup.hours2 %}
+                        <ul class="list-unstyled small mb-0 mt-1">
                             {% if sup.hours %}<li class="text-muted">{{ ico_bi('bi-clock', '1em', 'me-1') }}{{ sup.hours }}</li>{% endif %}
                             {% if sup.hours2 %}<li class="text-muted">{{ ico_bi('bi-clock', '1em', 'invisible me-1') }}{{ sup.hours2 }}</li>{% endif %}
                         </ul>
-                        {# Les contacts de l'éditeur (commercial, facturation, DPO)
-                           suivent son support, dans la même carte : ils se
-                           modifient sur sa fiche, où mène son nom. #}
-                        {% if sup.has_contacts() %}
-                        <ul class="list-unstyled small mb-0 border-top mt-2 pt-2 contacts-editeur">
-                            {{ contact('Commercial', sup.commercial_contact, sup.commercial_phone, sup.commercial_email) }}
-                            {{ contact('Commercial (2)', sup.commercial_contact2, sup.commercial_phone2, sup.commercial_email2) }}
-                            {{ contact('Administratif / facturation', sup.admin_contact, sup.admin_phone, sup.admin_email) }}
-                            {{ contact('DPO', sup.dpo_contact, sup.dpo_phone, sup.dpo_email) }}
-                        </ul>
                         {% endif %}
+                        {# Les autres contacts de l'éditeur (commercial, facturation)
+                           ne se répètent pas ici : ils sont sur sa fiche, où
+                           mène son nom. #}
                     </div>
                     {% endif %}
 
