@@ -2248,11 +2248,11 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 
 /* ==========================================================================
    FORMULAIRE D'UN MARCHE (contracts/form.html) : la grille de SoftInventory.
-   Pas de sommaire ni de rubriques numerotees : une carte, quatre rangees ou
-   chaque champ prend sa largeur naturelle (une date en 130 px, un libelle tout
-   ce qui reste), en champs de 26 px sous des intitules en micro-capitales.
+   Pas de sommaire ni de rubriques numerotees : une carte, trois rangees ou
+   chaque champ prend sa largeur naturelle (une date en 116 px, un libelle tout
+   ce qui reste), en champs de 26 px sous des intitules en micro-capitales,
+   sur toute la largeur de la colonne.
    ========================================================================== */
-.form-seul { max-width: 1000px; }
 .marche-saisie .rangee { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; margin-bottom: 8px; }
 .marche-saisie .rangee > .grandit { flex: 1 1 140px; min-width: 0; }
 /* Un intitule ne se replie pas : la rangee se replie a la place, champ entier. */
