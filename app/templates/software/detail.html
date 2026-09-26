@@ -73,7 +73,7 @@
     {% if features.quotes %}{{ onglet('devis', 'Devis', 'bi-cash-coin', compteur=consultations|length) }}{% endif %}
     {% endif %}
     {% if documents_enabled %}
-    {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=pieces|length) }}
+    {{ onglet('documents', 'Docs', 'bi-paperclip', compteur=pieces|length) }}
     {% endif %}
     {{ onglet('suivi', 'Suivi', 'bi-activity', compteur=(updates|length) + (taches|length) + (revues|length) + (comptes|length)) }}
 {% endcall %}

@@ -115,7 +115,9 @@
                 var icone = o.dataset.icone || (g && g.dataset.icone);
                 if (icone && sprite) {
                     var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                    svg.setAttribute('class', 'lucide puce-icone');
+                    // Un matériel prend la couleur de son type (kind-icon--vm…).
+                    svg.setAttribute('class', 'lucide puce-icone'
+                        + (o.dataset.kind ? ' kind-icon kind-icon--' + o.dataset.kind : ''));
                     svg.setAttribute('width', '14');
                     svg.setAttribute('height', '14');
                     svg.setAttribute('aria-hidden', 'true');
@@ -312,7 +314,10 @@
                     var icone = o.dataset.icone || (o.parentElement && o.parentElement.dataset.icone);
                     if (icone && sprite) {
                         var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                        svg.setAttribute('class', 'lucide puce-icone');
+                        // Un matériel prend la couleur de son type, comme dans
+                        // la liste du matériel (kind-icon--vm, --nas…).
+                        svg.setAttribute('class', 'lucide puce-icone'
+                            + (o.dataset.kind ? ' kind-icon kind-icon--' + o.dataset.kind : ''));
                         svg.setAttribute('width', '14');
                         svg.setAttribute('height', '14');
                         svg.setAttribute('aria-hidden', 'true');

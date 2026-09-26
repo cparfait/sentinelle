@@ -28,10 +28,10 @@
                     debut=contract.start_date, complement=complement, sans_date='échéance à renseigner') }}
 
 {% call barre('ficheContract', modifier=url_for('contracts.edit', id=contract.id) if peut_editer else None, sur_place=True) %}
-    {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+    {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}
     {% if peut_editer %}{{ onglet('details', 'Détails', 'bi-pencil-square') }}{% endif %}
     {% if documents_enabled %}
-    {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=attached_documents('contract', contract.id)|length) }}
+    {{ onglet('documents', 'Pièces', 'bi-paperclip', compteur=attached_documents('contract', contract.id)|length) }}
     {% endif %}
     {{ onglet('historique', 'Historique', 'bi-clock-history', compteur=histories|length) }}
 {% endcall %}

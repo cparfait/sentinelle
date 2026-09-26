@@ -1125,6 +1125,7 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 .kind-icon--nas      { color: #059669; } /* emerald-600 */
 .kind-icon--storage  { color: #d97706; } /* amber-600 */
 .kind-icon--network  { color: #7c3aed; } /* violet-600 */
+.kind-icon--software { color: #facc15; } /* jaune de l'entree Logiciels du menu */
 [data-theme="dark"] .kind-icon--vm       { color: #38bdf8; }
 [data-theme="dark"] .kind-icon--physical { color: #818cf8; }
 [data-theme="dark"] .kind-icon--nas      { color: #34d399; }
@@ -2149,14 +2150,20 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .formulaire .form-label .help-toggle { margin-left: 6px; vertical-align: -2px; }
 
 /* Les puces : le select natif reste (c'est lui qui est envoye), mais cache. */
-.puces-source { position: absolute !important; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+/* La liste d'origine, cachee derriere ses puces. Tout en !important : desactivee
+   (formulaire verrouille en lecture), les regles des champs desactives lui
+   rendaient son opacite et ses 26 px de haut -- et son ascenseur apparaissait
+   sur la premiere puce. */
+.puces-source { position: absolute !important; width: 1px !important; height: 1px !important; min-height: 0 !important; padding: 0 !important; border: 0 !important; margin: 0 !important; overflow: hidden !important; clip-path: inset(50%) !important; opacity: 0 !important; pointer-events: none; }
 .puces { position: relative; border: 1px solid var(--sub); border-radius: var(--radius-sm); background: var(--input-bg); padding: 5px 8px; display: flex; flex-direction: column; gap: 6px; }
 .puces:focus-within { border-color: var(--primary); box-shadow: var(--ring); }
 /* Sans recherche (data-sans-recherche), ce n'est plus un champ : les puces
    seules, sans contour ni fond. */
 .puces-source[data-sans-recherche] + .puces { border: 0; padding: 0; background: none; box-shadow: none; }
 .puces-liste { display: flex; flex-wrap: wrap; gap: 6px; }
-.puce { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 4px 0 10px; border-radius: 6px; background: var(--inset); font-size: 0.82rem; font-weight: 500; }
+/* Une puce : le fond et le contour d'une pastille selectionnee dans la
+   fenetre de choix -- c'est la meme selection, vue du champ. */
+.puce { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 4px 0 10px; border: 1px solid rgba(79, 70, 229, 0.45); border-radius: 6px; background: rgba(79, 70, 229, 0.12); font-size: 0.82rem; font-weight: 500; }
 /* La famille d'une puce (logiciel, matériel) quand la liste en mêle plusieurs :
    l'icône Lucide du groupe, en gris, à 6 px du nom ; l'étiquette de texte
    reste pour un groupe sans icône. */
@@ -2179,8 +2186,22 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    prend la teinte de l'accent (la case, cachee, porte l'etat). */
 .choix-ligne { display: flex; align-items: center; min-width: 0; height: 30px; padding: 0 10px; margin: 0; border: 1px solid transparent; border-radius: 6px; background: var(--inset); font-size: 0.82rem; font-weight: 500; cursor: pointer; user-select: none; }
 .choix-ligne:hover { border-color: var(--line); }
-.choix-ligne:has(input:checked) { background: rgba(79, 70, 229, 0.12); border-color: rgba(79, 70, 229, 0.45); color: var(--primary); }
-.choix-ligne:has(input:checked) .puce-icone { color: var(--primary); }
+.choix-ligne:has(input:checked) { background: rgba(79, 70, 229, 0.12); border-color: rgba(79, 70, 229, 0.45); color: var(--text); }
+.choix-ligne:has(input:checked) .puce-icone:not(.kind-icon) { color: var(--primary); }
+/* Un materiel garde la couleur de son type (liste du materiel), dans les puces
+   comme dans la fenetre de choix, selectionne ou non. */
+.puce-icone.kind-icon--vm       { color: #0284c7; }
+.puce-icone.kind-icon--physical { color: #4f46e5; }
+.puce-icone.kind-icon--nas      { color: #059669; }
+.puce-icone.kind-icon--storage  { color: #d97706; }
+.puce-icone.kind-icon--network  { color: #7c3aed; }
+/* Un logiciel : une seule couleur, le jaune de l'entree Logiciels du menu. */
+.puce-icone.kind-icon--software { color: #facc15; }
+[data-theme="dark"] .puce-icone.kind-icon--vm       { color: #38bdf8; }
+[data-theme="dark"] .puce-icone.kind-icon--physical { color: #818cf8; }
+[data-theme="dark"] .puce-icone.kind-icon--nas      { color: #34d399; }
+[data-theme="dark"] .puce-icone.kind-icon--storage  { color: #fbbf24; }
+[data-theme="dark"] .puce-icone.kind-icon--network  { color: #a78bfa; }
 .choix-ligne:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 1px; }
 @media (max-width: 679.98px) { .choix-liste { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 575.98px) { .choix-liste { grid-template-columns: 1fr; } }
