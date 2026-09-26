@@ -49,7 +49,7 @@
 
         {% call carte('Marché', 'bi-file-earmark-text', 'indigo') %}
         {# Rangée 1 — l'identité de l'acte : ce qu'il est, son numéro chez nous,
-           ce qu'il couvre, son numéro chez le fournisseur, et de quoi il s'agit. #}
+           de quoi il s'agit, ce qu'il couvre, son numéro chez le fournisseur. #}
         <div class="rangee">
             <div>
                 <label class="form-label small mb-1" for="ctNature">Nature</label>
@@ -65,6 +65,17 @@
                 <input type="text" name="reference" id="ctReference" class="form-control form-control-sm l-100"
                        value="{{ contract.reference or '' if contract else '' }}">
             </div>
+            <div>
+                <label class="form-label small mb-1" for="ctType">Type</label>
+                {# La liste vient des référentiels (Types de contrat) ; une création
+                   part sur « Maintenance » s'il y est encore. #}
+                <select name="kind_id" id="ctType" class="form-select form-select-sm l-140">
+                    <option value="">—</option>
+                    {% for t in kind_options %}
+                    <option value="{{ t.id }}" {{ 'selected' if (contract.kind_id == t.id) if contract else (t.label == 'Maintenance') }}>{{ t.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
             <div class="grandit">
                 <label class="form-label small mb-1" for="ctNom">Libellé *</label>
                 <input type="text" name="name" id="ctNom" class="form-control form-control-sm" required
@@ -76,17 +87,6 @@
                 <input type="text" name="supplier_reference" id="ctRefFournisseur" class="form-control form-control-sm l-150"
                        value="{{ contract.supplier_reference or '' if contract else '' }}"
                        placeholder="n° de commande chez lui">
-            </div>
-            <div>
-                <label class="form-label small mb-1" for="ctType">Type</label>
-                {# La liste vient des référentiels (Types de contrat) ; une création
-                   part sur « Maintenance » s'il y est encore. #}
-                <select name="kind_id" id="ctType" class="form-select form-select-sm l-140">
-                    <option value="">—</option>
-                    {% for t in kind_options %}
-                    <option value="{{ t.id }}" {{ 'selected' if (contract.kind_id == t.id) if contract else (t.label == 'Maintenance') }}>{{ t.label }}</option>
-                    {% endfor %}
-                </select>
             </div>
         </div>
 
