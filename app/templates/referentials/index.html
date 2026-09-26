@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Référentiels - Sentinelle{% endblock %}
 
@@ -8,12 +9,12 @@
         <p class="page-subtitle">Les listes de valeurs proposées dans les formulaires</p>
     </div>
     <a href="{{ url_for('auth.preferences') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i> Préférences
+        {{ ico_bi('bi-arrow-left', '1em', 'me-1') }} Préférences
     </a>
 </div>
 
 <div class="alert alert-info py-2 px-3 small">
-    <i class="bi bi-info-circle me-1"></i>
+    {{ ico_bi('bi-info-circle', '1em', 'me-1') }}
     Seuls les libellés <strong>descriptifs</strong> se règlent ici. Le cycle de vie d'un logiciel,
     l'hébergement, la criticité ou le statut d'un certificat pilotent des filtres, des compteurs et
     des couleurs : ils restent fixes, parce qu'en ajouter ou en retirer laisserait des fiches
@@ -36,7 +37,7 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer de la liste"
                                 aria-label="Retirer de la liste"
-                                data-confirm="Retirer « {{ item.label }} » ? Les fiches qui la portent la gardent."><i class="bi bi-x-lg"></i></button>
+                                data-confirm="Retirer « {{ item.label }} » ? Les fiches qui la portent la gardent.">{{ ico_bi('bi-x-lg', '1em') }}</button>
                     </form>
                 </li>
                 {% else %}
@@ -50,7 +51,7 @@
                     <input type="text" name="label" class="form-control" placeholder="Nouvelle valeur"
                            aria-label="Nouvelle valeur pour {{ label }}" required>
                     <button type="submit" class="btn btn-outline-primary" title="Ajouter"
-                            aria-label="Ajouter"><i class="bi bi-plus-lg"></i></button>
+                            aria-label="Ajouter">{{ ico_bi('bi-plus-lg', '1em') }}</button>
                 </div>
             </form>
         </div>
@@ -64,7 +65,7 @@
    ou une coupure d'accès. #}
 <div class="data-card mt-3">
     <div class="card-header-custom">
-        <h6 class="fw-bold mb-0"><i class="bi bi-people me-2 text-primary"></i>Services utilisateurs
+        <h6 class="fw-bold mb-0">{{ ico_bi('bi-people', '1em', 'me-2 text-primary') }}Services utilisateurs
             <span class="badge bg-secondary ms-1">{{ services | selectattr('is_active') | list | length }}</span></h6>
     </div>
     <form method="POST" action="{{ url_for('referentials.service_add') }}"
@@ -90,7 +91,7 @@
             </div>
             <div class="col-md-1">
                 <button type="submit" class="btn btn-sm btn-primary w-100" title="Ajouter le service"
-                        aria-label="Ajouter le service"><i class="bi bi-plus-lg"></i></button>
+                        aria-label="Ajouter le service">{{ ico_bi('bi-plus-lg', '1em') }}</button>
             </div>
         </div>
     </form>
@@ -115,13 +116,13 @@
                     <td class="text-end text-nowrap">
                         <div class="d-flex gap-1 justify-content-end">
                             <button type="submit" form="svc{{ sv.id }}" class="btn btn-sm btn-outline-primary"
-                                    title="Enregistrer" aria-label="Enregistrer"><i class="bi bi-check-lg"></i></button>
+                                    title="Enregistrer" aria-label="Enregistrer">{{ ico_bi('bi-check-lg', '1em') }}</button>
                             {% if sv.is_active %}
                             <form method="POST" action="{{ url_for('referentials.service_delete', id=sv.id) }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer des listes"
                                         aria-label="Retirer des listes"
-                                        data-confirm="Retirer « {{ sv.name }} » des listes ? Les fiches qui le nomment continuent de l'afficher."><i class="bi bi-x-lg"></i></button>
+                                        data-confirm="Retirer « {{ sv.name }} » des listes ? Les fiches qui le nomment continuent de l'afficher.">{{ ico_bi('bi-x-lg', '1em') }}</button>
                             </form>
                             {% else %}
                             <span class="badge bg-secondary align-self-center">Retiré</span>

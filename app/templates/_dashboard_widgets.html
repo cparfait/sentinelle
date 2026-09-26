@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {# Blocs (« widgets ») du tableau de bord personnalisable.
    Importe AVEC CONTEXTE depuis dashboard.html : les macros voient donc toutes
    les variables passees par la vue (stats, urgent_items, upcoming, ...).
@@ -14,7 +15,7 @@
 {% set dom = namespace(key='') %}
 {% for d in nav_domaines %}{% for e in d.entries %}{% if e.blueprint == key %}{% set dom.key = d.key %}{% endif %}{% endfor %}{% endfor %}
 <a href="{{ url }}" class="stat-card text-decoration-none" style="--cat-color: {{ color }};"{% if key %} data-card="{{ key }}"{% endif %}>
-    <span class="stat-toggle" role="button" tabindex="-1" title="Masquer / afficher cette vignette" aria-hidden="true"><i class="bi"></i></span>
+    <span class="stat-toggle" role="button" tabindex="-1" title="Masquer / afficher cette vignette" aria-hidden="true">{{ ico_bi('bi-eye-slash', '1em') }}</span>
     <div class="d-flex align-items-center gap-2">
         <div class="stat-icon{% if dom.key %} dom-{{ dom.key }}{% endif %}">{{ icone(icon, 20) }}</div>
         {# Le nombre et l'intitule sur une meme ligne, calee sur l'icone. #}
@@ -80,7 +81,7 @@
     </div>
     {% if dashboard_custom %}
     <div class="stat-tray d-none">
-        <div class="stat-tray-title"><i class="bi bi-eye-slash me-1"></i>Vignettes masquées <small class="text-muted">— cliquez sur l'œil pour réafficher</small></div>
+        <div class="stat-tray-title">{{ ico_bi('bi-eye-slash', '1em', 'me-1') }}Vignettes masquées <small class="text-muted">— cliquez sur l'œil pour réafficher</small></div>
         <div class="stat-tray-items">
             {% for c in dash_hidden_cards %}
             {{ stat_card(c.url, c.label, c.icon, c.color, c.s,
@@ -97,9 +98,9 @@
     {% if backups %}
     <div class="data-card">
         <div class="card-header-custom d-flex justify-content-between align-items-center">
-            <h6 class="fw-bold mb-0"><i class="bi bi-cloud-arrow-up me-2"></i>Sauvegardes de la nuit <span class="text-muted fw-normal ms-1">{{ today.strftime('%d/%m/%Y') }}</span></h6>
+            <h6 class="fw-bold mb-0">{{ ico_bi('bi-cloud-arrow-up', '1em', 'me-2') }}Sauvegardes de la nuit <span class="text-muted fw-normal ms-1">{{ today.strftime('%d/%m/%Y') }}</span></h6>
             <a href="{{ url_for('backups.daily') }}" class="btn btn-sm btn-outline-success">
-                <i class="bi bi-check2-square me-1"></i> Check complet
+                {{ ico_bi('bi-check2-square', '1em', 'me-1') }} Check complet
             </a>
         </div>
         <div class="table-responsive">
@@ -127,11 +128,11 @@
                         <td>
                             {% set tc = backup_checks.get(backup.id) %}
                             {% if tc and tc.status == 'ok' %}
-                                <span class="badge-status badge-success"><i class="bi bi-check-circle me-1"></i>OK</span>
+                                <span class="badge-status badge-success">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}OK</span>
                             {% elif tc and tc.status == 'failed' %}
-                                <span class="badge-status badge-danger"><i class="bi bi-x-circle me-1"></i>Échec</span>
+                                <span class="badge-status badge-danger">{{ ico_bi('bi-x-circle', '1em', 'me-1') }}Échec</span>
                             {% elif tc and tc.status == 'warning' %}
-                                <span class="badge-status badge-warning"><i class="bi bi-exclamation-triangle me-1"></i>Avertissement</span>
+                                <span class="badge-status badge-warning">{{ ico_bi('bi-exclamation-triangle', '1em', 'me-1') }}Avertissement</span>
                             {% else %}
                                 <span class="text-muted">pas encore vérifiée</span>
                             {% endif %}
@@ -148,13 +149,13 @@
                             <td>
                                 <div class="d-flex gap-2">
                                     <button type="submit" form="qc-{{ backup.id }}" name="status" value="ok" class="btn btn-sm btn-success fw-medium qc-btn" title="Valider OK">
-                                        <i class="bi bi-check-lg me-1"></i>OK
+                                        {{ ico_bi('bi-check-lg', '1em', 'me-1') }}OK
                                     </button>
                                     <button type="submit" form="qc-{{ backup.id }}" name="status" value="warning" class="btn btn-sm btn-warning fw-medium qc-btn" title="Marquer en avertissement">
-                                        <i class="bi bi-exclamation-triangle me-1"></i>Attention
+                                        {{ ico_bi('bi-exclamation-triangle', '1em', 'me-1') }}Attention
                                     </button>
                                     <button type="submit" form="qc-{{ backup.id }}" name="status" value="failed" class="btn btn-sm btn-danger fw-medium qc-btn" title="Marquer en échec">
-                                        <i class="bi bi-x-lg me-1"></i>Échec
+                                        {{ ico_bi('bi-x-lg', '1em', 'me-1') }}Échec
                                     </button>
                                 </div>
                             </td>
@@ -165,7 +166,7 @@
                     {% endif %}
                     {% endfor %}
                     {% if ns.shown == 0 %}
-                    <tr><td colspan="6" class="text-center py-3 text-success"><i class="bi bi-check-circle me-1"></i>Toutes les sauvegardes du jour sont validées.</td></tr>
+                    <tr><td colspan="6" class="text-center py-3 text-success">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}Toutes les sauvegardes du jour sont validées.</td></tr>
                     {% endif %}
                 </tbody>
             </table>
@@ -181,7 +182,7 @@
     {% from '_macros.html' import status_badge, delai_badge %}
     <div class="data-card">
         <div class="card-header-custom d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <h6 class="fw-bold mb-0"><i class="bi bi-list-check me-2"></i>À traiter <span class="text-muted fw-normal ms-1">{{ urgent_items|length }}</span></h6>
+            <h6 class="fw-bold mb-0">{{ ico_bi('bi-list-check', '1em', 'me-2') }}À traiter <span class="text-muted fw-normal ms-1">{{ urgent_items|length }}</span></h6>
             {% if urgent_items %}
             {% set cat_labels = {'account': 'Comptes', 'certificate': 'Certificats', 'domain': 'Domaines', 'backup': 'Sauvegardes', 'test': 'Tests', 'review': 'Revues', 'update': 'Mises à jour', 'contract': 'Contrats', 'equipment': 'Matériel', 'software': 'Logiciels'} %}
             <div id="urgentFilters" class="d-flex flex-wrap gap-1">
@@ -205,12 +206,12 @@
                 {% for item in groupe %}
                 <tr class="urgent-row row-{{ item.status }}" data-cat="{{ item.type }}" data-groupe="{{ cle }}">
                     <td class="urgent-statut">{{ status_badge(item.status) }}</td>
-                    <td class="urgent-icone"><i class="bi {{ icones.get(item.type, 'bi-dot') }} text-muted"></i></td>
+                    <td class="urgent-icone">{{ ico_bi(icones.get(item.type, 'bi-dot'), '1em', 'text-muted') }}</td>
                     <td><a href="{{ item.url }}" class="fw-medium text-decoration-none">{{ item.name }}</a></td>
                     <td class="urgent-detail">{% if item.days is not none %}{{ delai_badge(item.days, item.status) }}{% else %}<span class="text-muted">{{ item.detail }}</span>{% endif %}</td>
                     <td class="col-actions">
                         {% if item.action and current_user.can_edit() %}
-                        <a href="{{ item.url }}#{{ item.ancre }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-check-lg me-1"></i>{{ item.action }}</a>
+                        <a href="{{ item.url }}#{{ item.ancre }}" class="btn btn-sm btn-outline-secondary">{{ ico_bi('bi-check-lg', '1em', 'me-1') }}{{ item.action }}</a>
                         {% endif %}
                     </td>
                 </tr>
@@ -253,7 +254,7 @@
         </script>
         {% else %}
         <div class="text-center py-4 text-muted">
-            <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+            {{ ico_bi('bi-check-circle', '1em', 'text-success', 'font-size: 2rem;') }}
             <p class="mt-2 mb-0">Rien à traiter : tout est en ordre.</p>
         </div>
         {% endif %}
@@ -262,9 +263,9 @@
 {% elif key == 'upcoming' %}
     <div class="data-card">
         <div class="card-header-custom d-flex justify-content-between align-items-center">
-            <h6 class="fw-bold mb-0"><i class="bi bi-calendar-event me-2"></i>À venir</h6>
+            <h6 class="fw-bold mb-0">{{ ico_bi('bi-calendar-event', '1em', 'me-2') }}À venir</h6>
             <a href="{{ url_for('dashboard.agenda') }}" class="btn btn-sm btn-outline-primary">
-                Voir tout <i class="bi bi-arrow-right ms-1"></i>
+                Voir tout {{ ico_bi('bi-arrow-right', '1em', 'ms-1') }}
             </a>
         </div>
         <div class="p-3">
@@ -285,16 +286,16 @@
 {% elif key == 'alerts' %}
     <div class="data-card">
         <div class="card-header-custom d-flex justify-content-between align-items-center">
-            <h6 class="fw-bold mb-0"><i class="bi bi-bell me-2"></i>Dernières alertes envoyées</h6>
+            <h6 class="fw-bold mb-0">{{ ico_bi('bi-bell', '1em', 'me-2') }}Dernières alertes envoyées</h6>
             <a href="{{ url_for('alerts.list') }}" class="btn btn-sm btn-outline-primary">
-                Voir tout <i class="bi bi-arrow-right ms-1"></i>
+                Voir tout {{ ico_bi('bi-arrow-right', '1em', 'ms-1') }}
             </a>
         </div>
         <div class="p-3">
             {% if recent_alerts %}
                 {% for alert in recent_alerts %}
                 <div class="d-flex align-items-start gap-2 mb-3 pb-3 border-bottom">
-                    <i class="bi bi-envelope{% if alert.status == 'sent' %}-check text-success{% else %} text-danger{% endif %}"></i>
+                    {{ ico_bi('bi-envelope-check' if alert.status == 'sent' else 'bi-envelope', '1em', 'text-success' if alert.status == 'sent' else 'text-danger') }}
                     <div>
                         <small class="fw-medium d-block">{{ alert.entity_name or 'Systeme' }}</small>
                         <small class="text-muted">{{ alert.sent_at.strftime('%d/%m/%Y %H:%M') }}</small>

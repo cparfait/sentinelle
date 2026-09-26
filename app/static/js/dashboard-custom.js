@@ -71,12 +71,17 @@
         });
     }
 
-    // Icone du bouton oeil selon l'emplacement (grille = masquer, tiroir = afficher).
+    // L'oeil d'un bloc ou d'une vignette : ouvert s'il est range dans le bac
+    // (« afficher »), barre sinon (« masquer ») -- l'icone Lucide du sprite.
+    function oeil(btn, inTray) {
+        var use = btn.querySelector('use');
+        if (!use) return;
+        use.setAttribute('href', use.getAttribute('href').split('#')[0] + '#' + (inTray ? 'eye' : 'eye-off'));
+    }
     function refreshToggleIcons() {
         Array.prototype.forEach.call(document.querySelectorAll('.dash-widget .dash-toggle'), function (btn) {
             var inTray = trayItems && trayItems.contains(btn);
-            var icon = btn.querySelector('i');
-            icon.className = 'bi ' + (inTray ? 'bi-eye' : 'bi-eye-slash');
+            oeil(btn, inTray);
             btn.title = inTray ? 'Afficher ce bloc' : 'Masquer ce bloc';
         });
     }
@@ -290,8 +295,7 @@
     function refreshCardToggleIcons() {
         Array.prototype.forEach.call(document.querySelectorAll('.stat-card .stat-toggle'), function (btn) {
             var inTray = statTrayItems && statTrayItems.contains(btn);
-            var icon = btn.querySelector('i');
-            if (icon) icon.className = 'bi ' + (inTray ? 'bi-eye' : 'bi-eye-slash');
+            oeil(btn, inTray);
             btn.title = inTray ? 'Afficher cette vignette' : 'Masquer cette vignette';
         });
     }

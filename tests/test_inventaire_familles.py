@@ -211,7 +211,7 @@ def test_la_fiche_porte_les_couleurs_du_formulaire(client):
     du_formulaire = couleurs(
         formulaire,
         r'form-section form-section--(\w+)[^>]*>\s*<legend[^>]*>'
-        r'\s*<i[^>]*></i>([^<]+?)</legend>')
+        r'\s*(?:<svg[^>]*>.*?</svg>|<i[^>]*></i>)([^<]+?)</legend>')
     communes = set(des_fiches) & set(du_formulaire)
     assert communes, (sorted(des_fiches), sorted(du_formulaire))
     for titre in communes:

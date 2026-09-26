@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% import "_dashboard_widgets.html" as w with context %}
 {% from '_icones.html' import icone %}
@@ -18,18 +19,18 @@
         {% if dashboard_custom %}
         <div id="dashEditControls" class="d-flex gap-2 align-items-center d-none">
             <button type="button" id="dashResetBtn" class="btn btn-sm btn-outline-secondary" title="Rétablir la disposition par défaut">
-                <i class="bi bi-arrow-counterclockwise me-1"></i> Réinitialiser
+                {{ ico_bi('bi-arrow-counterclockwise', '1em', 'me-1') }} Réinitialiser
             </button>
             <button type="button" id="dashDoneBtn" class="btn btn-sm btn-success">
-                <i class="bi bi-check-lg me-1"></i> Terminer
+                {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Terminer
             </button>
         </div>
         <button type="button" id="dashCustomizeBtn" class="btn btn-sm btn-outline-primary" title="Choisir et réorganiser les blocs">
-            <i class="bi bi-sliders me-1"></i> Personnaliser
+            {{ ico_bi('bi-sliders', '1em', 'me-1') }} Personnaliser
         </button>
         {% endif %}
         <a href="{{ url_for('dashboard.report_pdf') }}" class="btn btn-sm btn-outline-danger" title="Bilan PDF (COPIL)">
-            <i class="bi bi-file-earmark-pdf me-1"></i> Bilan PDF
+            {{ ico_bi('bi-file-earmark-pdf', '1em', 'me-1') }} Bilan PDF
         </a>
     </div>
 </div>
@@ -38,10 +39,10 @@
 {% set meta = widget_meta[key] %}
 <section class="dash-widget" data-widget="{{ key }}" style="--w-span: {{ dash_spans[key] }};">
     <div class="dash-widget-bar">
-        <span class="dash-drag" title="Glisser pour déplacer" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>
+        <span class="dash-drag" title="Glisser pour déplacer" aria-hidden="true">{{ ico_bi('bi-grip-vertical', '1em') }}</span>
         <span class="dash-widget-name">{{ icone(meta.icon, 14, 'me-1') }}{{ meta.label }}</span>
         <button type="button" class="dash-toggle" data-widget="{{ key }}" title="Masquer / afficher ce bloc">
-            <i class="bi"></i>
+            {{ ico_bi('bi-eye-slash', '1em') }}
         </button>
     </div>
     <div class="dash-widget-body">{{ w.widget_body(key) }}</div>
@@ -51,7 +52,7 @@
 
 {% if dashboard_custom %}
 <div id="dashTray" class="dash-tray d-none">
-    <div class="dash-tray-title"><i class="bi bi-eye-slash me-1"></i>Blocs masqués <small class="text-muted">— cliquez sur l'œil pour réafficher</small></div>
+    <div class="dash-tray-title">{{ ico_bi('bi-eye-slash', '1em', 'me-1') }}Blocs masqués <small class="text-muted">— cliquez sur l'œil pour réafficher</small></div>
     <div id="dashTrayItems" class="dash-tray-items">
         {% for key in dash_hidden %}{{ widget_wrapper(key) }}{% endfor %}
         <div id="dashTrayEmpty" class="text-muted small {% if dash_hidden %}d-none{% endif %}">Aucun bloc masqué.</div>

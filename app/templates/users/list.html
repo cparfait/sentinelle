@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Utilisateurs - Sentinelle{% endblock %}
 
@@ -10,10 +11,10 @@
     </div>
     <div class="page-actions">
         <a href="{{ url_for('users.roles') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-shield-lock me-1"></i> Rôles & permissions
+            {{ ico_bi('bi-shield-lock', '1em', 'me-1') }} Rôles & permissions
         </a>
         <a href="{{ url_for('users.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nouvel utilisateur
+            {{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Nouvel utilisateur
         </a>
     </div>
 </div>
@@ -36,7 +37,7 @@
                 {% for user in users %}
                 <tr>
                     <td class="fw-medium">
-                        <i class="bi bi-person-circle me-1"></i> {{ user.username }}
+                        {{ ico_bi('bi-person-circle', '1em', 'me-1') }} {{ user.username }}
                     </td>
                     <td>{{ user.email }}</td>
                     <td>
@@ -46,32 +47,32 @@
                     </td>
                     <td>
                         {% if user.is_ldap %}
-                        <span class="badge bg-info"><i class="bi bi-diagram-3 me-1"></i>AD</span>
+                        <span class="badge bg-info">{{ ico_bi('bi-diagram-3', '1em', 'me-1') }}AD</span>
                         {% else %}
-                        <span class="badge bg-secondary"><i class="bi bi-hdd me-1"></i>Local</span>
+                        <span class="badge bg-secondary">{{ ico_bi('bi-hdd', '1em', 'me-1') }}Local</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if user.has_2fa %}
-                        <span class="badge-status badge-success"><i class="bi bi-shield-check me-1"></i>Activée</span>
+                        <span class="badge-status badge-success">{{ ico_bi('bi-shield-check', '1em', 'me-1') }}Activée</span>
                         {% else %}
-                        <span class="badge-status badge-info"><i class="bi bi-shield-slash me-1"></i>Non</span>
+                        <span class="badge-status badge-info">{{ ico_bi('bi-shield-slash', '1em', 'me-1') }}Non</span>
                         {% endif %}
                     </td>
                     <td>{{ user.created_at.strftime('%d/%m/%Y') }}</td>
                     <td class="col-actions">
                         {% call actions() %}
-                            <a href="{{ url_for('users.edit', id=user.id) }}" class="btn btn-sm btn-outline-secondary btn-icon" title="Modifier" aria-label="Modifier"><i class="bi bi-pencil"></i></a>
+                            <a href="{{ url_for('users.edit', id=user.id) }}" class="btn btn-sm btn-outline-secondary btn-icon" title="Modifier" aria-label="Modifier">{{ ico_bi('bi-pencil', '1em') }}</a>
                             {% if user.has_2fa %}
                             <form method="POST" action="{{ url_for('users.reset_2fa', id=user.id) }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Réinitialiser la 2FA" aria-label="Réinitialiser la 2FA" data-confirm="Désactiver la 2FA de {{ user.username }} ? Il devra la reconfigurer."><i class="bi bi-shield-x"></i></button>
+                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Réinitialiser la 2FA" aria-label="Réinitialiser la 2FA" data-confirm="Désactiver la 2FA de {{ user.username }} ? Il devra la reconfigurer.">{{ ico_bi('bi-shield-x', '1em') }}</button>
                             </form>
                             {% endif %}
                             {% if user.username != 'admin' and user.id != current_user.id %}
                             <form method="POST" action="{{ url_for('users.delete', id=user.id) }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="Supprimer" aria-label="Supprimer" data-confirm="Supprimer cet utilisateur ?"><i class="bi bi-trash"></i></button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="Supprimer" aria-label="Supprimer" data-confirm="Supprimer cet utilisateur ?">{{ ico_bi('bi-trash', '1em') }}</button>
                             </form>
                             {% endif %}
                         {% endcall %}

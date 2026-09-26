@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}{{ review.application }} - Sentinelle{% endblock %}
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
@@ -36,7 +37,7 @@
                     <div class="fiche-grille">
                         {% call champ_bloc('Logiciel') %}
                         {%- if review.software -%}
-                        <a href="{{ url_for('software.detail', id=review.software_id) }}" class="text-decoration-none"><i class="bi bi-window-stack me-1"></i>{{ review.software.name }}</a>
+                        <a href="{{ url_for('software.detail', id=review.software_id) }}" class="text-decoration-none">{{ ico_bi('bi-window-stack', '1em', 'me-1') }}{{ review.software.name }}</a>
                         {%- else -%}
                         <span class="text-muted">{{ review.application }} <small>(hors inventaire)</small></span>
                         {%- endif -%}
@@ -44,7 +45,7 @@
                         {% call champ_bloc('Responsable') %}
                         {%- if review.responsible or review.responsible_email -%}
                         {{ review.responsible or '' }}
-                        {% if review.responsible_email %}<a href="mailto:{{ review.responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ review.responsible_email }}</a>{% endif %}
+                        {% if review.responsible_email %}<a href="mailto:{{ review.responsible_email }}" class="d-block small text-truncate">{{ ico_bi('bi-envelope', '1em', 'me-1') }}{{ review.responsible_email }}</a>{% endif %}
                         {%- endif -%}
                         {% endcall %}
                         {{ champ('Fréquence', '%d jours' % review.frequency_days if review.frequency_days else None) }}

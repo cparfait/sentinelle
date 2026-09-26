@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Tendances - Sentinelle{% endblock %}
 
@@ -5,10 +6,10 @@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h1 class="page-title">Tendances</h1>
-        <p class="page-subtitle">Évolution sur les 30 derniers jours · <i class="bi bi-hand-index"></i> cliquez sur un graphique pour ouvrir la liste correspondante</p>
+        <p class="page-subtitle">Évolution sur les 30 derniers jours · {{ ico_bi('bi-hand-index', '1em') }} cliquez sur un graphique pour ouvrir la liste correspondante</p>
     </div>
     <a href="{{ url_for('dashboard.index') }}" class="btn btn-sm btn-outline-secondary">
-        <i class="bi bi-grid-1x2 me-1"></i> Tableau de bord
+        {{ ico_bi('bi-grid-1x2', '1em', 'me-1') }} Tableau de bord
     </a>
 </div>
 
@@ -31,7 +32,7 @@
                     <small class="text-muted d-block">Éléments suivis</small>
                     <span class="stat-number">{{ total }}</span>
                 </div>
-                <div class="stat-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-collection"></i></div>
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary">{{ ico_bi('bi-collection', '1em') }}</div>
             </div>
         </div>
     </div>
@@ -42,7 +43,7 @@
                     <small class="text-muted d-block">Conformité globale</small>
                     <span class="stat-number text-{{ conf_color }}">{{ conformity }}%</span>
                 </div>
-                <div class="stat-icon bg-{{ conf_color }} bg-opacity-10 text-{{ conf_color }}"><i class="bi bi-shield-check"></i></div>
+                <div class="stat-icon bg-{{ conf_color }} bg-opacity-10 text-{{ conf_color }}">{{ ico_bi('bi-shield-check', '1em') }}</div>
             </div>
             <div class="progress mt-2" style="height: 6px;">
                 <div class="progress-bar bg-{{ conf_color }}" style="width: {{ conformity }}%;"></div>
@@ -57,7 +58,7 @@
                     <small class="text-muted d-block">Alertes (30 j)</small>
                     <span class="stat-number text-danger">{{ alerts_total }}</span>
                 </div>
-                <div class="stat-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-bell"></i></div>
+                <div class="stat-icon bg-danger bg-opacity-10 text-danger">{{ ico_bi('bi-bell', '1em') }}</div>
             </div>
         </div>
     </div>
@@ -70,7 +71,7 @@
                     <small class="text-muted d-block">Backups réussis (30 j)</small>
                     <span class="stat-number text-success">{{ b_rate }}%</span>
                 </div>
-                <div class="stat-icon bg-success bg-opacity-10 text-success"><i class="bi bi-cloud-check"></i></div>
+                <div class="stat-icon bg-success bg-opacity-10 text-success">{{ ico_bi('bi-cloud-check', '1em') }}</div>
             </div>
             <small class="text-muted">{{ b_ok }} OK · {{ b_warn }} warn · {{ b_fail }} échec</small>
         </div>
@@ -83,7 +84,7 @@
     <div class="col-lg-5">
         <div class="data-card h-100">
             <div class="card-header-custom">
-                <h6 class="fw-bold mb-0"><i class="bi bi-pie-chart me-2 text-primary"></i>Répartition par statut</h6>
+                <h6 class="fw-bold mb-0">{{ ico_bi('bi-pie-chart', '1em', 'me-2 text-primary') }}Répartition par statut</h6>
             </div>
             <div class="p-3">
                 {% if total %}
@@ -92,7 +93,7 @@
                 </div>
                 {% else %}
                 <div class="text-center text-muted py-5">
-                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                    {{ ico_bi('bi-inbox', '1em', '', 'font-size: 2rem;') }}
                     <p class="mb-0 mt-2">Aucun élément suivi pour le moment.</p>
                 </div>
                 {% endif %}
@@ -104,7 +105,7 @@
     <div class="col-lg-7">
         <div class="data-card h-100">
             <div class="card-header-custom">
-                <h6 class="fw-bold mb-0"><i class="bi bi-activity me-2 text-danger"></i>Alertes envoyées par jour</h6>
+                <h6 class="fw-bold mb-0">{{ ico_bi('bi-activity', '1em', 'me-2 text-danger') }}Alertes envoyées par jour</h6>
             </div>
             <div class="p-3">
                 <div style="position: relative; height: 280px;">
@@ -119,7 +120,7 @@
     <div class="col-12">
         <div class="data-card">
             <div class="card-header-custom">
-                <h6 class="fw-bold mb-0"><i class="bi bi-bar-chart me-2 text-info"></i>Checks de backup par jour</h6>
+                <h6 class="fw-bold mb-0">{{ ico_bi('bi-bar-chart', '1em', 'me-2 text-info') }}Checks de backup par jour</h6>
             </div>
             <div class="p-3">
                 <div style="position: relative; height: 240px;">

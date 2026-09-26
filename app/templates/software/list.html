@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Logiciels métiers - Sentinelle{% endblock %}
 
@@ -11,7 +12,7 @@
     <div class="page-actions">
     {% if current_user.can_edit('software') %}
     <a href="{{ url_for('software.create') }}" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i> Nouveau logiciel
+        {{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Nouveau logiciel
     </a>
     {% endif %}
     </div>
@@ -63,7 +64,7 @@
                     <td>
                         <span class="d-flex align-items-center gap-1">
                             <a href="{{ url_for('software.detail', id=s.id) }}" class="fw-medium text-decoration-none text-truncate" style="min-width: 0" title="{{ s.name }}">{{ s.name }}</a>
-                            {%- if s.url %} <a href="{{ s.url }}" target="_blank" rel="noreferrer noopener" class="text-faint flex-shrink-0" title="Ouvrir {{ s.url }}" aria-label="Ouvrir le site du logiciel"><i class="bi bi-box-arrow-up-right"></i></a>{% endif %}
+                            {%- if s.url %} <a href="{{ s.url }}" target="_blank" rel="noreferrer noopener" class="text-faint flex-shrink-0" title="Ouvrir {{ s.url }}" aria-label="Ouvrir le site du logiciel">{{ ico_bi('bi-box-arrow-up-right', '1em') }}</a>{% endif %}
                             {%- if s.is_docker %} <i class="icon-docker flex-shrink-0" title="Conteneurisé (Docker)" aria-label="Conteneurisé (Docker)"></i>{% endif %}
                         </span>
                         {% if s.technology %}<small class="d-block text-truncate text-faint">{{ s.technology.label }}</small>{% endif %}
@@ -102,10 +103,10 @@
                 {% else %}
                 <tr>
                     <td colspan="6" class="text-center py-4 text-muted">
-                        <i class="bi bi-window-stack" style="font-size: 2rem;"></i>
+                        {{ ico_bi('bi-window-stack', '1em', '', 'font-size: 2rem;') }}
                         <p class="mt-2 mb-0">Aucun logiciel.
                             {% if current_user.can_edit('software') %}
-                            <a href="{{ url_for('software.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a>
+                            <a href="{{ url_for('software.create') }}" class="btn btn-sm btn-primary mt-1">{{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Ajouter le premier</a>
                             {% endif %}
                         </p>
                     </td>

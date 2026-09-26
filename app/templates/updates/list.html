@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Mises à jour - Sentinelle{% endblock %}
 {% set status_labels = dict(status_choices) %}
@@ -14,7 +15,7 @@
         {% with csv_key='updates' %}{% include '_csv_toolbar.html' %}{% endwith %}
         {% if current_user.can_edit('updates') %}
         <a href="{{ url_for('updates.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nouveau suivi
+            {{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Nouveau suivi
         </a>
         {% endif %}
     </div>

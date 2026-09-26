@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Fournisseurs - Sentinelle{% endblock %}
 
@@ -11,7 +12,7 @@
     <div class="page-actions">
         {% if current_user.can_edit('suppliers') %}
         <a href="{{ url_for('suppliers.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nouveau fournisseur
+            {{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Nouveau fournisseur
         </a>
         {% endif %}
     </div>
@@ -59,9 +60,9 @@
                     {% set cc_tel = s.commercial_phone or s.phone %}
                     <td>
                         <div class="pile">
-                            {% if cc_mail %}<a href="mailto:{{ cc_mail }}" class="pile-principal" title="Écrire à {{ cc_mail }}"><i class="bi bi-envelope"></i><span class="text-truncate">{{ cc_nom or cc_mail }}</span></a>
+                            {% if cc_mail %}<a href="mailto:{{ cc_mail }}" class="pile-principal" title="Écrire à {{ cc_mail }}">{{ ico_bi('bi-envelope', '1em') }}<span class="text-truncate">{{ cc_nom or cc_mail }}</span></a>
                             {% elif cc_nom %}<span class="pile-principal"><span class="text-truncate">{{ cc_nom }}</span></span>{% endif %}
-                            {% if cc_tel %}<a href="tel:{{ cc_tel | replace(' ', '') }}" class="pile-faint text-nowrap"><i class="bi bi-telephone"></i>{{ cc_tel }}</a>{% endif %}
+                            {% if cc_tel %}<a href="tel:{{ cc_tel | replace(' ', '') }}" class="pile-faint text-nowrap">{{ ico_bi('bi-telephone', '1em') }}{{ cc_tel }}</a>{% endif %}
                         </div>
                     </td>
                     {# Le portail d'abord, puis l'adresse où l'on écrit, puis le
@@ -69,9 +70,9 @@
                        casse de force plutôt que de déborder sur les horaires. #}
                     <td>
                         <div class="pile">
-                            {% if s.support_url %}<a href="{{ s.support_url }}" target="_blank" rel="noopener" class="pile-accent casse" title="Ouvrir le portail support"><i class="bi bi-globe2"></i>{{ s.support_url }}</a>{% endif %}
-                            {% if s.support_email %}<a href="mailto:{{ s.support_email }}" class="pile-faint casse" title="Écrire à {{ s.support_email }}"><i class="bi bi-envelope"></i>{{ s.support_email }}</a>{% endif %}
-                            {% if s.support_phone %}<a href="tel:{{ s.support_phone | replace(' ', '') }}" class="pile-faint text-nowrap"><i class="bi bi-telephone"></i>{{ s.support_phone }}</a>{% endif %}
+                            {% if s.support_url %}<a href="{{ s.support_url }}" target="_blank" rel="noopener" class="pile-accent casse" title="Ouvrir le portail support">{{ ico_bi('bi-globe2', '1em') }}{{ s.support_url }}</a>{% endif %}
+                            {% if s.support_email %}<a href="mailto:{{ s.support_email }}" class="pile-faint casse" title="Écrire à {{ s.support_email }}">{{ ico_bi('bi-envelope', '1em') }}{{ s.support_email }}</a>{% endif %}
+                            {% if s.support_phone %}<a href="tel:{{ s.support_phone | replace(' ', '') }}" class="pile-faint text-nowrap">{{ ico_bi('bi-telephone', '1em') }}{{ s.support_phone }}</a>{% endif %}
                         </div>
                     </td>
                     <td class="cell-horaires text-muted">
@@ -82,10 +83,10 @@
                 {% else %}
                 <tr>
                     <td colspan="4" class="text-center py-4 text-muted">
-                        <i class="bi bi-building" style="font-size: 2rem;"></i>
+                        {{ ico_bi('bi-building', '1em', '', 'font-size: 2rem;') }}
                         <p class="mt-2 mb-0">Aucun fournisseur.
                             {% if current_user.can_edit('suppliers') %}
-                            <a href="{{ url_for('suppliers.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a>
+                            <a href="{{ url_for('suppliers.create') }}" class="btn btn-sm btn-primary mt-1">{{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Ajouter le premier</a>
                             {% endif %}
                         </p>
                     </td>

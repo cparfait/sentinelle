@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Revues de droits - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge, delai_badge, priorite %}
@@ -13,7 +14,7 @@
         {% with csv_key='reviews' %}{% include '_csv_toolbar.html' %}{% endwith %}
         {% if current_user.can_edit('reviews') %}
         <a href="{{ url_for('reviews.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nouvelle revue
+            {{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Nouvelle revue
         </a>
         {% endif %}
     </div>

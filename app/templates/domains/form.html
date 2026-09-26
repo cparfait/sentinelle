@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}{{ 'Modifier' if domain else 'Ajouter' }} un domaine - Sentinelle{% endblock %}
 {% from '_form_section.html' import section %}
@@ -24,7 +25,7 @@
                                    placeholder="votredomaine.fr">
                             <button type="button" class="btn btn-outline-primary" id="checkRdapBtn"
                                     title="Lire l'expiration via RDAP">
-                                <i class="bi bi-globe"></i> Vérifier
+                                {{ ico_bi('bi-globe', '1em') }} Vérifier
                             </button>
                         </div>
                         <small id="checkRdapMsg" class="d-block mt-1"></small>

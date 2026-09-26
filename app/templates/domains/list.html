@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Domaines - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge, delai_badge %}
@@ -13,7 +14,7 @@
         {% with csv_key='domains' %}{% include '_csv_toolbar.html' %}{% endwith %}
         {% if current_user.can_edit('domains') %}
         <a href="{{ url_for('domains.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nouveau domaine
+            {{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Nouveau domaine
         </a>
         {% endif %}
     </div>
@@ -43,7 +44,7 @@
                         {% else %}<span class="text-muted">à renseigner</span>{% endif %}
                     </td>
                     <td>{% if d.registrar_supplier %}<a href="{{ url_for('suppliers.detail', id=d.registrar_id) }}" class="text-decoration-none">{{ d.registrar_supplier.name }}</a>{% else %}{{ d.registrar or '—' }}{% endif %}</td>
-                    <td>{% if d.auto_renew %}<i class="bi bi-arrow-repeat me-1 text-muted"></i>Automatique{% else %}Manuel{% endif %}</td>
+                    <td>{% if d.auto_renew %}{{ ico_bi('bi-arrow-repeat', '1em', 'me-1 text-muted') }}Automatique{% else %}Manuel{% endif %}</td>
                     <td>{{ status_badge(d.status()) }}</td>
                 </tr>
                 {% else %}

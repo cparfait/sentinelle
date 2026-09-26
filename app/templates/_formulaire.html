@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {# ═══ Le gabarit de formulaire ═══
    Un formulaire reprend les rubriques de la fiche, dans le même ordre, et se
    lit de la même façon partout :
@@ -37,7 +38,7 @@
     </div>
     <div class="page-actions">
         <a href="{{ retour }}" class="btn btn-outline-secondary js-retour">Annuler</a>
-        <button type="submit" form="form-principal" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> {{ libelle }}</button>
+        <button type="submit" form="form-principal" class="btn btn-primary">{{ ico_bi('bi-check-lg', '1em', 'me-1') }} {{ libelle }}</button>
     </div>
 </div>
 {% endmacro %}
@@ -46,6 +47,6 @@
 <div class="form-pied">
     <span class="form-pied-note text-muted small"><span class="text-danger">*</span> champ obligatoire</span>
     <a href="{{ retour }}" class="btn btn-outline-secondary js-retour">Annuler</a>
-    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> {{ libelle }}</button>
+    <button type="submit" class="btn btn-primary">{{ ico_bi('bi-check-lg', '1em', 'me-1') }} {{ libelle }}</button>
 </div>
 {% endmacro %}

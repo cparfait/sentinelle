@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Mon Profil - Sentinelle{% endblock %}
 
@@ -9,7 +10,7 @@
 <div class="row justify-content-center">
     <div class="col-md-6">
         <div class="data-card p-4">
-            <h6 class="fw-bold mb-3"><i class="bi bi-person me-2"></i>Informations</h6>
+            <h6 class="fw-bold mb-3">{{ ico_bi('bi-person', '1em', 'me-2') }}Informations</h6>
             <table class="table table-borderless">
                 <tr><td class="text-muted">Utilisateur</td><td class="fw-medium">{{ current_user.username }}</td></tr>
                 <tr><td class="text-muted">Email</td><td class="fw-medium">{{ current_user.email }}</td></tr>
@@ -25,7 +26,7 @@
         </div>
 
         <div class="data-card p-4 mt-3">
-            <h6 class="fw-bold mb-3"><i class="bi bi-lock me-2"></i>Changer le mot de passe</h6>
+            <h6 class="fw-bold mb-3">{{ ico_bi('bi-lock', '1em', 'me-2') }}Changer le mot de passe</h6>
             <form method="POST">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="change_password">
@@ -42,13 +43,13 @@
                     <input type="password" name="confirm_password" class="form-control" required minlength="8">
                 </div>
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-lg me-1"></i> Enregistrer
+                    {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer
                 </button>
             </form>
         </div>
 
         <div class="data-card p-4 mt-3">
-            <h6 class="fw-bold mb-3"><i class="bi bi-shield-lock me-2"></i>Double authentification (2FA)</h6>
+            <h6 class="fw-bold mb-3">{{ ico_bi('bi-shield-lock', '1em', 'me-2') }}Double authentification (2FA)</h6>
             {% if setup_secret %}
             <p class="small text-muted mb-2">Scannez ce QR code avec votre application (Google / Microsoft Authenticator, etc.), puis saisissez le code à 6 chiffres pour activer.</p>
             <div class="d-flex gap-3 align-items-center flex-wrap mb-2">
@@ -65,10 +66,10 @@
                     <label class="form-label small">Code de vérification</label>
                     <input type="text" name="code" class="form-control" inputmode="numeric" maxlength="6" placeholder="000000" required autofocus>
                 </div>
-                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i> Activer</button>
+                <button type="submit" class="btn btn-success">{{ ico_bi('bi-check-lg', '1em', 'me-1') }} Activer</button>
             </form>
             {% elif current_user.has_2fa %}
-            <p class="mb-2"><span class="badge bg-success"><i class="bi bi-shield-check me-1"></i>Activée</span>
+            <p class="mb-2"><span class="badge bg-success">{{ ico_bi('bi-shield-check', '1em', 'me-1') }}Activée</span>
                 Une vérification par code est demandée à chaque connexion.</p>
             <form method="POST" class="d-flex gap-2 align-items-end" style="max-width:360px;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -85,7 +86,7 @@
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="init_2fa">
-                <button type="submit" class="btn btn-outline-primary"><i class="bi bi-shield-plus me-1"></i> Activer la 2FA</button>
+                <button type="submit" class="btn btn-outline-primary">{{ ico_bi('bi-shield-plus', '1em', 'me-1') }} Activer la 2FA</button>
             </form>
             {% endif %}
         </div>

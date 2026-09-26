@@ -16,6 +16,14 @@
 (function () {
     var MINIMUM_LIGNES = 3;   // en dessous, l'entonnoir encombre plus qu'il ne sert
 
+    // L'entonnoir d'un en-tete de colonne : l'icone Lucide du sprite de la page.
+    function entonnoir() {
+        var u = document.querySelector('use[href*="lucide.svg"]');
+        if (!u) return '<i class="bi bi-funnel-fill"></i>';
+        return '<svg class="lucide lucide-funnel" width="1em" height="1em" aria-hidden="true"><use href="'
+            + u.getAttribute('href').split('#')[0] + '#funnel"></use></svg>';
+    }
+
     function equiper(table) {
         if (!table.tHead || !table.tHead.rows.length || !table.tBodies.length) return;
         var ths = Array.prototype.slice.call(table.tHead.rows[0].cells);
@@ -137,7 +145,7 @@
             btn.className = 'colfiltre-btn';
             btn.title = 'Filtrer cette colonne';
             btn.setAttribute('aria-label', 'Filtrer cette colonne');
-            btn.innerHTML = '<i class="bi bi-funnel-fill"></i>';
+            btn.innerHTML = entonnoir();
             btn.addEventListener('click', function (e) {
                 e.stopPropagation();
                 e.preventDefault();

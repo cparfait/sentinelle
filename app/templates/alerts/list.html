@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Alertes - Sentinelle{% endblock %}
 
@@ -39,16 +40,16 @@
                     <td><small>{{ alert.recipients }}</small></td>
                     <td>
                         {% if alert.status == 'sent' %}
-                        <span class="badge-status badge-success"><i class="bi bi-check-circle me-1"></i>Envoyée</span>
+                        <span class="badge-status badge-success">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}Envoyée</span>
                         {% else %}
-                        <span class="badge-status badge-danger"><i class="bi bi-x-circle me-1"></i>Échouée</span>
+                        <span class="badge-status badge-danger">{{ ico_bi('bi-x-circle', '1em', 'me-1') }}Échouée</span>
                         {% endif %}
                     </td>
                 </tr>
                 {% else %}
                 <tr>
                     <td colspan="6" class="text-center py-4 text-muted">
-                        <i class="bi bi-bell-slash" style="font-size: 2rem;"></i>
+                        {{ ico_bi('bi-bell-slash', '1em', '', 'font-size: 2rem;') }}
                         <p class="mt-2 mb-0">Aucune alerte envoyée</p>
                     </td>
                 </tr>

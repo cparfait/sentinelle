@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {# ═══ Le formulaire d'un logiciel ═══
    Partagé par la page de modification (form.html) et l'onglet Détails de la
    fiche (detail.html). `retour` : où mène « Annuler ».
@@ -36,7 +37,7 @@
 <div class="data-card mb-3">
     <div class="card-header-custom">
         <h6 class="fw-bold fiche-titre fiche-titre--{{ couleur }} mb-0">
-            {%- if onglet %}<i class="bi {{ bi }} ico-onglet ico-onglet--{{ onglet }}" aria-hidden="true"></i>
+            {%- if onglet %}{{ ico_bi(bi, '1em', 'ico-onglet ico-onglet--' ~ (onglet)) }}
             {%- elif bi.startswith('bi-') %}{{ icone(bi, 14, 'ico ico-' ~ couleur) }}
             {%- else %}{{ lucide(bi, 14, 'ico ico-' ~ couleur) }}{% endif %}{{ titre }}</h6>
     </div>
@@ -181,11 +182,11 @@
                 <input type="checkbox" class="btn-check" name="internal_dev" id="internalDev"
                        {{ 'checked' if item and item.internal_dev }}>
                 <label class="btn btn-outline-primary btn-sm" for="internalDev"
-                       title="Fait et maintenu par la DSI : ni éditeur, ni support, ni contrat"><i class="bi bi-code-slash me-1"></i>Développement interne</label>
+                       title="Fait et maintenu par la DSI : ni éditeur, ni support, ni contrat">{{ ico_bi('bi-code-slash', '1em', 'me-1') }}Développement interne</label>
                 <input type="checkbox" class="btn-check" name="no_server" id="noServer"
                        {{ 'checked' if item and item.no_server }}>
                 <label class="btn btn-outline-primary btn-sm" for="noServer"
-                       title="Ne s&rsquo;installe sur aucune machine du parc : SaaS, ou postes des agents"><i class="bi bi-slash-circle me-1"></i>Aucun serveur</label>
+                       title="Ne s&rsquo;installe sur aucune machine du parc : SaaS, ou postes des agents">{{ ico_bi('bi-slash-circle', '1em', 'me-1') }}Aucun serveur</label>
             </div>
         </div>
         <div>

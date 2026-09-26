@@ -3,20 +3,26 @@
    `icone('bi-key')` rend l'icone Lucide que app/navigation.py associe a ce
    module (sprite local app/static/vendor/lucide.svg, voir
    tools/build_lucide_sprite.py) ; une icone sans correspondance reste en
-   Bootstrap, donc rien ne casse la ou Lucide n'est pas encore passe.
+   Bootstrap (logos de marque), donc rien ne casse.
 
-   Le SVG herite de `color` comme un <i>, et sa taille de `taille` (px). #}
+   Le SVG herite de `color` comme un <i>, et sa taille de `taille` : un nombre
+   de pixels, ou '1em' pour suivre la taille du texte comme le faisait l'icone
+   Bootstrap qu'il remplace (style.css l'aligne alors sur la ligne de base).
+
+   Dans un gabarit, les icones d'interface s'importent sous le nom `ico_bi`
+   (« {% from '_icones.html' import icone as ico_bi %} ») : beaucoup de macros
+   ont un parametre nomme `icone`, qui masquerait la macro. #}
 {# Une icone Lucide par son nom, quand elle ne represente pas un module
    (nature d'un equipement, par exemple). Doit etre dans le sprite. #}
-{% macro lucide(nom, taille=16, classes='') -%}
-<svg class="lucide lucide-{{ nom }}{% if classes %} {{ classes }}{% endif %}" width="{{ taille }}" height="{{ taille }}" aria-hidden="true"><use href="{{ static_v('vendor/lucide.svg') }}#{{ nom }}"/></svg>
+{% macro lucide(nom, taille=16, classes='', style='') -%}
+<svg class="lucide lucide-{{ nom }}{% if classes %} {{ classes }}{% endif %}" width="{{ taille }}" height="{{ taille }}"{% if style %} style="{{ style }}"{% endif %} aria-hidden="true"><use href="{{ static_v('vendor/lucide.svg') }}#{{ nom }}"/></svg>
 {%- endmacro %}
 
-{% macro icone(bi, taille=16, classes='') -%}
+{% macro icone(bi, taille=16, classes='', style='') -%}
 {%- set nom = lucide_de(bi) -%}
 {%- if nom -%}
-{{ lucide(nom, taille, classes) }}
+{{ lucide(nom, taille, classes, style) }}
 {%- else -%}
-<i class="bi {{ bi if bi.startswith('bi-') else 'bi-' ~ bi }}{% if classes %} {{ classes }}{% endif %}"></i>
+<i class="bi {{ bi if bi.startswith('bi-') else 'bi-' ~ bi }}{% if classes %} {{ classes }}{% endif %}"{% if style %} style="{{ style }}"{% endif %} aria-hidden="true"></i>
 {%- endif -%}
 {%- endmacro %}

@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Connecteurs - Sentinelle{% endblock %}
 
@@ -27,9 +28,9 @@
 {# ===================== CONNECTEUR NOTIFICATIONS (WEBHOOKS) ===================== #}
 <div class="data-card mb-3">
     <div class="card-header-custom d-flex justify-content-between align-items-center">
-        <h6 class="fw-bold mb-0"><i class="bi bi-bell me-2 text-primary"></i>Notifications (webhooks)</h6>
+        <h6 class="fw-bold mb-0">{{ ico_bi('bi-bell', '1em', 'me-2 text-primary') }}Notifications (webhooks)</h6>
         {% if webhooks.teams or webhooks.slack or webhooks.discord or category_webhooks %}
-        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Configuré</span>
+        <span class="badge bg-success">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}Configuré</span>
         {% else %}
         <span class="badge bg-secondary">Non configuré</span>
         {% endif %}
@@ -40,41 +41,41 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row g-2">
                 <div class="col-md-9">
-                    <label class="form-label small"><i class="bi bi-microsoft-teams me-1"></i>Microsoft Teams {% if webhooks.teams %}<span class="text-success">— configuré</span>{% endif %}</label>
+                    <label class="form-label small">{{ ico_bi('bi-microsoft-teams', '1em', 'me-1') }}Microsoft Teams {% if webhooks.teams %}<span class="text-success">— configuré</span>{% endif %}</label>
                     <input type="url" name="teams_webhook" class="form-control form-control-sm"
                            value="{{ webhooks.teams }}" placeholder="https://...webhook.office.com/...">
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
                     <button type="submit" name="action" value="test_teams" class="btn btn-sm btn-outline-primary w-100"
-                            {% if not webhooks.teams %}disabled{% endif %}><i class="bi bi-send me-1"></i> Tester</button>
+                            {% if not webhooks.teams %}disabled{% endif %}>{{ ico_bi('bi-send', '1em', 'me-1') }} Tester</button>
                 </div>
                 <div class="col-md-9">
-                    <label class="form-label small"><i class="bi bi-slack me-1"></i>Slack {% if webhooks.slack %}<span class="text-success">— configuré</span>{% endif %}</label>
+                    <label class="form-label small">{{ ico_bi('bi-slack', '1em', 'me-1') }}Slack {% if webhooks.slack %}<span class="text-success">— configuré</span>{% endif %}</label>
                     <input type="url" name="slack_webhook" class="form-control form-control-sm"
                            value="{{ webhooks.slack }}" placeholder="https://hooks.slack.com/services/...">
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
                     <button type="submit" name="action" value="test_slack" class="btn btn-sm btn-outline-primary w-100"
-                            {% if not webhooks.slack %}disabled{% endif %}><i class="bi bi-send me-1"></i> Tester</button>
+                            {% if not webhooks.slack %}disabled{% endif %}>{{ ico_bi('bi-send', '1em', 'me-1') }} Tester</button>
                 </div>
                 <div class="col-md-9">
-                    <label class="form-label small"><i class="bi bi-discord me-1"></i>Discord {% if webhooks.discord %}<span class="text-success">— configuré</span>{% endif %}</label>
+                    <label class="form-label small">{{ ico_bi('bi-discord', '1em', 'me-1') }}Discord {% if webhooks.discord %}<span class="text-success">— configuré</span>{% endif %}</label>
                     <input type="url" name="discord_webhook" class="form-control form-control-sm"
                            value="{{ webhooks.discord }}" placeholder="https://discord.com/api/webhooks/...">
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
                     <button type="submit" name="action" value="test_discord" class="btn btn-sm btn-outline-primary w-100"
-                            {% if not webhooks.discord %}disabled{% endif %}><i class="bi bi-send me-1"></i> Tester</button>
+                            {% if not webhooks.discord %}disabled{% endif %}>{{ ico_bi('bi-send', '1em', 'me-1') }} Tester</button>
                 </div>
             </div>
             <button type="submit" name="action" value="save_webhooks" class="btn btn-sm btn-primary mt-2">
-                <i class="bi bi-check-lg me-1"></i> Enregistrer les notifications
+                {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer les notifications
             </button>
             <small class="text-muted d-block mt-1">Les alertes sont postées dans tous les canaux renseignés, en plus du mail.</small>
         </form>
 
         <hr class="my-3">
-        <h6 class="fw-bold mb-1"><i class="bi bi-diagram-2 me-2 text-primary"></i>Webhooks par catégorie</h6>
+        <h6 class="fw-bold mb-1">{{ ico_bi('bi-diagram-2', '1em', 'me-2 text-primary') }}Webhooks par catégorie</h6>
         <p class="text-muted small mb-2">Ajoutez autant de webhooks que nécessaire, ciblés sur une catégorie de gestion (ou « Toutes »). Une alerte d'une catégorie est postée sur ses webhooks (plus ceux « Toutes » et les webhooks globaux ci-dessus).</p>
 
         <form method="POST" action="{{ url_for('connectors.webhooks') }}" class="row g-2 align-items-end mb-2">
@@ -98,7 +99,7 @@
                 <input type="url" name="wh_url" class="form-control form-control-sm" required placeholder="https://...">
             </div>
             <div class="col-md-2">
-                <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-plus-lg me-1"></i> Ajouter</button>
+                <button type="submit" class="btn btn-sm btn-primary w-100">{{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Ajouter</button>
             </div>
             <div class="col-md-5">
                 <input type="text" name="wh_label" class="form-control form-control-sm" placeholder="Libellé (optionnel)">
@@ -120,13 +121,13 @@
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="action" value="test_webhook">
                                 <input type="hidden" name="wh_id" value="{{ w.id }}">
-                                <button type="submit" class="btn btn-sm btn-outline-primary py-0 px-1" title="Tester" aria-label="Tester"><i class="bi bi-send"></i></button>
+                                <button type="submit" class="btn btn-sm btn-outline-primary py-0 px-1" title="Tester" aria-label="Tester">{{ ico_bi('bi-send', '1em') }}</button>
                             </form>
                             <form method="POST" action="{{ url_for('connectors.webhooks') }}" class="d-inline">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="action" value="delete_webhook">
                                 <input type="hidden" name="wh_id" value="{{ w.id }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Supprimer" aria-label="Supprimer" data-confirm="Supprimer ce webhook ?"><i class="bi bi-trash"></i></button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Supprimer" aria-label="Supprimer" data-confirm="Supprimer ce webhook ?">{{ ico_bi('bi-trash', '1em') }}</button>
                             </form>
                         </td>
                     </tr>
@@ -143,7 +144,7 @@
 {# Emplacement pour les futurs connecteurs. #}
 <div class="data-card">
     <div class="p-4 text-center text-muted">
-        <i class="bi bi-plugin" style="font-size: 1.6rem;"></i>
+        {{ ico_bi('bi-plugin', '1em', '', 'font-size: 1.6rem;') }}
         <p class="mb-0 mt-2 small">D'autres connecteurs viendront s'ajouter ici.</p>
     </div>
 </div>

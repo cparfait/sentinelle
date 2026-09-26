@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {# Modal de confirmation réutilisable.
    Usage : <button ... data-confirm="Message ?" data-confirm-form="#form-id">
    Ou : <form id="form-id"><button data-confirm="Message ?">
@@ -10,7 +11,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body text-center py-2 px-4">
-        <i class="bi bi-exclamation-triangle-fill text-warning fs-1 d-block mb-3"></i>
+        {{ ico_bi('bi-exclamation-triangle-fill', '1em', 'text-warning fs-1 d-block mb-3') }}
         <p id="confirmModalText" class="mb-0 fs-6"></p>
       </div>
       <div class="modal-footer border-0 pt-0 justify-content-center gap-2">

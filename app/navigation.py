@@ -49,7 +49,7 @@ DOMAINES = [
     {'key': 'exploitation', 'label': 'Exploitation', 'entries': [
         _e('backups.list', 'Sauvegardes', 'bi-cloud-arrow-up', 'backups', 'backups', lucide='cloud-upload'),
         _e('tests.list', 'Tests', 'bi-clipboard-check', 'tests', 'tests', lucide='clipboard-list'),
-        _e('updates.list', 'Mises à jour', 'bi-arrow-up-circle', 'updates', 'updates', lucide='circle-arrow-up'),
+        _e('updates.list', 'Mises à jour', 'bi-arrow-up-circle', 'updates', 'updates', lucide='refresh-cw'),
         _e('reviews.list', 'Revues de droits', 'bi-person-check', 'reviews', 'reviews', lucide='user-check'),
     ]},
     {'key': 'parc', 'label': 'Parc', 'entries': [
@@ -141,7 +141,7 @@ RUBRIQUES = {
     'bi-calendar-check': ('calendar-check', 'amber'),
     'bi-calendar-range': ('calendar-range', 'amber'),
     'bi-arrow-repeat': ('refresh-cw', 'amber'),
-    'bi-arrow-up-circle': ('circle-arrow-up', 'emerald'),
+    'bi-arrow-up-circle': ('refresh-cw', 'emerald'),
     # argent
     'bi-cash-coin': ('coins', 'orange'),
     'bi-receipt': ('receipt', 'orange'),
@@ -164,6 +164,50 @@ RUBRIQUES = {
 }
 
 
+# Les icones d'INTERFACE (boutons, etats, fleches…) : pas de famille ni de
+# couleur, seulement leur equivalent Lucide. Le menu puis les rubriques ont la
+# priorite. Les logos de marque (Microsoft, Teams, Slack, Discord) n'existent
+# pas dans Lucide : ils restent en Bootstrap, faute de correspondance ici.
+GENERIQUES = {
+    'bi-activity': 'activity', 'bi-arrow-counterclockwise': 'rotate-ccw',
+    'bi-arrow-down-up': 'arrow-down-up', 'bi-arrow-left': 'arrow-left',
+    'bi-arrow-right': 'arrow-right', 'bi-bar-chart': 'chart-column',
+    'bi-bell-slash': 'bell-off', 'bi-box-arrow-right': 'log-out',
+    'bi-box-arrow-up-right': 'external-link', 'bi-calendar': 'calendar',
+    'bi-calendar-plus': 'calendar-plus', 'bi-card-text': 'file-text',
+    'bi-caret-down-fill': 'chevron-down', 'bi-caret-up-fill': 'chevron-up',
+    'bi-check-circle': 'circle-check', 'bi-check-circle-fill': 'circle-check',
+    'bi-check-lg': 'check', 'bi-check2-all': 'check-check', 'bi-check2-square': 'square-check',
+    'bi-chevron-left': 'chevron-left', 'bi-chevron-right': 'chevron-right',
+    'bi-clipboard': 'clipboard', 'bi-clipboard-data': 'clipboard-list',
+    'bi-clock': 'clock', 'bi-clock-history': 'history', 'bi-cloud-check': 'cloud-check',
+    'bi-code-slash': 'code', 'bi-collection': 'layers', 'bi-dash-circle': 'circle-minus',
+    'bi-database': 'database', 'bi-dot': 'dot', 'bi-download': 'download',
+    'bi-envelope': 'mail', 'bi-envelope-arrow-down': 'mail-open', 'bi-envelope-check': 'mail-check',
+    'bi-exclamation-octagon-fill': 'octagon-alert',
+    'bi-exclamation-triangle': 'triangle-alert', 'bi-exclamation-triangle-fill': 'triangle-alert',
+    'bi-eye': 'eye', 'bi-eye-slash': 'eye-off',
+    'bi-file-earmark-arrow-down': 'file-down', 'bi-file-earmark-excel': 'file-spreadsheet',
+    'bi-file-earmark-pdf': 'file-text', 'bi-file-earmark-zip': 'file-archive',
+    'bi-folder': 'folder', 'bi-funnel': 'funnel', 'bi-funnel-fill': 'funnel',
+    'bi-globe2': 'globe', 'bi-graph-up': 'trending-up', 'bi-grid-1x2': 'layout-panel-top',
+    'bi-grid-3x3-gap': 'grid-3x3', 'bi-grip-vertical': 'grip-vertical', 'bi-hand-index': 'pointer',
+    'bi-inbox': 'inbox', 'bi-info-circle-fill': 'info', 'bi-kanban': 'square-kanban',
+    'bi-layout-three-columns': 'columns-3', 'bi-link-45deg': 'link', 'bi-list': 'menu',
+    'bi-list-check': 'list-checks', 'bi-list-ul': 'list', 'bi-lock': 'lock',
+    'bi-palette': 'palette', 'bi-pencil': 'pencil', 'bi-pencil-square': 'square-pen',
+    'bi-person-circle': 'circle-user', 'bi-pie-chart': 'chart-pie', 'bi-plug': 'plug',
+    'bi-plugin': 'puzzle', 'bi-plus-circle': 'circle-plus', 'bi-plus-lg': 'plus',
+    'bi-router': 'router', 'bi-search': 'search', 'bi-send': 'send',
+    'bi-shield-exclamation': 'shield-alert', 'bi-shield-fill-check': 'shield-check',
+    'bi-shield-plus': 'shield-plus', 'bi-shield-slash': 'shield-off', 'bi-shield-x': 'shield-x',
+    'bi-slash-circle': 'ban', 'bi-speedometer2': 'gauge', 'bi-stars': 'sparkles',
+    'bi-telephone': 'phone', 'bi-three-dots': 'ellipsis', 'bi-toggles': 'toggle-right',
+    'bi-trash': 'trash-2', 'bi-truck': 'truck', 'bi-upload': 'upload', 'bi-usb-drive': 'usb',
+    'bi-x-circle': 'circle-x', 'bi-x-lg': 'x',
+}
+
+
 def _bi(icone):
     if not icone:
         return None
@@ -180,7 +224,7 @@ def lucide_de(icone):
     if icone in LUCIDE_PAR_ICONE:
         return LUCIDE_PAR_ICONE[icone]
     rubrique = RUBRIQUES.get(icone)
-    return rubrique[0] if rubrique else None
+    return rubrique[0] if rubrique else GENERIQUES.get(icone)
 
 
 def couleur_icone(icone):

@@ -1,10 +1,11 @@
+{% from '_icones.html' import icone as ico_bi %}
 {# Toast de notification en-app. Polling toutes les 60s sur /api/alert-count.
    Affiche un toast Bootstrap si le nombre d'alertes critiques augmente. #}
 <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1100">
   <div id="alertToast" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive">
     <div class="d-flex">
       <div class="toast-body" id="alertToastBody">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        {{ ico_bi('bi-exclamation-triangle-fill', '1em', 'me-2') }}
         <span id="alertToastText"></span>
       </div>
       <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>

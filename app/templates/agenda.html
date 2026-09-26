@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}À venir - Sentinelle{% endblock %}
 
@@ -12,17 +13,17 @@
     <div class="d-flex gap-2">
         <a href="{{ url_for('dashboard.agenda_ics') }}" class="btn btn-outline-primary"
            title="Télécharger un instantané des échéances au format iCalendar">
-            <i class="bi bi-download me-1"></i> Télécharger (.ics)
+            {{ ico_bi('bi-download', '1em', 'me-1') }} Télécharger (.ics)
         </a>
         <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-grid-1x2 me-1"></i> Tableau de bord
+            {{ ico_bi('bi-grid-1x2', '1em', 'me-1') }} Tableau de bord
         </a>
     </div>
 </div>
 
 <div class="data-card p-3 mb-4">
     <div class="d-flex align-items-center gap-2 mb-2">
-        <i class="bi bi-calendar-plus text-primary"></i>
+        {{ ico_bi('bi-calendar-plus', '1em', 'text-primary') }}
         <h6 class="fw-bold mb-0">Abonnement calendrier</h6>
     </div>
     {% if ics_url %}
@@ -35,7 +36,7 @@
     <div class="input-group input-group-sm mb-2">
         <input type="text" class="form-control" id="icsUrl" readonly value="{{ ics_url }}">
         <button type="button" class="btn btn-outline-primary" id="icsCopyBtn">
-            <i class="bi bi-clipboard me-1"></i> Copier
+            {{ ico_bi('bi-clipboard', '1em', 'me-1') }} Copier
         </button>
     </div>
     <div class="d-flex gap-2">
@@ -43,7 +44,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-outline-secondary btn-sm"
                     data-confirm="Régénérer le lien ? Les calendriers abonnés avec l'ancien lien cesseront de se mettre à jour.">
-                <i class="bi bi-arrow-repeat me-1"></i> Régénérer
+                {{ ico_bi('bi-arrow-repeat', '1em', 'me-1') }} Régénérer
             </button>
         </form>
         <form method="POST" action="{{ url_for('dashboard.agenda_ics_token') }}">
@@ -51,7 +52,7 @@
             <input type="hidden" name="action" value="disable">
             <button type="submit" class="btn btn-outline-danger btn-sm"
                     data-confirm="Désactiver le lien ? Les calendriers abonnés ne seront plus alimentés.">
-                <i class="bi bi-x-circle me-1"></i> Désactiver
+                {{ ico_bi('bi-x-circle', '1em', 'me-1') }} Désactiver
             </button>
         </form>
     </div>
@@ -62,9 +63,9 @@
             var input = document.getElementById('icsUrl');
             input.select();
             navigator.clipboard.writeText(input.value).then(function () {
-                btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Copié';
+                btn.innerHTML = '{{ ico_bi('bi-check-lg', '1em', 'me-1') }} Copié';
                 setTimeout(function () {
-                    btn.innerHTML = '<i class="bi bi-clipboard me-1"></i> Copier';
+                    btn.innerHTML = '{{ ico_bi('bi-clipboard', '1em', 'me-1') }} Copier';
                 }, 2000);
             });
         });
@@ -78,7 +79,7 @@
     <form method="POST" action="{{ url_for('dashboard.agenda_ics_token') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-primary btn-sm">
-            <i class="bi bi-link-45deg me-1"></i> Créer le lien d'abonnement
+            {{ ico_bi('bi-link-45deg', '1em', 'me-1') }} Créer le lien d'abonnement
         </button>
     </form>
     {% endif %}
@@ -86,7 +87,7 @@
 
 {% if not buckets %}
 <div class="data-card p-5 text-center text-muted">
-    <i class="bi bi-calendar-check" style="font-size: 2.5rem;"></i>
+    {{ ico_bi('bi-calendar-check', '1em', '', 'font-size: 2.5rem;') }}
     <p class="mt-2 mb-0">Aucune échéance dans les 90 prochains jours.</p>
 </div>
 {% endif %}

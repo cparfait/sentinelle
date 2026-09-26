@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}{{ domain.name }} - Sentinelle{% endblock %}
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
@@ -12,7 +13,7 @@
     {% if peut_editer %}
     <form method="POST" action="{{ url_for('domains.check_rdap', id=domain.id) }}" class="d-inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="btn btn-primary" title="Interroge le registre (RDAP) et met à jour la date d'expiration et le registrar"><i class="bi bi-arrow-repeat me-1"></i> Vérifier au registre</button>
+        <button type="submit" class="btn btn-primary" title="Interroge le registre (RDAP) et met à jour la date d'expiration et le registrar">{{ ico_bi('bi-arrow-repeat', '1em', 'me-1') }} Vérifier au registre</button>
     </form>
     {% endif %}
 {% endset %}
@@ -50,7 +51,7 @@
                     <div class="fiche-grille">
                         {% call champ_bloc('Registrar') %}
                         {%- if domain.registrar_supplier -%}
-                        <a href="{{ url_for('suppliers.detail', id=domain.registrar_id) }}" class="text-decoration-none"><i class="bi bi-building me-1"></i>{{ domain.registrar_supplier.name }}</a>
+                        <a href="{{ url_for('suppliers.detail', id=domain.registrar_id) }}" class="text-decoration-none">{{ ico_bi('bi-building', '1em', 'me-1') }}{{ domain.registrar_supplier.name }}</a>
                         {%- if domain.registrar and domain.registrar != domain.registrar_supplier.name %} <small class="text-muted">({{ domain.registrar }} au registre)</small>{% endif -%}
                         {%- elif domain.registrar -%}
                         {{ domain.registrar }} <small class="text-muted">(sans fiche fournisseur)</small>
@@ -68,7 +69,7 @@
             </div>
             {% if ct_new %}
             <div class="alert alert-warning py-2 small mt-3 mb-0">
-                <i class="bi bi-shield-exclamation me-1"></i>
+                {{ ico_bi('bi-shield-exclamation', '1em', 'me-1') }}
                 <strong>{{ ct_new }} nouveau{{ 'x' if ct_new > 1 }} certificat{{ 's' if ct_new > 1 }}</strong> observé{{ 's' if ct_new > 1 }} dans les journaux Certificate Transparency :
                 à vérifier dans l'onglet dédié.
             </div>
@@ -86,7 +87,7 @@
     {% call volet('certificats') %}
     <div class="data-card mb-3">
         <div class="card-header-custom">
-            <h6 class="fw-bold mb-0"><i class="bi bi-award me-2"></i>Certificats TLS de ce domaine
+            <h6 class="fw-bold mb-0">{{ ico_bi('bi-award', '1em', 'me-2') }}Certificats TLS de ce domaine
                 <span class="badge bg-secondary ms-1">{{ certificats|length }}</span></h6>
             <small class="text-muted">Les certificats suivis dont le nom d'hôte relève de ce domaine</small>
         </div>
@@ -115,7 +116,7 @@
     {% call volet('certificate-transparency') %}
     <div class="data-card mb-3">
         <div class="card-header-custom">
-            <h6 class="fw-bold mb-0"><i class="bi bi-shield-lock me-2"></i>Certificate Transparency
+            <h6 class="fw-bold mb-0">{{ ico_bi('bi-shield-lock', '1em', 'me-2') }}Certificate Transparency
                 {% if ct_new %}<span class="badge-status badge-warning ms-1">{{ ct_new }} nouveau{{ 'x' if ct_new > 1 }}</span>{% endif %}</h6>
             <small class="text-muted">Certificats émis pour ce domaine, d'après crt.sh — y compris ceux inconnus de la DSI</small>
         </div>

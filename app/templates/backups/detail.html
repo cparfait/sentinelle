@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}{{ backup.service_name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
@@ -29,9 +30,9 @@
     {% call faits() %}
         {% call fait_bloc("Aujourd'hui") %}
         {%- if tc -%}
-            {%- if tc.status == 'ok' %}<span class="text-success"><i class="bi bi-check-circle me-1"></i>OK</span>
-            {%- elif tc.status == 'failed' %}<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Échec</span>
-            {%- else %}<span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Avertissement</span>{% endif -%}
+            {%- if tc.status == 'ok' %}<span class="text-success">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}OK</span>
+            {%- elif tc.status == 'failed' %}<span class="text-danger">{{ ico_bi('bi-x-circle', '1em', 'me-1') }}Échec</span>
+            {%- else %}<span class="text-warning">{{ ico_bi('bi-exclamation-triangle', '1em', 'me-1') }}Avertissement</span>{% endif -%}
         {%- else %}<span class="text-muted">non vérifiée</span>{% endif -%}
         {% endcall %}
         {% call fait_bloc('Dernier OK') %}
@@ -88,7 +89,7 @@
     <div class="data-card">
         <div class="card-header-custom">
             <div>
-                <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>Historique des checks</h6>
+                <h6 class="fw-bold mb-0">{{ ico_bi('bi-clock-history', '1em', 'me-2') }}Historique des checks</h6>
                 <small class="text-muted">Toutes les saisies, y compris plusieurs le même jour. Les statistiques retiennent le premier statut du jour ; l'état actuel reflète le dernier.</small>
             </div>
         </div>

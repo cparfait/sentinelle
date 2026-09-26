@@ -306,7 +306,7 @@ button:focus-visible,
 
 .sidebar-search-form { position: relative; display: flex; align-items: center; }
 
-.sidebar-search-form i {
+.sidebar-search-form :is(i, svg.lucide) {
     position: absolute;
     left: 12px;
     color: var(--faint);
@@ -350,8 +350,8 @@ button:focus-visible,
 /* Section repliable (Administration) : le titre devient un bouton discret. */
 details.sidebar-section--repliable > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px; }
 details.sidebar-section--repliable > summary::-webkit-details-marker { display: none; }
-details.sidebar-section--repliable > summary i { margin-left: auto; font-size: 0.7rem; transition: transform 0.15s ease; }
-details.sidebar-section--repliable[open] > summary i { transform: rotate(90deg); }
+details.sidebar-section--repliable > summary :is(i, svg.lucide) { margin-left: auto; font-size: 0.7rem; transition: transform 0.15s ease; }
+details.sidebar-section--repliable[open] > summary :is(i, svg.lucide) { transform: rotate(90deg); }
 details.sidebar-section--repliable > summary:hover { color: var(--muted); }
 
 /* Fil d'Ariane : le domaine, puis la liste ; le titre de la page suit en H1. */
@@ -644,7 +644,7 @@ svg.lucide { flex-shrink: 0; vertical-align: -0.18em; fill: none; stroke: curren
     letter-spacing: -0.02em;
     color: var(--strong);
 }
-.page-title i { display: none; }
+.page-title :is(i, svg.lucide) { display: none; }
 /* Le compteur dans le titre (« Certificats 5 ») et le ? d'aide. */
 .page-count { margin-left: 6px; font-size: 1.05rem; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
 .help-toggle {
@@ -1004,7 +1004,7 @@ body.dash-editing .stat-toggle { display: inline-flex; }
     letter-spacing: 0.05em;
     color: var(--text);
 }
-.card-header-custom h6 i { margin-right: 6px; }
+.card-header-custom h6 :is(i, svg.lucide) { margin-right: 6px; }
 
 /* Titres de bloc posés dans le corps d'une carte : meme barre, meme casse.
    Le titre d'une RUBRIQUE (.fiche-bloc) en est exclu : il a sa propre mise
@@ -1225,7 +1225,7 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 /* Validation rapide des sauvegardes (tableau de bord) : trois boutons et un
    champ par ligne, serres pour ne pas dicter la hauteur des lignes. */
 .qc-btn { padding: 2px 9px; font-size: 0.78rem; line-height: 1.4; border-radius: 6px; white-space: nowrap; }
-.qc-btn i { font-size: 0.85em; }
+.qc-btn :is(i, svg.lucide) { font-size: 0.85em; }
 .qc-commentaire { padding: 2px 8px; font-size: 0.78rem; height: 26px; min-height: 26px; border-radius: 6px; }
 
 /* Utilitaires des cellules a deux etages (voir certificates/list.html). */
@@ -1257,14 +1257,14 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 .pile > * { display: flex; align-items: flex-start; gap: 5px; min-width: 0; text-decoration: none; }
 .pile > .pile-principal { font-size: 0.875rem; line-height: 1.4; }
 .pile > .pile-principal + * { margin-top: 2px; }
-.pile i { flex-shrink: 0; font-size: 0.7rem; line-height: inherit; color: var(--faint); }
+.pile :is(i, svg.lucide) { flex-shrink: 0; font-size: 0.7rem; line-height: inherit; color: var(--faint); }
 .pile .casse { word-break: break-all; }
 /* Les liens gris et le portail en couleur d'accent : la regle generale des
    tableaux (liens couleur du texte) est plus specifique, d'ou le selecteur. */
 .table.tableau-fournisseurs tbody td .pile a.pile-faint { color: var(--faint); }
 .table.tableau-fournisseurs tbody td .pile a.pile-accent { color: var(--primary); }
 .table.tableau-fournisseurs tbody td .pile a:hover,
-.table.tableau-fournisseurs tbody td .pile a:hover i { color: var(--primary); }
+.table.tableau-fournisseurs tbody td .pile a:hover :is(i, svg.lucide) { color: var(--primary); }
 .table.tableau-fournisseurs tbody td a.pile-site { font-size: 0.75rem; color: var(--faint); }
 .table.tableau-fournisseurs tbody td a.pile-site:hover { color: var(--primary); text-decoration: underline; }
 .tableau-fournisseurs .cell-horaires { font-size: 0.75rem; line-height: 1.35; }
@@ -2011,7 +2011,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     font-size: 0.8rem; font-weight: 600; color: var(--text);
     margin-bottom: 7px; display: flex; align-items: center; gap: 6px;
 }
-.perm-tile-head i { color: var(--text-light); font-size: 0.95rem; }
+.perm-tile-head :is(i, svg.lucide) { color: var(--text-light); font-size: 0.95rem; }
 
 /* Code couleur du niveau (bordure gauche du select) */
 .lvl-select { border-left-width: 4px !important; font-weight: 500; }
@@ -2131,7 +2131,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     width: 22px; height: 22px; border-radius: 50%; background: var(--inset); color: var(--muted);
     font-size: 0.72rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
 }
-.formulaire .form-section > .form-section-titre i { display: none; }
+.formulaire .form-section > .form-section-titre :is(i, svg.lucide) { display: none; }
 
 /* La barre fixe du bas : Annuler et Enregistrer suivent le defilement. */
 .form-pied {
@@ -2203,7 +2203,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     background: rgba(var(--sec), 0.08);
     border-bottom: 1px solid rgba(var(--sec), 0.18);
 }
-.form-section > .form-section-titre i { margin-right: 8px; }
+.form-section > .form-section-titre :is(i, svg.lucide) { margin-right: 8px; }
 
 .form-section-aide {
     margin: 0;
@@ -2218,11 +2218,11 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    et les bandeaux de rubrique qui poussent leurs pastilles a droite. */
 .pref-etat { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
 .pref-etat .badge-status { font-size: 0.75rem; padding: 3px 10px; gap: 6px; }
-.pref-etat .badge-status i { font-size: 0.8rem; }
+.pref-etat .badge-status :is(i, svg.lucide) { font-size: 0.8rem; }
 .pref-page .som-famille { margin: 14px 0 4px; padding: 0 10px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
 .pref-page .som-famille:first-child { margin-top: 0; }
-.pref-page .form-sommaire-lien i { width: 16px; text-align: center; color: var(--faint); font-size: 0.9rem; }
-.pref-page .form-sommaire-lien.active i { color: var(--primary); }
+.pref-page .form-sommaire-lien :is(i, svg.lucide) { width: 16px; text-align: center; color: var(--faint); font-size: 0.9rem; }
+.pref-page .form-sommaire-lien.active :is(i, svg.lucide) { color: var(--primary); }
 .som-etat { margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: var(--faint); opacity: 0.5; flex: 0 0 auto; }
 .som-etat.ok { background: var(--success); opacity: 1; }
 .som-etat.ko { background: var(--danger); opacity: 1; }
@@ -2663,7 +2663,8 @@ a.marche-doc-nom:hover { color: var(--primary); }
 .data-card h6.fiche-titre::before { background: rgb(var(--sec)); }
 /* !important : les gabarits posent encore des utilitaires Bootstrap
    (text-primary, text-success) sur ces icones. */
-.data-card h6.fiche-titre > i:not(.ico-onglet) { color: rgb(var(--sec)) !important; }
+.data-card h6.fiche-titre > i:not(.ico-onglet),
+.data-card h6.fiche-titre > svg.lucide:not(.ico):not(.ico-onglet) { color: rgb(var(--sec)) !important; }
 
 .fiche-titre--indigo  { --sec: var(--sec-indigo); }
 .fiche-titre--sky     { --sec: var(--sec-sky); }
@@ -2974,7 +2975,7 @@ tr:hover .row-actions, tr:focus-within .row-actions { opacity: 1; }
     flex: 1;
 }
 .list-search { position: relative; flex-shrink: 0; }
-.list-search > i {
+.list-search > :is(i, svg.lucide) {
     position: absolute;
     left: 12px;
     top: 50%;

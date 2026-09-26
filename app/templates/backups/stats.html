@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Statistiques Backups - Sentinelle{% endblock %}
 
@@ -8,7 +9,7 @@
         <p class="page-subtitle">Vue globale sur les 30 derniers jours</p>
     </div>
     <a href="{{ url_for('backups.list') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i> Retour
+        {{ ico_bi('bi-arrow-left', '1em', 'me-1') }} Retour
     </a>
 </div>
 
@@ -89,7 +90,7 @@
 </div>
 {% else %}
 <div class="data-card p-4 text-center text-muted">
-    <i class="bi bi-bar-chart" style="font-size: 2rem;"></i>
+    {{ ico_bi('bi-bar-chart', '1em', '', 'font-size: 2rem;') }}
     <p class="mt-2 mb-0">Aucune donnee de backup disponible</p>
 </div>
 {% endfor %}

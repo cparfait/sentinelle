@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Matériel - Sentinelle{% endblock %}
 
@@ -37,10 +38,10 @@
     {% if current_user.can_edit('inventory') %}
     <div class="page-actions">
         <a href="{{ url_for('inventory.import_xlsx') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-file-earmark-excel me-1"></i> Importer Excel
+            {{ ico_bi('bi-file-earmark-excel', '1em', 'me-1') }} Importer Excel
         </a>
         <a href="{{ url_for('inventory.create', famille=famille) }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nouvel équipement
+            {{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Nouvel équipement
         </a>
     </div>
     {% endif %}
@@ -68,17 +69,17 @@
         </div>
         <div class="flex-grow-1 justify-content-end d-flex flex-wrap align-items-center gap-2">
             <div class="list-search">
-                <i class="bi bi-search"></i>
+                {{ ico_bi('bi-search', '1em') }}
                 <input type="search" name="q" value="{{ q }}" class="form-control"
                        placeholder="Rechercher…" aria-label="Rechercher dans la liste">
             </div>
             <button class="btn btn-outline-secondary btn-icon" type="button" data-bs-toggle="collapse" data-bs-target="#advFilter" title="Filtre avancé" aria-label="Filtre avancé">
-                <i class="bi bi-funnel"></i>{% if active_filters %} <span class="badge bg-primary">{{ active_filters }}</span>{% endif %}
+                {{ ico_bi('bi-funnel', '1em') }}{% if active_filters %} <span class="badge bg-primary">{{ active_filters }}</span>{% endif %}
             </button>
-            {% if q or active_filters %}<a href="{{ url_for('inventory.list', famille=famille, kind=kind) }}" class="btn btn-ghost" title="Effacer la recherche"><i class="bi bi-x-lg me-1"></i>Effacer</a>{% endif %}
+            {% if q or active_filters %}<a href="{{ url_for('inventory.list', famille=famille, kind=kind) }}" class="btn btn-ghost" title="Effacer la recherche">{{ ico_bi('bi-x-lg', '1em', 'me-1') }}Effacer</a>{% endif %}
             <div class="dropdown">
                 <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-                    <i class="bi bi-layout-three-columns me-1"></i> Colonnes
+                    {{ ico_bi('bi-layout-three-columns', '1em', 'me-1') }} Colonnes
                 </button>
                 <div class="dropdown-menu dropdown-menu-end p-2" style="max-height: 320px; overflow-y: auto;">
                     {% for key, label in columns %}
@@ -145,7 +146,7 @@
                     </div>
                 </div>
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-funnel me-1"></i> Filtrer</button>
+                    <button type="submit" class="btn btn-sm btn-primary w-100">{{ ico_bi('bi-funnel', '1em', 'me-1') }} Filtrer</button>
                 </div>
             </div>
         </div>
@@ -156,7 +157,7 @@
     {%- set a = request.args.to_dict() -%}
     {%- set _ = a.update({'sort': key, 'dir': 'desc' if (sort == key and dir == 'asc') else 'asc'}) -%}
     {%- set _ = a.pop('page', None) -%}
-    <a href="{{ url_for('inventory.list', **a) }}" class="th-sort">{{ label }}{% if sort == key %} <i class="bi bi-caret-{{ 'down' if dir == 'desc' else 'up' }}-fill"></i>{% else %} <i class="bi bi-arrow-down-up th-sort-idle"></i>{% endif %}</a>
+    <a href="{{ url_for('inventory.list', **a) }}" class="th-sort">{{ label }}{% if sort == key %} {{ ico_bi('bi-caret-' ~ ('down' if dir == 'desc' else 'up') ~ '-fill', '1em') }}{% else %} {{ ico_bi('bi-arrow-down-up', '1em', 'th-sort-idle') }}{% endif %}</a>
 {%- endmacro %}
 
 <div class="data-card">
@@ -230,7 +231,7 @@
                 </tr>
                 {% else %}
                 <tr><td colspan="{{ columns|length + 2 }}" class="text-center py-4 text-muted">
-                    <i class="bi bi-hdd-stack" style="font-size: 2rem;"></i>
+                    {{ ico_bi('bi-hdd-stack', '1em', '', 'font-size: 2rem;') }}
                     <p class="mt-2 mb-0">Aucun équipement.
                         {% if current_user.can_edit('inventory') %}<a href="{{ url_for('inventory.import_xlsx') }}">Importer votre fichier Excel</a> ou <a href="{{ url_for('inventory.create', famille=famille) }}">en ajouter un</a>.{% endif %}
                     </p>

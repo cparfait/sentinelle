@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Comptes - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge, delai_badge, priorite %}
@@ -15,14 +16,14 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-outline-secondary" title="Synchroniser depuis Active Directory"
                     data-confirm="Synchroniser les expirations de mots de passe depuis l'AD ?">
-                <i class="bi bi-arrow-repeat me-1"></i> Synchroniser AD
+                {{ ico_bi('bi-arrow-repeat', '1em', 'me-1') }} Synchroniser AD
             </button>
         </form>
         {% endif %}
         {% with csv_key='accounts' %}{% include '_csv_toolbar.html' %}{% endwith %}
         {% if current_user.can_edit('accounts') %}
         <a href="{{ url_for('accounts.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nouveau compte
+            {{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Nouveau compte
         </a>
         {% endif %}
     </div>

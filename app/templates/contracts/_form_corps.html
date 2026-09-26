@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {# ═══ Le formulaire d'un marché ═══
    Partagé par la page de modification (form.html, aussi rendue seule dans une
    liste avec ?inline=1) et l'onglet Détails de la fiche (detail.html).
@@ -216,7 +217,7 @@
         <div class="d-flex align-items-center justify-content-end gap-2">
             <span class="text-muted small me-auto"><span class="text-danger">*</span> champ obligatoire</span>
             <button type="button" class="btn btn-sm btn-outline-secondary" data-formulaire-fermer>Annuler</button>
-            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if contract else 'Ajouter' }}</button>
+            <button type="submit" class="btn btn-sm btn-primary">{{ ico_bi('bi-check-lg', '1em', 'me-1') }} {{ 'Enregistrer' if contract else 'Ajouter' }}</button>
         </div>
         {% else %}
         {{ pied_form(retour, 'Enregistrer' if contract else 'Ajouter') }}

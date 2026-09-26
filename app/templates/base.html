@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -24,7 +25,7 @@
 
     <div class="app-topbar">
         <button class="topbar-toggle" type="button" onclick="toggleSidebar()" aria-label="Ouvrir le menu">
-            <i class="bi bi-list"></i>
+            {{ ico_bi('bi-list', '1em') }}
         </button>
         <span class="topbar-title">Sentinelle</span>
         <span class="theme-toggle" onclick="toggleTheme()" title="Changer le theme" aria-label="Changer le theme" role="button" tabindex="0">
@@ -41,7 +42,7 @@
 
         <div class="sidebar-search px-3 pb-2">
             <form method="GET" action="{{ url_for('search.search') }}" class="sidebar-search-form" role="search">
-                <i class="bi bi-search"></i>
+                {{ ico_bi('bi-search', '1em') }}
                 <input type="search" name="q" id="recherche-globale" placeholder="Rechercher partout" autocomplete="off" aria-label="Rechercher partout (Ctrl K)">
                 <kbd aria-hidden="true">Ctrl K</kbd>
             </form>
@@ -78,7 +79,7 @@
             {% if admin_visible %}
             <details class="sidebar-section sidebar-section--repliable dom-administration" data-section="administration"
                      {% if nav_domaine_actif == 'administration' %}open data-forced-open{% endif %}>
-                <summary class="sidebar-section-title">{{ nav_administration.label }}<i class="bi bi-chevron-right"></i></summary>
+                <summary class="sidebar-section-title">{{ nav_administration.label }}{{ ico_bi('bi-chevron-right', '1em') }}</summary>
                 {% for e in nav_administration.entries %}
                 {% if (e.admin and current_user.is_admin) or (not e.admin and e.perm and current_user.can_view(e.perm)) %}
                 <a href="{{ url_for(e.endpoint) }}" class="sidebar-link {% if e.endpoint == nav_endpoint_actif %}active{% endif %}">
@@ -124,7 +125,7 @@
         {% for category, message in messages %}
         {% set cat = category if category in ['success', 'danger', 'warning', 'info'] else 'info' %}
         <div class="alert alert-{{ cat }} alert-dismissible fade show d-flex align-items-center gap-2 js-autodismiss" role="alert">
-            <i class="bi bi-{{ flash_icons[cat] }}"></i>
+            {{ ico_bi('bi-' ~ flash_icons[cat], '1em') }}
             <div class="flex-grow-1">{{ message }}</div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
         </div>

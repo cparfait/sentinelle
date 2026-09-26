@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% from '_icones.html' import icone %}
 {# ═══ Mise en concurrence ═══
    Les devis racontent l'AVANT-contrat. Ils se groupent par consultation — un
@@ -14,7 +15,7 @@
         {% if peut_editer %}
         <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
                 data-bs-target="#nouvelleConsultation">
-            <i class="bi bi-plus-lg me-1"></i> Consultation
+            {{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Consultation
         </button>
         {% endif %}
     </div>
@@ -55,7 +56,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer la consultation"
                         aria-label="Supprimer la consultation"
-                        data-confirm="Supprimer cette consultation et ses devis ?"><i class="bi bi-trash"></i></button>
+                        data-confirm="Supprimer cette consultation et ses devis ?">{{ ico_bi('bi-trash', '1em') }}</button>
             </form>
             {% endif %}
         </div>
@@ -75,14 +76,14 @@
                             <form method="POST" action="{{ url_for('contracts.quote_select', quote_id=d.id) }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-sm btn-outline-success" title="Marquer comme retenu"
-                                        aria-label="Marquer comme retenu"><i class="bi bi-check-lg"></i></button>
+                                        aria-label="Marquer comme retenu">{{ ico_bi('bi-check-lg', '1em') }}</button>
                             </form>
                             {% endif %}
                             {% if peut_supprimer %}
                             <form method="POST" action="{{ url_for('contracts.quote_delete', quote_id=d.id) }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer le devis"
-                                        aria-label="Supprimer le devis" data-confirm="Supprimer ce devis ?"><i class="bi bi-trash"></i></button>
+                                        aria-label="Supprimer le devis" data-confirm="Supprimer ce devis ?">{{ ico_bi('bi-trash', '1em') }}</button>
                             </form>
                             {% endif %}
                         </div>
@@ -118,7 +119,7 @@
                 </div>
                 <div class="col-md-1">
                     <button type="submit" class="btn btn-sm btn-outline-primary w-100" title="Ajouter le devis"
-                            aria-label="Ajouter le devis"><i class="bi bi-plus-lg"></i></button>
+                            aria-label="Ajouter le devis">{{ ico_bi('bi-plus-lg', '1em') }}</button>
                 </div>
             </div>
         </form>

@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}{{ 'Modifier' if user else 'Nouvel' }} utilisateur - Sentinelle{% endblock %}
 {% from '_form_section.html' import section %}
@@ -35,7 +36,7 @@
                 {% if user and user.is_ldap %}
                 <div class="mb-3">
                     <label class="form-label fw-medium">Mot de passe</label>
-                    <p class="text-muted small mb-0"><i class="bi bi-diagram-3 me-1"></i>Compte <strong>Active Directory</strong> : l'authentification et le mot de passe sont gérés par l'annuaire, pas ici.</p>
+                    <p class="text-muted small mb-0">{{ ico_bi('bi-diagram-3', '1em', 'me-1') }}Compte <strong>Active Directory</strong> : l'authentification et le mot de passe sont gérés par l'annuaire, pas ici.</p>
                 </div>
                 {% else %}
                 <div class="mb-3">
@@ -51,7 +52,7 @@
                            {{ '' if user else 'required' }}
                            minlength="8"
                            placeholder="Ressaisir le mot de passe">
-                    <small class="text-danger d-none" id="pwMismatch"><i class="bi bi-exclamation-triangle me-1"></i>Les deux mots de passe ne correspondent pas.</small>
+                    <small class="text-danger d-none" id="pwMismatch">{{ ico_bi('bi-exclamation-triangle', '1em', 'me-1') }}Les deux mots de passe ne correspondent pas.</small>
                 </div>
                 {% endif %}
                 {% endcall %}

@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Journal d'audit - Sentinelle{% endblock %}
 
@@ -8,13 +9,13 @@
         <p class="page-subtitle">Qui a fait quoi, et quand — {{ total }} action(s){% if q %} pour « {{ q }} »{% endif %}</p>
     </div>
     <a href="{{ url_for('users.list') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-people me-1"></i> Utilisateurs
+        {{ ico_bi('bi-people', '1em', 'me-1') }} Utilisateurs
     </a>
 </div>
 
 <form method="GET" action="{{ url_for('users.audit') }}" class="mb-3">
     <div class="input-group" style="max-width: 480px;">
-        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <span class="input-group-text">{{ ico_bi('bi-search', '1em') }}</span>
         {% if request.args.get('per_page') %}<input type="hidden" name="per_page" value="{{ request.args.get('per_page') }}">{% endif %}
         <input type="text" name="q" value="{{ q }}" class="form-control"
                placeholder="Rechercher (action, détail, utilisateur, catégorie)...">

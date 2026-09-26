@@ -1,10 +1,11 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Importer l'inventaire - Sentinelle{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="page-title">Importer l'inventaire (Excel)</h1>
-    <a href="{{ url_for('inventory.list') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Retour</a>
+    <a href="{{ url_for('inventory.list') }}" class="btn btn-outline-secondary">{{ ico_bi('bi-arrow-left', '1em', 'me-1') }} Retour</a>
 </div>
 
 <div class="row justify-content-center">
@@ -15,7 +16,7 @@
                 <label class="form-label fw-medium">Fichier Excel (.xlsx)</label>
                 <input type="file" name="file" accept=".xlsx,.xlsm" class="form-control" required>
                 <div class="alert alert-info py-2 small mt-3 mb-0">
-                    <i class="bi bi-info-circle me-1"></i>
+                    {{ ico_bi('bi-info-circle', '1em', 'me-1') }}
                     Le classeur doit contenir un ou plusieurs onglets nommés
                     <strong>VM</strong>, <strong>Physiques</strong> et/ou <strong>NAS</strong>.
                     Les colonnes sont reconnues automatiquement (Nom, OS, Adresse IP,
@@ -23,7 +24,7 @@
                     colonnes inconnues sont ignorées. L'import <strong>ajoute</strong> les
                     équipements (il ne remplace pas l'existant).
                 </div>
-                <button type="submit" class="btn btn-primary mt-3"><i class="bi bi-upload me-1"></i> Importer</button>
+                <button type="submit" class="btn btn-primary mt-3">{{ ico_bi('bi-upload', '1em', 'me-1') }} Importer</button>
             </form>
         </div>
     </div>

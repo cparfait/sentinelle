@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% from '_icones.html' import icone, lucide %}
 {% from '_quick_add.html' import qa_modal_server, qa_modal_supplier %}
@@ -32,8 +33,8 @@
 <li class="mb-2">
     <span class="text-muted d-block" style="font-size:.75rem">{{ titre }}</span>
     {% if nom %}<span class="fw-medium">{{ nom }}</span>{% endif %}
-    {% if tel %}<a href="tel:{{ tel }}" class="d-block text-decoration-none"><i class="bi bi-telephone me-1"></i>{{ tel }}</a>{% endif %}
-    {% if mail %}<a href="mailto:{{ mail }}" class="d-block text-truncate"><i class="bi bi-envelope me-1"></i>{{ mail }}</a>{% endif %}
+    {% if tel %}<a href="tel:{{ tel }}" class="d-block text-decoration-none">{{ ico_bi('bi-telephone', '1em', 'me-1') }}{{ tel }}</a>{% endif %}
+    {% if mail %}<a href="mailto:{{ mail }}" class="d-block text-truncate">{{ ico_bi('bi-envelope', '1em', 'me-1') }}{{ mail }}</a>{% endif %}
 </li>
 {% endif %}
 {% endmacro %}
@@ -52,7 +53,7 @@
     {%- if item.criticality %} · criticité {{ item.criticality_label() | lower }}{% endif -%}
 {% endset %}
 {% set primaire %}
-    {% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right me-1"></i> Ouvrir l'application</a>{% endif %}
+    {% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener" class="btn btn-outline-secondary">{{ ico_bi('bi-box-arrow-up-right', '1em', 'me-1') }} Ouvrir l'application</a>{% endif %}
 {% endset %}
 {% set menu %}
     {% if current_user.can_delete('software') %}
@@ -64,7 +65,7 @@
 
 {% if item.over_licence() %}
 <div class="alert alert-warning py-2 px-3 small">
-    <i class="bi bi-exclamation-triangle me-1"></i>
+    {{ ico_bi('bi-exclamation-triangle', '1em', 'me-1') }}
     <strong>Dépassement de licence</strong> : {{ item.users_count }} utilisateurs pour un plafond
     contractuel de {{ item.users_max }}.
 </div>
@@ -159,7 +160,7 @@
                             {%- if item.responsible or item.responsible_email -%}
                             {{ item.responsible or '' }}
                             {% if item.responsible_email %}
-                            <a href="mailto:{{ item.responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.responsible_email }}</a>
+                            <a href="mailto:{{ item.responsible_email }}" class="d-block small text-truncate">{{ ico_bi('bi-envelope', '1em', 'me-1') }}{{ item.responsible_email }}</a>
                             {% endif %}
                             {%- endif -%}
                             {% endcall %}
@@ -167,7 +168,7 @@
                             {%- if item.tech_responsible or item.tech_responsible_email -%}
                             {{ item.tech_responsible or '' }}
                             {% if item.tech_responsible_email %}
-                            <a href="mailto:{{ item.tech_responsible_email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ item.tech_responsible_email }}</a>
+                            <a href="mailto:{{ item.tech_responsible_email }}" class="d-block small text-truncate">{{ ico_bi('bi-envelope', '1em', 'me-1') }}{{ item.tech_responsible_email }}</a>
                             {% endif %}
                             {%- endif -%}
                             {% endcall %}
@@ -226,11 +227,11 @@
                         <div class="fw-medium mb-2"><a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}">{{ sup.name }}</a></div>
                         <ul class="list-unstyled small mb-0">
                             {% if sup.customer_ref %}<li class="mb-1"><span class="text-muted">N° client</span> <span class="fw-medium">{{ sup.customer_ref }}</span></li>{% endif %}
-                            {% if sup.support_url %}<li><i class="bi bi-life-preserver me-1"></i><a href="{{ sup.support_url }}" target="_blank" rel="noopener">Portail de tickets</a></li>{% endif %}
-                            {% if sup.support_phone or sup.phone %}<li><i class="bi bi-telephone me-1"></i>{{ sup.support_phone or sup.phone }}</li>{% endif %}
-                            {% if sup.support_email or sup.email %}<li class="text-truncate"><i class="bi bi-envelope me-1"></i><a href="mailto:{{ sup.support_email or sup.email }}">{{ sup.support_email or sup.email }}</a></li>{% endif %}
-                            {% if sup.hours %}<li class="text-muted"><i class="bi bi-clock me-1"></i>{{ sup.hours }}</li>{% endif %}
-                            {% if sup.hours2 %}<li class="text-muted"><i class="bi bi-clock invisible me-1"></i>{{ sup.hours2 }}</li>{% endif %}
+                            {% if sup.support_url %}<li>{{ ico_bi('bi-life-preserver', '1em', 'me-1') }}<a href="{{ sup.support_url }}" target="_blank" rel="noopener">Portail de tickets</a></li>{% endif %}
+                            {% if sup.support_phone or sup.phone %}<li>{{ ico_bi('bi-telephone', '1em', 'me-1') }}{{ sup.support_phone or sup.phone }}</li>{% endif %}
+                            {% if sup.support_email or sup.email %}<li class="text-truncate">{{ ico_bi('bi-envelope', '1em', 'me-1') }}<a href="mailto:{{ sup.support_email or sup.email }}">{{ sup.support_email or sup.email }}</a></li>{% endif %}
+                            {% if sup.hours %}<li class="text-muted">{{ ico_bi('bi-clock', '1em', 'me-1') }}{{ sup.hours }}</li>{% endif %}
+                            {% if sup.hours2 %}<li class="text-muted">{{ ico_bi('bi-clock', '1em', 'invisible me-1') }}{{ sup.hours2 }}</li>{% endif %}
                         </ul>
                         {# Les contacts de l'éditeur (commercial, facturation, DPO)
                            suivent son support, dans la même carte : ils se
@@ -252,7 +253,7 @@
                        puis le total annuel. Le détail vit dans l'onglet Contrats. #}
                     {% if marches_en_cours %}
                     <div class="data-card p-4 mb-3">
-                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2 d-flex align-items-center"><i class="bi bi-file-earmark-text ico-onglet ico-onglet--contrats" aria-hidden="true"></i>Contrats
+                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2 d-flex align-items-center">{{ ico_bi('bi-file-earmark-text', '1em', 'ico-onglet ico-onglet--contrats') }}Contrats
                             <button type="button" class="btn btn-ghost btn-sm ms-auto text-nowrap" onclick="document.getElementById('ong-contrats')?.click()">Tout voir</button></h6>
                         <ul class="list-unstyled small mb-0 contrats-resume">
                             {% set total = namespace(annuel=0) %}

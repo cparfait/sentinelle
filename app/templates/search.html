@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Recherche - Sentinelle{% endblock %}
 
@@ -11,7 +12,7 @@
                    value="{{ q }}" placeholder="Rechercher un service, compte, domaine, logiciel, pièce jointe..."
                    autofocus>
             <button type="submit" class="btn btn-primary">
-                <i class="bi bi-search me-1"></i> Rechercher
+                {{ ico_bi('bi-search', '1em', 'me-1') }} Rechercher
             </button>
         </div>
     </form>
@@ -46,7 +47,7 @@
                     <td class="text-muted">{{ r.detail }}</td>
                     <td>
                         <a href="{{ r.url }}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-eye me-1"></i> Voir
+                            {{ ico_bi('bi-eye', '1em', 'me-1') }} Voir
                         </a>
                     </td>
                 </tr>
@@ -57,7 +58,7 @@
 </div>
 {% else %}
 <div class="data-card p-4 text-center text-muted">
-    <i class="bi bi-search" style="font-size: 2rem;"></i>
+    {{ ico_bi('bi-search', '1em', '', 'font-size: 2rem;') }}
     <p class="mt-2 mb-0">Aucun resultat pour "{{ q }}"</p>
 </div>
 {% endif %}

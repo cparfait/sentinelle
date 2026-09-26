@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Check quotidien - Sentinelle{% endblock %}
 
@@ -8,7 +9,7 @@
         <p class="page-subtitle">{{ today.strftime('%A %d %B %Y') }}</p>
     </div>
     <a href="{{ url_for('backups.list') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i> Retour
+        {{ ico_bi('bi-arrow-left', '1em', 'me-1') }} Retour
     </a>
 </div>
 
@@ -63,8 +64,8 @@
                     {% else %}
                     <tr>
                         <td colspan="5" class="text-center py-4 text-muted">
-                            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-                            <p class="mt-2 mb-0">Aucun backup configure. <a href="{{ url_for('backups.create') }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a></p>
+                            {{ ico_bi('bi-inbox', '1em', '', 'font-size: 2rem;') }}
+                            <p class="mt-2 mb-0">Aucun backup configure. <a href="{{ url_for('backups.create') }}" class="btn btn-sm btn-primary mt-1">{{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Ajouter le premier</a></p>
                         </td>
                     </tr>
                     {% endfor %}
@@ -76,7 +77,7 @@
     {% if backups %}
     <div class="mt-3 d-flex justify-content-end">
         <button type="submit" class="btn btn-success btn-lg">
-            <i class="bi bi-check-lg me-1"></i> Enregistrer les checks
+            {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer les checks
         </button>
     </div>
     {% endif %}

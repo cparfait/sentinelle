@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {# ═══ Le gabarit de liste ═══
    Toutes les listes partagent la même barre d'outils, sur UNE ligne :
 
@@ -29,11 +30,11 @@
 <div class="list-toolbar">
     <form method="GET" class="list-search" role="search">
         {% for k, v in keep.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
-        <i class="bi bi-search"></i>
+        {{ ico_bi('bi-search', '1em') }}
         <input type="search" name="q" value="{{ q or '' }}" class="form-control"
                placeholder="{{ placeholder }}" aria-label="Rechercher dans la liste">
     </form>
-    {% if q %}<a href="{{ url_for(request.endpoint, **keep) }}" class="btn btn-ghost btn-icon" title="Effacer la recherche"><i class="bi bi-x-lg me-1"></i>Effacer</a>{% endif %}
+    {% if q %}<a href="{{ url_for(request.endpoint, **keep) }}" class="btn btn-ghost btn-icon" title="Effacer la recherche">{{ ico_bi('bi-x-lg', '1em', 'me-1') }}Effacer</a>{% endif %}
     {{ segments }}
     <div class="list-toolbar-pills" data-pills></div>
     {% if droite %}<div class="list-toolbar-right">{{ droite }}</div>{% endif %}
@@ -51,13 +52,13 @@
 
 {# Le bouton « Modifier » d'une ligne, et le bouton « Supprimer » (POST + CSRF). #}
 {% macro bouton_modifier(url) %}
-<a href="{{ url }}" class="btn btn-sm btn-outline-secondary btn-icon" title="Modifier" aria-label="Modifier"><i class="bi bi-pencil"></i></a>
+<a href="{{ url }}" class="btn btn-sm btn-outline-secondary btn-icon" title="Modifier" aria-label="Modifier">{{ ico_bi('bi-pencil', '1em') }}</a>
 {% endmacro %}
 
 {% macro bouton_supprimer(url, message='Supprimer cet élément ?') %}
 <form method="POST" action="{{ url }}" class="d-inline">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="Supprimer" aria-label="Supprimer" data-confirm="{{ message }}"><i class="bi bi-trash"></i></button>
+    <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="Supprimer" aria-label="Supprimer" data-confirm="{{ message }}">{{ ico_bi('bi-trash', '1em') }}</button>
 </form>
 {% endmacro %}
 
@@ -65,9 +66,9 @@
 {% macro vide(colonnes, message, url_ajout=None, icone='bi-inbox') %}
 <tr>
     <td colspan="{{ colonnes }}" class="text-center py-4 text-muted">
-        <i class="bi {{ icone }}" style="font-size: 2rem;"></i>
+        {{ ico_bi(icone, '1em', '', 'font-size: 2rem;') }}
         <p class="mt-2 mb-0">{{ message }}
-            {% if url_ajout %}<a href="{{ url_ajout }}" class="btn btn-sm btn-primary mt-1"><i class="bi bi-plus-lg me-1"></i> Ajouter le premier</a>{% endif %}
+            {% if url_ajout %}<a href="{{ url_ajout }}" class="btn btn-sm btn-primary mt-1">{{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Ajouter le premier</a>{% endif %}
         </p>
     </td>
 </tr>

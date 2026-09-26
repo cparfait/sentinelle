@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {# Barre de recherche d'une liste. Variables optionnelles : q, hidden (dict de
    paramètres GET à préserver, ex. onglet de filtre courant). Soumet en GET sur
    la page courante — Entrée suffit, il n'y a pas de bouton « Rechercher ». #}
@@ -5,10 +6,10 @@
     {% if hidden %}{% for k, v in hidden.items() %}{% if v %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}{% endif %}
     <div class="list-toolbar-filters">
         <div class="list-search">
-            <i class="bi bi-search"></i>
+            {{ ico_bi('bi-search', '1em') }}
             <input type="search" name="q" value="{{ q or '' }}" class="form-control"
                    placeholder="Rechercher…" aria-label="Rechercher dans la liste">
         </div>
-        {% if q %}{% set keep = {} %}{% for k, v in (hidden or {}).items() %}{% if v %}{% set _ = keep.update({k: v}) %}{% endif %}{% endfor %}<a href="{{ url_for(request.endpoint, **keep) }}" class="btn btn-ghost btn-icon" title="Effacer la recherche"><i class="bi bi-x-lg me-1"></i>Effacer</a>{% endif %}
+        {% if q %}{% set keep = {} %}{% for k, v in (hidden or {}).items() %}{% if v %}{% set _ = keep.update({k: v}) %}{% endif %}{% endfor %}<a href="{{ url_for(request.endpoint, **keep) }}" class="btn btn-ghost btn-icon" title="Effacer la recherche">{{ ico_bi('bi-x-lg', '1em', 'me-1') }}Effacer</a>{% endif %}
     </div>
 </form>

@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {# ═══ Onglets de fiche ═══
    Une fiche portait tout sur une seule colonne : le détail, les flux, les
    consultations, les pièces jointes, l'historique. Les pièces jointes — ce
@@ -66,7 +67,7 @@
             data-bs-toggle="tab" data-bs-target="#vol-{{ cible }}" type="button"
             role="tab" aria-controls="vol-{{ cible }}"
             aria-selected="{{ 'true' if actif else 'false' }}">
-        {% if icone.startswith('bi-') %}<i class="bi {{ icone }}"></i>{% else %}{{ lucide(icone, 16) }}{% endif %}{{ libelle }}
+        {% if icone.startswith('bi-') %}{{ ico_bi(icone, '1em') }}{% else %}{{ lucide(icone, 16) }}{% endif %}{{ libelle }}
         {%- if compteur is not none %}
         <span class="fiche-onglet-nb{{ ' est-vide' if not compteur }}">{{ compteur }}</span>
         {%- endif %}

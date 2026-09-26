@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Sauvegardes - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
@@ -12,24 +13,24 @@
     <div class="page-actions">
         {% if current_user.can_edit('backups') %}
         <a href="{{ url_for('backups.daily') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-check2-square me-1"></i> Check quotidien
+            {{ ico_bi('bi-check2-square', '1em', 'me-1') }} Check quotidien
         </a>
         {% endif %}
         <a href="{{ url_for('backups.stats') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-bar-chart me-1"></i> Statistiques
+            {{ ico_bi('bi-bar-chart', '1em', 'me-1') }} Statistiques
         </a>
         {% if config.BACKUP_INBOX_DIR and current_user.can_edit('backups') %}
         <form method="POST" action="{{ url_for('backups.scan_inbox_now') }}" class="d-inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-outline-secondary" title="Lire les mails de sauvegarde du répertoire">
-                <i class="bi bi-envelope-arrow-down me-1"></i> Scanner la boîte
+                {{ ico_bi('bi-envelope-arrow-down', '1em', 'me-1') }} Scanner la boîte
             </button>
         </form>
         {% endif %}
         {% with csv_key='backups' %}{% include '_csv_toolbar.html' %}{% endwith %}
         {% if current_user.can_edit('backups') %}
         <a href="{{ url_for('backups.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nouvelle sauvegarde
+            {{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Nouvelle sauvegarde
         </a>
         {% endif %}
     </div>
@@ -60,9 +61,9 @@
                     <td>
                         {% set tc = today_checks.get(backup.id) %}
                         {% if tc %}
-                            {% if tc.status == 'ok' %}<span class="text-success"><i class="bi bi-check-circle me-1"></i>OK</span>
-                            {% elif tc.status == 'failed' %}<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Échec</span>
-                            {% else %}<span class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Avertissement</span>{% endif %}
+                            {% if tc.status == 'ok' %}<span class="text-success">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}OK</span>
+                            {% elif tc.status == 'failed' %}<span class="text-danger">{{ ico_bi('bi-x-circle', '1em', 'me-1') }}Échec</span>
+                            {% else %}<span class="text-warning">{{ ico_bi('bi-exclamation-triangle', '1em', 'me-1') }}Avertissement</span>{% endif %}
                         {% else %}
                             <span class="text-muted">non vérifiée</span>
                         {% endif %}

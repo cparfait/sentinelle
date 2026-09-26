@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Préférences - Sentinelle{% endblock %}
 
@@ -17,50 +18,50 @@
    maquette, 2026-09-23). Les identifiants secXxx des rubriques sont conservés :
    ce sont les ancres des liens venus d'ailleurs. #}
 <div class="pref-etat" aria-label="État des réglages">
-    {% if mail_configured %}<span class="badge-status badge-success"><i class="bi bi-envelope"></i>Messagerie : {{ 'Office 365' if mail_method == 'o365' else 'SMTP' }}</span>
-    {% else %}<span class="badge-status badge-danger"><i class="bi bi-envelope"></i>Messagerie non configurée</span>{% endif %}
-    {% if ldap_config.enabled %}<span class="badge-status badge-success"><i class="bi bi-diagram-3"></i>LDAP activé</span>
-    {% else %}<span class="badge-status badge-muted"><i class="bi bi-diagram-3"></i>LDAP désactivé</span>{% endif %}
-    {% if ct_monitoring %}<span class="badge-status badge-success"><i class="bi bi-shield-lock"></i>Surveillance CT activée</span>
-    {% else %}<span class="badge-status badge-muted"><i class="bi bi-shield-lock"></i>Surveillance CT désactivée</span>{% endif %}
-    {% if software_alerts %}<span class="badge-status badge-success"><i class="bi bi-window-stack"></i>Alertes logiciels activées</span>
-    {% else %}<span class="badge-status badge-muted"><i class="bi bi-window-stack"></i>Alertes logiciels désactivées</span>{% endif %}
-    {% if db_backups %}<span class="badge-status badge-success"><i class="bi bi-database"></i>{{ db_backups|length }} sauvegarde{{ 's' if db_backups|length > 1 }}</span>
-    {% else %}<span class="badge-status badge-danger"><i class="bi bi-database"></i>Aucune sauvegarde</span>{% endif %}
+    {% if mail_configured %}<span class="badge-status badge-success">{{ ico_bi('bi-envelope', '1em') }}Messagerie : {{ 'Office 365' if mail_method == 'o365' else 'SMTP' }}</span>
+    {% else %}<span class="badge-status badge-danger">{{ ico_bi('bi-envelope', '1em') }}Messagerie non configurée</span>{% endif %}
+    {% if ldap_config.enabled %}<span class="badge-status badge-success">{{ ico_bi('bi-diagram-3', '1em') }}LDAP activé</span>
+    {% else %}<span class="badge-status badge-muted">{{ ico_bi('bi-diagram-3', '1em') }}LDAP désactivé</span>{% endif %}
+    {% if ct_monitoring %}<span class="badge-status badge-success">{{ ico_bi('bi-shield-lock', '1em') }}Surveillance CT activée</span>
+    {% else %}<span class="badge-status badge-muted">{{ ico_bi('bi-shield-lock', '1em') }}Surveillance CT désactivée</span>{% endif %}
+    {% if software_alerts %}<span class="badge-status badge-success">{{ ico_bi('bi-window-stack', '1em') }}Alertes logiciels activées</span>
+    {% else %}<span class="badge-status badge-muted">{{ ico_bi('bi-window-stack', '1em') }}Alertes logiciels désactivées</span>{% endif %}
+    {% if db_backups %}<span class="badge-status badge-success">{{ ico_bi('bi-database', '1em') }}{{ db_backups|length }} sauvegarde{{ 's' if db_backups|length > 1 }}</span>
+    {% else %}<span class="badge-status badge-danger">{{ ico_bi('bi-database', '1em') }}Aucune sauvegarde</span>{% endif %}
     {% set modules_coupes = modules|rejectattr('on')|list %}
-    {% if modules_coupes %}<span class="badge-status badge-muted"><i class="bi bi-toggles"></i>{{ modules_coupes|length }} module{{ 's' if modules_coupes|length > 1 }} désactivé{{ 's' if modules_coupes|length > 1 }}</span>
-    {% else %}<span class="badge-status badge-muted"><i class="bi bi-toggles"></i>Tous les modules actifs</span>{% endif %}
-    {% if documents_enabled %}<span class="badge-status badge-muted"><i class="bi bi-paperclip"></i>Pièces jointes : {{ document_max_mb }} Mo</span>
-    {% else %}<span class="badge-status badge-muted"><i class="bi bi-paperclip"></i>Pièces jointes désactivées</span>{% endif %}
-    {% if ui_primary_color %}<span class="badge-status badge-muted" style="--badge: {{ ui_primary_color }};"><i class="bi bi-palette"></i>Couleur personnalisée</span>
-    {% else %}<span class="badge-status badge-muted"><i class="bi bi-palette"></i>Palette d'origine</span>{% endif %}
+    {% if modules_coupes %}<span class="badge-status badge-muted">{{ ico_bi('bi-toggles', '1em') }}{{ modules_coupes|length }} module{{ 's' if modules_coupes|length > 1 }} désactivé{{ 's' if modules_coupes|length > 1 }}</span>
+    {% else %}<span class="badge-status badge-muted">{{ ico_bi('bi-toggles', '1em') }}Tous les modules actifs</span>{% endif %}
+    {% if documents_enabled %}<span class="badge-status badge-muted">{{ ico_bi('bi-paperclip', '1em') }}Pièces jointes : {{ document_max_mb }} Mo</span>
+    {% else %}<span class="badge-status badge-muted">{{ ico_bi('bi-paperclip', '1em') }}Pièces jointes désactivées</span>{% endif %}
+    {% if ui_primary_color %}<span class="badge-status badge-muted" style="--badge: {{ ui_primary_color }};">{{ ico_bi('bi-palette', '1em') }}Couleur personnalisée</span>
+    {% else %}<span class="badge-status badge-muted">{{ ico_bi('bi-palette', '1em') }}Palette d'origine</span>{% endif %}
 </div>
 
 <div class="form-page pref-page">
     <nav class="form-sommaire" id="prefsSommaire" aria-label="Rubriques des préférences">
         <div class="som-famille">Accès &amp; sécurité</div>
-        <a href="#secLdap" class="form-sommaire-lien" data-cible="secLdap"><i class="bi bi-diagram-3"></i><span>Authentification LDAP</span><span class="som-etat"></span></a>
-        <a href="#secConformity" class="form-sommaire-lien" data-cible="secConformity"><i class="bi bi-speedometer2"></i><span>Conformité globale</span><span class="som-etat"></span></a>
-        <a href="#secSurveillance" class="form-sommaire-lien" data-cible="secSurveillance"><i class="bi bi-shield-lock"></i><span>Surveillance</span><span class="som-etat"></span></a>
+        <a href="#secLdap" class="form-sommaire-lien" data-cible="secLdap">{{ ico_bi('bi-diagram-3', '1em') }}<span>Authentification LDAP</span><span class="som-etat"></span></a>
+        <a href="#secConformity" class="form-sommaire-lien" data-cible="secConformity">{{ ico_bi('bi-speedometer2', '1em') }}<span>Conformité globale</span><span class="som-etat"></span></a>
+        <a href="#secSurveillance" class="form-sommaire-lien" data-cible="secSurveillance">{{ ico_bi('bi-shield-lock', '1em') }}<span>Surveillance</span><span class="som-etat"></span></a>
         <div class="som-famille">Messagerie &amp; alertes</div>
-        <a href="#secMail" class="form-sommaire-lien" data-cible="secMail"><i class="bi bi-envelope"></i><span>Messagerie</span><span class="som-etat"></span></a>
-        <a href="#secRecipients" class="form-sommaire-lien" data-cible="secRecipients"><i class="bi bi-people"></i><span>Destinataires &amp; test</span><span class="som-etat"></span></a>
-        <a href="#secThresholds" class="form-sommaire-lien" data-cible="secThresholds"><i class="bi bi-sliders"></i><span>Seuils d'alerte</span><span class="som-etat"></span></a>
+        <a href="#secMail" class="form-sommaire-lien" data-cible="secMail">{{ ico_bi('bi-envelope', '1em') }}<span>Messagerie</span><span class="som-etat"></span></a>
+        <a href="#secRecipients" class="form-sommaire-lien" data-cible="secRecipients">{{ ico_bi('bi-people', '1em') }}<span>Destinataires &amp; test</span><span class="som-etat"></span></a>
+        <a href="#secThresholds" class="form-sommaire-lien" data-cible="secThresholds">{{ ico_bi('bi-sliders', '1em') }}<span>Seuils d'alerte</span><span class="som-etat"></span></a>
         <div class="som-famille">Données</div>
-        <a href="#secDb" class="form-sommaire-lien" data-cible="secDb"><i class="bi bi-database"></i><span>Base de données</span><span class="som-etat"></span></a>
-        <a href="#secDocuments" class="form-sommaire-lien" data-cible="secDocuments"><i class="bi bi-paperclip"></i><span>Pièces jointes</span><span class="som-etat"></span></a>
-        <a href="#secModules" class="form-sommaire-lien" data-cible="secModules"><i class="bi bi-toggles"></i><span>Modules</span><span class="som-etat"></span></a>
-        <a href="#secReferentiels" class="form-sommaire-lien" data-cible="secReferentiels"><i class="bi bi-list-ul"></i><span>Référentiels</span><span class="som-etat"></span></a>
+        <a href="#secDb" class="form-sommaire-lien" data-cible="secDb">{{ ico_bi('bi-database', '1em') }}<span>Base de données</span><span class="som-etat"></span></a>
+        <a href="#secDocuments" class="form-sommaire-lien" data-cible="secDocuments">{{ ico_bi('bi-paperclip', '1em') }}<span>Pièces jointes</span><span class="som-etat"></span></a>
+        <a href="#secModules" class="form-sommaire-lien" data-cible="secModules">{{ ico_bi('bi-toggles', '1em') }}<span>Modules</span><span class="som-etat"></span></a>
+        <a href="#secReferentiels" class="form-sommaire-lien" data-cible="secReferentiels">{{ ico_bi('bi-list-ul', '1em') }}<span>Référentiels</span><span class="som-etat"></span></a>
         <div class="som-famille">Affichage</div>
-        <a href="#secDashboard" class="form-sommaire-lien" data-cible="secDashboard"><i class="bi bi-grid-1x2"></i><span>Tableau de bord</span><span class="som-etat"></span></a>
-        <a href="#secAppearance" class="form-sommaire-lien" data-cible="secAppearance"><i class="bi bi-palette"></i><span>Apparence</span><span class="som-etat"></span></a>
+        <a href="#secDashboard" class="form-sommaire-lien" data-cible="secDashboard">{{ ico_bi('bi-grid-1x2', '1em') }}<span>Tableau de bord</span><span class="som-etat"></span></a>
+        <a href="#secAppearance" class="form-sommaire-lien" data-cible="secAppearance">{{ ico_bi('bi-palette', '1em') }}<span>Apparence</span><span class="som-etat"></span></a>
     </nav>
     <div class="form-corps" id="prefsRubriques">
         <div class="form-famille">Accès &amp; sécurité</div>
 
         <section class="form-section pref-rubrique" id="secLdap">
             <div class="form-section-titre">
-                <i class="bi bi-diagram-3 me-2"></i>Authentification LDAP / Active Directory
+                {{ ico_bi('bi-diagram-3', '1em', 'me-2') }}Authentification LDAP / Active Directory
                 {% if ldap_config.enabled %}<span class="badge bg-success ms-2">Activé</span>{% endif %}
             </div>
             <p class="form-section-aide">Connexion des utilisateurs avec leur compte de l'annuaire ; les comptes locaux restent utilisables.</p>
@@ -141,14 +142,14 @@
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-2 mt-2">
-                            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i> Enregistrer LDAP</button>
+                            <button type="submit" class="btn btn-sm btn-primary">{{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer LDAP</button>
                         </div>
                         <small class="text-muted d-block mt-1">Les utilisateurs AD validés sont créés automatiquement en lecture seule ; ajustez leur rôle ensuite dans Utilisateurs. La synchro des expirations utilise le compte de service + le Base DN.</small>
                     </form>
                     <form method="POST" action="{{ url_for('auth.preferences') }}" class="mt-2">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="action" value="test_ldap">
-                        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plug me-1"></i> Tester la connexion</button>
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">{{ ico_bi('bi-plug', '1em', 'me-1') }} Tester la connexion</button>
                         <small class="text-muted ms-1">Teste la configuration <strong>enregistrée</strong> (compte de service).</small>
                     </form>
                     <script>
@@ -173,8 +174,8 @@
 
         <section class="form-section pref-rubrique" id="secConformity">
             <div class="form-section-titre">
-                <i class="bi bi-speedometer2 me-2"></i>Conformité globale
-                {% if configured.conformity %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Personnalisé</span>{% endif %}
+                {{ ico_bi('bi-speedometer2', '1em', 'me-2') }}Conformité globale
+                {% if configured.conformity %}<span class="badge bg-success ms-2">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}Personnalisé</span>{% endif %}
                 <span class="badge bg-secondary ms-2">{{ conformity_included|length }}/{{ conformity_categories|length }}</span>
             </div>
             <p class="form-section-aide">Les contrôles qui entrent dans le score de conformité du tableau de bord.</p>
@@ -194,15 +195,15 @@
                             </div>
                             {% endfor %}
                         </div>
-                        <button type="submit" class="btn btn-sm btn-primary mt-2"><i class="bi bi-check-lg me-1"></i> Enregistrer la conformité</button>
+                        <button type="submit" class="btn btn-sm btn-primary mt-2">{{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer la conformité</button>
                     </form>
             </div>
         </section>
 
         <section class="form-section pref-rubrique" id="secSurveillance">
             <div class="form-section-titre">
-                <i class="bi bi-shield-lock me-2"></i>Surveillance
-                {% if ct_monitoring %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>CT activé</span>{% else %}<span class="badge bg-secondary ms-2">CT désactivé</span>{% endif %}
+                {{ ico_bi('bi-shield-lock', '1em', 'me-2') }}Surveillance
+                {% if ct_monitoring %}<span class="badge bg-success ms-2">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}CT activé</span>{% else %}<span class="badge bg-secondary ms-2">CT désactivé</span>{% endif %}
             </div>
             <p class="form-section-aide">Veille Certificate Transparency et suivi des logiciels : ce qui se surveille sans date d'échéance.</p>
             <div class="form-section-corps">
@@ -216,7 +217,7 @@
                         </div>
                         <p class="text-muted small mt-1 mb-2">Scan quotidien des journaux CT pour détecter les certificats émis pour vos domaines à l'insu de la DSI (shadow IT, prestataire, usurpation). Les alertes suivent la catégorie « Domaines ».</p>
                         <button type="submit" class="btn btn-sm btn-primary">
-                            <i class="bi bi-check-lg me-1"></i> Enregistrer
+                            {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer
                         </button>
                     </form>
                     <hr>
@@ -230,7 +231,7 @@
                         </div>
                         <p class="text-muted small mt-1 mb-2">Chaque lundi, un mail pour les logiciels en fin de vie sans successeur et ceux dont le nombre d'utilisateurs dépasse le plafond du contrat. Les alertes suivent la catégorie « Logiciels ».</p>
                         <button type="submit" class="btn btn-sm btn-primary">
-                            <i class="bi bi-check-lg me-1"></i> Enregistrer
+                            {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer
                         </button>
                     </form>
             </div>
@@ -239,11 +240,11 @@
 
         <section class="form-section pref-rubrique" id="secMail">
             <div class="form-section-titre">
-                <i class="bi bi-envelope me-2"></i>Messagerie
+                {{ ico_bi('bi-envelope', '1em', 'me-2') }}Messagerie
                 {% if mail_configured %}
-                <span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Configuré</span>
+                <span class="badge bg-success ms-2">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}Configuré</span>
                 {% else %}
-                <span class="badge bg-danger ms-2"><i class="bi bi-x-circle me-1"></i>Non configuré</span>
+                <span class="badge bg-danger ms-2">{{ ico_bi('bi-x-circle', '1em', 'me-1') }}Non configuré</span>
                 {% endif %}
             </div>
             <p class="form-section-aide">Le compte qui envoie les alertes, les bilans et les envois de test.</p>
@@ -260,7 +261,7 @@
 
                     {% if mail_method == 'o365' %}
                     <div class="data-card p-3 mb-0" style="background: var(--body-bg);">
-                        <h6 class="fw-bold small mb-2"><i class="bi bi-microsoft me-1"></i>Configuration Office 365</h6>
+                        <h6 class="fw-bold small mb-2">{{ ico_bi('bi-microsoft', '1em', 'me-1') }}Configuration Office 365</h6>
 
                         <form method="POST" action="{{ url_for('auth.preferences') }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -294,7 +295,7 @@
                                 </div>
                             </div>
                             <button type="submit" class="btn btn-sm btn-primary mt-2">
-                                <i class="bi bi-check-lg me-1"></i> Enregistrer la configuration
+                                {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer la configuration
                             </button>
                         </form>
 
@@ -304,14 +305,14 @@
                             {% if o365_connected %}
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
-                                    <span class="badge bg-success me-2"><i class="bi bi-check-circle me-1"></i>Connecte</span>
+                                    <span class="badge bg-success me-2">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}Connecte</span>
                                     <span class="fw-medium">{{ o365_user_email }}</span>
                                 </div>
                                 <form method="POST" action="{{ url_for('auth.preferences') }}">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="action" value="disconnect_o365">
                                     <button type="submit" class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-box-arrow-right me-1"></i> Deconnecter
+                                        {{ ico_bi('bi-box-arrow-right', '1em', 'me-1') }} Deconnecter
                                     </button>
                                 </form>
                             </div>
@@ -331,7 +332,7 @@
                             {% endif %}
                         {% else %}
                         <div class="alert alert-info py-2 small mb-0">
-                            <i class="bi bi-info-circle me-1"></i>
+                            {{ ico_bi('bi-info-circle', '1em', 'me-1') }}
                             <strong>Configuration Azure AD requise :</strong>
                             <ol class="mt-1 mb-0 ps-3">
                                 <li>Aller sur <strong>portal.azure.com</strong> > Azure Active Directory > App registrations > New registration</li>
@@ -346,7 +347,7 @@
                     </div>
                     {% else %}
                     <div class="data-card p-3 mb-0" style="background: var(--body-bg);">
-                        <h6 class="fw-bold small mb-2"><i class="bi bi-envelope me-1"></i>Configuration SMTP</h6>
+                        <h6 class="fw-bold small mb-2">{{ ico_bi('bi-envelope', '1em', 'me-1') }}Configuration SMTP</h6>
                         <form method="POST" action="{{ url_for('auth.preferences') }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="action" value="save_smtp">
@@ -381,14 +382,14 @@
                                 </div>
                             </div>
                             <div class="alert alert-info py-2 small mt-2 mb-0">
-                                <i class="bi bi-info-circle me-1"></i>
+                                {{ ico_bi('bi-info-circle', '1em', 'me-1') }}
                                 <strong>Direct Send (recommande, sans mot de passe) :</strong>
                                 Serveur = <code>votredomaine-fr.mail.protection.outlook.com</code>, Port = <code>25</code>,
                                 Utilisateur et Mot de passe <strong>vides</strong>. L'adresse expeditrice doit etre
                                 de votre domaine et les destinataires internes.
                             </div>
                             <button type="submit" class="btn btn-sm btn-primary mt-2">
-                                <i class="bi bi-check-lg me-1"></i> Enregistrer la configuration SMTP
+                                {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer la configuration SMTP
                             </button>
                         </form>
                     </div>
@@ -398,8 +399,8 @@
 
         <section class="form-section pref-rubrique" id="secRecipients">
             <div class="form-section-titre">
-                <i class="bi bi-people me-2"></i>Destinataires &amp; test d'envoi
-                {% if configured.recipients %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Configuré</span>{% endif %}
+                {{ ico_bi('bi-people', '1em', 'me-2') }}Destinataires &amp; test d'envoi
+                {% if configured.recipients %}<span class="badge bg-success ms-2">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}Configuré</span>{% endif %}
             </div>
             <p class="form-section-aide">Qui reçoit les alertes et le bilan PDF planifié ; un envoi de test pour vérifier.</p>
             <div class="form-section-corps">
@@ -413,7 +414,7 @@
 
                         <details class="mt-3" {{ 'open' if alert_recipients_by_cat.values()|select|list }}>
                             <summary class="small fw-bold" style="cursor:pointer;">
-                                <i class="bi bi-diagram-3 me-1"></i>Destinataires par catégorie
+                                {{ ico_bi('bi-diagram-3', '1em', 'me-1') }}Destinataires par catégorie
                                 <span class="text-muted fw-normal">— optionnel : une catégorie sans adresse utilise la liste globale ci-dessus</span>
                             </summary>
                             <div class="row g-2 mt-1">
@@ -430,12 +431,12 @@
                         </details>
 
                         <button type="submit" class="btn btn-sm btn-primary mt-3">
-                            <i class="bi bi-check-lg me-1"></i> Enregistrer les destinataires
+                            {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer les destinataires
                         </button>
                     </form>
 
                     <hr>
-                    <h6 class="fw-bold mb-2"><i class="bi bi-file-earmark-pdf me-2"></i>Bilan PDF planifié</h6>
+                    <h6 class="fw-bold mb-2">{{ ico_bi('bi-file-earmark-pdf', '1em', 'me-2') }}Bilan PDF planifié</h6>
                     <form method="POST" action="{{ url_for('auth.preferences') }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="action" value="save_report">
@@ -457,7 +458,7 @@
                             </div>
                             <div class="col-md-3 d-flex gap-2">
                                 <button type="submit" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-check-lg me-1"></i> Enregistrer
+                                    {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer
                                 </button>
                             </div>
                         </div>
@@ -466,12 +467,12 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="action" value="send_report_now">
                         <button type="submit" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-send me-1"></i> Envoyer le bilan maintenant
+                            {{ ico_bi('bi-send', '1em', 'me-1') }} Envoyer le bilan maintenant
                         </button>
                     </form>
 
                     <hr>
-                    <h6 class="fw-bold mb-2"><i class="bi bi-send me-2"></i>Test d'envoi</h6>
+                    <h6 class="fw-bold mb-2">{{ ico_bi('bi-send', '1em', 'me-2') }}Test d'envoi</h6>
                     <form method="POST" action="{{ url_for('auth.preferences') }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="row g-2 align-items-end">
@@ -483,11 +484,11 @@
                             <div class="col-md-6 d-flex gap-2">
                                 <button type="submit" name="action" value="test_email"
                                         class="btn btn-sm btn-primary mt-2" {% if not mail_configured %}disabled{% endif %}>
-                                    <i class="bi bi-send me-1"></i> Email de test
+                                    {{ ico_bi('bi-send', '1em', 'me-1') }} Email de test
                                 </button>
                                 <button type="submit" name="action" value="send_digest"
                                         class="btn btn-sm btn-outline-primary mt-2" {% if not mail_configured %}disabled{% endif %}>
-                                    <i class="bi bi-clipboard-data me-1"></i> Envoyer un récap
+                                    {{ ico_bi('bi-clipboard-data', '1em', 'me-1') }} Envoyer un récap
                                 </button>
                             </div>
                         </div>
@@ -497,8 +498,8 @@
 
         <section class="form-section pref-rubrique" id="secThresholds">
             <div class="form-section-titre">
-                <i class="bi bi-sliders me-2"></i>Seuils d'alerte (jours restants)
-                {% if configured.thresholds %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Personnalisé</span>{% endif %}
+                {{ ico_bi('bi-sliders', '1em', 'me-2') }}Seuils d'alerte (jours restants)
+                {% if configured.thresholds %}<span class="badge bg-success ms-2">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}Personnalisé</span>{% endif %}
             </div>
             <p class="form-section-aide">Le nombre de jours restants qui fait passer un statut en Proche, Attention puis Critique.</p>
             <div class="form-section-corps">
@@ -520,7 +521,7 @@
                                 {% endfor %}
                             </tbody>
                         </table>
-                        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i> Enregistrer les seuils</button>
+                        <button type="submit" class="btn btn-sm btn-primary">{{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer les seuils</button>
                         <small class="text-muted d-block mt-1">Détermine la couleur de statut selon le nombre de jours restants avant échéance.</small>
                     </form>
             </div>
@@ -529,8 +530,8 @@
 
         <section class="form-section pref-rubrique" id="secDb">
             <div class="form-section-titre">
-                <i class="bi bi-database me-2"></i>Base de données
-                {% if db_backups %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>{{ db_backups|length }} sauvegarde{{ 's' if db_backups|length > 1 }}</span>{% else %}<span class="badge bg-danger ms-2"><i class="bi bi-x-circle me-1"></i>Aucune sauvegarde</span>{% endif %}
+                {{ ico_bi('bi-database', '1em', 'me-2') }}Base de données
+                {% if db_backups %}<span class="badge bg-success ms-2">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}{{ db_backups|length }} sauvegarde{{ 's' if db_backups|length > 1 }}</span>{% else %}<span class="badge bg-danger ms-2">{{ ico_bi('bi-x-circle', '1em', 'me-1') }}Aucune sauvegarde</span>{% endif %}
             </div>
             <p class="form-section-aide">Copies de la base, pièces jointes comprises : rétention et sauvegarde manuelle.</p>
             <div class="form-section-corps">
@@ -551,7 +552,7 @@
                             </div>
                             <div class="col-auto">
                                 <button type="submit" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-check-lg me-1"></i> Enregistrer
+                                    {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer
                                 </button>
                             </div>
                             <div class="col">
@@ -575,7 +576,7 @@
                             <div class="btn-group">
                                 <a href="{{ url_for('data_io.export_full') }}" class="btn btn-sm btn-outline-success"
                                    title="Archive ZIP (base + CSV + page HTML) pour clé USB">
-                                    <i class="bi bi-usb-drive me-1"></i> Export complet
+                                    {{ ico_bi('bi-usb-drive', '1em', 'me-1') }} Export complet
                                 </a>
                                 <a href="{{ url_for('data_io.export_full', sans_documents=1) }}"
                                    class="btn btn-sm btn-outline-secondary"
@@ -586,7 +587,7 @@
                             <form method="POST" action="{{ url_for('auth.preferences') }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" name="action" value="backup_db" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-download me-1"></i> Sauvegarder maintenant
+                                    {{ ico_bi('bi-download', '1em', 'me-1') }} Sauvegarder maintenant
                                 </button>
                             </form>
                         </div>
@@ -595,7 +596,7 @@
                     <ul class="list-group list-group-flush small">
                         {% for b in db_backups[:8] %}
                         <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
-                            <span><i class="bi bi-file-earmark-zip me-1"></i>{{ b.name }}</span>
+                            <span>{{ ico_bi('bi-file-earmark-zip', '1em', 'me-1') }}{{ b.name }}</span>
                             <span class="d-flex align-items-center gap-2">
                                 <span class="text-muted">{{ b.date.strftime('%d/%m/%Y %H:%M') }} · {{ b.size_kb }} Ko</span>
                                 <form method="POST" action="{{ url_for('auth.preferences') }}">
@@ -604,7 +605,7 @@
                                     <input type="hidden" name="name" value="{{ b.name }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Supprimer" aria-label="Supprimer"
                                             data-confirm="Supprimer cette sauvegarde ?">
-                                        <i class="bi bi-trash"></i>
+                                        {{ ico_bi('bi-trash', '1em') }}
                                     </button>
                                 </form>
                             </span>
@@ -618,8 +619,8 @@
 
         <section class="form-section pref-rubrique" id="secDocuments">
             <div class="form-section-titre">
-                <i class="bi bi-paperclip me-2"></i>Pièces jointes
-                {% if documents_enabled %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Activées ({{ document_max_mb }} Mo)</span>{% else %}<span class="badge bg-secondary ms-2">Désactivées</span>{% endif %}
+                {{ ico_bi('bi-paperclip', '1em', 'me-2') }}Pièces jointes
+                {% if documents_enabled %}<span class="badge bg-success ms-2">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}Activées ({{ document_max_mb }} Mo)</span>{% else %}<span class="badge bg-secondary ms-2">Désactivées</span>{% endif %}
             </div>
             <p class="form-section-aide">Fichiers accrochés aux fiches : activation, taille maximale, affichage.</p>
             <div class="form-section-corps">
@@ -655,7 +656,7 @@
                             </div>
                         </div>
                         <button type="submit" class="btn btn-sm btn-primary">
-                            <i class="bi bi-check-lg me-1"></i> Enregistrer
+                            {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer
                         </button>
                     </form>
             </div>
@@ -663,9 +664,9 @@
 
         <section class="form-section pref-rubrique" id="secModules">
             <div class="form-section-titre">
-                <i class="bi bi-toggles me-2"></i>Modules
+                {{ ico_bi('bi-toggles', '1em', 'me-2') }}Modules
                 {% if modules_coupes %}<span class="badge bg-secondary ms-2">{{ modules|length - modules_coupes|length }}/{{ modules|length }} actifs</span>
-                {% else %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Tous actifs</span>{% endif %}
+                {% else %}<span class="badge bg-success ms-2">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}Tous actifs</span>{% endif %}
             </div>
             <p class="form-section-aide">Les volets que la collectivité utilise ou non. Un module désactivé disparaît des écrans ; ce qui a été saisi reste en base et revient en le réactivant.</p>
             <div class="form-section-corps">
@@ -681,7 +682,7 @@
                         <p class="text-muted small mt-1 mb-0">{{ m.help }}</p>
                         {% endfor %}
                         <button type="submit" class="btn btn-sm btn-primary mt-3">
-                            <i class="bi bi-check-lg me-1"></i> Enregistrer
+                            {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer
                         </button>
                     </form>
             </div>
@@ -689,7 +690,7 @@
 
         <section class="form-section pref-rubrique" id="secReferentiels">
             <div class="form-section-titre">
-                <i class="bi bi-list-ul me-2"></i>Référentiels et services utilisateurs
+                {{ ico_bi('bi-list-ul', '1em', 'me-2') }}Référentiels et services utilisateurs
             </div>
             <p class="form-section-aide">Listes de valeurs et services utilisateurs, gérés sur leur propre écran.</p>
             <div class="form-section-corps">
@@ -700,7 +701,7 @@
                         le cycle de vie d'un logiciel ou le statut d'un certificat pilotent des filtres et des
                         couleurs, et restent fixes.</p>
                     <a href="{{ url_for('referentials.index') }}" class="btn btn-sm btn-primary">
-                        <i class="bi bi-arrow-right me-1"></i> Gérer les référentiels
+                        {{ ico_bi('bi-arrow-right', '1em', 'me-1') }} Gérer les référentiels
                     </a>
             </div>
         </section>
@@ -708,8 +709,8 @@
 
         <section class="form-section pref-rubrique" id="secDashboard">
             <div class="form-section-titre">
-                <i class="bi bi-grid-1x2 me-2"></i>Tableau de bord
-                {% if dashboard_custom %}<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Personnalisable</span>{% else %}<span class="badge bg-secondary ms-2">Disposition fixe</span>{% endif %}
+                {{ ico_bi('bi-grid-1x2', '1em', 'me-2') }}Tableau de bord
+                {% if dashboard_custom %}<span class="badge bg-success ms-2">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}Personnalisable</span>{% else %}<span class="badge bg-secondary ms-2">Disposition fixe</span>{% endif %}
             </div>
             <p class="form-section-aide">Ce que chaque utilisateur peut réorganiser sur son tableau de bord.</p>
             <div class="form-section-corps">
@@ -723,7 +724,7 @@
                         </div>
                         <p class="text-muted small mt-1 mb-2">Chaque utilisateur peut choisir les blocs affichés sur son tableau de bord et les réordonner (bouton « Personnaliser » en haut du tableau de bord). Désactivé : tout le monde voit la disposition par défaut.</p>
                         <button type="submit" class="btn btn-sm btn-primary">
-                            <i class="bi bi-check-lg me-1"></i> Enregistrer
+                            {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer
                         </button>
                     </form>
             </div>
@@ -731,8 +732,8 @@
 
         <section class="form-section pref-rubrique" id="secAppearance">
             <div class="form-section-titre">
-                <i class="bi bi-palette me-2"></i>Apparence
-                {% if ui_primary_color %}<span class="badge ms-2" style="background:{{ ui_primary_color }};"><i class="bi bi-check-circle me-1"></i>Personnalisée</span>{% else %}<span class="badge bg-secondary ms-2">Palette d'origine</span>{% endif %}
+                {{ ico_bi('bi-palette', '1em', 'me-2') }}Apparence
+                {% if ui_primary_color %}<span class="badge ms-2" style="background:{{ ui_primary_color }};">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}Personnalisée</span>{% else %}<span class="badge bg-secondary ms-2">Palette d'origine</span>{% endif %}
             </div>
             <p class="form-section-aide">Couleur principale de l'interface, pour tous les utilisateurs.</p>
             <div class="form-section-corps">
@@ -750,7 +751,7 @@
                                    value="{{ ui_primary_color or '#4f46e5' }}" title="Choisir la couleur principale">
                         </div>
                         <button type="submit" class="btn btn-sm btn-primary">
-                            <i class="bi bi-check-lg me-1"></i> Enregistrer
+                            {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer
                         </button>
                     </form>
             </div>

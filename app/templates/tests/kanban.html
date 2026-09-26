@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Tests — Kanban - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
@@ -10,11 +11,11 @@
     </div>
     <div class="d-flex gap-2">
         <a href="{{ url_for('tests.list') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-list-ul me-1"></i> Vue liste
+            {{ ico_bi('bi-list-ul', '1em', 'me-1') }} Vue liste
         </a>
         {% if current_user.can_edit('tests') %}
         <a href="{{ url_for('tests.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Ajouter
+            {{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Ajouter
         </a>
         {% endif %}
     </div>
@@ -25,7 +26,7 @@
 <div class="col-md-4">
     <div class="kanban-column h-100" data-status="{{ key }}">
         <div class="kanban-col-header d-flex align-items-center gap-2 mb-3">
-            <i class="bi {{ col.icon }} text-{{ col.color }}"></i>
+            {{ ico_bi(col.icon, '1em', 'text-' ~ (col.color)) }}
             <span class="fw-semibold">{{ col.label }}</span>
             <span class="badge bg-{{ col.color }} rounded-pill ms-auto">{{ col['items']|length }}</span>
         </div>
@@ -39,12 +40,12 @@
                 {{ status_badge(test.computed_status()) }}
             </div>
             {% if test.test_type %}
-            <small class="text-muted d-block mb-1"><i class="bi bi-tag me-1"></i>{{ test.test_type }}</small>
+            <small class="text-muted d-block mb-1">{{ ico_bi('bi-tag', '1em', 'me-1') }}{{ test.test_type }}</small>
             {% endif %}
             {% if test.next_due %}
             {% set days = (test.next_due - now().date()).days %}
             <small class="{% if days < 0 %}text-danger{% elif days <= 7 %}text-warning{% else %}text-muted{% endif %}">
-                <i class="bi bi-calendar me-1"></i>
+                {{ ico_bi('bi-calendar', '1em', 'me-1') }}
                 {{ days|delai }}
             </small>
             {% endif %}
@@ -65,7 +66,7 @@
         </div>
         {% else %}
         <div class="text-center text-muted py-4">
-            <i class="bi bi-inbox d-block fs-4 mb-1"></i>
+            {{ ico_bi('bi-inbox', '1em', 'd-block fs-4 mb-1') }}
             <small>Aucun test</small>
         </div>
         {% endfor %}

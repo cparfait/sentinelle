@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% from '_icones.html' import icone %}
 {% block title %}{{ supplier.name }} - Sentinelle{% endblock %}
@@ -14,15 +15,15 @@
 <div class="fiche-champ">
     <span class="fiche-label">{{ titre }}</span>
     {% if nom %}<span class="fw-medium">{{ nom }}</span>{% endif %}
-    {% if tel %}<a href="tel:{{ tel | replace(' ', '') }}" class="d-block small text-decoration-none"><i class="bi bi-telephone me-1"></i>{{ tel }}</a>{% endif %}
-    {% if mail %}<a href="mailto:{{ mail }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ mail }}</a>{% endif %}
+    {% if tel %}<a href="tel:{{ tel | replace(' ', '') }}" class="d-block small text-decoration-none">{{ ico_bi('bi-telephone', '1em', 'me-1') }}{{ tel }}</a>{% endif %}
+    {% if mail %}<a href="mailto:{{ mail }}" class="d-block small text-truncate">{{ ico_bi('bi-envelope', '1em', 'me-1') }}{{ mail }}</a>{% endif %}
 </div>
 {% endif %}
 {% endmacro %}
 
 {% block content %}
 {% set sous_titre %}{{ supplier.kind_label() }}{% if supplier.contact_name %} · {{ supplier.contact_name }}{% endif %}{% if supplier.website %} · <a href="{{ supplier.website }}" target="_blank" rel="noopener">{{ supplier.website | replace('https://', '') | replace('http://', '') }}</a>{% endif %}{% endset %}
-{% set primaire %}{% if current_user.can_edit('contracts') %}<a href="{{ url_for('contracts.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Nouveau contrat</a>{% endif %}{% endset %}
+{% set primaire %}{% if current_user.can_edit('contracts') %}<a href="{{ url_for('contracts.create') }}" class="btn btn-primary">{{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Nouveau contrat</a>{% endif %}{% endset %}
 {% set menu %}
     {% if current_user.can_delete('suppliers') %}
     {{ menu_post(url_for('suppliers.delete', id=supplier.id), 'Supprimer', 'bi-trash', confirm='Supprimer ce fournisseur ?', danger=True) }}
@@ -72,7 +73,7 @@
                     <div class="fiche-grille">
                         {% call champ_bloc('Hotline support') %}
                         {% if supplier.support_phone or supplier.phone %}
-                        <i class="bi bi-telephone me-1"></i><a href="tel:{{ (supplier.support_phone or supplier.phone) | replace(' ', '') }}">{{ supplier.support_phone or supplier.phone }}</a>
+                        {{ ico_bi('bi-telephone', '1em', 'me-1') }}<a href="tel:{{ (supplier.support_phone or supplier.phone) | replace(' ', '') }}">{{ supplier.support_phone or supplier.phone }}</a>
                         {% if supplier.hours %}<small class="text-muted d-block">{{ supplier.hours }}</small>{% endif %}
                         {% if supplier.hours2 %}<small class="text-muted d-block">{{ supplier.hours2 }}</small>{% endif %}
                         {% else %}<span class="text-muted">-</span>{% endif %}
@@ -87,7 +88,7 @@
                         {% if supplier.support_url %}
                         {% call champ_bloc('Portail de tickets') %}
                         <a href="{{ supplier.support_url }}" target="_blank" rel="noopener">
-                            <i class="bi bi-box-arrow-up-right me-1"></i>Ouvrir le portail</a>
+                            {{ ico_bi('bi-box-arrow-up-right', '1em', 'me-1') }}Ouvrir le portail</a>
                         {% endcall %}
                         {% endif %}
                     </div>
@@ -98,7 +99,7 @@
                     <div class="fiche-grille">
                         {% call champ_bloc('Téléphone standard') %}
                         {{ supplier.phone or '-' }}
-                        {% if supplier.email %}<a href="mailto:{{ supplier.email }}" class="d-block small text-truncate"><i class="bi bi-envelope me-1"></i>{{ supplier.email }}</a>{% endif %}
+                        {% if supplier.email %}<a href="mailto:{{ supplier.email }}" class="d-block small text-truncate">{{ ico_bi('bi-envelope', '1em', 'me-1') }}{{ supplier.email }}</a>{% endif %}
                         {% endcall %}
                         {% if supplier.address or supplier.city %}
                         {% call champ_bloc('Adresse') %}
@@ -128,11 +129,11 @@
     <div class="col-lg-4">
         {# Le rail : ce que ce fournisseur couvre chez nous, en un coup d'œil. #}
         <div class="data-card mb-3">
-            <div class="card-header-custom"><h6 class="fw-bold mb-0"><i class="bi bi-link-45deg me-2"></i>Chez nous</h6></div>
+            <div class="card-header-custom"><h6 class="fw-bold mb-0">{{ ico_bi('bi-link-45deg', '1em', 'me-2') }}Chez nous</h6></div>
             <div class="fiche-lies">
-                <button type="button" class="fiche-lie btn text-start" onclick="document.getElementById('ong-contrats')?.click()"><i class="bi bi-file-earmark-text"></i><span class="cell2"><strong>{{ contracts|length }} contrat{{ 's' if contracts|length != 1 }}</strong></span></button>
-                <button type="button" class="fiche-lie btn text-start" onclick="document.getElementById('ong-logiciels')?.click()"><i class="bi bi-window-stack"></i><span class="cell2"><strong>{{ software|length }} logiciel{{ 's' if software|length != 1 }}</strong></span></button>
-                <button type="button" class="fiche-lie btn text-start" onclick="document.getElementById('ong-materiel-couvert')?.click()"><i class="bi bi-hdd-stack"></i><span class="cell2"><strong>{{ equipments|length }} équipement{{ 's' if equipments|length != 1 }}</strong></span></button>
+                <button type="button" class="fiche-lie btn text-start" onclick="document.getElementById('ong-contrats')?.click()">{{ ico_bi('bi-file-earmark-text', '1em') }}<span class="cell2"><strong>{{ contracts|length }} contrat{{ 's' if contracts|length != 1 }}</strong></span></button>
+                <button type="button" class="fiche-lie btn text-start" onclick="document.getElementById('ong-logiciels')?.click()">{{ ico_bi('bi-window-stack', '1em') }}<span class="cell2"><strong>{{ software|length }} logiciel{{ 's' if software|length != 1 }}</strong></span></button>
+                <button type="button" class="fiche-lie btn text-start" onclick="document.getElementById('ong-materiel-couvert')?.click()">{{ ico_bi('bi-hdd-stack', '1em') }}<span class="cell2"><strong>{{ equipments|length }} équipement{{ 's' if equipments|length != 1 }}</strong></span></button>
             </div>
         </div>
     </div>

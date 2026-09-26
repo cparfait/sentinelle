@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}{{ 'Modifier' if certificate else 'Ajouter' }} un certificat - Sentinelle{% endblock %}
 {% from '_form_section.html' import section %}
@@ -70,7 +71,7 @@
                                    placeholder="exemple.votredomaine.fr">
                             <button type="button" class="btn btn-outline-primary" id="checkTlsBtn"
                                     title="Lire le certificat du domaine">
-                                <i class="bi bi-shield-check"></i> Vérifier
+                                {{ ico_bi('bi-shield-check', '1em') }} Vérifier
                             </button>
                         </div>
                         <small id="checkTlsMsg" class="d-block mt-1"></small>

@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}{{ item.name }} - Inventaire{% endblock %}
 {% from '_macros.html' import status_badge %}
@@ -73,7 +74,7 @@
         <div class="data-card p-3">
             {% if item.status_reasons() %}
             <div class="alert alert-warning py-2 small">
-                <i class="bi bi-exclamation-triangle me-1"></i>
+                {{ ico_bi('bi-exclamation-triangle', '1em', 'me-1') }}
                 {{ item.status_reasons() | join(' · ') }}
             </div>
             {% endif %}
@@ -107,9 +108,9 @@
                     </div>
                     {% if item.porte('virtualisation') %}
                     <div class="d-flex gap-3 flex-wrap small text-muted mt-1">
-                        <span><i class="bi bi-{{ 'check-circle-fill text-success' if item.supervised else 'dash-circle' }} me-1"></i>Supervision</span>
-                        <span><i class="bi bi-{{ 'check-circle-fill text-success' if item.cyberwatch else 'dash-circle' }} me-1"></i>Cyberwatch</span>
-                        <span><i class="bi bi-{{ 'check-circle-fill text-success' if item.ninja_one else 'dash-circle' }} me-1"></i>Ninja One</span>
+                        <span>{{ ico_bi('bi-check-circle-fill' if item.supervised else 'bi-dash-circle', '1em', 'me-1 text-success' if item.supervised else 'me-1') }}Supervision</span>
+                        <span>{{ ico_bi('bi-check-circle-fill' if item.cyberwatch else 'bi-dash-circle', '1em', 'me-1 text-success' if item.cyberwatch else 'me-1') }}Cyberwatch</span>
+                        <span>{{ ico_bi('bi-check-circle-fill' if item.ninja_one else 'bi-dash-circle', '1em', 'me-1 text-success' if item.ninja_one else 'me-1') }}Ninja One</span>
                     </div>
                     {% endif %}
                 </div>
@@ -183,7 +184,7 @@
                     {% if item.porte('pra') %}{{ champ('PRA / PCA', item.pra_pca) }}{% endif %}
                     {% if not item.backup1 and not item.backup2 %}
                     <div class="fiche-champ">
-                        <span class="fiche-valeur text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Aucune sauvegarde renseignée.</span>
+                        <span class="fiche-valeur text-danger">{{ ico_bi('bi-exclamation-triangle', '1em', 'me-1') }}Aucune sauvegarde renseignée.</span>
                     </div>
                     {% endif %}
                     </div>

@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {# ═══ Le gabarit de fiche ═══
    Toutes les fiches se lisent de la même façon :
 
@@ -34,7 +35,7 @@
         {{ primaire }}
         {% if menu | trim %}
         <div class="dropdown">
-            <button class="btn btn-outline-secondary btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Autres actions" aria-label="Autres actions"><i class="bi bi-three-dots"></i></button>
+            <button class="btn btn-outline-secondary btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Autres actions" aria-label="Autres actions">{{ ico_bi('bi-three-dots', '1em') }}</button>
             <ul class="dropdown-menu dropdown-menu-end">{{ menu }}</ul>
         </div>
         {% endif %}
@@ -45,14 +46,14 @@
 {# Un élément du menu ⋯ : lien simple, ou action POST (avec jeton CSRF et
    confirmation facultative). `danger` : rouge, pour supprimer. #}
 {% macro menu_lien(url, libelle, icone, cible=None) %}
-<li><a class="dropdown-item" href="{{ url }}"{% if cible %} target="{{ cible }}" rel="noopener"{% endif %}><i class="bi {{ icone }} me-2"></i>{{ libelle }}</a></li>
+<li><a class="dropdown-item" href="{{ url }}"{% if cible %} target="{{ cible }}" rel="noopener"{% endif %}>{{ ico_bi(icone, '1em', 'me-2') }}{{ libelle }}</a></li>
 {% endmacro %}
 
 {% macro menu_post(url, libelle, icone, confirm=None, danger=False) %}
 <li>
     <form method="POST" action="{{ url }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="dropdown-item{{ ' text-danger' if danger }}"{% if confirm %} data-confirm="{{ confirm }}"{% endif %}><i class="bi {{ icone }} me-2"></i>{{ libelle }}</button>
+        <button type="submit" class="dropdown-item{{ ' text-danger' if danger }}"{% if confirm %} data-confirm="{{ confirm }}"{% endif %}>{{ ico_bi(icone, '1em', 'me-2') }}{{ libelle }}</button>
     </form>
 </li>
 {% endmacro %}
@@ -61,7 +62,7 @@
 
 {# ---- Le bouton principal, qui ouvre la fenêtre d'action ---- #}
 {% macro bouton_modal(id, libelle, icone='bi-check-lg', classe='btn-primary') %}
-<button type="button" class="btn {{ classe }}" data-bs-toggle="modal" data-bs-target="#{{ id }}"><i class="bi {{ icone }} me-1"></i> {{ libelle }}</button>
+<button type="button" class="btn {{ classe }}" data-bs-toggle="modal" data-bs-target="#{{ id }}">{{ ico_bi(icone, '1em', 'me-1') }} {{ libelle }}</button>
 {% endmacro %}
 
 {# ---- La fenêtre d'action : un formulaire POST, ses champs en `caller` ----
@@ -81,7 +82,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="submit" class="btn btn-primary"><i class="bi {{ icone }} me-1"></i> {{ bouton }}</button>
+                <button type="submit" class="btn btn-primary">{{ ico_bi(icone, '1em', 'me-1') }} {{ bouton }}</button>
             </div>
         </form>
     </div>
@@ -129,7 +130,7 @@
 {% set contenu = caller() %}
 {% if contenu | trim %}
 <div class="data-card mb-3">
-    <div class="card-header-custom"><h6 class="fw-bold mb-0"><i class="bi bi-link-45deg me-2"></i>{{ titre }}</h6></div>
+    <div class="card-header-custom"><h6 class="fw-bold mb-0">{{ ico_bi('bi-link-45deg', '1em', 'me-2') }}{{ titre }}</h6></div>
     <div class="fiche-lies">{{ contenu }}</div>
 </div>
 {% endif %}
@@ -140,7 +141,7 @@
 {% macro lien(url, icone, nom, sous='', cible=None) %}
 {% from '_icones.html' import lucide %}
 <a href="{{ url }}" class="fiche-lie"{% if cible %} target="{{ cible }}" rel="noopener"{% endif %}>
-    {% if icone.startswith('bi-') %}<i class="bi {{ icone }}"></i>{% else %}{{ lucide(icone, 16) }}{% endif %}
+    {% if icone.startswith('bi-') %}{{ ico_bi(icone, '1em') }}{% else %}{{ lucide(icone, 16) }}{% endif %}
     <span class="cell2"><strong>{{ nom }}</strong>{% if sous %}<small>{{ sous }}</small>{% endif %}</span>
 </a>
 {% endmacro %}
@@ -150,17 +151,17 @@
 {% macro carte_fournisseur(sup, titre='Fournisseur') %}
 {% if sup %}
 <div class="data-card mb-3">
-    <div class="card-header-custom"><h6 class="fw-bold mb-0"><i class="bi bi-building me-2"></i>{{ titre }}</h6></div>
+    <div class="card-header-custom"><h6 class="fw-bold mb-0">{{ ico_bi('bi-building', '1em', 'me-2') }}{{ titre }}</h6></div>
     <div class="p-3">
         <div class="fw-medium mb-1"><a href="{{ url_for('suppliers.detail', id=sup.id) }}">{{ sup.name }}</a>
             {% if sup.customer_ref %}<span class="text-muted small ms-1">n° client <code>{{ sup.customer_ref }}</code></span>{% endif %}</div>
         <ul class="list-unstyled small mb-0">
             {% if sup.support_phone or sup.phone %}
-            <li><i class="bi bi-telephone me-1 text-muted"></i><a href="tel:{{ (sup.support_phone or sup.phone) | replace(' ', '') }}">{{ sup.support_phone or sup.phone }}</a>
+            <li>{{ ico_bi('bi-telephone', '1em', 'me-1 text-muted') }}<a href="tel:{{ (sup.support_phone or sup.phone) | replace(' ', '') }}">{{ sup.support_phone or sup.phone }}</a>
                 {% if sup.hours %}<span class="text-muted"> · {{ sup.hours }}</span>{% endif %}</li>
             {% endif %}
-            {% if sup.support_email or sup.email %}<li><i class="bi bi-envelope me-1 text-muted"></i><a href="mailto:{{ sup.support_email or sup.email }}">{{ sup.support_email or sup.email }}</a></li>{% endif %}
-            {% if sup.support_url %}<li><i class="bi bi-box-arrow-up-right me-1 text-muted"></i><a href="{{ sup.support_url }}" target="_blank" rel="noopener">Portail support</a></li>{% endif %}
+            {% if sup.support_email or sup.email %}<li>{{ ico_bi('bi-envelope', '1em', 'me-1 text-muted') }}<a href="mailto:{{ sup.support_email or sup.email }}">{{ sup.support_email or sup.email }}</a></li>{% endif %}
+            {% if sup.support_url %}<li>{{ ico_bi('bi-box-arrow-up-right', '1em', 'me-1 text-muted') }}<a href="{{ sup.support_url }}" target="_blank" rel="noopener">Portail support</a></li>{% endif %}
         </ul>
     </div>
 </div>
@@ -170,7 +171,7 @@
 {# ---- L'historique, en volet ---- #}
 {% macro historique(histories, titre='Historique') %}
 <div class="data-card">
-    <div class="card-header-custom"><h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>{{ titre }}</h6></div>
+    <div class="card-header-custom"><h6 class="fw-bold mb-0">{{ ico_bi('bi-clock-history', '1em', 'me-2') }}{{ titre }}</h6></div>
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead><tr><th>Date</th><th>Action</th><th>Commentaire</th><th>Par</th></tr></thead>
@@ -195,7 +196,7 @@
 {% macro activite(histories, cible='historique') %}
 {% if histories %}
 <div class="data-card mb-3">
-    <div class="card-header-custom"><h6 class="fw-bold mb-0"><i class="bi bi-activity me-2"></i>Activité</h6>
+    <div class="card-header-custom"><h6 class="fw-bold mb-0">{{ ico_bi('bi-activity', '1em', 'me-2') }}Activité</h6>
         <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('ong-{{ cible }}')?.click()">Tout l'historique</button></div>
     <div class="fiche-activite">
         {% for h in histories[:3] %}

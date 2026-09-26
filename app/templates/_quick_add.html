@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {# Composant « ajout rapide » (+) : cree une entite liee (fournisseur, contrat,
    equipement) sans quitter le formulaire courant.
    Cf. app/static/js/quick-add.js (charge globalement dans base.html).
@@ -18,7 +19,7 @@
 <button type="button" class="btn btn-outline-primary" title="{{ title }}"
         data-bs-toggle="modal" data-bs-target="#{{ modal_id }}"
         data-qa-open="{{ modal_id }}" data-qa-target="{{ target_id }}">
-    <i class="bi bi-plus-lg"></i>
+    {{ ico_bi('bi-plus-lg', '1em') }}
 </button>
 {% endmacro %}
 
@@ -27,7 +28,7 @@
 <button type="button" class="btn btn-sm btn-outline-primary" title="{{ text }}"
         data-bs-toggle="modal" data-bs-target="#{{ modal_id }}"
         data-qa-open="{{ modal_id }}" data-qa-target="{{ target_id }}">
-    <i class="bi bi-plus-lg me-1"></i>{{ text }}
+    {{ ico_bi('bi-plus-lg', '1em', 'me-1') }}{{ text }}
 </button>
 {% endmacro %}
 
@@ -37,7 +38,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-truck me-2"></i>Nouveau fournisseur</h5>
+                <h5 class="modal-title">{{ ico_bi('bi-truck', '1em', 'me-2') }}Nouveau fournisseur</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <div class="modal-body">
@@ -55,7 +56,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-warn btn-sm" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-primary btn-sm" data-qa-save><i class="bi bi-check-lg me-1"></i>Créer</button>
+                <button type="button" class="btn btn-primary btn-sm" data-qa-save>{{ ico_bi('bi-check-lg', '1em', 'me-1') }}Créer</button>
             </div>
         </div>
     </div>
@@ -68,7 +69,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-file-earmark-text me-2"></i>Nouveau contrat</h5>
+                <h5 class="modal-title">{{ ico_bi('bi-file-earmark-text', '1em', 'me-2') }}Nouveau contrat</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <div class="modal-body">
@@ -86,7 +87,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-warn btn-sm" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-primary btn-sm" data-qa-save><i class="bi bi-check-lg me-1"></i>Créer</button>
+                <button type="button" class="btn btn-primary btn-sm" data-qa-save>{{ ico_bi('bi-check-lg', '1em', 'me-1') }}Créer</button>
             </div>
         </div>
     </div>
@@ -99,7 +100,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-window-stack me-2"></i>Nouvelle application</h5>
+                <h5 class="modal-title">{{ ico_bi('bi-window-stack', '1em', 'me-2') }}Nouvelle application</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <div class="modal-body">
@@ -113,7 +114,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-warn btn-sm" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-primary btn-sm" data-qa-save><i class="bi bi-check-lg me-1"></i>Créer</button>
+                <button type="button" class="btn btn-primary btn-sm" data-qa-save>{{ ico_bi('bi-check-lg', '1em', 'me-1') }}Créer</button>
             </div>
         </div>
     </div>
@@ -126,7 +127,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-hdd-stack me-2"></i>Nouvel équipement</h5>
+                <h5 class="modal-title">{{ ico_bi('bi-hdd-stack', '1em', 'me-2') }}Nouvel équipement</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <div class="modal-body">
@@ -152,7 +153,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-warn btn-sm" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-primary btn-sm" data-qa-save><i class="bi bi-check-lg me-1"></i>Créer</button>
+                <button type="button" class="btn btn-primary btn-sm" data-qa-save>{{ ico_bi('bi-check-lg', '1em', 'me-1') }}Créer</button>
             </div>
         </div>
     </div>
@@ -169,7 +170,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-hdd-stack me-2"></i>Nouveau serveur</h5>
+                <h5 class="modal-title">{{ ico_bi('bi-hdd-stack', '1em', 'me-2') }}Nouveau serveur</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <div class="modal-body">

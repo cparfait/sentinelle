@@ -45,6 +45,19 @@ ICONES = [
     'arrow-right', 'arrow-left', 'copy', 'check', 'x',
     # Liaisons d'un logiciel (onglet, carte Interconnexions, recapitulatif).
     'arrow-right-left',
+    # Icones d'interface (GENERIQUES dans app/navigation.py) : boutons, etats,
+    # fleches -- ce que les gabarits dessinaient en Bootstrap.
+    'activity', 'arrow-down-up', 'ban', 'bell-off', 'calendar', 'calendar-plus',
+    'chart-pie', 'check-check', 'chevron-left', 'chevron-right', 'chevron-up', 'circle-check',
+    'circle-minus', 'circle-plus', 'circle-user', 'circle-x', 'clipboard', 'clock',
+    'cloud-check', 'code', 'columns-3', 'dot', 'ellipsis', 'external-link',
+    'eye', 'eye-off', 'file-archive', 'file-down', 'file-spreadsheet', 'folder',
+    'funnel', 'gauge', 'grid-3x3', 'grip-vertical', 'history', 'inbox',
+    'layers', 'layout-panel-top', 'list', 'list-checks', 'lock', 'mail',
+    'mail-check', 'mail-open', 'menu', 'octagon-alert', 'palette', 'phone',
+    'pointer', 'puzzle', 'rotate-ccw', 'search', 'send', 'shield-alert',
+    'shield-off', 'shield-plus', 'shield-x', 'sparkles', 'square-check', 'square-kanban',
+    'toggle-right', 'trending-up', 'triangle-alert', 'truck', 'usb',
 ]
 
 

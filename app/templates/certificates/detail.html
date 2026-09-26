@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}{{ certificate.service_name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge, priorite %}
@@ -85,7 +86,7 @@
                     <div class="fiche-grille">
                         {% call champ_bloc('Domaine') %}
                         {%- if certificate.registered_domain -%}
-                        <a href="{{ url_for('domains.detail', id=certificate.domain_id) }}" class="text-decoration-none"><i class="bi bi-globe me-1"></i>{{ certificate.registered_domain.name }}</a>
+                        <a href="{{ url_for('domains.detail', id=certificate.domain_id) }}" class="text-decoration-none">{{ ico_bi('bi-globe', '1em', 'me-1') }}{{ certificate.registered_domain.name }}</a>
                         {%- else -%}
                         <span class="text-muted">hors du référentiel des domaines</span>
                         {%- endif -%}
@@ -113,7 +114,7 @@
                 <small class="text-muted">Code de révocation</small>
                 <div class="d-flex align-items-center gap-2">
                     <code id="revocationCode" class="fs-6">••••••••</code>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="revealCode"><i class="bi bi-eye me-1"></i> Afficher</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="revealCode">{{ ico_bi('bi-eye', '1em', 'me-1') }} Afficher</button>
                     <small class="text-muted">Il invalide le certificat — perte, vol, départ du titulaire.</small>
                 </div>
             </div>

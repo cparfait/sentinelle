@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {# Contrôles de pagination. Variables : page, pages, et si la vue les fournit
    total (nombre d'éléments) et per_page — sinon la taille vient de g, où
    paginate() l'a déposée. Préserve les filtres (ex. q).
@@ -21,16 +22,16 @@
     <span class="pagination-nav">
         {% if page > 1 %}
         {% set _ = base_args.update({'page': page - 1}) %}
-        <a href="{{ url_for(request.endpoint, **base_args) }}" class="btn btn-outline-secondary btn-icon" title="Page précédente" aria-label="Page précédente"><i class="bi bi-chevron-left"></i></a>
+        <a href="{{ url_for(request.endpoint, **base_args) }}" class="btn btn-outline-secondary btn-icon" title="Page précédente" aria-label="Page précédente">{{ ico_bi('bi-chevron-left', '1em') }}</a>
         {% else %}
-        <span class="btn btn-outline-secondary btn-icon disabled" aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
+        <span class="btn btn-outline-secondary btn-icon disabled" aria-hidden="true">{{ ico_bi('bi-chevron-left', '1em') }}</span>
         {% endif %}
         <span class="pagination-info">{{ page }} / {{ pages }}</span>
         {% if page < pages %}
         {% set _ = base_args.update({'page': page + 1}) %}
-        <a href="{{ url_for(request.endpoint, **base_args) }}" class="btn btn-outline-secondary btn-icon" title="Page suivante" aria-label="Page suivante"><i class="bi bi-chevron-right"></i></a>
+        <a href="{{ url_for(request.endpoint, **base_args) }}" class="btn btn-outline-secondary btn-icon" title="Page suivante" aria-label="Page suivante">{{ ico_bi('bi-chevron-right', '1em') }}</a>
         {% else %}
-        <span class="btn btn-outline-secondary btn-icon disabled" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+        <span class="btn btn-outline-secondary btn-icon disabled" aria-hidden="true">{{ ico_bi('bi-chevron-right', '1em') }}</span>
         {% endif %}
     </span>
     <span class="pagination-droite">

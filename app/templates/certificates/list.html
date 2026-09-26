@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Certificats - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge, delai_badge, priorite %}
@@ -19,11 +20,11 @@
            fiche et ne se change plus ensuite — on la choisit avant de saisir. #}
         <div class="dropdown">
             <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-plus-lg me-1"></i> Nouveau certificat
+                {{ ico_bi('bi-plus-lg', '1em', 'me-1') }} Nouveau certificat
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="{{ url_for('certificates.create', kind='tls') }}"><i class="bi bi-award me-2"></i>Certificat TLS</a></li>
-                {% if features.ecerts %}<li><a class="dropdown-item" href="{{ url_for('certificates.create', kind='signature') }}"><i class="bi bi-person-badge me-2"></i>Certificat électronique</a></li>{% endif %}
+                <li><a class="dropdown-item" href="{{ url_for('certificates.create', kind='tls') }}">{{ ico_bi('bi-award', '1em', 'me-2') }}Certificat TLS</a></li>
+                {% if features.ecerts %}<li><a class="dropdown-item" href="{{ url_for('certificates.create', kind='signature') }}">{{ ico_bi('bi-person-badge', '1em', 'me-2') }}Certificat électronique</a></li>{% endif %}
             </ul>
         </div>
         {% endif %}
@@ -34,7 +35,7 @@
    utile une fois l'an, encombrante le reste du temps. Elle s'ouvre depuis le ?. #}
 <div class="collapse" id="aideCertificats">
     <div class="alert alert-info d-flex align-items-start mb-3">
-        <i class="bi bi-tools me-2 mt-1"></i>
+        {{ ico_bi('bi-tools', '1em', 'me-2 mt-1') }}
         <div>
             <strong>Renouvellement du wildcard *.collectivite.fr :</strong>
             l'outil <strong>cert-deploy</strong> automatise toute la campagne

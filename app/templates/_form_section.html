@@ -1,3 +1,4 @@
+{% from '_icones.html' import icone as ico_bi %}
 {# ═══ Sections de formulaire ═══
    Un long formulaire sans relief se lit mal : trente champs de même poids
    visuel, et l'œil n'a nulle part où s'accrocher. Chaque section reçoit donc
@@ -23,7 +24,7 @@
 <fieldset class="form-section form-section--{{ couleur }}{{ ' kind-section' if kinds }}"
           {% if kinds %}data-kinds="{{ kinds }}"{% endif %}>
     <legend class="form-section-titre">
-        <i class="bi {{ icone }}"></i>{{ titre }}
+        {{ ico_bi(icone, '1em') }}{{ titre }}
     </legend>
     {% if aide %}<p class="form-section-aide">{{ aide }}</p>{% endif %}
     <div class="form-section-corps">
