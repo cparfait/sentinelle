@@ -156,6 +156,14 @@
                 </div>
             </div>
             <div>
+                <label class="form-label small mb-1" for="autoRenew">Reconduction</label>
+                <div class="form-check form-switch reconduction">
+                    <input type="checkbox" name="auto_renew" class="form-check-input" id="autoRenew"
+                           {{ 'checked' if contract and contract.auto_renew }}>
+                    <label class="form-check-label small" for="autoRenew">Tacite</label>
+                </div>
+            </div>
+            <div>
                 <label class="form-label small mb-1" for="ctPeriode">Par période de</label>
                 <div class="d-flex align-items-center gap-2">
                     <input type="number" name="renewal_years" id="ctPeriode" class="form-control form-control-sm l-64" min="0" max="10" step="1"
@@ -171,11 +179,6 @@
                            value="{{ contract.notice_days or 0 if contract else 0 }}">
                     <span class="small text-muted">jours</span>
                 </div>
-            </div>
-            <div class="form-check form-switch mb-1 ms-1">
-                <input type="checkbox" name="auto_renew" class="form-check-input" id="autoRenew"
-                       {{ 'checked' if contract and contract.auto_renew }}>
-                <label class="form-check-label small" for="autoRenew">Tacite reconduction</label>
             </div>
         </div>
 

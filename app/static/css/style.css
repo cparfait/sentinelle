@@ -2267,8 +2267,10 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .marche-saisie .l-180 { width: 180px; }
 /* Le + a cote du fournisseur : carre de 26 px, la hauteur de la liste. */
 .marche-saisie .fournisseur .btn { padding: 4px; line-height: 1; height: 26px; flex: 0 0 26px; display: inline-flex; align-items: center; justify-content: center; }
-/* L'interrupteur se cale sur la ligne des champs, pas sur celle des intitules. */
-.marche-saisie .form-switch { padding-top: 0; }
+/* L'interrupteur « Tacite » tient la hauteur d'un champ (26 px), son texte
+   centre dessus, sous l'intitule « Reconduction » comme les autres. */
+.marche-saisie .reconduction { min-height: 26px; display: flex; align-items: center; margin: 0; }
+.marche-saisie .reconduction .form-check-input { margin-top: 0; }
 /* Le pied n'est plus dans une carte a marge de 24 px : il devient une carte. */
 .form-seul .form-pied { margin: 8px 0 0; border: 1px solid var(--line); border-radius: var(--radius-lg); }
 @media (max-width: 767.98px) {
