@@ -221,7 +221,8 @@
         {# Les logiciels et le matériel que l'acte couvre, dans UNE zone : un
            marché de maintenance couvre souvent les deux, et l'on cherche « ce
            que couvre cet acte » sans savoir d'avance dans quelle famille il
-           tombe. Un seul champ à puces, deux groupes ; la puce porte sa famille.
+           tombe. Un seul champ à puces, deux groupes ; la puce porte sa famille
+           et le seul nom de l'élément, l'icône disant déjà de quoi il s'agit.
            Le + crée un équipement dans le groupe Matériel sans quitter la page. #}
         {# Les boutons de l'en-tête : créer un équipement absent de l'inventaire,
            puis les deux modales de choix dans une famille : un logiciel du
@@ -239,12 +240,12 @@
                 data-sans-recherche>
             <optgroup label="Logiciel" data-icone="package">
                 {% for sw in software_list %}
-                <option value="software:{{ sw.id }}" {{ 'selected' if contract and sw in contract.software }}>{{ sw.name }}{% if sw.supplier %} — {{ sw.supplier.name }}{% endif %}</option>
+                <option value="software:{{ sw.id }}" {{ 'selected' if contract and sw in contract.software }}>{{ sw.name }}</option>
                 {% endfor %}
             </optgroup>
             <optgroup label="Matériel" data-icone="server">
                 {% for e in equipments %}
-                <option value="equipment:{{ e.id }}" {{ 'selected' if contract and e in contract.equipments }}>{{ e.name }} ({{ e.kind_label() }}{% if e.environment %} · {{ e.env_label() }}{% endif %})</option>
+                <option value="equipment:{{ e.id }}" {{ 'selected' if contract and e in contract.equipments }}>{{ e.name }}</option>
                 {% endfor %}
             </optgroup>
         </select>
