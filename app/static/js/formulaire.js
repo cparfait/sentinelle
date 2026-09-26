@@ -236,6 +236,24 @@
         });
     }
 
+    // ---- Accord du mot qui suit un nombre : « 1 an », « 2 ans », « 0 jour » ----
+    // Le champ porte ses deux formes dans data-accord="an|ans" ; l'élément qui
+    // le suit prend la bonne. En français, le pluriel commence à deux ; un
+    // champ vide garde le pluriel, qui se lit comme l'unité du champ.
+    function initAccords(form) {
+        form.querySelectorAll('input[data-accord]').forEach(function (champ) {
+            var formes = champ.getAttribute('data-accord').split('|');
+            var mot = champ.nextElementSibling;
+            if (!mot || formes.length !== 2) return;
+            function accorder() {
+                var n = Math.abs(Number(champ.value));
+                mot.textContent = (champ.value === '' || !isFinite(n) || n >= 2) ? formes[1] : formes[0];
+            }
+            champ.addEventListener('input', accorder);
+            accorder();
+        });
+    }
+
     // ---- Modale de choix : une famille d'un select à puces, à cocher ----
     // [data-choix-select] désigne le select, [data-choix-groupe] l'<optgroup>
     // dont on propose les options pas encore choisies ; « Ajouter » les coche
@@ -307,6 +325,7 @@
         initAide(form);
         initPuces(form);
         initMontants(form);
+        initAccords(form);
         initModalesChoix();
     });
 
@@ -317,6 +336,7 @@
             initAide(form);
             initPuces(form);
             initMontants(form);
+            initAccords(form);
             initModalesChoix(racine || form);
         }
     };

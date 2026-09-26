@@ -167,9 +167,10 @@
             <div>
                 <label class="form-label small mb-1" for="ctPeriode" title="Durée de chaque reconduction">Période</label>
                 <div class="d-flex align-items-center gap-2">
+                    {# data-accord : le mot d'à côté suit la valeur (formulaire.js). #}
                     <input type="number" name="renewal_years" id="ctPeriode" class="form-control form-control-sm l-chiffre" min="1" max="4" step="1"
                            value="{{ contract.renewal_years if contract and contract.renewal_years is not none else '' }}"
-                           oninput="this.nextElementSibling.textContent = this.value === '1' ? 'an' : 'ans'">
+                           data-accord="an|ans">
                     <span class="small text-muted">{{ 'an' if contract and contract.renewal_years == 1 else 'ans' }}</span>
                 </div>
             </div>
@@ -177,8 +178,8 @@
                 <label class="form-label small mb-1" for="ctPreavis">Préavis</label>
                 <div class="d-flex align-items-center gap-2">
                     <input type="number" name="notice_days" id="ctPreavis" class="form-control form-control-sm l-jours" min="0" max="365" step="1"
-                           value="{{ contract.notice_days or 0 if contract else 0 }}">
-                    <span class="small text-muted">jours</span>
+                           value="{{ contract.notice_days or 0 if contract else 0 }}" data-accord="jour|jours">
+                    <span class="small text-muted">{{ 'jour' if (contract.notice_days or 0 if contract else 0) < 2 else 'jours' }}</span>
                 </div>
             </div>
         </div>
