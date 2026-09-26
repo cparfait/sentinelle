@@ -47,7 +47,7 @@
     <form method="POST" id="form-principal" class="formulaire marche-saisie">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-        {% call carte('Marché', 'bi-file-earmark-text', 'indigo') %}
+        {% call carte('Contrat', 'bi-file-earmark-text', 'indigo') %}
         {# Rangée 1 — l'identité de l'acte : ce qu'il est, son numéro chez nous,
            de quoi il s'agit, ce qu'il couvre, son numéro chez le fournisseur. #}
         <div class="rangee">
