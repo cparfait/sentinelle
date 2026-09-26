@@ -341,9 +341,9 @@ def test_la_duree_ferme_va_de_1_a_4_ans(client):
     assert '<option value="4"' in html and '<option value="5"' not in html
     client.post('/contracts/create', data={'name': 'Court', 'firm_years': '3'}, follow_redirects=True)
     assert Contract.query.filter_by(name='Court').one().firm_years == 3
-    client.post('/contracts/create', data={'name': 'Trop long', 'firm_years': '7', 'renewal_years': '5'},
-                follow_redirects=True)
+    client.post('/contracts/create', data={'name': 'Trop long', 'firm_years': '7', 'renewal_years': '5',
+                                           'renewals': '4'}, follow_redirects=True)
     trop = Contract.query.filter_by(name='Trop long').one()
-    assert trop.firm_years is None and trop.renewal_years is None
+    assert trop.firm_years is None and trop.renewal_years is None and trop.renewals is None
     client.post(f'/contracts/{trop.id}/edit', data={'name': 'Trop long', 'renewal_years': '4'}, follow_redirects=True)
     assert Contract.query.get(trop.id).renewal_years == 4

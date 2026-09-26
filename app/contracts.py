@@ -43,7 +43,9 @@ def _fill(c, f):
     c.firm_years = duree if duree and duree <= 4 else None
     # Zero est une reponse -- « non reconductible » ; l'absence n'en est pas
     # une. parse_int rend None sur une saisie vide, ce qui les distingue.
-    c.renewals = parse_int(f.get('renewals'), minimum=0)
+    # De 0 (marche sec) a 3 reconductions ; au-dela, rien.
+    renouv = parse_int(f.get('renewals'), minimum=0)
+    c.renewals = renouv if renouv is not None and renouv <= 3 else None
     # La periode de reconduction va de 1 a 4 ans, comme la duree ferme.
     periode = parse_int(f.get('renewal_years'), minimum=0)
     c.renewal_years = periode if periode and periode <= 4 else None
