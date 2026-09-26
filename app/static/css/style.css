@@ -2286,6 +2286,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    fond gris clair du formulaire de SoftInventory ; la carte qu'il contient
    garde son blanc. */
 .formulaire-inline { background: var(--inset); }
+.formulaire-inline.rounded-3 { border: 1px solid var(--line); }
 /* Deux rubriques dans une carte : un filet entre le corps de l'une et
    l'en-tete de la suivante. */
 .marche-saisie .data-card > .p-3 + .card-header-custom { border-top: 1px solid var(--line); }
