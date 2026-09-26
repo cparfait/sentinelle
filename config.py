@@ -98,6 +98,12 @@ class Config:
     # blocs). Desactivable globalement -> disposition par defaut pour tous.
     DASHBOARD_CUSTOM = os.getenv('DASHBOARD_CUSTOM', 'true').lower() in ('true', '1', 'yes')
 
+    # Formulaire des logiciels : l'ancien (rubriques numerotees, rattachements
+    # compris) au lieu de la grille de SoftInventory. Defaut : le nouveau.
+    SOFTWARE_FORM_LEGACY = os.getenv('SOFTWARE_FORM_LEGACY', 'false').lower() in ('true', '1', 'yes')
+    # De meme pour les contrats : l'ancien formulaire (rubriques numerotees).
+    CONTRACT_FORM_LEGACY = os.getenv('CONTRACT_FORM_LEGACY', 'false').lower() in ('true', '1', 'yes')
+
     # Couleur principale de l'interface (hex #rrggbb, vide = palette indigo
     # d'origine). Modifiable depuis Preferences -> Apparence.
     UI_PRIMARY_COLOR = os.getenv('UI_PRIMARY_COLOR', '')

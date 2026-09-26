@@ -31,7 +31,21 @@
 {{ entete_form(titre_form, retour) }}
 {% endif %}
 
+{# Préférences > Formulaires : l'ancien formulaire (rubriques numérotées, avec
+   leur sommaire à gauche) sur la page ; rendu seul dans une liste
+   (?inline=1), le formulaire reste la grille, faite pour y tenir. #}
+{% if config.CONTRACT_FORM_LEGACY and not inline %}
+<div class="form-page">
+    <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
+    <div class="form-corps">
+        <div class="data-card p-4">
+            {% include 'contracts/_form_corps_ancien.html' %}
+        </div>
+    </div>
+</div>
+{% else %}
 {% include 'contracts/_form_corps.html' %}
+{% endif %}
 
 
 {% if current_user.can_edit('suppliers') %}{{ qa_modal_supplier() }}{% endif %}

@@ -383,3 +383,28 @@ def test_la_tacite_reconduction_est_cochee_par_defaut(client):
     db.session.commit()
     html = client.get(f'/contracts/{ct.id}/edit').get_data(as_text=True)
     assert 'id="autoRenew"\n                           checked' not in html
+
+
+def test_l_ancien_formulaire_de_contrat_se_choisit_dans_les_preferences(client, app):
+    """Préférences > Formulaires : l'ancien formulaire (rubriques numérotées,
+    deux listes d'éléments couverts) sur la page et dans l'onglet Détails ; la
+    liste d'un logiciel (?inline=1) garde la grille. Il enregistre comme le
+    nouveau."""
+    from app.models import Equipment
+    e = Equipment(name='SRV-ACTE', kind='vm')
+    ct = Contract(name='Acte ancien')
+    db.session.add_all([e, ct])
+    db.session.commit()
+    client.post('/preferences', data={'action': 'save_forms', 'contract_form_legacy': 'on'})
+    assert app.config['CONTRACT_FORM_LEGACY'] is True
+    for url in (f'/contracts/{ct.id}/edit', f'/contracts/{ct.id}', '/contracts/create'):
+        html = client.get(url).get_data(as_text=True)
+        assert 'form-section form-section--' in html and 'name="equipment_ids"' in html, url
+        assert 'marche-saisie' not in html, url
+    assert 'marche-saisie' in client.get(f'/contracts/{ct.id}/edit?inline=1').get_data(as_text=True)
+    client.post(f'/contracts/{ct.id}/edit', data={'name': 'Acte ancien', 'equipment_ids': [str(e.id)],
+                                                   'firm_years': '3', 'notice_days': '60'})
+    ct = db.session.get(Contract, ct.id)
+    assert [x.name for x in ct.equipments] == ['SRV-ACTE'] and ct.firm_years == 3
+    client.post('/preferences', data={'action': 'save_forms'})
+    assert app.config['CONTRACT_FORM_LEGACY'] is False

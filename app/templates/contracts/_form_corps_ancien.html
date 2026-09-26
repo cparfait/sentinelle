@@ -1,0 +1,208 @@
+{# ═══ L'ancien formulaire d'un contrat ═══
+   Le formulaire d'avant la grille de SoftInventory (commit 1b00959) : rubriques
+   numérotées avec leur aide sous les champs, logiciels et équipements couverts
+   en deux listes. Choisi à la place de _form_corps.html par la préférence
+   CONTRACT_FORM_LEGACY (Préférences > Affichage > Formulaires).
+
+   Remis sur les champs d'aujourd'hui : le type vient des référentiels
+   (kind_id) ; le responsable, la priorité et le service demandeur, retirés du
+   modèle, n'y sont plus ; les bornes suivent celles de contracts._fill().
+
+   Contexte attendu : contract, retour (où mène « Annuler »), les listes de
+   _form_context() (contracts.py) et, facultatif, action_form : l'adresse
+   d'envoi quand la page qui l'affiche n'est pas la sienne. #}
+{% from '_quick_add.html' import qa_button %}
+{% from '_form_section.html' import section %}
+{% from '_formulaire.html' import pied_form %}
+
+<form method="POST" id="form-principal" class="formulaire" data-edition-visible{% if action_form %} action="{{ action_form }}"{% endif %}>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% call section("Nature de l'acte", 'bi-file-earmark-text', 'indigo') %}
+    <div class="row g-3 mb-3">
+        <div class="col-md-7">
+            <label class="form-label fw-medium">Nom du contrat *</label>
+            <input type="text" name="name" class="form-control" required
+                   value="{{ contract.name if contract else '' }}"
+                   placeholder="ex: Maintenance serveurs Dell, Licences Office 365...">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-medium">Type</label>
+            {# La liste vient des référentiels (Types de contrat) ; une création
+               part sur « Maintenance » s'il y est encore. #}
+            <select name="kind_id" class="form-select">
+                <option value="">—</option>
+                {% for t in kind_options %}
+                <option value="{{ t.id }}" {{ 'selected' if (contract.kind_id == t.id) if contract else (t.label == 'Maintenance') }}>{{ t.label }}</option>
+                {% endfor %}
+            </select>
+            <div class="form-text">De quoi il s'agit.</div>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-medium">Nature de l'acte</label>
+            <select name="nature" class="form-select">
+                <option value="">— Non renseignée —</option>
+                {% for value, label in nature_labels.items() %}
+                <option value="{{ value }}" {{ 'selected' if contract and contract.nature == value }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <div class="form-text">Ce qu'il EST.</div>
+        </div>
+    </div>
+    {% endcall %}
+
+    {% call section('Fournisseur & références', 'bi-building', 'violet') %}
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <label class="form-label fw-medium">Fournisseur / contact</label>
+            <div class="input-group">
+                <select name="supplier_id" id="supplierSelect" class="form-select">
+                    <option value="">— Sélectionner —</option>
+                    {% for s in suppliers %}
+                    <option value="{{ s.id }}" {{ 'selected' if contract and contract.supplier_id == s.id }}>{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+                {% if current_user.can_edit('suppliers') %}{{ qa_button('qaModalSupplier', 'supplierSelect', 'Ajouter un fournisseur') }}{% endif %}
+            </div>
+            <div class="form-text">Porte le contact support (tél., e-mail). Géré dans <a href="{{ url_for('suppliers.list') }}">Fournisseurs</a>.</div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-medium">Notre référence</label>
+            <input type="text" name="reference" class="form-control"
+                   value="{{ contract.reference or '' if contract else '' }}"
+                   placeholder="n° de marché">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-medium">Référence fournisseur</label>
+            <input type="text" name="supplier_reference" class="form-control"
+                   value="{{ contract.supplier_reference or '' if contract else '' }}"
+                   placeholder="son n° de commande">
+            <div class="form-text">C'est celle-là qu'il faut citer quand on l'appelle.</div>
+        </div>
+    </div>
+    {% endcall %}
+
+    {% call section('Montants', 'bi-cash-coin', 'amber') %}
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <label class="form-label fw-medium">Montant annuel (€)</label>
+            <input type="text" name="cost_yearly" class="form-control" inputmode="decimal" data-montant
+                   value="{{ contract.cost_yearly if contract and contract.cost_yearly is not none else '' }}">
+            <div class="form-text">Ce qu'on paie. Seul montant qui entre dans le coût du parc.</div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-medium">Maximum annuel (€)</label>
+            <input type="text" name="cost_max_yearly" class="form-control" inputmode="decimal" data-montant
+                   value="{{ contract.cost_max_yearly if contract and contract.cost_max_yearly is not none else '' }}">
+            <div class="form-text">Le plafond, quand l'acte en fixe un. Un plafond n'est pas une dépense.</div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-medium">Montant total sur la durée (€)</label>
+            <input type="text" name="cost_total" class="form-control" inputmode="decimal" data-montant
+                   value="{{ contract.cost_total if contract and contract.cost_total is not none else '' }}">
+            <div class="form-text">N'entre pas dans le coût du parc, qui se compte à l'année.</div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-medium">Imputation budgétaire</label>
+            <input type="text" name="budget_code" class="form-control"
+                   value="{{ contract.budget_code or '' if contract else '' }}" placeholder="6156, 65818…">
+            <div class="form-text">La ligne du budget sur laquelle la dépense tombe.</div>
+        </div>
+    </div>
+    {% endcall %}
+
+    {% call section('Échéance & durée', 'bi-calendar-event', 'emerald') %}
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <label class="form-label fw-medium">Début</label>
+            <input type="date" name="start_date" class="form-control"
+                   value="{{ contract.start_date.strftime('%Y-%m-%d') if contract and contract.start_date else '' }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-medium">Échéance</label>
+            <input type="date" name="end_date" class="form-control"
+                   value="{{ contract.end_date.strftime('%Y-%m-%d') if contract and contract.end_date else '' }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-medium">Préavis de résiliation (jours)</label>
+            <input type="number" name="notice_days" class="form-control" min="0" max="365"
+                   value="{{ contract.notice_days or 0 if contract else 0 }}">
+            <div class="form-text">Le statut est calculé sur échéance − préavis.</div>
+        </div>
+        <div class="col-md-3 d-flex align-items-center">
+            <div class="form-check form-switch mt-3">
+                {# Une création part sur la tacite reconduction : c'est le cas courant. #}
+                <input type="checkbox" name="auto_renew" class="form-check-input" id="autoRenew"
+                       {{ 'checked' if (contract.auto_renew if contract else True) }}>
+                <label class="form-check-label" for="autoRenew">Tacite reconduction</label>
+            </div>
+        </div>
+    </div>
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <label class="form-label fw-medium">Durée ferme (années)</label>
+            <input type="number" name="firm_years" class="form-control" min="1" max="4"
+                   value="{{ contract.firm_years if contract and contract.firm_years is not none else '' }}">
+            <div class="form-text">L'engagement initial, tel que l'acte le fixe — pas la période affichée.</div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-medium">Reconductions prévues</label>
+            <input type="number" name="renewals" class="form-control" min="0" max="3"
+                   value="{{ contract.renewals if contract and contract.renewals is not none else '' }}">
+            <div class="form-text">0 = marché sec, non reconductible. Vide = l'acte n'a pas été dépouillé.</div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-medium">Durée de chaque reconduction (années)</label>
+            <input type="number" name="renewal_years" class="form-control" min="1" max="4"
+                   value="{{ contract.renewal_years if contract and contract.renewal_years is not none else '' }}">
+            <div class="form-text">Une reconduction annuelle et une triennale ne pèsent pas pareil.</div>
+        </div>
+    </div>
+    {% endcall %}
+
+    {% call section('Commande', 'bi-receipt', 'sky') %}
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <label class="form-label fw-medium">Bon de commande signé le</label>
+            <input type="date" name="order_signed_on" class="form-control"
+                   value="{{ contract.order_signed_on.strftime('%Y-%m-%d') if contract and contract.order_signed_on else '' }}">
+            <div class="form-text">L'acte notifié n'engage la prestation qu'une fois ce bon parti.</div>
+        </div>
+    </div>
+    {% endcall %}
+
+    {% call section('Logiciels couverts', 'bi-window-stack', 'teal') %}
+    <div class="mb-3">
+        <label class="form-label fw-medium mb-1">Logiciels couverts</label>
+        <select name="software_ids" id="contractSoftware" class="form-select" multiple size="6">
+            {% for sw in software_list %}
+            <option value="{{ sw.id }}" {{ 'selected' if contract and sw in contract.software }}>{{ sw.name }}{% if sw.supplier %} — {{ sw.supplier.name }}{% endif %}</option>
+            {% endfor %}
+        </select>
+        <div class="form-text">Un marché en couvre AUTANT qu'il en couvre réellement : UGAP, marchés
+            « communs » à deux applications. Supprimer un logiciel n'emporte pas ses marchés — seul
+            le rattachement disparaît, l'acte contractuel reste.</div>
+    </div>
+    {% endcall %}
+
+    {% call section('Équipements couverts', 'bi-hdd-stack', 'rose') %}
+    <div class="mb-3">
+        <label class="form-label fw-medium mb-1">Équipements couverts</label>
+        <select name="equipment_ids" id="contractEquipment" class="form-select" multiple size="6">
+            {% for e in equipments %}
+            <option value="{{ e.id }}" {{ 'selected' if contract and e in contract.equipments }}>{{ e.name }} ({{ e.kind_label() }}{% if e.environment %} · {{ e.env_label() }}{% endif %})</option>
+            {% endfor %}
+        </select>
+        <div class="form-text">Ctrl/Cmd (ou Maj) pour sélectionner plusieurs serveurs/NAS de l'inventaire. Un matériel absent se crée dans l'inventaire.</div>
+    </div>
+    {% endcall %}
+
+    {% call section('Notes', 'bi-journal-text', 'slate') %}
+    <div class="mb-3">
+        <label class="form-label fw-medium">Description / Notes</label>
+        <textarea name="description" class="form-control" rows="3"
+                  placeholder="Périmètre couvert, conditions, procédure de renouvellement...">{{ contract.description or '' if contract else '' }}</textarea>
+    </div>
+    {% endcall %}
+
+    {{ pied_form(retour, 'Enregistrer' if contract else 'Ajouter') }}
+</form>

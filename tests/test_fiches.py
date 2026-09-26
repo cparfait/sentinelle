@@ -118,6 +118,11 @@ def test_chaque_fiche_repond_avant_d_etre_lue(client, jeu):
         # ou trois a six faits pour le reste (sauvegardes, materiel...).
         if 'fiche-bandeau-ligne' in html:
             assert 'fiche-bandeau-k' in html, f'{url} : bandeau d echeance sans libelle'
+        elif '/inventory/logiciels/' in url:
+            # La fiche logiciel s'en passe : ce que le bandeau repetait se lit
+            # dans la Synthese (authentification, utilisateurs) et la carte
+            # Liaisons (serveurs).
+            assert 'fiche-faits' not in html, f'{url} : le bandeau de faits est revenu'
         else:
             assert 'fiche-faits' in html, f'{url} : ni bandeau d echeance ni bandeau de faits'
             cases = len(re.findall(r'class="fiche-fait"', html))

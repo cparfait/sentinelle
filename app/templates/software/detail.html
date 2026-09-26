@@ -1,10 +1,10 @@
 {% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% from '_icones.html' import icone, lucide %}
-{% from '_quick_add.html' import qa_modal_server, qa_modal_supplier %}
+{% from '_quick_add.html' import qa_modal_server, qa_modal_supplier, qa_modal_contract, qa_modal_equipment %}
 {% block title %}{{ item.name }} - Sentinelle{% endblock %}
 {% from '_macros.html' import status_badge %}
-{% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
+{% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
 {% from '_onglets.html' import barre, onglet, volets, volet %}
 {% from '_fiche.html' import entete, menu_lien, menu_post, menu_sep %}
 
@@ -71,16 +71,8 @@
 </div>
 {% endif %}
 
-{# ═══ En haut : ce qui identifie le logiciel ═══ #}
-        {% call faits() %}
-            {% if item.service_date %}{{ fait('Mise en service', item.service_date.strftime('%d/%m/%Y')) }}{% endif %}
-            {% call fait_bloc('Authentification') %}{{ item.auth_mode_label() or 'non renseignée' }}{% if item.auth_strong %} <small>· 2FA</small>{% endif %}{% endcall %}
-            {{ fait('Serveurs', ('aucun' if item.no_server else item.equipments|length)) }}
-            {% call fait_bloc('Utilisateurs') %}
-            {%- if item.users_count is none %}<small>Non comptés</small>
-            {%- else %}{{ item.users_count }}{% if item.users_max %} <small>/ {{ item.users_max }}</small>{% endif %}{% endif -%}
-            {% endcall %}
-        {% endcall %}
+{# Pas de bandeau de faits : l'authentification, les utilisateurs et la mise en
+   service se lisent dans la Synthèse, les serveurs dans la carte Liaisons. #}
 
 {% set pieces = attached_documents('software', item.id) if documents_enabled else [] %}
 {% set nb_liaisons = ((sortants|length) + (entrants|length) if features.links else 0)
@@ -112,6 +104,7 @@
                             {{ titre_section('Identité', 'bi-window-stack', 'indigo', 'mb-0') }}
                             <div class="fiche-grille">
                             {{ champ('Version', item.version) }}
+                            {{ champ('Mise en service', item.service_date.strftime('%d/%m/%Y') if item.service_date else None) }}
                             {% call champ_bloc('URL / accès') %}
                             {%- if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.url }}</a>{% endif -%}
                             {% endcall %}
@@ -340,7 +333,11 @@
     {% call volet('details') %}
         {% set retour = url_for('software.detail', id=item.id) ~ '#details' %}
         <fieldset class="edition-verrou" data-edition-verrou disabled>
+        {% if config.SOFTWARE_FORM_LEGACY %}
+        <div class="data-card p-4">{% include 'software/_form_corps_ancien.html' %}</div>
+        {% else %}
         {% include 'software/_form_corps.html' %}
+        {% endif %}
         </fieldset>
     {% endcall %}
     {% endif %}
@@ -356,6 +353,9 @@
        lit seulement. #}
     {% set services_lies = item.user_services | map(attribute='id') | list %}
     {% set peut_lier = current_user.can_edit('software') %}
+    {# Services, serveurs, flux et alertes : des rubriques collées dans une
+       même carte, un filet entre elles. #}
+    <div class="cartes-collees">
     <div class="data-card mb-3">
         <div class="card-header-custom">
             <h6 class="fw-bold fiche-titre fiche-titre--emerald mb-0">{{ icone('bi-people', 14, 'ico ico-' ~ couleur_icone('bi-people')) }}Services utilisateurs
@@ -439,6 +439,7 @@
 
     {% if features.links %}{% include 'software/_flux.html' %}{% endif %}
     {% with entity_type='software', entity_id=item.id %}{% include '_snooze_card.html' %}{% endwith %}
+    </div>
     {% endcall %}
 
     {% if current_user.can_view('contracts') %}
@@ -454,9 +455,10 @@
     {% endif %}
 
     {% call volet('suivi') %}
-    <div class="row g-3">
-    <div class="col-xl-6">
-        <div class="data-card h-100">
+    {# Mises à jour, tâches, revues, comptes : des rubriques collées dans une
+       même carte, un filet entre elles. #}
+    <div class="cartes-collees">
+        <div class="data-card">
             <div class="card-header-custom">
                 <h6 class="fw-bold fiche-titre fiche-titre--sky mb-0">{{ icone('bi-arrow-up-circle', 14, 'ico ico-' ~ couleur_icone('bi-arrow-up-circle')) }}Mises à jour liées
                     <span class="badge bg-secondary ms-1">{{ updates|length }}</span></h6>
@@ -479,11 +481,9 @@
                 </table>
             </div>
         </div>
-    </div>
 
     {% if current_user.can_view('tests') %}
-    <div class="col-xl-6">
-        <div class="data-card h-100">
+        <div class="data-card">
             <div class="card-header-custom">
                 <h6 class="fw-bold fiche-titre fiche-titre--teal mb-0">{{ icone('bi-clipboard-check', 14, 'ico ico-' ~ couleur_icone('bi-clipboard-check')) }}Tâches récurrentes
                     <span class="badge bg-secondary ms-1">{{ taches | length }}</span></h6>
@@ -506,12 +506,10 @@
                 </table>
             </div>
         </div>
-    </div>
     {% endif %}
 
     {% if current_user.can_view('reviews') %}
-    <div class="col-xl-6">
-        <div class="data-card h-100">
+        <div class="data-card">
             <div class="card-header-custom">
                 <h6 class="fw-bold fiche-titre fiche-titre--violet mb-0">{{ icone('bi-person-check', 14, 'ico ico-' ~ couleur_icone('bi-person-check')) }}Revues de droits
                     <span class="badge bg-secondary ms-1">{{ revues | length }}</span></h6>
@@ -534,12 +532,10 @@
                 </table>
             </div>
         </div>
-    </div>
     {% endif %}
 
     {% if current_user.can_view('accounts') %}
-    <div class="col-xl-6">
-        <div class="data-card h-100">
+        <div class="data-card">
             <div class="card-header-custom">
                 <h6 class="fw-bold fiche-titre fiche-titre--orange mb-0">{{ icone('bi-key', 14, 'ico ico-' ~ couleur_icone('bi-key')) }}Comptes
                     <span class="badge bg-secondary ms-1">{{ comptes | length }}</span></h6>
@@ -562,7 +558,6 @@
                 </table>
             </div>
         </div>
-    </div>
     {% endif %}
     </div>
     {% endcall %}
@@ -575,8 +570,12 @@
        et on les cherche dans cet ordre. #}
     {% if documents_enabled %}
     {% call volet('documents') %}
+        {# Les pièces et les dossiers réseau : deux rubriques collées dans une
+           même carte, un filet entre elles. #}
+        <div class="cartes-collees">
         {% with doc_parent_kind='software', doc_parent_id=item.id, doc_permission='software', doc_title='Documents' %}{% include '_documents.html' %}{% endwith %}
         {% include 'software/_partages.html' %}
+        </div>
     {% endcall %}
     {% endif %}
 {% endcall %}
@@ -584,5 +583,9 @@
 {# Les ajouts rapides du formulaire de l'onglet Détails. #}
 {% if current_user.can_edit('software') %}
 {% if current_user.can_edit('suppliers') %}{{ qa_modal_supplier() }}{% endif %}
+{% if config.SOFTWARE_FORM_LEGACY %}
+{% if current_user.can_edit('contracts') %}{{ qa_modal_contract() }}{% endif %}
+{% if current_user.can_edit('inventory') %}{{ qa_modal_equipment() }}{% endif %}
+{% endif %}
 {% endif %}
 {% endblock %}

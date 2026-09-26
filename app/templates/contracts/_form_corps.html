@@ -226,27 +226,26 @@
 </div>
 
 {# ---- La modale de choix d'une famille d'éléments couverts ----
-   Elle se remplit depuis le groupe du champ à puces (formulaire.js) : les
-   éléments pas encore rattachés, cochables, avec une recherche ; « Ajouter »
-   les coche dans le champ, qui les montre en puces. #}
+   Elle se remplit depuis le groupe du champ à puces (formulaire.js) : TOUS
+   les éléments de la famille en pastilles, les rattachés déjà sélectionnés,
+   sur trois colonnes ; « Valider » donne au champ exactement la sélection
+   (ajouts et retraits), qu'il montre en puces. #}
 {% macro modale_choix(id, titre, nom_icone, groupe, aide) %}
 <div class="modal fade" id="{{ id }}" tabindex="-1" aria-hidden="true" aria-labelledby="{{ id }}-titre"
      data-choix-select="contractCovered" data-choix-groupe="{{ groupe }}">
-    <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-dialog modal-choix">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title d-flex align-items-center gap-2" id="{{ id }}-titre">{{ lucide(nom_icone, 18, 'text-muted') }}{{ titre }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <div class="modal-body">
-                <input type="search" class="form-control form-control-sm mb-2" placeholder="Rechercher…"
-                       aria-label="Rechercher" data-choix-recherche autocomplete="off">
                 <div class="choix-liste" data-choix-liste></div>
                 <div class="form-text">{{ aide }}</div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-sm btn-primary" data-choix-valider>Ajouter</button>
+                <button type="button" class="btn btn-sm btn-primary" data-choix-valider>Valider</button>
             </div>
         </div>
     </div>

@@ -1,0 +1,310 @@
+{# ═══ L'ancien formulaire d'un logiciel ═══
+   Le formulaire d'avant la grille de SoftInventory : neuf rubriques numérotées
+   (Identité, Hébergement & nature, Qualification, Authentification &
+   utilisateurs, Éditeur & contrat, Services utilisateurs, Serveurs, RGPD,
+   Description), avec les rattachements (marchés, services, serveurs).
+   Choisi à la place de _form_corps.html par la préférence
+   SOFTWARE_FORM_LEGACY (Préférences > Affichage > Formulaires).
+   Contexte attendu : item, retour (où mène « Annuler ») et les listes de
+   _form_context() (software.py). #}
+{% from '_quick_add.html' import qa_button, qa_add_link %}
+{% from '_form_section.html' import section %}
+{% from '_formulaire.html' import pied_form %}
+{% from '_icones.html' import icone as ico_bi %}
+
+{% macro sel(name, labels, current, blank=None, disabled=False) %}
+<select name="{{ name }}" class="form-select"{{ ' disabled' if disabled }}>
+    {% if blank %}<option value="">{{ blank }}</option>{% endif %}
+    {% for value, label in labels.items() %}
+    <option value="{{ value }}" {{ 'selected' if current == value }}>{{ label }}</option>
+    {% endfor %}
+</select>
+{% endmacro %}
+
+<form method="POST" id="form-principal" class="formulaire" data-edition-visible
+      action="{{ url_for('software.edit', id=item.id) if item else url_for('software.create') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {# Les listes à choix multiples envoient leur nom même vides : l'enregistrement
+       ne lit les rattachements que s'ils sont ENVOYÉS (software._fill), et tout
+       décocher doit bien les vider. #}
+    <input type="hidden" name="contract_ids" value="">
+    <input type="hidden" name="user_service_ids" value="">
+    <input type="hidden" name="equipment_ids" value="">
+
+    {% call section('Identité', 'bi-window-stack', 'indigo') %}
+    {# ── Identité ── #}
+    <div class="row g-3 mb-3">
+        <div class="col-md-5">
+            <label class="form-label fw-medium">Nom du logiciel *</label>
+            <input type="text" name="name" class="form-control" required
+                   value="{{ item.name if item else '' }}"
+                   placeholder="ex: GLPI, Berger-Levrault, Office 365...">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-medium">Version</label>
+            <input type="text" name="version" class="form-control"
+                   value="{{ item.version or '' if item else '' }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-medium">Cycle de vie</label>
+            {{ sel('lifecycle', lifecycle_labels, item.lifecycle if item else 'production') }}
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-medium">Mise en service</label>
+            <input type="date" name="service_date" class="form-control"
+                   value="{{ item.service_date.strftime('%Y-%m-%d') if item and item.service_date else '' }}">
+        </div>
+    </div>
+
+    {% endcall %}
+
+    {% call section('Hébergement & nature', 'bi-cloud', 'sky') %}
+    {# ── Hébergement et nature ── #}
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <label class="form-label fw-medium d-block">Hébergement</label>
+            {% set cur_host = item.hosting if item else 'on_premise' %}
+            <div class="btn-group w-100" role="group" aria-label="Hébergement">
+                <input type="radio" class="btn-check" name="hosting" id="hostOnprem" value="on_premise"
+                       {{ 'checked' if cur_host == 'on_premise' }}>
+                <label class="btn btn-outline-secondary btn-sm" for="hostOnprem"
+                       title="Installé sur le parc (serveurs internes)">{{ ico_bi('bi-hdd-network', '1em', 'me-1') }}On premise</label>
+                <input type="radio" class="btn-check" name="hosting" id="hostSaas" value="saas"
+                       {{ 'checked' if cur_host == 'saas' }}>
+                <label class="btn btn-outline-secondary btn-sm" for="hostSaas"
+                       title="Hébergé hors parc (Cloud éditeur)">{{ ico_bi('bi-cloud', '1em', 'me-1') }}SaaS</label>
+                <input type="radio" class="btn-check" name="hosting" id="hostHybride" value="hybride"
+                       {{ 'checked' if cur_host == 'hybride' }}>
+                <label class="btn btn-outline-secondary btn-sm" for="hostHybride"
+                       title="Une part chez nous, une part chez l&rsquo;éditeur">{{ ico_bi('bi-diagram-2', '1em', 'me-1') }}Hybride</label>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <label class="form-label fw-medium d-block">Nature</label>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <input type="checkbox" class="btn-check" name="is_docker" id="isDocker"
+                       {{ 'checked' if item and item.is_docker }}>
+                <label class="btn btn-outline-primary btn-sm" for="isDocker"
+                       title="Conteneurisé (Docker) — cumulable avec tout hébergement"><i class="icon-docker me-1"></i>Docker</label>
+                <input type="checkbox" class="btn-check" name="internal_dev" id="internalDev"
+                       {{ 'checked' if item and item.internal_dev }}>
+                <label class="btn btn-outline-primary btn-sm" for="internalDev"
+                       title="Fait et maintenu par la DSI : ni éditeur, ni support, ni contrat">{{ ico_bi('bi-code-slash', '1em', 'me-1') }}Développement interne</label>
+                <input type="checkbox" class="btn-check" name="no_server" id="noServer"
+                       {{ 'checked' if item and item.no_server }}>
+                <label class="btn btn-outline-primary btn-sm" for="noServer"
+                       title="Ne s&rsquo;installe sur aucune machine du parc : SaaS, ou postes des agents">{{ ico_bi('bi-slash-circle', '1em', 'me-1') }}Aucun serveur</label>
+            </div>
+            <div class="form-text">« Aucun serveur » distingue un logiciel qui n'en a pas besoin d'une fiche dont le serveur reste à saisir.</div>
+        </div>
+    </div>
+
+    {% endcall %}
+
+    {% call section('Qualification', 'bi-sliders', 'violet') %}
+    {# ── Qualification ── #}
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <label class="form-label fw-medium">Criticité</label>
+            <select name="criticality" class="form-select">
+                {% for value, label in [('', '—'), (1, '1 - Faible'), (2, '2 - Moyenne'), (3, '3 - Élevée'), (4, '4 - Critique')] %}
+                <option value="{{ value }}" {{ 'selected' if item and item.criticality == value }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-medium">Technologie</label>
+            <select name="technology_id" class="form-select">
+                <option value="">— Non renseignée —</option>
+                {% for t in technologies %}
+                <option value="{{ t.id }}" {{ 'selected' if item and item.technology_id == t.id }}>{{ t.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-medium">Type de source</label>
+            {{ sel('source_type', source_type_labels, item.source_type if item else 'proprietaire') }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-medium">URL / accès</label>
+            <input type="url" name="url" class="form-control"
+                   value="{{ item.url or '' if item else '' }}" placeholder="https://...">
+        </div>
+    </div>
+
+    {% endcall %}
+
+    {% call section('Authentification & utilisateurs', 'bi-person-lock', 'teal') %}
+    {# ── Authentification et utilisateurs ── #}
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <label class="form-label fw-medium">Authentification</label>
+            {{ sel('auth_mode', auth_mode_labels, item.auth_mode if item else None, blank='— Non renseignée —') }}
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <div class="form-check mb-2">
+                <input type="checkbox" class="form-check-input" name="auth_strong" id="authStrong"
+                       {{ 'checked' if item and item.auth_strong }}>
+                <label class="form-check-label" for="authStrong">Double authentification (2FA)</label>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-medium">Utilisateurs</label>
+            <input type="number" min="0" name="users_count" class="form-control"
+                   value="{{ item.users_count if item and item.users_count is not none else '' }}"
+                   placeholder="non compté">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-medium">Plafond contractuel</label>
+            <input type="number" min="0" name="users_max" class="form-control"
+                   value="{{ item.users_max if item and item.users_max is not none else '' }}"
+                   placeholder="illimité">
+            <div class="form-text">Comparé au nombre d'utilisateurs : signale un dépassement de licence.</div>
+        </div>
+    </div>
+
+    {% endcall %}
+
+    {% call section('Éditeur & contrat', 'bi-building', 'amber') %}
+    {# ── Éditeur et contrat ── #}
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <label class="form-label fw-medium">Éditeur / fournisseur</label>
+            <div class="input-group">
+                <select name="supplier_id" id="swSupplier" class="form-select">
+                    <option value="">— Sélectionner —</option>
+                    {% for s in suppliers %}
+                    <option value="{{ s.id }}" {{ 'selected' if item and item.supplier_id == s.id }}>{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+                {% if current_user.can_edit('suppliers') %}{{ qa_button('qaModalSupplier', 'swSupplier', 'Ajouter un fournisseur') }}{% endif %}
+            </div>
+            <div class="form-text">Annuaire <a href="{{ url_for('suppliers.list') }}">Fournisseurs</a> — c'est là que vivent les contacts.</div>
+        </div>
+        <div class="col-md-4">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label fw-medium mb-0">Contrats / marchés</label>
+                {% if current_user.can_edit('contracts') %}{{ qa_add_link('qaModalContract', 'swContract', 'Nouveau marché') }}{% endif %}
+            </div>
+            <select name="contract_ids" id="swContract" class="form-select" multiple size="4">
+                {% for c in contracts %}
+                <option value="{{ c.id }}" {{ 'selected' if item and c in item.contracts }}>{{ c.name }}{% if c.reference %} — {{ c.reference }}{% endif %}</option>
+                {% endfor %}
+            </select>
+            <div class="form-text">Un marché peut en couvrir plusieurs (UGAP, marché commun) : Ctrl/Cmd pour en choisir plusieurs.</div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-medium">Mention « sans contrat »</label>
+            <input type="text" name="no_contract_note" class="form-control"
+                   value="{{ item.no_contract_note or '' if item else '' }}"
+                   placeholder="ex: contrat géré par le CCAS">
+            <div class="form-text">Affichée à la place de « aucun contrat » quand le marché est porté ailleurs.</div>
+        </div>
+    </div>
+
+    {% endcall %}
+
+    {% call section('Services utilisateurs', 'bi-people', 'emerald') %}
+    {# ── Référents ── #}
+    <div class="row g-3 mb-1">
+        <div class="col-md-3">
+            <label class="form-label fw-medium">Référent métier</label>
+            <input type="text" name="responsible" class="form-control"
+                   value="{{ item.responsible or '' if item else '' }}"
+                   data-ad-search data-ad-email="responsible_email"
+                   placeholder="Rechercher dans l'annuaire (AD)...">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-medium">Email métier</label>
+            <input type="email" name="responsible_email" class="form-control"
+                   value="{{ item.responsible_email or '' if item else '' }}" placeholder="responsable@collectivite.fr">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-medium">Référent technique</label>
+            <input type="text" name="tech_responsible" class="form-control"
+                   value="{{ item.tech_responsible or '' if item else '' }}"
+                   data-ad-search data-ad-email="tech_responsible_email"
+                   placeholder="Rechercher dans l'annuaire (AD)...">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-medium">Email technique</label>
+            <input type="email" name="tech_responsible_email" class="form-control"
+                   value="{{ item.tech_responsible_email or '' if item else '' }}">
+        </div>
+    </div>
+    <div class="form-text mb-3">Écrire au métier pour une revue de droits, au technique pour un incident d'exploitation : les deux adresses évitent de manquer la cible.</div>
+
+    {# ── Services utilisateurs, dans la meme section ──
+       Un logiciel sert souvent plusieurs directions, et une direction
+       en utilise plusieurs. Ils s'administrent dans les Référentiels,
+       avec leur référent. #}
+    <div class="mb-3">
+        <label class="form-label fw-medium mb-1">Services utilisateurs</label>
+        <select name="user_service_ids" class="form-select" multiple size="5">
+            {% for sv in user_services %}
+            <option value="{{ sv.id }}" {{ 'selected' if item and sv in item.user_services }}>{{ sv.name }}</option>
+            {% endfor %}
+        </select>
+        <div class="form-text">Les directions qui s'en servent. La liste se gère dans
+            {% if current_user.is_admin %}<a href="{{ url_for('referentials.index') }}">Référentiels</a>{% else %}les Référentiels (admin){% endif %}.</div>
+    </div>
+
+    {% endcall %}
+
+    {% call section('Serveurs', 'bi-hdd-stack', 'slate') %}
+    {# ── Serveurs ── #}
+    <div class="mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label fw-medium mb-0">Serveur(s) d'installation</label>
+            {% if current_user.can_edit('inventory') %}{{ qa_add_link('qaModalEquipment', 'swEquipment', 'Nouveau serveur') }}{% endif %}
+        </div>
+        <select name="equipment_ids" id="swEquipment" class="form-select" multiple size="6">
+            {% for e in equipments %}
+            <option value="{{ e.id }}" {{ 'selected' if item and e in item.equipments }}>{{ e.name }} ({{ e.kind_label() }}{% if e.environment %} · {{ e.env_label() }}{% endif %})</option>
+            {% endfor %}
+        </select>
+        <div class="form-text">Ctrl/Cmd (ou Maj) pour sélectionner plusieurs. Cochez « Aucun serveur » plus haut si le logiciel n'en utilise pas.</div>
+    </div>
+
+    {% endcall %}
+
+    {# ── Volet RGPD ── #}
+    {% if features.gdpr %}
+    {% call section('Données personnelles (RGPD)', 'bi-shield-lock', 'rose') %}
+        <div class="row g-3">
+            <div class="col-md-3 d-flex align-items-center">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" name="gdpr_personal_data" id="gdprPd"
+                           {{ 'checked' if item and item.gdpr_personal_data }}>
+                    <label class="form-check-label" for="gdprPd">Traite des données personnelles</label>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-medium">Catégories de données</label>
+                <input type="text" name="gdpr_categories" class="form-control"
+                       value="{{ item.gdpr_categories or '' if item else '' }}"
+                       placeholder="état civil, coordonnées, santé, NIR...">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-medium">Réf. registre</label>
+                <input type="text" name="gdpr_registry_ref" class="form-control"
+                       value="{{ item.gdpr_registry_ref or '' if item else '' }}" placeholder="n° du traitement">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-medium">Localisation des données</label>
+                {{ sel('gdpr_location', data_location_labels, item.gdpr_location if item else 'inconnue') }}
+            </div>
+        </div>
+    {% endcall %}
+    {% endif %}
+
+    {% call section('Description', 'bi-journal-text', 'slate') %}
+    <div class="mb-3">
+        <label class="form-label fw-medium">Description / Notes</label>
+        <textarea name="description" class="form-control" rows="3"
+                  placeholder="Périmètre fonctionnel, dépendances, particularités...">{{ item.description or '' if item else '' }}</textarea>
+    </div>
+    {% endcall %}
+
+    {{ pied_form(retour, 'Enregistrer' if item else 'Ajouter') }}
+</form>

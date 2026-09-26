@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from '_quick_add.html' import qa_modal_supplier %}
+{% from '_quick_add.html' import qa_modal_supplier, qa_modal_contract, qa_modal_equipment %}
 {% block title %}{{ 'Modifier' if item else 'Ajouter' }} un logiciel - Sentinelle{% endblock %}
 
 {% block content %}
@@ -8,9 +8,26 @@
 {{ entete_form(titre_form, (url_for('software.detail', id=item.id) if item else url_for('software.list'))) }}
 
 {% set retour = url_for('software.detail', id=item.id) if item else url_for('software.list') %}
+{# Préférences > Formulaires : l'ancien formulaire (rubriques numérotées, avec
+   leur sommaire à gauche) ou la grille de SoftInventory. #}
+{% if config.SOFTWARE_FORM_LEGACY %}
+<div class="form-page">
+    <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
+    <div class="form-corps">
+        <div class="data-card p-4">
+            {% include 'software/_form_corps_ancien.html' %}
+        </div>
+    </div>
+</div>
+{% else %}
 {% include 'software/_form_corps.html' %}
+{% endif %}
 
 {% if current_user.can_edit('suppliers') %}{{ qa_modal_supplier() }}{% endif %}
+{% if config.SOFTWARE_FORM_LEGACY %}
+{% if current_user.can_edit('contracts') %}{{ qa_modal_contract() }}{% endif %}
+{% if current_user.can_edit('inventory') %}{{ qa_modal_equipment() }}{% endif %}
+{% endif %}
 
 {% endblock %}
 

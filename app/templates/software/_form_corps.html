@@ -29,12 +29,11 @@
 </select>
 {% endmacro %}
 
-{# Une carte du formulaire : son en-tête (barre d'accent, titre) et son corps.
+{# Une rubrique de la carte : son en-tête (barre d'accent, titre) et son corps.
    `onglet` : la carte reprend l'icône de cet onglet de la fiche, en couleur
    (.ico-onglet--<onglet>), au lieu de l'icône du module. `bi` : un nom
    Bootstrap (« bi-… », traduit en Lucide) ou directement un nom Lucide. #}
 {% macro carte(titre, bi, couleur, onglet=None) %}
-<div class="data-card mb-3">
     <div class="card-header-custom">
         <h6 class="fw-bold fiche-titre fiche-titre--{{ couleur }} mb-0">
             {%- if onglet %}{{ ico_bi(bi, '1em', 'ico-onglet ico-onglet--' ~ (onglet)) }}
@@ -42,7 +41,6 @@
             {%- else %}{{ lucide(bi, 14, 'ico ico-' ~ couleur) }}{% endif %}{{ titre }}</h6>
     </div>
     <div class="p-3">{{ caller() }}</div>
-</div>
 {% endmacro %}
 
 <div class="form-seul">
@@ -50,6 +48,9 @@
       action="{{ url_for('software.edit', id=item.id) if item else url_for('software.create') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
+    {# Les rubriques se suivent dans UNE carte, collées, un filet entre elles,
+       comme dans le formulaire de contrat. #}
+    <div class="data-card mb-3">
     {% call carte('Identité', 'info', 'indigo') %}
     {# Rangée 1 — ce qu'est le logiciel, qui l'édite, où il s'ouvre. #}
     <div class="grille grille-identite">
@@ -224,6 +225,7 @@
     </div>
     {% endcall %}
     {% endif %}
+    </div>
 
     {{ pied_form(retour, 'Enregistrer' if item else 'Ajouter') }}
 </form>

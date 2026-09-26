@@ -265,54 +265,78 @@
             var select = document.getElementById(modal.getAttribute('data-choix-select'));
             var groupe = modal.getAttribute('data-choix-groupe');
             var liste = modal.querySelector('[data-choix-liste]');
-            var recherche = modal.querySelector('[data-choix-recherche]');
             if (!select || !liste) return;
+            // Le sprite Lucide de la page, pour les icônes des pastilles.
+            var u = document.querySelector('use[href*="lucide.svg"]');
+            var sprite = u ? u.getAttribute('href').split('#')[0] : '';
 
+            // TOUS les éléments de la famille, ceux déjà rattachés compris :
+            // ils arrivent sélectionnés, et les désélectionner les retire.
             function candidats() {
                 return Array.prototype.slice.call(select.options).filter(function (o) {
-                    return !o.selected && o.value !== '' && o.parentElement && o.parentElement.label === groupe;
+                    return o.value !== '' && o.parentElement && o.parentElement.label === groupe;
                 });
             }
+            // La sélection en cours, par valeur.
+            var coches = {};
+            liste.addEventListener('change', function (e) {
+                if (e.target && e.target.type === 'checkbox') coches[e.target.value] = e.target.checked;
+            });
             function rendre() {
-                var q = (recherche ? recherche.value : '').trim().toLowerCase();
-                var coches = {};
-                liste.querySelectorAll('input:checked').forEach(function (c) { coches[c.value] = true; });
                 liste.innerHTML = '';
-                var lignes = candidats().filter(function (o) { return !q || o.text.toLowerCase().indexOf(q) !== -1; });
+                var lignes = candidats();
                 if (!lignes.length) {
                     var rien = document.createElement('div');
                     rien.className = 'text-muted small py-2';
-                    rien.textContent = q ? 'Aucun résultat' : 'Tout est déjà rattaché';
+                    rien.textContent = 'Aucun élément';
                     liste.appendChild(rien);
                     return;
                 }
+                // Une pastille par élément, comme les puces du champ : son icône
+                // (le type d'un matériel, sinon celle du groupe) et son nom. Un
+                // clic la sélectionne et la teinte ; la case reste, cachée,
+                // pour le clavier et pour « Valider ».
                 lignes.forEach(function (o, i) {
                     var id = modal.id + '-' + i;
                     var ligne = document.createElement('label');
                     ligne.className = 'choix-ligne';
                     ligne.setAttribute('for', id);
+                    ligne.title = o.title || o.text;
                     var case_ = document.createElement('input');
                     case_.type = 'checkbox';
-                    case_.className = 'form-check-input';
+                    case_.className = 'visually-hidden';
                     case_.id = id;
                     case_.value = o.value;
                     case_.checked = !!coches[o.value];
                     ligne.appendChild(case_);
-                    ligne.appendChild(document.createTextNode(o.text));
+                    var icone = o.dataset.icone || (o.parentElement && o.parentElement.dataset.icone);
+                    if (icone && sprite) {
+                        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                        svg.setAttribute('class', 'lucide puce-icone');
+                        svg.setAttribute('width', '14');
+                        svg.setAttribute('height', '14');
+                        svg.setAttribute('aria-hidden', 'true');
+                        var use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                        use.setAttribute('href', sprite + '#' + icone);
+                        svg.appendChild(use);
+                        ligne.appendChild(svg);
+                    }
+                    var nom = document.createElement('span');
+                    nom.className = 'text-truncate';
+                    nom.textContent = o.text;
+                    ligne.appendChild(nom);
                     liste.appendChild(ligne);
                 });
             }
             modal.addEventListener('show.bs.modal', function () {
-                if (recherche) recherche.value = '';
+                coches = {};
+                candidats().forEach(function (o) { coches[o.value] = o.selected; });
                 rendre();
             });
-            modal.addEventListener('shown.bs.modal', function () { if (recherche) recherche.focus(); });
-            if (recherche) recherche.addEventListener('input', rendre);
             var valider = modal.querySelector('[data-choix-valider]');
             if (valider) valider.addEventListener('click', function () {
-                var choisis = {};
-                liste.querySelectorAll('input:checked').forEach(function (c) { choisis[c.value] = true; });
-                Array.prototype.forEach.call(select.options, function (o) { if (choisis[o.value]) o.selected = true; });
+                // La famille prend exactement la sélection de la fenêtre.
+                candidats().forEach(function (o) { o.selected = !!coches[o.value]; });
                 select.dispatchEvent(new Event('change', { bubbles: true }));
                 var inst = window.bootstrap && bootstrap.Modal.getInstance(modal);
                 if (inst) inst.hide();

@@ -121,7 +121,11 @@
         {% set action_form = url_for('contracts.edit', id=contract.id) %}
         {% set inline = False %}
         <fieldset class="edition-verrou" data-edition-verrou disabled>
+        {% if config.CONTRACT_FORM_LEGACY %}
+        <div class="data-card p-4">{% include 'contracts/_form_corps_ancien.html' %}</div>
+        {% else %}
         {% include 'contracts/_form_corps.html' %}
+        {% endif %}
         </fieldset>
     {% endcall %}
     {% endif %}

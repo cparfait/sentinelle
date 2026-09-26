@@ -492,3 +492,32 @@ def test_la_synthese_ne_resume_que_les_contrats_en_cours(client):
     synthese = html.split('id="vol-detail"', 1)[1].split('id="vol-details"', 1)[0]
     assert 'COUR-1' in synthese and 'ECHU-1' not in synthese
     assert 'ECHU-1' in html.split('id="vol-contrats"', 1)[1]
+
+
+def test_l_ancien_formulaire_se_choisit_dans_les_preferences(client, app):
+    """Préférences > Formulaires : l'ancien formulaire (rubriques numérotées,
+    rattachements compris) remplace la grille de SoftInventory, sur la page
+    comme dans l'onglet Détails ; tout décocher y vide bien les listes."""
+    from app.models import Equipment
+    e = Equipment(name='SRV-ANCIEN', kind='vm')
+    sw = Software(name='Ancien', equipments=[e])
+    db.session.add_all([e, sw])
+    db.session.commit()
+
+    nouveau = client.get(f'/inventory/logiciels/{sw.id}/edit').get_data(as_text=True)
+    assert 'logiciel-saisie' in nouveau and 'name="equipment_ids"' not in nouveau
+
+    client.post('/preferences', data={'action': 'save_forms', 'software_form_legacy': 'on'})
+    assert app.config['SOFTWARE_FORM_LEGACY'] is True
+    for url in (f'/inventory/logiciels/{sw.id}/edit', f'/inventory/logiciels/{sw.id}',
+                '/inventory/logiciels/create'):
+        html = client.get(url).get_data(as_text=True)
+        assert 'form-section form-section--' in html and 'name="equipment_ids"' in html, url
+        assert 'logiciel-saisie' not in html, url
+
+    # Plus aucun serveur coché : seul le marqueur vide part, la liste se vide.
+    client.post(f'/inventory/logiciels/{sw.id}/edit', data={'name': 'Ancien', 'equipment_ids': ''})
+    assert db.session.get(Software, sw.id).equipments == []
+
+    client.post('/preferences', data={'action': 'save_forms'})
+    assert app.config['SOFTWARE_FORM_LEGACY'] is False

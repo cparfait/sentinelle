@@ -54,6 +54,7 @@
         <a href="#secReferentiels" class="form-sommaire-lien" data-cible="secReferentiels">{{ ico_bi('bi-list-ul', '1em') }}<span>Référentiels</span><span class="som-etat"></span></a>
         <div class="som-famille">Affichage</div>
         <a href="#secDashboard" class="form-sommaire-lien" data-cible="secDashboard">{{ ico_bi('bi-grid-1x2', '1em') }}<span>Tableau de bord</span><span class="som-etat"></span></a>
+        <a href="#secForms" class="form-sommaire-lien" data-cible="secForms">{{ ico_bi('bi-window-stack', '1em') }}<span>Formulaires</span><span class="som-etat"></span></a>
         <a href="#secAppearance" class="form-sommaire-lien" data-cible="secAppearance">{{ ico_bi('bi-palette', '1em') }}<span>Apparence</span><span class="som-etat"></span></a>
     </nav>
     <div class="form-corps" id="prefsRubriques">
@@ -723,6 +724,35 @@
                             <label class="form-check-label fw-medium" for="dashboardCustom">Tableau de bord personnalisable</label>
                         </div>
                         <p class="text-muted small mt-1 mb-2">Chaque utilisateur peut choisir les blocs affichés sur son tableau de bord et les réordonner (bouton « Personnaliser » en haut du tableau de bord). Désactivé : tout le monde voit la disposition par défaut.</p>
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer
+                        </button>
+                    </form>
+            </div>
+        </section>
+
+        <section class="form-section pref-rubrique" id="secForms">
+            <div class="form-section-titre">
+                {{ ico_bi('bi-window-stack', '1em', 'me-2') }}Formulaires
+                {% if software_form_legacy or contract_form_legacy %}<span class="badge bg-secondary ms-2">Ancien formulaire : {{ ['logiciels' if software_form_legacy, 'contrats' if contract_form_legacy] | select | join(', ') }}</span>{% else %}<span class="badge bg-success ms-2">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}Nouveaux formulaires</span>{% endif %}
+            </div>
+            <p class="form-section-aide">La présentation des formulaires de saisie, pour tous les utilisateurs.</p>
+            <div class="form-section-corps">
+                    <form method="POST" action="{{ url_for('auth.preferences') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="save_forms">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="softwareFormLegacy" name="software_form_legacy" {% if software_form_legacy %}checked{% endif %}>
+                            <label class="form-check-label fw-medium" for="softwareFormLegacy">Ancien formulaire des logiciels</label>
+                        </div>
+                        <p class="text-muted small mt-1 mb-2">Ajout et modification d'un logiciel (page et onglet Détails) avec l'ancien formulaire : neuf rubriques numérotées, marchés, services et serveurs compris. Désactivé : la grille de SoftInventory (Identité, Technique, RGPD), les rattachements se gérant dans les onglets Contrats et Liaisons.</p>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="contractFormLegacy" name="contract_form_legacy" {% if contract_form_legacy %}checked{% endif %}>
+                            <label class="form-check-label fw-medium" for="contractFormLegacy">Ancien formulaire des contrats</label>
+                        </div>
+                        <p class="text-muted small mt-1 mb-2">Ajout et modification d'un contrat (page et onglet Détails) avec l'ancien formulaire : rubriques numérotées avec leur aide, logiciels et équipements couverts en deux listes. Désactivé : la grille de SoftInventory, une seule carte « Contrat » et les éléments couverts en puces. Le formulaire ouvert dans l'onglet Contrats d'un logiciel reste la grille.</p>
                         <button type="submit" class="btn btn-sm btn-primary">
                             {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer
                         </button>

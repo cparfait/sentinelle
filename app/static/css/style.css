@@ -2163,11 +2163,27 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .puce-icone { color: var(--muted); margin-right: 6px; vertical-align: -2px; flex-shrink: 0; }
 /* La modale de choix d'une famille : une ligne a cocher par element, 32 px,
    teintee au survol ; la liste defile dans la modale. */
-.choix-liste { max-height: 320px; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); }
-.choix-ligne { display: flex; align-items: center; gap: 10px; padding: 6px 10px; margin: 0; font-size: 0.875rem; cursor: pointer; }
-.choix-ligne + .choix-ligne { border-top: 1px solid var(--line); }
-.choix-ligne:hover { background: var(--inset); }
-.choix-ligne .form-check-input { margin: 0; flex-shrink: 0; }
+/* Trois pastilles de 200 px de front : le nom le plus long du catalogue en
+   demande 194 (152 de texte, 42 d'icone, marges et bordure) ; un plus long se
+   coupe en « … » et se lit au survol. La fenetre se regle dessus : 3 x 200,
+   2 ecarts de 6, 2 x 16 de marge du corps, 2 de bordure, et la place de
+   l'ascenseur (12), reservee pour qu'il ne morde pas sur les colonnes.
+   Au-dela de huit rangees (8 x 30 + 7 x 6 = 282 px, 24 elements), la liste
+   defile ; l'en-tete et les boutons restent en vue. Sur un ecran bas, elle
+   se borne a la hauteur restante (en-tete, aide, boutons et marges : 240 px)
+   -- la liste seule defile, jamais la fenetre : un seul ascenseur. */
+.modal-choix { --bs-modal-width: 658px; }
+.choix-liste { max-height: min(282px, calc(100vh - 240px)); overflow-y: auto; scrollbar-gutter: stable; scrollbar-width: thin; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; align-content: start; }
+.choix-liste > .text-muted { grid-column: 1 / -1; }
+/* Chaque element, une pastille comme les puces du champ ; selectionnee, elle
+   prend la teinte de l'accent (la case, cachee, porte l'etat). */
+.choix-ligne { display: flex; align-items: center; min-width: 0; height: 30px; padding: 0 10px; margin: 0; border: 1px solid transparent; border-radius: 6px; background: var(--inset); font-size: 0.82rem; font-weight: 500; cursor: pointer; user-select: none; }
+.choix-ligne:hover { border-color: var(--line); }
+.choix-ligne:has(input:checked) { background: rgba(79, 70, 229, 0.12); border-color: rgba(79, 70, 229, 0.45); color: var(--primary); }
+.choix-ligne:has(input:checked) .puce-icone { color: var(--primary); }
+.choix-ligne:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 1px; }
+@media (max-width: 679.98px) { .choix-liste { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 575.98px) { .choix-liste { grid-template-columns: 1fr; } }
 .puce-groupe { display: inline-block; margin-right: 6px; padding: 0 5px; border-radius: 4px; background: var(--surface); border: 1px solid var(--line); font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); vertical-align: 1px; }
 .puce button { border: 0; background: none; color: var(--muted); font-size: 1rem; line-height: 1; padding: 0 4px; cursor: pointer; border-radius: 4px; }
 .puce button:hover { color: var(--danger); background: var(--danger-dim); }
@@ -2256,7 +2272,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .marche-saisie .rangee { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; margin-bottom: 8px; }
 .marche-saisie .rangee > .grandit { flex: 1 1 140px; min-width: 0; }
 /* Un intitule ne se replie pas : la rangee se replie a la place, champ entier. */
-.marche-saisie .form-label { white-space: nowrap; }
+/* Les intitules a la taille du titre de la carte (« CONTRAT ») : 12 px. */
+.marche-saisie .form-label { white-space: nowrap; font-size: 12px; }
 /* Des jours de 0 a 365 (« 365 » fait 23,1 px) avec la molette, les marges
    reduites a 6 et 4 px : 54 px. */
 .marche-saisie .form-control.l-jours { width: 54px; padding-left: 6px; padding-right: 4px; }
@@ -2289,7 +2306,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .formulaire-inline.rounded-3 { border: 1px solid var(--line); }
 /* Deux rubriques dans une carte : un filet entre le corps de l'une et
    l'en-tete de la suivante. */
-.marche-saisie .data-card > .p-3 + .card-header-custom { border-top: 1px solid var(--line); }
+.marche-saisie .data-card > .p-3 + .card-header-custom,
+.logiciel-saisie .data-card > .p-3 + .card-header-custom { border-top: 1px solid var(--line); }
 @media (max-width: 767.98px) {
     .marche-saisie .rangee > div:not(.form-switch) { flex: 1 1 100%; }
     .marche-saisie .rangee [class^="l-"], .marche-saisie .rangee [class*=" l-"] { width: 100%; }
@@ -2308,7 +2326,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .logiciel-saisie .grille-rgpd { grid-template-columns: 1fr 1.3fr 1fr 1fr; }
 .logiciel-saisie .grille-large { grid-column: span 2; }
 .logiciel-saisie .grille > div { min-width: 0; }
-.logiciel-saisie .form-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.logiciel-saisie .form-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
 /* La case 2FA a la hauteur d'un champ, centree sous son intitule. */
 .logiciel-saisie .case-2fa { width: 1.1rem; height: 1.1rem; margin: 5px 0; }
 /* Le + de l'editeur : un carre de la hauteur d'un champ. */
@@ -2465,6 +2483,9 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 }
 /* Dans un en-tete de carte, pas de pastille : l'icone seule, en couleur. */
 .card-header-custom h6.fiche-titre > svg.lucide.ico { margin-right: 6px; color: rgb(var(--ico-rgb, var(--sec))); }
+/* Dans les cartes de la colonne de droite d'une fiche (Editeur…) : l'icone en
+   couleur, 8 px avant le titre, comme les cartes Contrats et Liaisons. */
+.fiche-cote h6.fiche-titre > svg.lucide.ico { margin-right: 8px; color: rgb(var(--ico-rgb, var(--sec))); }
 .ico-indigo  { --ico-rgb: 79, 70, 229; }
 .ico-sky     { --ico-rgb: 2, 132, 199; }
 .ico-emerald { --ico-rgb: 5, 150, 105; }
@@ -2788,8 +2809,11 @@ a.marche-doc-nom:hover { color: var(--primary); }
    un troisieme niveau de cadre a une page qui en a deja deux (la carte, les
    rubriques) — et le trait suffit a dire lequel est ouvert.
    ========================================================================== */
+/* Serre pour tenir sur une ligne : 10 px de marge laterale par onglet, 5 entre
+   icone, libelle et compteur, aucun entre deux onglets (sept onglets et le
+   crayon dans les 788 px d'une fiche : 784 px). */
 .fiche-onglets {
-    gap: 6px;
+    gap: 0;
     margin: 0 0 12px;
     border-bottom: 1px solid var(--border);
     flex-wrap: wrap;
@@ -2797,8 +2821,8 @@ a.marche-doc-nom:hover { color: var(--primary); }
 .fiche-onglets .nav-link {
     display: flex;
     align-items: center;
-    gap: 7px;
-    padding: 8px 14px;
+    gap: 5px;
+    padding: 8px 10px;
     border: 0;
     border-bottom: 2px solid transparent;
     border-radius: 8px 8px 0 0;
@@ -2850,9 +2874,7 @@ fieldset.edition-verrou[disabled] :is(.form-pied, .puce button, .puces-champ, .m
     [data-qa-open], .help-toggle) { display: none !important; }
 fieldset.edition-verrou[disabled] .form-control,
 fieldset.edition-verrou[disabled] .form-select { background-color: var(--inset); }
-/* Le crayon enfoncé et son étiquette, tant que la fiche est en modification. */
-.fiche-onglets .edition-etiquette { display: none; margin-right: 8px; font-size: 12px; font-weight: 600; color: var(--primary); }
-main.en-edition .fiche-onglets .edition-etiquette { display: inline; }
+/* Le crayon enfoncé, tant que la fiche est en modification : il suffit à le dire. */
 main.en-edition .fiche-onglets .js-edition { color: var(--primary); background: rgba(79, 70, 229, 0.12); }
 
 /* Une couleur par onglet, la meme d'une fiche a l'autre : les documents sont
@@ -3025,3 +3047,13 @@ tr:hover .row-actions, tr:focus-within .row-actions { opacity: 1; }
 /* Les contacts de l'editeur, sous son support dans la carte Editeur d'un
    logiciel : pas de marge sous le dernier. */
 .contacts-editeur > li:last-child { margin-bottom: 0 !important; }
+
+/* Des cartes qui n'en font qu'une (onglets Documents et Liaisons d'un logiciel) : collees, les coins arrondis aux seules extremites, un filet
+   entre deux. Les cartes viennent de gabarits partages, qui restent des
+   cartes ailleurs. */
+.cartes-collees { margin-bottom: 16px; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+.cartes-collees > .data-card { margin-bottom: 0 !important; box-shadow: none; }
+/* :first-of-type / :last-of-type et non :first-child / :last-child : un
+   gabarit inclus peut laisser un <script> apres sa carte. */
+.cartes-collees > .data-card:not(:first-of-type) { border-top-left-radius: 0; border-top-right-radius: 0; border-top: 0; }
+.cartes-collees > .data-card:not(:last-of-type) { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
