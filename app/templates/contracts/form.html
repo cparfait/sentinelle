@@ -134,7 +134,7 @@
                        value="{{ contract.start_date.strftime('%Y-%m-%d') if contract and contract.start_date else '' }}">
             </div>
             <div>
-                <label class="form-label small mb-1" for="ctFin">Fin</label>
+                <label class="form-label small mb-1" for="ctFin">Échéance</label>
                 <input type="date" name="end_date" id="ctFin" class="form-control form-control-sm l-date"
                        value="{{ contract.end_date.strftime('%Y-%m-%d') if contract and contract.end_date else '' }}">
             </div>
