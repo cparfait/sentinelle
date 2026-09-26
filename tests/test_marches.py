@@ -283,13 +283,13 @@ def test_les_elements_couverts_dans_une_seule_liste(client):
     assert '<optgroup label="Logiciel" data-icone="package">' in html
 
 
-def test_le_formulaire_se_rend_seul_pour_une_modale(client):
-    """?modal=1 : le formulaire sans la page autour, avec l'en-tête et le pied
-    d'une modale ; une erreur se rend aussi en fragment, message compris."""
-    html = client.get('/contracts/create?modal=1').get_data(as_text=True)
+def test_le_formulaire_se_rend_seul_dans_une_liste(client):
+    """?inline=1 : le formulaire sans la page autour, avec sa ligne Annuler /
+    Ajouter ; une erreur se rend aussi en fragment, message compris."""
+    html = client.get('/contracts/create?inline=1').get_data(as_text=True)
     assert '<html' not in html and 'form-pied' not in html and 'id="form-principal"' in html
-    assert 'Ajouter un contrat' in html
-    erreur = client.post('/contracts/create?modal=1', data={'name': ''}).get_data(as_text=True)
+    assert 'data-formulaire-fermer' in html
+    erreur = client.post('/contracts/create?inline=1', data={'name': ''}).get_data(as_text=True)
     assert '<html' not in erreur and 'Le nom du contrat est obligatoire.' in erreur
     # Sans le paramètre, la page entière, comme toujours.
     page = client.get('/contracts/create').get_data(as_text=True)

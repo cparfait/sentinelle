@@ -1,6 +1,7 @@
-{# En modale (?modal=1), le formulaire se rend seul, dans un contenu de modale
-   que modale-formulaire.js charge à la volée : même grille, même route. #}
-{% extends '_fragment.html' if request.args.get('modal') == '1' else 'base.html' %}
+{# Dans une liste (?inline=1), le formulaire se rend seul : formulaire-inline.js
+   le charge à la place du marché qu'on modifie, ou en tête pour une création.
+   Même grille, même route. #}
+{% extends '_fragment.html' if request.args.get('inline') == '1' else 'base.html' %}
 {% from '_quick_add.html' import qa_button, qa_add_link, qa_modal_supplier, qa_modal_equipment %}
 {% from '_icones.html' import icone %}
 {% block title %}{{ 'Modifier' if contract else 'Ajouter' }} un contrat - Sentinelle{% endblock %}
@@ -16,17 +17,12 @@
    gardent leur carte, comme dans SoftInventory. #}
 
 {% block content %}
-{% set modal = request.args.get('modal') == '1' %}
+{% set inline = request.args.get('inline') == '1' %}
 {% from '_formulaire.html' import entete_form, pied_form %}
 {% set titre_form %}{{ 'Modifier le contrat' if contract else 'Ajouter un contrat' }}{% endset %}
 {% set retour = url_for('contracts.detail', id=contract.id) if contract else url_for('contracts.list') %}
-{% if modal %}
-<div class="modal-header">
-    <h5 class="modal-title">{{ titre_form }}</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-</div>
-<div class="modal-body">
-{# Les messages (nom manquant...) : la page les affiche en haut, la modale ici. #}
+{% if inline %}
+{# Les messages (nom manquant...) : la page les affiche en haut, le fragment ici. #}
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% for categorie, message in messages %}
 <div class="alert alert-{{ 'danger' if categorie == 'danger' else 'info' }} py-2 small">{{ message }}</div>
@@ -254,17 +250,18 @@
         </select>
         {% endcall %}
 
-        {% if not modal %}{{ pied_form(retour, 'Enregistrer' if contract else 'Ajouter') }}{% endif %}
+        {% if inline %}
+        {# Dans une liste : la ligne d'actions du fragment, sans barre fixe. #}
+        <div class="d-flex align-items-center justify-content-end gap-2">
+            <span class="text-muted small me-auto"><span class="text-danger">*</span> champ obligatoire</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-formulaire-fermer>Annuler</button>
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if contract else 'Ajouter' }}</button>
+        </div>
+        {% else %}
+        {{ pied_form(retour, 'Enregistrer' if contract else 'Ajouter') }}
+        {% endif %}
     </form>
 </div>
-{% if modal %}
-</div>
-<div class="modal-footer">
-    <span class="text-muted small me-auto"><span class="text-danger">*</span> champ obligatoire</span>
-    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
-    <button type="submit" form="form-principal" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> {{ 'Enregistrer' if contract else 'Ajouter' }}</button>
-</div>
-{% endif %}
 
 {# ---- La modale de choix d'une famille d'éléments couverts ----
    Elle se remplit depuis le groupe du champ à puces (formulaire.js) : les

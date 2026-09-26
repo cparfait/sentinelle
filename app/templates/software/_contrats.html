@@ -40,13 +40,17 @@
             </form>
             {% endif %}
             <a href="{{ url_for('contracts.create') }}" class="btn btn-sm btn-ghost btn-icone" title="Créer un marché"
-               aria-label="Créer un marché" data-modale-formulaire>{{ lucide('plus', 16) }}</a>
+               aria-label="Créer un marché" data-formulaire-inline data-avant="#marches-liste">{{ lucide('plus', 16) }}</a>
         </div>
         {% endif %}
     </div>
 
+    {# Le formulaire d'un marché s'ouvre ICI (formulaire-inline.js) : à la
+       place du bloc du marché qu'on modifie, en tête de la liste qu'on
+       complète — pas sur une autre page. #}
+    <div id="marches-liste">
     {% for c in marches %}
-    <div class="p-3 {{ '' if loop.last else 'border-bottom' }}">
+    <div class="p-3 {{ '' if loop.last else 'border-bottom' }}" id="marche-{{ c.id }}">
         {# Deux lignes, trois colonnes, comme dans SoftInventory. La première
            NOMME l'acte : sa référence, son libellé, la société engagée — les
            trois mènent à leur fiche. La seconde dit ce qu'il engage : sa
@@ -93,7 +97,8 @@
                retirer le LIEN -- pas l'acte : le marché reste, il ne couvre
                simplement plus cette application. #}
             <div class="d-flex gap-1 flex-shrink-0">
-                <a href="{{ url_for('contracts.edit', id=c.id) }}" class="btn btn-sm btn-ghost btn-icone" data-modale-formulaire
+                <a href="{{ url_for('contracts.edit', id=c.id) }}" class="btn btn-sm btn-ghost btn-icone"
+                   data-formulaire-inline data-cible="#marche-{{ c.id }}"
                    title="Modifier le contrat" aria-label="Modifier le contrat">{{ lucide('pencil', 16) }}</a>
                 <form method="POST" action="{{ url_for('contracts.software_detach', id=c.id, software_id=item.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -236,4 +241,5 @@
         {% endif %}
     </div>
     {% endfor %}
+    </div>
 </div>
