@@ -223,18 +223,17 @@
            que couvre cet acte » sans savoir d'avance dans quelle famille il
            tombe. Un seul champ à puces, deux groupes ; la puce porte sa famille.
            Le + crée un équipement dans le groupe Matériel sans quitter la page. #}
-        {# Les deux boutons de l'en-tête ouvrent chacun une modale de choix dans
-           sa famille : un logiciel du catalogue, un matériel de l'inventaire. #}
+        {# Les boutons de l'en-tête : créer un équipement absent de l'inventaire,
+           puis les deux modales de choix dans une famille : un logiciel du
+           catalogue, un matériel de l'inventaire. #}
         {% set boutons_couverts %}
+        {% if current_user.can_edit('inventory') %}<span class="me-1">{{ qa_add_link('qaModalEquipment', 'contractCovered', 'Nouvel équipement') }}</span>{% endif %}
         <button type="button" class="btn btn-sm btn-ghost btn-icone" data-bs-toggle="modal" data-bs-target="#choixLogiciel"
                 title="Ajouter un logiciel du catalogue" aria-label="Ajouter un logiciel du catalogue">{{ lucide('package', 16) }}</button>
         <button type="button" class="btn btn-sm btn-ghost btn-icone" data-bs-toggle="modal" data-bs-target="#choixMateriel"
                 title="Ajouter un matériel de l'inventaire" aria-label="Ajouter un matériel de l'inventaire">{{ lucide('server', 16) }}</button>
         {% endset %}
         {% call carte('Éléments couverts', 'bi-window-stack', 'teal', droite=boutons_couverts) %}
-        {% if current_user.can_edit('inventory') %}
-        <div class="d-flex justify-content-end mb-1">{{ qa_add_link('qaModalEquipment', 'contractCovered', 'Nouvel équipement') }}</div>
-        {% endif %}
         <select name="covered_ids" id="contractCovered" class="form-select form-select-sm" multiple size="6"
                 aria-label="Éléments couverts" data-qa-value-prefix="equipment:" data-qa-group="Matériel"
                 data-sans-recherche>
