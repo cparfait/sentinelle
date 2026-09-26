@@ -159,8 +159,9 @@
             <div>
                 <label class="form-label small mb-1" for="autoRenew" title="Reconduction">Recond.</label>
                 <div class="form-check form-switch reconduction">
+                    {# Une création part sur la tacite reconduction : c'est le cas courant. #}
                     <input type="checkbox" name="auto_renew" class="form-check-input" id="autoRenew"
-                           {{ 'checked' if contract and contract.auto_renew }}>
+                           {{ 'checked' if (contract.auto_renew if contract else True) }}>
                     <label class="form-check-label small" for="autoRenew">Tacite</label>
                 </div>
             </div>

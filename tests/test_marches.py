@@ -350,3 +350,15 @@ def test_la_duree_ferme_va_de_1_a_4_ans(client):
     assert Contract.query.get(trop.id).renewal_years == 4
     # Le preavis est ramene a un an au plus.
     assert Contract.query.get(trop.id).notice_days == 365
+
+
+def test_la_tacite_reconduction_est_cochee_par_defaut(client):
+    """Une création part sur la tacite reconduction ; une modification montre
+    l'état du contrat."""
+    html = client.get('/contracts/create').get_data(as_text=True)
+    assert 'id="autoRenew"' in html and 'id="autoRenew"\n                           checked' in html
+    ct = Contract(name='Sec', auto_renew=False)
+    db.session.add(ct)
+    db.session.commit()
+    html = client.get(f'/contracts/{ct.id}/edit').get_data(as_text=True)
+    assert 'id="autoRenew"\n                           checked' not in html
