@@ -2271,7 +2271,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    les marges et la bordure : 116 px. */
 .marche-saisie .l-date { width: 116px; }
 .marche-saisie .l-140 { width: 140px; }
-.marche-saisie .l-180 { width: 180px; }
+.marche-saisie .l-150 { width: 150px; }
 /* Le + a cote du fournisseur : carre de 26 px, la hauteur de la liste. */
 .marche-saisie .fournisseur .btn { padding: 4px; line-height: 1; height: 26px; flex: 0 0 26px; display: inline-flex; align-items: center; justify-content: center; }
 /* L'interrupteur « Tacite » tient la hauteur d'un champ (26 px), son texte
