@@ -129,11 +129,16 @@
             </div>
         </div>
 
-        {# Rangée 3 — le temps : de quand à quand, pour combien d'années fermes,
-           reconductible combien de fois et pour combien de temps ; puis ce que
-           Sentinelle surveille en plus : le préavis, la tacite reconduction, et
-           la date du bon de commande signé. #}
+        {# Rangée 3 — le temps : le bon de commande signé, puis de quand à quand,
+           pour combien d'années fermes, reconductible combien de fois et pour
+           combien de temps ; enfin ce que Sentinelle surveille en plus : le
+           préavis, la tacite reconduction. #}
         <div class="rangee">
+            <div>
+                <label class="form-label small mb-1" for="ctBon" title="Bon de commande signé le">Signé le</label>
+                <input type="date" name="order_signed_on" id="ctBon" class="form-control form-control-sm l-date"
+                       value="{{ contract.order_signed_on.strftime('%Y-%m-%d') if contract and contract.order_signed_on else '' }}">
+            </div>
             <div>
                 <label class="form-label small mb-1" for="ctDebut">Début</label>
                 <input type="date" name="start_date" id="ctDebut" class="form-control form-control-sm l-date"
@@ -188,11 +193,6 @@
                            value="{{ contract.notice_days or 0 if contract else 0 }}" data-accord="jour|jours">
                     <span class="small text-muted">{{ 'jour' if (contract.notice_days or 0 if contract else 0) < 2 else 'jours' }}</span>
                 </div>
-            </div>
-            <div>
-                <label class="form-label small mb-1" for="ctBon" title="Bon de commande signé le">Signé le</label>
-                <input type="date" name="order_signed_on" id="ctBon" class="form-control form-control-sm l-date"
-                       value="{{ contract.order_signed_on.strftime('%Y-%m-%d') if contract and contract.order_signed_on else '' }}">
             </div>
         </div>
 
