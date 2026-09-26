@@ -54,7 +54,7 @@ DOMAINES = [
     ]},
     {'key': 'parc', 'label': 'Parc', 'entries': [
         _e('inventory.list', 'Matériel', 'bi-hdd-stack', 'inventory', 'inventory', lucide='server'),
-        _e('software.list', 'Logiciels', 'bi-window-stack', 'software', 'software', lucide='package'),
+        _e('software.list', 'Logiciels', 'bi-window-stack', 'software', 'software', lucide='app-window'),
         _e('suppliers.list', 'Fournisseurs', 'bi-building', 'suppliers', lucide='building'),
     ]},
 ]
@@ -151,7 +151,7 @@ RUBRIQUES = {
     'bi-hdd': ('hard-drive', 'sky'),
     'bi-pc-display': ('monitor', 'sky'),
     'bi-cpu': ('cpu', 'sky'),
-    'bi-window-stack': ('package', 'sky'),
+    'bi-window-stack': ('app-window', 'sky'),
     'bi-globe': ('globe', 'sky'),
     'bi-cloud': ('cloud', 'emerald'),
     'bi-cloud-arrow-up': ('cloud-upload', 'emerald'),

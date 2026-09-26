@@ -214,14 +214,14 @@
            Un matériel absent de l'inventaire se crée dans l'inventaire. #}
         {% set boutons_couverts %}
         <button type="button" class="btn btn-sm btn-ghost btn-icone" data-bs-toggle="modal" data-bs-target="#choixLogiciel"
-                title="Ajouter un logiciel du catalogue" aria-label="Ajouter un logiciel du catalogue">{{ lucide('package', 16) }}</button>
+                title="Ajouter un logiciel du catalogue" aria-label="Ajouter un logiciel du catalogue">{{ lucide('app-window', 16) }}</button>
         <button type="button" class="btn btn-sm btn-ghost btn-icone" data-bs-toggle="modal" data-bs-target="#choixMateriel"
                 title="Ajouter un matériel de l'inventaire" aria-label="Ajouter un matériel de l'inventaire">{{ lucide('server', 16) }}</button>
         {% endset %}
         {% call rubrique('Éléments couverts', 'bi-window-stack', 'teal', droite=boutons_couverts) %}
         <select name="covered_ids" id="contractCovered" class="form-select form-select-sm" multiple size="6"
                 aria-label="Éléments couverts" data-sans-recherche>
-            <optgroup label="Logiciel" data-icone="package">
+            <optgroup label="Logiciel" data-icone="app-window">
                 {% for sw in software_list %}
                 <option value="software:{{ sw.id }}" {{ 'selected' if contract and sw in contract.software }}>{{ sw.name }}</option>
                 {% endfor %}
@@ -275,7 +275,7 @@
     </div>
 </div>
 {% endmacro %}
-{{ modale_choix('choixLogiciel', 'Logiciels du catalogue', 'package', 'Logiciel',
+{{ modale_choix('choixLogiciel', 'Logiciels du catalogue', 'app-window', 'Logiciel',
                 "Les logiciels que cet acte couvre. Un marché en couvre autant qu'il en couvre réellement.") }}
 {{ modale_choix('choixMateriel', "Matériel de l'inventaire", 'server', 'Matériel',
                 "Les serveurs, NAS et équipements réseau que cet acte couvre.") }}

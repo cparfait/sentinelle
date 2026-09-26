@@ -280,7 +280,7 @@ def test_les_elements_couverts_dans_une_seule_liste(client):
     assert f'value="software:{a.id}" selected' in html
     assert f'value="equipment:{e.id}" selected' in html
     assert '<optgroup label="Matériel" data-icone="server">' in html
-    assert '<optgroup label="Logiciel" data-icone="package">' in html
+    assert '<optgroup label="Logiciel" data-icone="app-window">' in html
 
 
 def test_le_formulaire_se_rend_seul_dans_une_liste(client):
