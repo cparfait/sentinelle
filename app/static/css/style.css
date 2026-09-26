@@ -2257,8 +2257,9 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .marche-saisie .rangee > .grandit { flex: 1 1 140px; min-width: 0; }
 /* Un intitule ne se replie pas : la rangee se replie a la place, champ entier. */
 .marche-saisie .form-label { white-space: nowrap; }
-/* Des jours de 0 a 365 (« 365 » fait 23,1 px) avec la molette : 64 px. */
-.marche-saisie .l-jours { width: 64px; }
+/* Des jours de 0 a 365 (« 365 » fait 23,1 px) avec la molette, les marges
+   reduites a 6 et 4 px : 54 px. */
+.marche-saisie .form-control.l-jours { width: 54px; padding-left: 6px; padding-right: 4px; }
 /* Un chiffre (« 4 » fait 7,7 px) avec sa molette, les marges reduites a 6 et
    4 px : 40 px. Une duree de 1 a 4 ans (« 4 ans », 31,1 px) avec la fleche de
    la liste rapprochee du bord : 64 px. */
