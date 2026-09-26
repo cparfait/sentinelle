@@ -333,3 +333,15 @@ def test_l_ancien_type_est_repris_dans_le_referentiel(app):
     orphelin = Contract.query.filter_by(name='Orphelin').one()
     assert orphelin.kind_label() == 'Autre' and orphelin.kind_ref.kind == 'contract_kind'
     assert Contract.query.filter_by(name='Inconnu').one().kind_id is None
+
+
+def test_la_duree_ferme_se_choisit_de_1_a_4_ans(client):
+    """Quatre choix, comme dans SoftInventory ; une durée plus longue déjà en
+    base reste proposée pour ne pas être perdue."""
+    html = client.get('/contracts/create').get_data(as_text=True)
+    assert '<option value="4"' in html and '<option value="5"' not in html
+    ct = Contract(name='Long', firm_years=7)
+    db.session.add(ct)
+    db.session.commit()
+    html = client.get(f'/contracts/{ct.id}/edit').get_data(as_text=True)
+    assert '<option value="7" selected>7 ans</option>' in html and '<option value="5"' not in html

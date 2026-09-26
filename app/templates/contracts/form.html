@@ -140,9 +140,13 @@
             </div>
             <div>
                 <label class="form-label small mb-1" for="ctDuree">Durée</label>
+                {# De 1 à 4 ans, comme dans SoftInventory ; une durée plus longue déjà
+                   en base reste proposée, pour ne pas la perdre en enregistrant. #}
+                {% set durees = range(1, 5) | list %}
+                {% if contract and contract.firm_years and contract.firm_years > 4 %}{% set durees = durees + [contract.firm_years] %}{% endif %}
                 <select name="firm_years" id="ctDuree" class="form-select form-select-sm l-100">
                     <option value="">—</option>
-                    {% for n in range(1, 11) %}
+                    {% for n in durees %}
                     <option value="{{ n }}" {{ 'selected' if contract and contract.firm_years == n }}>{{ n }} an{{ 's' if n > 1 }}</option>
                     {% endfor %}
                 </select>
