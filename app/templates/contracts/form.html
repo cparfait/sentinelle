@@ -87,10 +87,12 @@
             </div>
         </div>
 
-        {# Rangée 2 — l'argent : chez qui, et combien. Neuf parts : le fournisseur
-           en prend trois, les trois montants deux chacun. #}
-        <div class="grille-9">
-            <div class="c3">
+        {# Rangée 2 — l'argent : chez qui, et combien. Les trois montants ont la
+           même largeur fixe, celle de « 9 999 999,99 » (78,7 px de texte en
+           12,8 px, plus 10 px de marge de chaque côté et la bordure : 104 px),
+           et le fournisseur prend tout ce qui reste. #}
+        <div class="rangee">
+            <div class="grandit fournisseur">
                 <label class="form-label small mb-1" for="supplierSelect">Fournisseur</label>
                 <div class="d-flex align-items-center gap-1">
                     <select name="supplier_id" id="supplierSelect" class="form-select form-select-sm min-w-0 flex-grow-1">
@@ -102,19 +104,19 @@
                     {% if current_user.can_edit('suppliers') %}{{ qa_button('qaModalSupplier', 'supplierSelect', 'Ajouter un fournisseur') }}{% endif %}
                 </div>
             </div>
-            <div class="c2">
+            <div>
                 <label class="form-label small mb-1" for="ctMontant">Montant annuel</label>
-                <input type="text" name="cost_yearly" id="ctMontant" class="form-control form-control-sm" inputmode="decimal"
+                <input type="text" name="cost_yearly" id="ctMontant" class="form-control form-control-sm l-montant" inputmode="decimal"
                        value="{{ contract.cost_yearly if contract and contract.cost_yearly is not none else '' }}">
             </div>
-            <div class="c2">
+            <div>
                 <label class="form-label small mb-1" for="ctMaxi">Maximum annuel</label>
-                <input type="text" name="cost_max_yearly" id="ctMaxi" class="form-control form-control-sm" inputmode="decimal"
+                <input type="text" name="cost_max_yearly" id="ctMaxi" class="form-control form-control-sm l-montant" inputmode="decimal"
                        value="{{ contract.cost_max_yearly if contract and contract.cost_max_yearly is not none else '' }}">
             </div>
-            <div class="c2">
+            <div>
                 <label class="form-label small mb-1" for="ctTotal" title="Montant total sur la durée du marché">Montant total</label>
-                <input type="text" name="cost_total" id="ctTotal" class="form-control form-control-sm" inputmode="decimal"
+                <input type="text" name="cost_total" id="ctTotal" class="form-control form-control-sm l-montant" inputmode="decimal"
                        value="{{ contract.cost_total if contract and contract.cost_total is not none else '' }}">
             </div>
         </div>
