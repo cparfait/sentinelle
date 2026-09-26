@@ -152,7 +152,7 @@
                 </select>
             </div>
             <div>
-                <label class="form-label small mb-1" for="ctRenouv">Renouvelable</label>
+                <label class="form-label small mb-1" for="ctRenouv" title="Renouvelable">Renouv.</label>
                 <div class="d-flex align-items-center gap-2">
                     <input type="number" name="renewals" id="ctRenouv" class="form-control form-control-sm l-64" min="0" max="10" step="1"
                            value="{{ contract.renewals if contract and contract.renewals is not none else '' }}">
@@ -160,7 +160,7 @@
                 </div>
             </div>
             <div>
-                <label class="form-label small mb-1" for="autoRenew">Reconduction</label>
+                <label class="form-label small mb-1" for="autoRenew" title="Reconduction">Recond.</label>
                 <div class="form-check form-switch reconduction">
                     <input type="checkbox" name="auto_renew" class="form-check-input" id="autoRenew"
                            {{ 'checked' if contract and contract.auto_renew }}>
