@@ -9,7 +9,7 @@ from flask_login import login_required, current_user
 from app import db
 from app import features
 from app.models import (Contract, ContractHistory, Consultation,
-                        Quote, Supplier, Equipment, Software, UserService,
+                        Quote, Supplier, Equipment, Software,
                         CONTRACT_NATURE_LABELS, Referential)
 from app.forms_util import parse_date, parse_int, parse_float, status_rank
 from app.decorators import require_edit, require_delete, view_guard
@@ -76,10 +76,7 @@ def _fill(c, f):
                   if sids else [])
     c.budget_code = (f.get('budget_code', '') or '').strip() or None
     c.order_signed_on = parse_date(f.get('order_signed_on'))
-    c.service_id = parse_int(f.get('service_id')) or None
-    c.responsible = (f.get('responsible', '') or '').strip() or None
     c.description = f.get('description') or None
-    c.priority = f.get('priority', 'medium')
 
 
 def _form_context():
@@ -90,7 +87,6 @@ def _form_context():
         'equipments': Equipment.query.filter_by(is_active=True).order_by(Equipment.name).all(),
         'software_list': Software.query.filter_by(is_active=True)
                                        .order_by(Software.name).all(),
-        'services': UserService.options(),
     }
 
 
@@ -101,7 +97,7 @@ def list():
         Contract.end_date.asc().nullslast()).all()
     q = request.args.get('q', '').strip()
     from app.paging import paginate, text_search
-    contracts = text_search(contracts, q, ['name', 'reference', 'description', 'responsible'])
+    contracts = text_search(contracts, q, ['name', 'reference', 'description'])
     contracts.sort(key=lambda c: status_rank(c.status()))
     # Cout annuel total : agrege en SQL (evite de recharger toute la table).
     from sqlalchemy import func
@@ -126,7 +122,7 @@ def quick_create():
     # encore dans la liste.
     maintenance = Referential.query.filter_by(kind='contract_kind', label='Maintenance').first()
     c = Contract(name=name, kind_id=maintenance.id if maintenance else None,
-                 priority='medium', notice_days=0,
+                 notice_days=0,
                  end_date=parse_date(request.form.get('end_date')))
     db.session.add(c)
     db.session.commit()

@@ -1238,15 +1238,12 @@ class Contract(db.Model):
     # qu'une fois ce bon parti ; c'est l'etape qu'on oublie, et la seule dont la
     # date se retient.
     order_signed_on = db.Column(db.Date)
-    # Le service pour qui l'acte est passe. Un contrat couvre le plus souvent des
-    # logiciels, qui portent deja leurs services -- mais une cotisation, une
-    # liaison fibre ou un abonnement n'en couvre aucun, et le service se perdait.
-    service_id = db.Column(db.Integer, db.ForeignKey('user_service.id'), index=True)
-    service = db.relationship('UserService', foreign_keys=[service_id],
-                              backref=db.backref('contracts', lazy='dynamic'))
-    responsible = db.Column(db.String(128))
+    # Retires du contrat le 26/09/2026 : le service demandeur (service_id), le
+    # responsable et la priorite. Aucun calcul n'en dependait, et SoftInventory
+    # ne les connait pas. Les colonnes survivent dans les bases existantes --
+    # SQLite ne sait pas les retirer sans reconstruire la table -- mais plus
+    # rien ne les lit.
     description = db.Column(db.Text)
-    priority = db.Column(db.String(20), default='medium')
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),

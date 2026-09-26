@@ -3,7 +3,7 @@ ajout rapide de fournisseur (AJAX) et fiche fournisseur (impacts)."""
 from datetime import date
 
 from app import db, _migrate_data
-from app.models import Supplier, Equipment, Contract, UserService
+from app.models import Supplier, Equipment, Contract
 
 
 def test_contract_multi_equipements(client):
@@ -169,38 +169,35 @@ def test_sans_contact_la_carte_ne_parait_pas(client):
     assert 'person-lines-fill' not in html
 
 
-def test_contrat_porte_imputation_bdc_et_service(client):
-    """Trois colonnes du tableau Excel des marchés n'avaient pas de champ.
-
-    L'imputation budgétaire et le bon de commande existaient déjà sur un
-    certificat ; le service, sur un logiciel. Un contrat qui ne couvre AUCUN
-    logiciel — cotisation, liaison fibre, abonnement — perdait le service pour
-    qui l'acte est passé, faute de logiciel pour le porter."""
-    svc = UserService(name='État civil')
-    db.session.add(svc)
-    db.session.commit()
+def test_contrat_porte_imputation_et_bdc(client):
+    """Deux colonnes du tableau Excel des marchés : l'imputation budgétaire et
+    le bon de commande signé, qui existaient déjà sur un certificat. Le
+    service demandeur, le responsable et la priorité, eux, ont quitté le
+    contrat le 26/09/2026 : rien n'en dépendait."""
     r = client.post('/contracts/create', data={
-        'name': 'Cotisation ADULLACT', 'kind': 'subscription', 'notice_days': '0',
-        'budget_code': '65818', 'order_signed_on': '2026-03-13',
-        'service_id': str(svc.id)}, follow_redirects=True)
+        'name': 'Cotisation ADULLACT', 'notice_days': '0',
+        'budget_code': '65818', 'order_signed_on': '2026-03-13'}, follow_redirects=True)
     assert r.status_code == 200
     ct = Contract.query.filter_by(name='Cotisation ADULLACT').first()
     assert ct.budget_code == '65818'
     assert ct.order_signed_on == date(2026, 3, 13)
-    assert ct.service is svc and ct.software == []
+    assert ct.software == []
     # et la fiche les montre
     body = client.get(f'/contracts/{ct.id}').data.decode('utf-8')
-    assert '65818' in body and '13/03/2026' in body and 'État civil' in body
+    assert '65818' in body and '13/03/2026' in body
+    # plus de champ service, responsable ni priorité au formulaire
+    form = client.get(f'/contracts/{ct.id}/edit').data.decode('utf-8')
+    assert 'name="service_id"' not in form and 'name="responsible"' not in form and 'name="priority"' not in form
 
 
-def test_les_trois_champs_se_vident(client):
+def test_les_deux_champs_se_vident(client):
     """Une saisie vide efface : sans cela, une imputation corrigée en « aucune »
     resterait celle d'avant."""
     ct = Contract(name='Fibre', budget_code='6156', order_signed_on=date(2026, 1, 1))
     db.session.add(ct)
     db.session.commit()
     client.post(f'/contracts/{ct.id}/edit', data={
-        'name': 'Fibre', 'kind': 'maintenance', 'notice_days': '0',
-        'budget_code': '', 'order_signed_on': '', 'service_id': ''},
+        'name': 'Fibre', 'notice_days': '0',
+        'budget_code': '', 'order_signed_on': ''},
         follow_redirects=True)
-    assert ct.budget_code is None and ct.order_signed_on is None and ct.service_id is None
+    assert ct.budget_code is None and ct.order_signed_on is None

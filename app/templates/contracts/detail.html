@@ -82,10 +82,7 @@
                 <div class="fiche-bloc">
                     {{ titre_section('Suivi', 'bi-person-check', 'slate', 'mb-0') }}
                     <div class="fiche-grille">
-                        {{ champ('Service demandeur', contract.service.name if contract.service else None) }}
-                        {{ champ('Responsable', contract.responsible) }}
                         {{ champ('Bon de commande signé le', contract.order_signed_on.strftime('%d/%m/%Y') if contract.order_signed_on else None) }}
-                        {{ champ('Priorité', priority_label(contract.priority)) }}
                     </div>
                 </div>
 
