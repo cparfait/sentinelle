@@ -2,9 +2,10 @@
 
    Un lien [data-formulaire-inline] charge son adresse (?inline=1) : le serveur
    rend le formulaire seul (_fragment.html), et il s'affiche
-     - A LA PLACE du bloc [data-cible="#id"] (modification : le marche
-       s'efface, le formulaire prend sa place, Annuler le rend) ;
+     - A LA PLACE du bloc [data-cible="#id"] (modification : les lignes du
+       marche s'effacent, ses documents restent, Annuler rend les lignes) ;
      - EN TETE du conteneur [data-avant="#id"] (creation).
+   [data-classes] habille le cadre (marge, retrait, filet).
    Le formulaire s'envoie lui-meme. Une reponse REDIRIGEE dit que
    l'enregistrement a reussi : la page se recharge, sur son onglet ; une
    reponse qui rend le formulaire (nom manquant...) le remplace sur place.
@@ -89,7 +90,9 @@
         var avant = lien.getAttribute('data-avant') ? document.querySelector(lien.getAttribute('data-avant')) : null;
         if (!cible && !avant) { location.href = url; return; }
         var boite = document.createElement('div');
-        boite.className = 'formulaire-inline p-3 border-bottom';
+        // L'habillage du cadre vient du lien : marge dans un bloc qu'on
+        // remplace en partie, retrait et filet en tete d'une liste.
+        boite.className = 'formulaire-inline ' + (lien.getAttribute('data-classes') || '');
         boite.innerHTML = '<div class="text-muted small">Chargement…</div>';
         if (cible) {
             cible.insertAdjacentElement('afterend', boite);
