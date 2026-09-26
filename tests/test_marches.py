@@ -345,5 +345,8 @@ def test_la_duree_ferme_va_de_1_a_4_ans(client):
                                            'renewals': '4'}, follow_redirects=True)
     trop = Contract.query.filter_by(name='Trop long').one()
     assert trop.firm_years is None and trop.renewal_years is None and trop.renewals is None
-    client.post(f'/contracts/{trop.id}/edit', data={'name': 'Trop long', 'renewal_years': '4'}, follow_redirects=True)
+    client.post(f'/contracts/{trop.id}/edit', data={'name': 'Trop long', 'renewal_years': '4',
+                                                    'notice_days': '400'}, follow_redirects=True)
     assert Contract.query.get(trop.id).renewal_years == 4
+    # Le preavis est ramene a un an au plus.
+    assert Contract.query.get(trop.id).notice_days == 365

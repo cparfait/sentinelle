@@ -176,7 +176,7 @@
             <div>
                 <label class="form-label small mb-1" for="ctPreavis">Préavis</label>
                 <div class="d-flex align-items-center gap-2">
-                    <input type="number" name="notice_days" id="ctPreavis" class="form-control form-control-sm l-64" min="0" step="1"
+                    <input type="number" name="notice_days" id="ctPreavis" class="form-control form-control-sm l-jours" min="0" max="365" step="1"
                            value="{{ contract.notice_days or 0 if contract else 0 }}">
                     <span class="small text-muted">jours</span>
                 </div>

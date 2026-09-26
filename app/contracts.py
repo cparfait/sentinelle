@@ -49,7 +49,8 @@ def _fill(c, f):
     # La periode de reconduction va de 1 a 4 ans, comme la duree ferme.
     periode = parse_int(f.get('renewal_years'), minimum=0)
     c.renewal_years = periode if periode and periode <= 4 else None
-    c.notice_days = parse_int(f.get('notice_days'), 0, minimum=0)
+    # Le preavis va de 0 a 365 jours ; au-dela, il est ramene a un an.
+    c.notice_days = min(parse_int(f.get('notice_days'), 0, minimum=0), 365)
     c.auto_renew = f.get('auto_renew') == 'on'
     # Elements couverts : le formulaire envoie une seule liste « famille:id »
     # (covered_ids) ; les deux listes historiques (equipment_ids, software_ids)
