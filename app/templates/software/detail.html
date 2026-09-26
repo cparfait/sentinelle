@@ -100,7 +100,7 @@
 {% call volets() %}
     {% call volet('detail', actif=True) %}
         <div class="row g-3">
-            <div class="{{ 'col-lg-8' if item.supplier else 'col-12' }}">
+            <div class="{{ 'col-lg-8' if (item.supplier or marches) else 'col-12' }}">
                 <div class="data-card p-3 mb-3">
                     <div class="fiche-sections">
                         <div class="fiche-bloc fiche-bloc--indigo">
@@ -185,10 +185,11 @@
                de l'éditeur. La question « qui j'appelle ? » se pose devant le logiciel,
                mais la réponse vaut pour tous les logiciels du même éditeur — la recopier
                fiche par fiche garantirait des numéros divergents. #}
-            {% if item.supplier %}
-            {% set sup = item.supplier %}
+            {% if item.supplier or marches %}
             <div class="col-lg-4">
                 <div class="fiche-cote">
+                    {% if item.supplier %}
+                    {% set sup = item.supplier %}
                     <div class="data-card p-4 mb-3">
                         <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2">{{ icone('bi-building', 14, 'ico ico-' ~ couleur_icone('bi-building')) }}Éditeur</h6>
                         <div class="fw-medium mb-2"><a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}">{{ sup.name }}</a></div>
@@ -212,6 +213,43 @@
                             {{ contact('DPO', sup.dpo_contact, sup.dpo_phone, sup.dpo_email) }}
                         </ul>
                         <div class="form-text mt-2">Se modifient sur la <a href="{{ url_for('suppliers.edit', id=sup.id) }}">fiche de l'éditeur</a>.</div>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+
+                    {# ═══ Contrats : le récapitulatif ═══
+                       Ce que l'application coûte et jusqu'à quand : chaque marché
+                       rattaché avec son état, son échéance et son montant annuel,
+                       puis le total annuel. Le détail vit dans l'onglet Contrats. #}
+                    {% if marches %}
+                    <div class="data-card p-4 mb-3">
+                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2 d-flex align-items-center">{{ icone('bi-file-earmark-text', 14, 'ico ico-' ~ couleur_icone('bi-file-earmark-text')) }}Contrats
+                            <span class="badge bg-secondary ms-1">{{ marches | length }}</span>
+                            <button type="button" class="btn btn-ghost btn-sm ms-auto" onclick="document.getElementById('ong-contrats')?.click()">Tout voir</button></h6>
+                        <ul class="list-unstyled small mb-0 contrats-resume">
+                            {% set total = namespace(annuel=0) %}
+                            {% for c in marches %}
+                            {% if c.cost_yearly %}{% set total.annuel = total.annuel + c.cost_yearly %}{% endif %}
+                            <li class="{{ 'mb-2' if not loop.last }}">
+                                <div class="d-flex justify-content-between align-items-center gap-2">
+                                    <a href="{{ url_for('contracts.detail', id=c.id) }}" class="fw-medium text-truncate"
+                                       title="{{ c.name }}">{{ c.reference or c.name }}</a>
+                                    {{ status_badge(c.status()) }}
+                                </div>
+                                <div class="text-muted">
+                                    {%- if c.reference %}{{ c.name }}{% endif -%}
+                                    {%- if c.end_date %}{% if c.reference %} · {% endif %}échéance {{ c.end_date.strftime('%d/%m/%Y') }}{% endif -%}
+                                    {%- if c.cost_yearly %} · {{ '{:,.0f}'.format(c.cost_yearly).replace(',', ' ') }} €/an{% endif -%}
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% if total.annuel %}
+                        <div class="d-flex justify-content-between small border-top mt-2 pt-2">
+                            <span class="text-muted">Total annuel</span>
+                            <span class="fw-medium">{{ '{:,.0f}'.format(total.annuel).replace(',', ' ') }} €</span>
+                        </div>
+                        {% endif %}
                     </div>
                     {% endif %}
                 </div>
