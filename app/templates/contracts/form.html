@@ -2,7 +2,7 @@
    le charge à la place du marché qu'on modifie, ou en tête pour une création.
    Même grille, même route. #}
 {% extends '_fragment.html' if request.args.get('inline') == '1' else 'base.html' %}
-{% from '_quick_add.html' import qa_button, qa_add_link, qa_modal_supplier, qa_modal_equipment %}
+{% from '_quick_add.html' import qa_button, qa_modal_supplier %}
 {% from '_icones.html' import icone %}
 {% block title %}{{ 'Modifier' if contract else 'Ajouter' }} un contrat - Sentinelle{% endblock %}
 
@@ -222,13 +222,11 @@
            marché de maintenance couvre souvent les deux, et l'on cherche « ce
            que couvre cet acte » sans savoir d'avance dans quelle famille il
            tombe. Un seul champ à puces, deux groupes ; la puce porte sa famille
-           et le seul nom de l'élément, l'icône disant déjà de quoi il s'agit.
-           Le + crée un équipement dans le groupe Matériel sans quitter la page. #}
-        {# Les boutons de l'en-tête : créer un équipement absent de l'inventaire,
-           puis les deux modales de choix dans une famille : un logiciel du
-           catalogue, un matériel de l'inventaire. #}
+           et le seul nom de l'élément, l'icône disant déjà de quoi il s'agit. #}
+        {# Les deux boutons de l'en-tête ouvrent chacun une modale de choix dans
+           sa famille : un logiciel du catalogue, un matériel de l'inventaire.
+           Un matériel absent de l'inventaire se crée dans l'inventaire. #}
         {% set boutons_couverts %}
-        {% if current_user.can_edit('inventory') %}<span class="me-1">{{ qa_add_link('qaModalEquipment', 'contractCovered', 'Nouvel équipement') }}</span>{% endif %}
         <button type="button" class="btn btn-sm btn-ghost btn-icone" data-bs-toggle="modal" data-bs-target="#choixLogiciel"
                 title="Ajouter un logiciel du catalogue" aria-label="Ajouter un logiciel du catalogue">{{ lucide('package', 16) }}</button>
         <button type="button" class="btn btn-sm btn-ghost btn-icone" data-bs-toggle="modal" data-bs-target="#choixMateriel"
@@ -236,8 +234,7 @@
         {% endset %}
         {% call carte('Éléments couverts', 'bi-window-stack', 'teal', droite=boutons_couverts) %}
         <select name="covered_ids" id="contractCovered" class="form-select form-select-sm" multiple size="6"
-                aria-label="Éléments couverts" data-qa-value-prefix="equipment:" data-qa-group="Matériel"
-                data-sans-recherche>
+                aria-label="Éléments couverts" data-sans-recherche>
             <optgroup label="Logiciel" data-icone="package">
                 {% for sw in software_list %}
                 <option value="software:{{ sw.id }}" {{ 'selected' if contract and sw in contract.software }}>{{ sw.name }}</option>
@@ -297,5 +294,4 @@
                 "Les serveurs, NAS et équipements réseau que cet acte couvre.") }}
 
 {% if current_user.can_edit('suppliers') %}{{ qa_modal_supplier() }}{% endif %}
-{% if current_user.can_edit('inventory') %}{{ qa_modal_equipment() }}{% endif %}
 {% endblock %}
