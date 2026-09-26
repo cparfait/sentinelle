@@ -66,6 +66,7 @@
 {% call barre('ficheLogiciel', modifier=url_for('software.edit', id=item.id) if current_user.can_edit('software') else None, sur_place=True) %}
     {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}
     {% if current_user.can_edit('software') %}{{ onglet('details', 'Détails', 'bi-pencil-square') }}{% endif %}
+    {{ onglet('contacts', 'Contacts', 'contact-round') }}
     {{ onglet('liaisons', 'Liaisons', 'arrow-right-left', compteur=nb_liaisons) }}
     {% if current_user.can_view('contracts') %}
     {{ onglet('contrats', 'Contrats', 'bi-file-earmark-text', compteur=marches|length) }}
@@ -328,6 +329,9 @@
         </fieldset>
     {% endcall %}
     {% endif %}
+
+    {# ═══ Contacts ═══ Les coordonnées de l'éditeur, en lecture seule. #}
+    {% call volet('contacts') %}{% include 'software/_contacts.html' %}{% endcall %}
 
     {# ═══ Liaisons ═══
        Avec quoi cette application parle : les directions qui s'en servent, les

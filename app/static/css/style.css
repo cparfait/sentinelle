@@ -2539,7 +2539,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    le filet, le titre gardant sa place. */
 .marche-docs-entete .btn-icone { margin-bottom: -4px; }
 .marche-docs-vide { font-size: 14px; color: var(--faint); }
-.marche-docs-zone { padding: 0 16px; }
+.marche-docs-zone { padding: 0 16px; margin-top: 5px; }  /* 5 px sous la ligne du marche */
 .doc-aide { font-size: 12px; color: var(--faint); margin-top: 4px; }
 /* Le bouton de depot du fichier, dans la ligne du formulaire de piece : un
    carre de 26 px, la hauteur des champs qui l'entourent. */
@@ -2892,7 +2892,8 @@ main.en-edition .fiche-onglets .js-edition { color: var(--primary); background: 
 .ico-onglet--rgpd { --ong-icon: #e11d48; } /* rose-600 */
 #ong-historique { --ong-icon: #d97706; } /* amber-600 */
 #ong-logiciels  { --ong-icon: #eab308; } /* yellow-500 */
-#ong-contacts   { --ong-icon: #db2777; } /* pink-600 */
+#ong-contacts,
+.ico-onglet--contacts { --ong-icon: #db2777; } /* pink-600 */
 [data-theme="dark"] #ong-detail     { --ong-icon: #818cf8; }
 [data-theme="dark"] #ong-liaisons,
 [data-theme="dark"] .ico-onglet--liaisons,
@@ -2906,7 +2907,8 @@ main.en-edition .fiche-onglets .js-edition { color: var(--primary); background: 
 [data-theme="dark"] .ico-onglet--rgpd { --ong-icon: #fb7185; }
 [data-theme="dark"] #ong-historique { --ong-icon: #fbbf24; }
 [data-theme="dark"] #ong-logiciels  { --ong-icon: #facc15; }
-[data-theme="dark"] #ong-contacts   { --ong-icon: #f472b6; }
+[data-theme="dark"] #ong-contacts,
+[data-theme="dark"] .ico-onglet--contacts { --ong-icon: #f472b6; }
 
 /* La pastille de comptage : zero se dit, il ne se tait pas. Une pastille grise
    a zero signifie « on a regarde, il n'y en a pas » ; pas de pastille du tout
@@ -3063,3 +3065,21 @@ tr:hover .row-actions, tr:focus-within .row-actions { opacity: 1; }
 .editeur-titre a:hover { color: var(--primary); }
 .editeur-coordonnees { columns: 2 160px; column-gap: 12px; }
 .editeur-coordonnees > li { break-inside: avoid; }
+
+/* Onglet Contacts d'un logiciel (software/_contacts.html), comme dans
+   SoftInventory : trois colonnes, une tuile d'icone de 32 px par ligne,
+   l'intitule en petites capitales, la valeur dessous ; un filet entre le
+   support et les contacts nommes. Une colonne sous 576 px. */
+.contacts-grille { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 12px; }
+.contact-ligne { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+.contact-ligne--large { grid-column: span 2; }
+.contact-ico { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 32px; height: 32px; margin-top: 2px; border-radius: 8px; background: var(--inset); color: var(--muted); }
+.contact-ligne dt { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.contact-ligne dd { margin: 0; font-size: 0.875rem; color: var(--text); }
+.contact-vide { color: var(--faint); }
+.contacts-filet { grid-column: 1 / -1; border-top: 1px solid var(--line); margin: 4px 0; }
+.contact-aucun { padding: 24px; border: 1px dashed var(--line); border-radius: var(--radius-lg); text-align: center; font-size: 0.875rem; color: var(--faint); }
+@media (max-width: 575.98px) {
+    .contacts-grille { grid-template-columns: 1fr; }
+    .contact-ligne--large { grid-column: auto; }
+}

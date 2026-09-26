@@ -1,0 +1,76 @@
+{# ═══ Contacts ═══
+   L'onglet Contacts de SoftInventory (contacts-panel.tsx) : les coordonnées de
+   l'éditeur, en LECTURE SEULE -- elles se saisissent une seule fois, sur sa
+   fiche, et valent pour tous ses logiciels. Une grille de trois colonnes, une
+   tuile d'icône par ligne ; le support d'abord (portail, téléphone, courriel,
+   n° client, horaires), un filet, puis le commercial (et le second s'il
+   existe), l'administratif, le DPO. Une valeur absente se dit « Non renseigné ».
+   Contexte : item (le logiciel). #}
+{% from '_icones.html' import lucide %}
+
+{# Un numéro à dix chiffres se lit par paires (« 01 23 45 67 89 »), un autre
+   tel qu'il a été saisi ; le lien compose le numéro sans espaces. #}
+{% macro tel(numero) -%}
+{%- set chiffres = numero | replace(' ', '') | replace('.', '') -%}
+<a href="tel:{{ chiffres }}">
+{%- if chiffres | length == 10 and chiffres.isdigit() -%}
+{{ chiffres[0:2] }} {{ chiffres[2:4] }} {{ chiffres[4:6] }} {{ chiffres[6:8] }} {{ chiffres[8:10] }}
+{%- else %}{{ numero }}{% endif %}</a>
+{%- endmacro %}
+
+{% macro ligne(label, icone, large=False) %}
+<div class="contact-ligne{{ ' contact-ligne--large' if large }}">
+    <span class="contact-ico">{{ lucide(icone, 16) }}</span>
+    <div class="min-w-0">
+        <dt>{{ label }}</dt>
+        <dd class="text-truncate">{{ caller() }}</dd>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro vide() %}<span class="contact-vide">Non renseigné</span>{% endmacro %}
+
+{% set sup = item.supplier %}
+{% if not sup %}
+<div class="contact-aucun">Aucun éditeur n'est rattaché à ce logiciel. Renseignez-le dans l'onglet « Détails » pour retrouver ici ses contacts.</div>
+{% else %}
+{% set tel_support = sup.support_phone or sup.phone %}
+{% set mail_support = sup.support_email or sup.email %}
+{% set horaires = [sup.hours, sup.hours2] | select | join(' · ') %}
+{% set second = sup.commercial_contact2 or sup.commercial_phone2 or sup.commercial_email2 %}
+<div class="data-card mb-3">
+    <div class="card-header-custom">
+        <h6 class="fw-bold fiche-titre fiche-titre--rose mb-0">{{ lucide('contact-round', 14, 'ico-onglet ico-onglet--contacts') }}Contacts — {{ sup.name }}</h6>
+    </div>
+    <div class="p-3">
+    {% if not (sup.support_url or tel_support or mail_support or sup.customer_ref or horaires or sup.has_contacts()) %}
+    <div class="contact-aucun">Aucun contact n'est renseigné sur la fiche de « {{ sup.name }} ».</div>
+    {% else %}
+    <dl class="contacts-grille mb-0">
+        {% call ligne('Portail de support', 'life-buoy') %}{% if sup.support_url %}<a href="{{ sup.support_url }}" target="_blank" rel="noopener">{{ sup.support_url }}</a>{% else %}{{ vide() }}{% endif %}{% endcall %}
+        {% call ligne('Tél du support', 'phone') %}{% if tel_support %}{{ tel(tel_support) }}{% else %}{{ vide() }}{% endif %}{% endcall %}
+        {% call ligne('Mail du support', 'mail') %}{% if mail_support %}<a href="mailto:{{ mail_support }}">{{ mail_support }}</a>{% else %}{{ vide() }}{% endif %}{% endcall %}
+        {% call ligne('N° de client', 'badge-check') %}{{ sup.customer_ref or vide() }}{% endcall %}
+        {% call ligne('Horaires du support', 'clock', large=True) %}{{ horaires or vide() }}{% endcall %}
+
+        <div class="contacts-filet" aria-hidden="true"></div>
+
+        {% call ligne('Contact commercial', 'user') %}{{ sup.commercial_contact or vide() }}{% endcall %}
+        {% call ligne('Tél commercial', 'phone') %}{% if sup.commercial_phone %}{{ tel(sup.commercial_phone) }}{% else %}{{ vide() }}{% endif %}{% endcall %}
+        {% call ligne('Mail commercial', 'mail') %}{% if sup.commercial_email %}<a href="mailto:{{ sup.commercial_email }}">{{ sup.commercial_email }}</a>{% else %}{{ vide() }}{% endif %}{% endcall %}
+        {% if second %}
+        {% call ligne('Contact commercial 2', 'user') %}{{ sup.commercial_contact2 or vide() }}{% endcall %}
+        {% call ligne('Tél commercial 2', 'phone') %}{% if sup.commercial_phone2 %}{{ tel(sup.commercial_phone2) }}{% else %}{{ vide() }}{% endif %}{% endcall %}
+        {% call ligne('Mail commercial 2', 'mail') %}{% if sup.commercial_email2 %}<a href="mailto:{{ sup.commercial_email2 }}">{{ sup.commercial_email2 }}</a>{% else %}{{ vide() }}{% endif %}{% endcall %}
+        {% endif %}
+        {% call ligne('Contact administratif', 'user') %}{{ sup.admin_contact or vide() }}{% endcall %}
+        {% call ligne('Tél administratif', 'phone') %}{% if sup.admin_phone %}{{ tel(sup.admin_phone) }}{% else %}{{ vide() }}{% endif %}{% endcall %}
+        {% call ligne('Mail administratif', 'mail') %}{% if sup.admin_email %}<a href="mailto:{{ sup.admin_email }}">{{ sup.admin_email }}</a>{% else %}{{ vide() }}{% endif %}{% endcall %}
+        {% call ligne('DPO', 'user') %}{{ sup.dpo_contact or vide() }}{% endcall %}
+        {% call ligne('Tél DPO', 'phone') %}{% if sup.dpo_phone %}{{ tel(sup.dpo_phone) }}{% else %}{{ vide() }}{% endif %}{% endcall %}
+        {% call ligne('Mail DPO', 'mail') %}{% if sup.dpo_email %}<a href="mailto:{{ sup.dpo_email }}">{{ sup.dpo_email }}</a>{% else %}{{ vide() }}{% endif %}{% endcall %}
+    </dl>
+    {% endif %}
+    </div>
+</div>
+{% endif %}

@@ -521,3 +521,24 @@ def test_l_ancien_formulaire_se_choisit_dans_les_preferences(client, app):
 
     client.post('/preferences', data={'action': 'save_forms'})
     assert app.config['SOFTWARE_FORM_LEGACY'] is False
+
+
+def test_l_onglet_contacts_reprend_ceux_de_l_editeur(client):
+    """Troisième onglet, comme dans SoftInventory : les coordonnées de
+    l'éditeur, en lecture seule ; le second commercial seulement s'il existe ;
+    sans éditeur, une invitation à le renseigner."""
+    sup = Supplier(name='Arpège', support_phone='0123456789', support_email='aide@arpege.fr',
+                   commercial_contact='Jean Vendeur', dpo_email='dpo@arpege.fr')
+    sw = Software(name='Concerto', supplier=sup)
+    seul = Software(name='Maison', internal_dev=True)
+    db.session.add_all([sup, sw, seul])
+    db.session.commit()
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    volet = html.split('id="vol-contacts"', 1)[1].split('id="vol-liaisons"', 1)[0]
+    assert html.index('data-bs-target="#vol-details"') < html.index('data-bs-target="#vol-contacts"') \
+        < html.index('data-bs-target="#vol-liaisons"')
+    assert 'Contacts — Arpège' in volet and 'Jean Vendeur' in volet and 'dpo@arpege.fr' in volet
+    assert 'href="tel:0123456789">01 23 45 67 89</a>' in volet
+    assert 'Contact commercial 2' not in volet and 'name=' not in volet
+    html = client.get(f'/inventory/logiciels/{seul.id}').get_data(as_text=True)
+    assert "Aucun éditeur n'est rattaché à ce logiciel" in html
