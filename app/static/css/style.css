@@ -2261,6 +2261,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 /* Un nombre de 0 a 10 (« 10 » fait 15,4 px) avec sa molette : 56 px. Une duree
    de 1 a 4 ans (« 4 ans », 31,1 px) avec la fleche de la liste : 72 px. */
 .marche-saisie .l-nombre { width: 56px; }
+/* Un chiffre de 1 a 4 (« 4 » fait 7,7 px) avec sa molette : 48 px. */
+.marche-saisie .l-chiffre { width: 48px; }
 .marche-saisie .l-duree  { width: 72px; }
 /* Un montant : « 9 999 999,99 » en 12,8 px fait 78,7 px ; avec 10 px de marge
    de chaque cote et la bordure, 104 px, deux pixels d'air compris. */

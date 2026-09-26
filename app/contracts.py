@@ -44,7 +44,9 @@ def _fill(c, f):
     # Zero est une reponse -- « non reconductible » ; l'absence n'en est pas
     # une. parse_int rend None sur une saisie vide, ce qui les distingue.
     c.renewals = parse_int(f.get('renewals'), minimum=0)
-    c.renewal_years = parse_int(f.get('renewal_years'), minimum=0)
+    # La periode de reconduction va de 1 a 4 ans, comme la duree ferme.
+    periode = parse_int(f.get('renewal_years'), minimum=0)
+    c.renewal_years = periode if periode and periode <= 4 else None
     c.notice_days = parse_int(f.get('notice_days'), 0, minimum=0)
     c.auto_renew = f.get('auto_renew') == 'on'
     # Elements couverts : le formulaire envoie une seule liste « famille:id »
