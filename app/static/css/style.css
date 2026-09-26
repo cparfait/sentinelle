@@ -2282,6 +2282,10 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .marche-saisie .reconduction .form-check-input { margin-top: 0; }
 /* Le pied n'est plus dans une carte a marge de 24 px : il devient une carte. */
 .form-seul .form-pied { margin: 8px 0 0; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+/* Le formulaire ouvert dans une liste (formulaire-inline.js) se pose sur le
+   fond gris clair du formulaire de SoftInventory ; la carte qu'il contient
+   garde son blanc. */
+.formulaire-inline { background: var(--inset); }
 /* Deux rubriques dans une carte : un filet entre le corps de l'une et
    l'en-tete de la suivante. */
 .marche-saisie .data-card > .p-3 + .card-header-custom { border-top: 1px solid var(--line); }

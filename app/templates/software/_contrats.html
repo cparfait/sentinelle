@@ -100,7 +100,7 @@
                simplement plus cette application. #}
             <div class="d-flex gap-1 flex-shrink-0">
                 <a href="{{ url_for('contracts.edit', id=c.id) }}" class="btn btn-sm btn-ghost btn-icone"
-                   data-formulaire-inline data-cible="#marche-{{ c.id }}-entete" data-classes="mb-3"
+                   data-formulaire-inline data-cible="#marche-{{ c.id }}-entete" data-classes="p-3 rounded-3 mb-3"
                    title="Modifier le contrat" aria-label="Modifier le contrat">{{ lucide('pencil', 16) }}</a>
                 <form method="POST" action="{{ url_for('contracts.software_detach', id=c.id, software_id=item.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
