@@ -331,6 +331,20 @@ def test_la_fiche_sans_editeur_prend_toute_la_largeur(client):
     assert 'Aucune donnée personnelle' in html
 
 
+def test_la_synthese_resume_les_liaisons(client):
+    """Un logiciel sans éditeur mais porté par un serveur : la colonne de
+    droite revient pour la carte Liaisons, le serveur avec l'icône de son type."""
+    from app.models import Equipment
+    e = Equipment(name='SRV-MAISON', kind='nas')
+    sw = Software(name='Maison', internal_dev=True, equipments=[e])
+    db.session.add_all([e, sw])
+    db.session.commit()
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    assert 'col-lg-4' in html
+    assert 'liaisons-resume' in html
+    assert '#hard-drive' in html and 'SRV-MAISON' in html
+
+
 def test_les_services_se_cochent_depuis_la_fiche(client):
     """La fiche montre TOUS les services en cases, coche ceux qui s'en servent,
     et une case cochée ou décochée enregistre la liste telle quelle."""

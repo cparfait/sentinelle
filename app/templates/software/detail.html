@@ -82,10 +82,11 @@
         {% endcall %}
 
 {% set pieces = attached_documents('software', item.id) if documents_enabled else [] %}
+{% set nb_liaisons = ((sortants|length) + (entrants|length) if features.links else 0)
+                      + (item.equipments|length) + (item.user_services|length) %}
 {% call barre('ficheLogiciel', modifier=url_for('software.edit', id=item.id) if current_user.can_edit('software') else None) %}
     {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}
-    {{ onglet('liaisons', 'Liaisons', 'bi-diagram-3', compteur=((sortants|length) + (entrants|length) if features.links else 0)
-                                                              + (item.equipments|length) + (item.user_services|length)) }}
+    {{ onglet('liaisons', 'Liaisons', 'bi-diagram-3', compteur=nb_liaisons) }}
     {% if current_user.can_view('contracts') %}
     {{ onglet('contrats', 'Contrats', 'bi-file-earmark-text', compteur=marches|length) }}
     {% if features.quotes %}{{ onglet('devis', 'Devis', 'bi-cash-coin', compteur=consultations|length) }}{% endif %}
@@ -100,7 +101,7 @@
 {% call volets() %}
     {% call volet('detail', actif=True) %}
         <div class="row g-3">
-            <div class="{{ 'col-lg-8' if (item.supplier or marches) else 'col-12' }}">
+            <div class="{{ 'col-lg-8' if (item.supplier or marches or nb_liaisons) else 'col-12' }}">
                 <div class="data-card p-3 mb-3">
                     <div class="fiche-sections">
                         <div class="fiche-bloc fiche-bloc--indigo">
@@ -185,7 +186,7 @@
                de l'éditeur. La question « qui j'appelle ? » se pose devant le logiciel,
                mais la réponse vaut pour tous les logiciels du même éditeur — la recopier
                fiche par fiche garantirait des numéros divergents. #}
-            {% if item.supplier or marches %}
+            {% if item.supplier or marches or nb_liaisons %}
             <div class="col-lg-4">
                 <div class="fiche-cote">
                     {% if item.supplier %}
@@ -250,6 +251,50 @@
                             <span class="fw-medium">{{ '{:,.0f}'.format(total.annuel).replace(',', ' ') }} €</span>
                         </div>
                         {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {# ═══ Liaisons : le récapitulatif ═══
+                       Avec quoi l'application parle, en noms seuls : les services
+                       qui s'en servent, les serveurs qui la portent (l'icône de
+                       leur type), les flux (le sens en flèche). Le détail et les
+                       modifications vivent dans l'onglet Liaisons. #}
+                    {% if nb_liaisons %}
+                    <div class="data-card p-4 mb-3">
+                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2 d-flex align-items-center">{{ icone('bi-diagram-3', 14, 'ico ico-' ~ couleur_icone('bi-diagram-3')) }}Liaisons
+                            <span class="badge bg-secondary ms-1">{{ nb_liaisons }}</span>
+                            <button type="button" class="btn btn-ghost btn-sm ms-auto" onclick="document.getElementById('ong-liaisons')?.click()">Tout voir</button></h6>
+                        <div class="small liaisons-resume">
+                            {% if item.user_services %}
+                            <div class="liaisons-groupe">
+                                <div class="liaisons-titre">Services</div>
+                                <div>{{ item.user_services | map(attribute='name') | sort | join(', ') }}</div>
+                            </div>
+                            {% endif %}
+                            {% if item.equipments %}
+                            <div class="liaisons-groupe">
+                                <div class="liaisons-titre">Serveurs</div>
+                                <ul class="list-unstyled mb-0">
+                                    {% for e in item.equipments %}
+                                    <li class="d-flex align-items-center gap-2">{{ lucide(e.kind_icon(), 14, 'flex-shrink-0') }}<a href="{{ url_for('inventory.detail', id=e.id) }}" class="text-truncate" title="{{ e.kind_label() }}">{{ e.name }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                            {% if features.links and (sortants or entrants) %}
+                            <div class="liaisons-groupe">
+                                <div class="liaisons-titre">Flux</div>
+                                <ul class="list-unstyled mb-0">
+                                    {% for l in sortants %}
+                                    <li class="d-flex align-items-center gap-2">{{ lucide('arrow-right', 14, 'flex-shrink-0') }}<a href="{{ url_for('software.detail', id=l.target.id) }}" class="text-truncate" title="Flux sortant vers {{ l.target.name }}">{{ l.target.name }}</a></li>
+                                    {% endfor %}
+                                    {% for l in entrants %}
+                                    <li class="d-flex align-items-center gap-2">{{ lucide('arrow-left', 14, 'flex-shrink-0') }}<a href="{{ url_for('software.detail', id=l.source.id) }}" class="text-truncate" title="Flux entrant depuis {{ l.source.name }}">{{ l.source.name }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
                     {% endif %}
                 </div>
