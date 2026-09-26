@@ -29,7 +29,7 @@ ICONES = [
     'layout-dashboard', 'calendar-days', 'chart-column', 'trash-2',
     'key-round', 'shield-check', 'globe', 'file-pen',
     'cloud-upload', 'clipboard-list', 'circle-arrow-up', 'user-check',
-    'server', 'app-window', 'building',
+    'server', 'app-window', 'boxes', 'building',
     'bell', 'users', 'shield', 'notebook-text', 'calendar-clock', 'plug', 'sliders-horizontal',
     # Natures d'equipement (inventaire) : VM, serveur physique, NAS, baie, reseau, inconnu.
     'monitor', 'hard-drive', 'database', 'router', 'box',

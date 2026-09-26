@@ -34,10 +34,11 @@
 
 {% from '_icones.html' import lucide %}
 {# Une rubrique de la carte : son en-tête (titre, boutons à droite) et son corps.
-   Les rubriques se suivent dans UNE carte, collées, un filet entre elles. #}
+   Les rubriques se suivent dans UNE carte, collées, un filet entre elles.
+   `bi` : un nom Bootstrap (traduit en Lucide) ou directement un nom Lucide. #}
 {% macro rubrique(titre, bi, couleur, droite='') %}
     <div class="card-header-custom d-flex justify-content-between align-items-center">
-        <h6 class="fw-bold fiche-titre fiche-titre--{{ couleur }} mb-0">{{ icone(bi, 14, 'ico ico-' ~ couleur) }}{{ titre }}</h6>
+        <h6 class="fw-bold fiche-titre fiche-titre--{{ couleur }} mb-0">{% if bi.startswith('bi-') %}{{ icone(bi, 14, 'ico ico-' ~ couleur) }}{% else %}{{ lucide(bi, 14, 'ico ico-' ~ couleur) }}{% endif %}{{ titre }}</h6>
         {% if droite %}<div class="d-flex gap-1 marches-actions">{{ droite }}</div>{% endif %}
     </div>
     <div class="p-3">{{ caller() }}</div>
@@ -218,7 +219,7 @@
         <button type="button" class="btn btn-sm btn-ghost btn-icone" data-bs-toggle="modal" data-bs-target="#choixMateriel"
                 title="Ajouter un matériel de l'inventaire" aria-label="Ajouter un matériel de l'inventaire">{{ lucide('server', 16) }}</button>
         {% endset %}
-        {% call rubrique('Éléments couverts', 'bi-window-stack', 'teal', droite=boutons_couverts) %}
+        {% call rubrique('Éléments couverts', 'boxes', 'teal', droite=boutons_couverts) %}
         <select name="covered_ids" id="contractCovered" class="form-select form-select-sm" multiple size="6"
                 aria-label="Éléments couverts" data-sans-recherche>
             <optgroup label="Logiciel" data-icone="app-window">
