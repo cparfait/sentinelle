@@ -31,11 +31,17 @@ def parse_int(value, default=None, minimum=None):
 
 
 def parse_float(value, default=None):
-    """Parse un nombre decimal (virgule ou point acceptes). Renvoie `default`
-    si vide ou invalide."""
+    """Parse un nombre decimal, saisi a la francaise (« 9 999 999,99 », espaces
+    insecables compris, symbole euro tolere) ou a l'anglaise (« 9999999.99 »).
+    Avec une virgule, le point est un separateur de milliers. Renvoie
+    `default` si vide ou invalide."""
     if value is None:
         return default
-    raw = str(value).strip().replace(',', '.')
+    raw = str(value).strip()
+    for espace in (' ', '\u00a0', '\u202f', '\u2009', '€'):
+        raw = raw.replace(espace, '')
+    if ',' in raw:
+        raw = raw.replace('.', '').replace(',', '.')
     if not raw:
         return default
     try:

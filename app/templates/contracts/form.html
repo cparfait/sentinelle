@@ -106,17 +106,17 @@
             </div>
             <div>
                 <label class="form-label small mb-1" for="ctMontant">Montant annuel</label>
-                <input type="text" name="cost_yearly" id="ctMontant" class="form-control form-control-sm l-montant" inputmode="decimal"
+                <input type="text" name="cost_yearly" id="ctMontant" class="form-control form-control-sm l-montant" inputmode="decimal" data-montant
                        value="{{ contract.cost_yearly if contract and contract.cost_yearly is not none else '' }}">
             </div>
             <div>
                 <label class="form-label small mb-1" for="ctMaxi">Maximum annuel</label>
-                <input type="text" name="cost_max_yearly" id="ctMaxi" class="form-control form-control-sm l-montant" inputmode="decimal"
+                <input type="text" name="cost_max_yearly" id="ctMaxi" class="form-control form-control-sm l-montant" inputmode="decimal" data-montant
                        value="{{ contract.cost_max_yearly if contract and contract.cost_max_yearly is not none else '' }}">
             </div>
             <div>
                 <label class="form-label small mb-1" for="ctTotal" title="Montant total sur la durée du marché">Montant total</label>
-                <input type="text" name="cost_total" id="ctTotal" class="form-control form-control-sm l-montant" inputmode="decimal"
+                <input type="text" name="cost_total" id="ctTotal" class="form-control form-control-sm l-montant" inputmode="decimal" data-montant
                        value="{{ contract.cost_total if contract and contract.cost_total is not none else '' }}">
             </div>
         </div>

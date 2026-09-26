@@ -216,6 +216,26 @@
         });
     }
 
+    // ---- Montants : affichés et saisis à la française ----
+    // Un champ [data-montant] montre « 9 999 999,99 » (espaces insécables,
+    // virgule, deux décimales) ; on y tape ce qu'on veut — « 18500 », « 18 500,5 »,
+    // « 18500.50 » — et il se remet en forme en le quittant. Le serveur lit la
+    // même chose (parse_float).
+    function formaterMontant(valeur) {
+        var brut = String(valeur || '').replace(/[\s\u00a0\u202f€]/g, '');
+        if (brut.indexOf(',') !== -1) brut = brut.replace(/\./g, '').replace(',', '.');
+        if (brut === '') return '';
+        var n = Number(brut);
+        if (!isFinite(n)) return valeur;
+        return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function initMontants(form) {
+        form.querySelectorAll('input[data-montant]').forEach(function (champ) {
+            champ.value = formaterMontant(champ.value);
+            champ.addEventListener('blur', function () { champ.value = formaterMontant(champ.value); });
+        });
+    }
+
     // ---- Modale de choix : une famille d'un select à puces, à cocher ----
     // [data-choix-select] désigne le select, [data-choix-groupe] l'<optgroup>
     // dont on propose les options pas encore choisies ; « Ajouter » les coche
@@ -286,6 +306,7 @@
         initSommaire(form);
         initAide(form);
         initPuces(form);
+        initMontants(form);
         initModalesChoix();
     });
 
@@ -295,6 +316,7 @@
         init: function (form, racine) {
             initAide(form);
             initPuces(form);
+            initMontants(form);
             initModalesChoix(racine || form);
         }
     };

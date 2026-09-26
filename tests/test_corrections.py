@@ -25,6 +25,16 @@ def test_parse_date_tolere_invalide():
     assert parse_date('2026-06-30') == date(2026, 6, 30)
 
 
+def test_parse_float_a_la_francaise():
+    """« 9 999 999,99 » tel qu'un champ montant l'affiche, espaces insécables
+    ou fines, euro toléré ; avec une virgule, le point sépare les milliers."""
+    assert parse_float('9 999 999,99') == 9999999.99
+    assert parse_float('9\u00a0999\u202f999,99') == 9999999.99
+    assert parse_float('18 500,00 €') == 18500.0
+    assert parse_float('1.234,5') == 1234.5
+    assert parse_float('18500.5') == 18500.5
+
+
 def test_parse_float_virgule_et_invalide():
     assert parse_float('1,5') == 1.5
     assert parse_float('') is None
