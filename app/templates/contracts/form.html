@@ -130,12 +130,12 @@
         <div class="rangee">
             <div>
                 <label class="form-label small mb-1" for="ctDebut">Début</label>
-                <input type="date" name="start_date" id="ctDebut" class="form-control form-control-sm l-130"
+                <input type="date" name="start_date" id="ctDebut" class="form-control form-control-sm l-date"
                        value="{{ contract.start_date.strftime('%Y-%m-%d') if contract and contract.start_date else '' }}">
             </div>
             <div>
                 <label class="form-label small mb-1" for="ctFin">Fin</label>
-                <input type="date" name="end_date" id="ctFin" class="form-control form-control-sm l-130"
+                <input type="date" name="end_date" id="ctFin" class="form-control form-control-sm l-date"
                        value="{{ contract.end_date.strftime('%Y-%m-%d') if contract and contract.end_date else '' }}">
             </div>
             <div>
@@ -202,7 +202,7 @@
             </div>
             <div>
                 <label class="form-label small mb-1" for="ctBon" title="Bon de commande signé le">Commande signée le</label>
-                <input type="date" name="order_signed_on" id="ctBon" class="form-control form-control-sm l-130"
+                <input type="date" name="order_signed_on" id="ctBon" class="form-control form-control-sm l-date"
                        value="{{ contract.order_signed_on.strftime('%Y-%m-%d') if contract and contract.order_signed_on else '' }}">
             </div>
             <div>
