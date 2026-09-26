@@ -203,7 +203,7 @@
                        value="{{ contract.responsible or '' if contract else '' }}">
             </div>
             <div>
-                <label class="form-label small mb-1" for="ctBon" title="Bon de commande signé le">Commande signée le</label>
+                <label class="form-label small mb-1" for="ctBon" title="Bon de commande signé le">Signé le</label>
                 <input type="date" name="order_signed_on" id="ctBon" class="form-control form-control-sm l-date"
                        value="{{ contract.order_signed_on.strftime('%Y-%m-%d') if contract and contract.order_signed_on else '' }}">
             </div>
