@@ -128,10 +128,12 @@ def test_fiche_fournisseur_impacts(client):
 # ── L'annuaire tient les contacts, les fiches logiciel les remontent ──
 
 def test_contacts_editeur_enregistres_et_herites(client):
-    """Les coordonnées ne se saisissent QU'ICI : la fiche logiciel en reprend,
-    en lecture seule, le support et le courriel du DPO ; les autres contacts
-    restent sur la fiche de l'éditeur. La recopier fiche par fiche garantirait
-    des numéros divergents."""
+    """Les coordonnées ne se saisissent QU'ICI : la fiche logiciel les reprend
+    en lecture seule. Sa Synthèse (carte de l'éditeur) n'en garde que ce qui
+    sert à appeler -- support, n° client, courriel du DPO ; les autres contacts
+    (commerciaux, facturation) se lisent dans son onglet Contacts, comme dans
+    SoftInventory. Les recopier fiche par fiche garantirait des numéros
+    divergents."""
     from app.models import Software
     client.post('/suppliers/create', data={
         'name': 'Berger-Levrault', 'kind': 'editor',
@@ -155,9 +157,14 @@ def test_contacts_editeur_enregistres_et_herites(client):
     db.session.add(sw)
     db.session.commit()
     html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
-    assert 'assistance@bl.fr' in html and 'dpo@bl.fr' in html
-    assert 'MOREAU' not in html and 'factu@bl.fr' not in html
-    assert 'CLI-42' in html               # le n° client, cherché juste avant d'appeler
+    synthese = html.split('id="vol-detail"', 1)[1].split('id="vol-details"', 1)[0]
+    assert 'assistance@bl.fr' in synthese and 'dpo@bl.fr' in synthese
+    assert 'CLI-42' in synthese           # le n° client, cherché juste avant d'appeler
+    assert 'MOREAU' not in synthese and 'factu@bl.fr' not in synthese
+    # Les autres contacts : dans l'onglet Contacts, en lecture seule.
+    contacts = html.split('id="vol-contacts"', 1)[1]
+    assert 'MOREAU' in contacts and 'factu@bl.fr' in contacts
+    assert 'name="commercial_contact' not in contacts
 
 
 def test_sans_contact_la_carte_ne_parait_pas(client):
