@@ -73,7 +73,9 @@ def test_aucune_fiche_ne_delaye_ses_champs(client, jeu):
     tirait un vide de plusieurs centimetres entre le libelle et sa valeur."""
     for url, _ in _fiches(jeu):
         html = client.get(url).get_data(as_text=True)
-        assert 'fiche-grille' in html, f'{url} : pas de grille dense'
+        # La nouvelle Synthese (contrats, logiciels) a sa propre grille : les
+        # rangees du formulaire, en lecture (_synthese.html).
+        assert 'fiche-grille' in html or 'lu-rangee' in html, f'{url} : pas de grille dense'
         assert 'table-borderless' not in html, f'{url} : un tableau de champs a survecu'
 
 
@@ -89,6 +91,10 @@ def test_chaque_fiche_montre_ses_sections(client, jeu):
     for url, _ in _fiches(jeu):
         html = client.get(url).get_data(as_text=True)
         blocs = re.findall(r'class="fiche-bloc', html)
+        if 'mb-3 synthese' in html:
+            # La nouvelle Synthese : les rubriques du formulaire, en-tetes titres.
+            synthese = html.split('id="vol-detail"', 1)[1].split('class="tab-pane', 1)[0]
+            blocs = re.findall(r'fiche-titre fiche-titre--', synthese.split('mb-3 synthese', 1)[1])
         assert len(blocs) >= 2, f'{url} : {len(blocs)} rubrique(s)'
 
 
@@ -118,10 +124,11 @@ def test_chaque_fiche_repond_avant_d_etre_lue(client, jeu):
         # ou trois a six faits pour le reste (sauvegardes, materiel...).
         if 'fiche-bandeau-ligne' in html:
             assert 'fiche-bandeau-k' in html, f'{url} : bandeau d echeance sans libelle'
-        elif '/inventory/logiciels/' in url:
+        elif '/inventory/logiciels/' in url or 'mb-3 synthese' in html:
             # La fiche logiciel s'en passe : ce que le bandeau repetait se lit
             # dans la Synthese (authentification, utilisateurs) et la carte
-            # Liaisons (serveurs).
+            # Liaisons (serveurs). De meme la nouvelle Synthese d'un
+            # fournisseur : hotline et n° client sont dans sa rubrique Assistance.
             assert 'fiche-faits' not in html, f'{url} : le bandeau de faits est revenu'
         else:
             assert 'fiche-faits' in html, f'{url} : ni bandeau d echeance ni bandeau de faits'
@@ -133,7 +140,12 @@ def test_la_valeur_se_pose_en_face_de_son_intitule(client, jeu):
     """L'intitule etait AU-DESSUS de sa valeur : chaque champ pesait deux lignes,
     les blocs doublaient de hauteur et la fiche defilait. Les deux sont
     desormais sur la meme ligne — sauf les listes, que l'alignement a droite
-    hacherait."""
+    hacherait.
+
+    La regle vaut pour l'ANCIENNE Synthese. La nouvelle (contrats, logiciels)
+    reprend les rangees du formulaire de l'onglet Details : l'intitule y
+    revient au-dessus, mais cinq champs tiennent sur une ligne."""
+    client.post('/preferences', data={'action': 'save_forms', 'software_form_legacy': 'on'})
     html = client.get(f"/inventory/logiciels/{jeu['/inventory/logiciels'].id}").get_data(as_text=True)
     assert 'fiche-champ' in html
     # Le gabarit ne doit plus produire de bloc colore : la couleur est passee au

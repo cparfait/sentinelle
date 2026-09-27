@@ -137,11 +137,12 @@
 {% endmacro %}
 
 {# `icone` : une classe Bootstrap (« bi-… ») ou un nom Lucide (le type d'un
-   materiel, « app-window » pour un logiciel). #}
-{% macro lien(url, icone, nom, sous='', cible=None) %}
+   materiel, « app-window » pour un logiciel). `teinte` : la famille qui colore
+   l'icone Lucide (« software », le type d'un materiel), comme dans les listes. #}
+{% macro lien(url, icone, nom, sous='', cible=None, teinte=None) %}
 {% from '_icones.html' import lucide %}
 <a href="{{ url }}" class="fiche-lie"{% if cible %} target="{{ cible }}" rel="noopener"{% endif %}>
-    {% if icone.startswith('bi-') %}{{ ico_bi(icone, '1em') }}{% else %}{{ lucide(icone, 16) }}{% endif %}
+    {% if icone.startswith('bi-') %}{{ ico_bi(icone, '1em') }}{% else %}{{ lucide(icone, 16, 'kind-icon--' ~ teinte if teinte else '') }}{% endif %}
     <span class="cell2"><strong>{{ nom }}</strong>{% if sous %}<small>{{ sous }}</small>{% endif %}</span>
 </a>
 {% endmacro %}
@@ -151,7 +152,7 @@
 {% macro carte_fournisseur(sup, titre='Fournisseur') %}
 {% if sup %}
 <div class="data-card mb-3">
-    <div class="card-header-custom"><h6 class="fw-bold mb-0">{{ ico_bi('bi-building', '1em', 'me-2') }}{{ titre }}</h6></div>
+    <div class="card-header-custom"><h6 class="fw-bold mb-0">{{ ico_bi('bi-building', '1em', 'me-2 ico-carte ico-violet') }}{{ titre }}</h6></div>
     <div class="p-3">
         <div class="fw-medium mb-1"><a href="{{ url_for('suppliers.detail', id=sup.id) }}">{{ sup.name }}</a>
             {% if sup.customer_ref %}<span class="text-muted small ms-1">n° client <code>{{ sup.customer_ref }}</code></span>{% endif %}</div>
@@ -163,6 +164,37 @@
             {% if sup.support_email or sup.email %}<li>{{ ico_bi('bi-envelope', '1em', 'me-1 text-muted') }}<a href="mailto:{{ sup.support_email or sup.email }}">{{ sup.support_email or sup.email }}</a></li>{% endif %}
             {% if sup.support_url %}<li>{{ ico_bi('bi-box-arrow-up-right', '1em', 'me-1 text-muted') }}<a href="{{ sup.support_url }}" target="_blank" rel="noopener">Portail support</a></li>{% endif %}
         </ul>
+    </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{# ---- La carte d'un éditeur ou d'un fournisseur, dans le rail ----
+   Son titre EST son nom, lien vers sa fiche ; puis ce qui sert pour l'appeler :
+   n° client, portail, téléphone, courriels du support et du DPO (sur deux
+   colonnes quand la carte est assez large, style.css), horaires. Les autres
+   contacts (commercial, facturation) restent sur sa fiche, où mène son nom.
+   `role` : « Éditeur », « Fournisseur », dit au survol du nom. #}
+{% macro carte_editeur(sup, role='Fournisseur') %}
+{% if sup %}
+<div class="data-card mb-3">
+    {# L'en-tête des autres cartes du rail (Activité) : l'icône en couleur,
+       puis le nom à la place d'un intitulé. #}
+    <div class="card-header-custom"><h6 class="fw-bold mb-0 d-flex align-items-center min-w-0 editeur-titre">{{ ico_bi('bi-building', '1em', 'me-2 flex-shrink-0 ico-carte ico-' ~ couleur_icone('bi-building')) }}<a href="{{ url_for('suppliers.detail', id=sup.id) }}" class="text-truncate" title="{{ role }} : {{ sup.name }}">{{ sup.name }}</a></h6></div>
+    <div class="p-3">
+    {% if sup.customer_ref %}<div class="small mb-1"><span class="text-muted">N° client</span> <span class="fw-medium">{{ sup.customer_ref }}</span></div>{% endif %}
+    <ul class="list-unstyled small mb-0 editeur-coordonnees">
+        {% if sup.support_url %}<li class="text-truncate">{{ ico_bi('bi-life-preserver', '1em', 'me-1') }}<a href="{{ sup.support_url }}" target="_blank" rel="noopener">Portail de tickets</a></li>{% endif %}
+        {% if sup.support_phone or sup.phone %}<li class="text-truncate">{{ ico_bi('bi-telephone', '1em', 'me-1') }}{{ sup.support_phone or sup.phone }}</li>{% endif %}
+        {% if sup.support_email or sup.email %}<li class="text-truncate">{{ ico_bi('bi-envelope', '1em', 'me-1') }}<a href="mailto:{{ sup.support_email or sup.email }}">{{ sup.support_email or sup.email }}</a></li>{% endif %}
+        {% if sup.dpo_email %}<li class="text-truncate" title="DPO{{ ' — ' ~ sup.dpo_contact if sup.dpo_contact }}">{{ ico_bi('bi-envelope', '1em', 'me-1') }}<a href="mailto:{{ sup.dpo_email }}">{{ sup.dpo_email }}</a></li>{% endif %}
+    </ul>
+    {% if sup.hours or sup.hours2 %}
+    <ul class="list-unstyled small mb-0 mt-1">
+        {% if sup.hours %}<li class="text-muted">{{ ico_bi('bi-clock', '1em', 'me-1') }}{{ sup.hours }}</li>{% endif %}
+        {% if sup.hours2 %}<li class="text-muted">{{ ico_bi('bi-clock', '1em', 'invisible me-1') }}{{ sup.hours2 }}</li>{% endif %}
+    </ul>
+    {% endif %}
     </div>
 </div>
 {% endif %}
@@ -196,7 +228,7 @@
 {% macro activite(histories, cible='historique') %}
 {% if histories %}
 <div class="data-card mb-3">
-    <div class="card-header-custom"><h6 class="fw-bold mb-0">{{ ico_bi('bi-activity', '1em', 'me-2') }}Activité</h6>
+    <div class="card-header-custom"><h6 class="fw-bold mb-0">{{ ico_bi('bi-activity', '1em', 'me-2 ico-carte ico-amber') }}Activité</h6>
         <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('ong-{{ cible }}')?.click()">Tout l'historique</button></div>
     <div class="fiche-activite">
         {% for h in histories[:3] %}

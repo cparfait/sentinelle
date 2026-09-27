@@ -103,6 +103,8 @@ class Config:
     SOFTWARE_FORM_LEGACY = os.getenv('SOFTWARE_FORM_LEGACY', 'false').lower() in ('true', '1', 'yes')
     # De meme pour les contrats : l'ancien formulaire (rubriques numerotees).
     CONTRACT_FORM_LEGACY = os.getenv('CONTRACT_FORM_LEGACY', 'false').lower() in ('true', '1', 'yes')
+    # De meme pour les fournisseurs : l'ancien formulaire et l'ancienne synthese.
+    SUPPLIER_FORM_LEGACY = os.getenv('SUPPLIER_FORM_LEGACY', 'false').lower() in ('true', '1', 'yes')
 
     # Couleur principale de l'interface (hex #rrggbb, vide = palette indigo
     # d'origine). Modifiable depuis Preferences -> Apparence.

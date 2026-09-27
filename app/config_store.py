@@ -25,7 +25,7 @@ SECRET_KEYS = {'MAIL_PASSWORD', 'O365_CLIENT_SECRET', 'LDAP_BIND_PASSWORD',
 _BOOL = {'LDAP_ENABLED', 'LDAP_USE_SSL', 'LDAP_VALIDATE_CERT', 'CT_MONITORING',
          'SESAME_API_ENABLED', 'DASHBOARD_CUSTOM', 'DOCUMENTS_ENABLED',
          'DOCUMENT_INLINE_VIEW', 'SOFTWARE_ALERTS', 'SOFTWARE_FORM_LEGACY',
-         'CONTRACT_FORM_LEGACY',
+         'CONTRACT_FORM_LEGACY', 'SUPPLIER_FORM_LEGACY',
          # Modules debrayables (voir app/features.py)
          'QUOTES_ENABLED', 'GDPR_ENABLED', 'SOFTWARE_LINKS_ENABLED',
          'ELECTRONIC_CERTS_ENABLED'}
@@ -60,6 +60,7 @@ MANAGED = _BOOL | _INT | _TRIPLET | _CSV | {
     'QUOTES_ENABLED', 'GDPR_ENABLED', 'SOFTWARE_LINKS_ENABLED', 'ELECTRONIC_CERTS_ENABLED',
     'DASHBOARD_CUSTOM', # tableau de bord personnalisable par utilisateur : on/off
     'SOFTWARE_FORM_LEGACY', 'CONTRACT_FORM_LEGACY',  # anciens formulaires : on/off
+    'SUPPLIER_FORM_LEGACY',
     # Pieces jointes stockees en base (actes signes, guides, deliberations).
     'DOCUMENTS_ENABLED', 'DOCUMENT_MAX_MB', 'DOCUMENT_INLINE_VIEW',
     # Nombre de sauvegardes automatiques conservees. Une politique de retention

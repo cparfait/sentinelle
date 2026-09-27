@@ -6,7 +6,7 @@
 {% from '_macros.html' import status_badge %}
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
 {% from '_onglets.html' import barre, onglet, volets, volet %}
-{% from '_fiche.html' import entete, menu_lien, menu_post, menu_sep %}
+{% from '_fiche.html' import entete, menu_lien, menu_post, menu_sep, carte_editeur %}
 
 {# ═══ Disposition ═══
    La fiche reprend l'organisation de SoftInventory, dont l'inventaire des
@@ -85,6 +85,9 @@
                à venir ne dit pas ce que l'application coûte aujourd'hui. Tous se
                lisent dans l'onglet Contrats. #}
             <div class="{{ 'col-lg-8' if (item.supplier or marches_en_cours or nb_liaisons) else 'col-12' }}">
+                {% if not config.SOFTWARE_FORM_LEGACY %}
+                {% include 'software/_synthese.html' %}
+                {% else %}
                 <div class="data-card p-3 mb-3">
                     <div class="fiche-sections">
                         <div class="fiche-bloc fiche-bloc--indigo">
@@ -190,6 +193,7 @@
                         </div>
                     </div>
                 </div>
+                {% endif %}
             </div>
 
             {# ── Contacts de l'éditeur ──
@@ -200,42 +204,17 @@
             {% if item.supplier or marches_en_cours or nb_liaisons %}
             <div class="col-lg-4">
                 <div class="fiche-cote">
-                    {% if item.supplier %}
-                    {% set sup = item.supplier %}
-                    <div class="data-card p-4 mb-3">
-                        {# Le titre de la carte EST le nom de l'éditeur, lien vers sa fiche. #}
-                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2 editeur-titre">{{ icone('bi-building', 14, 'ico ico-' ~ couleur_icone('bi-building')) }}<a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}" class="text-truncate" title="Éditeur : {{ sup.name }}">{{ sup.name }}</a></h6>
-                        {% if sup.customer_ref %}<div class="small mb-1"><span class="text-muted">N° client</span> <span class="fw-medium">{{ sup.customer_ref }}</span></div>{% endif %}
-                        {# Portail, téléphone, courriels du support et du DPO : sur
-                           deux colonnes quand la carte est assez large (style.css).
-                           Le DPO, c'est à lui qu'on écrit pour une question de
-                           données personnelles. #}
-                        <ul class="list-unstyled small mb-0 editeur-coordonnees">
-                            {% if sup.support_url %}<li class="text-truncate">{{ ico_bi('bi-life-preserver', '1em', 'me-1') }}<a href="{{ sup.support_url }}" target="_blank" rel="noopener">Portail de tickets</a></li>{% endif %}
-                            {% if sup.support_phone or sup.phone %}<li class="text-truncate">{{ ico_bi('bi-telephone', '1em', 'me-1') }}{{ sup.support_phone or sup.phone }}</li>{% endif %}
-                            {% if sup.support_email or sup.email %}<li class="text-truncate">{{ ico_bi('bi-envelope', '1em', 'me-1') }}<a href="mailto:{{ sup.support_email or sup.email }}">{{ sup.support_email or sup.email }}</a></li>{% endif %}
-                            {% if sup.dpo_email %}<li class="text-truncate" title="DPO{{ ' — ' ~ sup.dpo_contact if sup.dpo_contact }}">{{ ico_bi('bi-envelope', '1em', 'me-1') }}<a href="mailto:{{ sup.dpo_email }}">{{ sup.dpo_email }}</a></li>{% endif %}
-                        </ul>
-                        {% if sup.hours or sup.hours2 %}
-                        <ul class="list-unstyled small mb-0 mt-1">
-                            {% if sup.hours %}<li class="text-muted">{{ ico_bi('bi-clock', '1em', 'me-1') }}{{ sup.hours }}</li>{% endif %}
-                            {% if sup.hours2 %}<li class="text-muted">{{ ico_bi('bi-clock', '1em', 'invisible me-1') }}{{ sup.hours2 }}</li>{% endif %}
-                        </ul>
-                        {% endif %}
-                        {# Les autres contacts de l'éditeur (commercial, facturation)
-                           ne se répètent pas ici : ils sont sur sa fiche, où
-                           mène son nom. #}
-                    </div>
-                    {% endif %}
+                    {{ carte_editeur(item.supplier, 'Éditeur') }}
 
                     {# ═══ Contrats : le récapitulatif ═══
                        Ce que l'application coûte et jusqu'à quand : chaque marché
                        EN COURS avec son état, son échéance et son montant annuel,
                        puis le total annuel. Le détail vit dans l'onglet Contrats. #}
                     {% if marches_en_cours %}
-                    <div class="data-card p-4 mb-3">
-                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2 d-flex align-items-center">{{ ico_bi('bi-file-earmark-text', '1em', 'ico-onglet ico-onglet--contrats') }}Contrats
-                            <button type="button" class="btn btn-ghost btn-sm ms-auto text-nowrap" onclick="document.getElementById('ong-contrats')?.click()">Tout voir</button></h6>
+                    <div class="data-card mb-3">
+                        <div class="card-header-custom"><h6 class="fw-bold mb-0 d-flex align-items-center">{{ ico_bi('bi-file-earmark-text', '1em', 'ico-onglet ico-onglet--contrats') }}Contrats</h6>
+                            <button type="button" class="btn btn-ghost btn-sm text-nowrap" onclick="document.getElementById('ong-contrats')?.click()">Tout voir</button></div>
+                        <div class="p-3">
                         <ul class="list-unstyled small mb-0 contrats-resume">
                             {% set total = namespace(annuel=0) %}
                             {% for c in marches_en_cours %}
@@ -260,6 +239,7 @@
                             <span class="fw-medium">{{ '{:,.0f}'.format(total.annuel).replace(',', ' ') }} €</span>
                         </div>
                         {% endif %}
+                        </div>
                     </div>
                     {% endif %}
 
@@ -269,11 +249,11 @@
                        leur type), les flux (le sens en flèche). Le détail et les
                        modifications vivent dans l'onglet Liaisons. #}
                     {% if nb_liaisons %}
-                    <div class="data-card p-4 mb-3">
-                        <h6 class="fw-bold fiche-titre fiche-titre--amber mb-2 d-flex align-items-center">{{ lucide('arrow-right-left', 16, 'ico-onglet ico-onglet--liaisons') }}Liaisons
-                            <span class="badge bg-secondary ms-1">{{ nb_liaisons }}</span>
-                            <button type="button" class="btn btn-ghost btn-sm ms-auto text-nowrap" onclick="document.getElementById('ong-liaisons')?.click()">Tout voir</button></h6>
-                        <div class="small liaisons-resume">
+                    <div class="data-card mb-3">
+                        <div class="card-header-custom"><h6 class="fw-bold mb-0 d-flex align-items-center">{{ lucide('arrow-right-left', 16, 'ico-onglet ico-onglet--liaisons') }}Liaisons
+                            <span class="badge bg-secondary ms-1">{{ nb_liaisons }}</span></h6>
+                            <button type="button" class="btn btn-ghost btn-sm text-nowrap" onclick="document.getElementById('ong-liaisons')?.click()">Tout voir</button></div>
+                        <div class="p-3 small liaisons-resume">
                             {% if item.user_services %}
                             <div class="liaisons-groupe">
                                 <div class="liaisons-titre">Services</div>
@@ -389,7 +369,7 @@
                 <li class="d-flex align-items-center justify-content-between gap-3">
                     <span class="d-flex align-items-center gap-2 min-w-0">
                         {{ lucide('server', 16, 'serveur-ico flex-shrink-0 ico-' ~ couleur_icone('bi-hdd-stack')) }}
-                        <a href="{{ url_for('inventory.detail', id=e.id) }}" class="fw-medium text-decoration-none">{{ e.name }}</a>
+                        <a href="{{ url_for('inventory.detail', id=e.id) }}" class="fw-semibold text-decoration-none">{{ e.name }}</a>
                     </span>
                     {% if peut_lier %}
                     <form method="POST" action="{{ url_for('software.server_detach', id=item.id, equipment_id=e.id) }}">

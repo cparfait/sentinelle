@@ -463,7 +463,8 @@ def preferences():
 
         elif action == 'save_forms':
             etats = {'SOFTWARE_FORM_LEGACY': request.form.get('software_form_legacy') == 'on',
-                     'CONTRACT_FORM_LEGACY': request.form.get('contract_form_legacy') == 'on'}
+                     'CONTRACT_FORM_LEGACY': request.form.get('contract_form_legacy') == 'on',
+                     'SUPPLIER_FORM_LEGACY': request.form.get('supplier_form_legacy') == 'on'}
             _persist_config({k: ('true' if v else 'false') for k, v in etats.items()})
             current_app.config.update(etats)
             audit_record('config formulaires',
@@ -729,6 +730,7 @@ def preferences():
                            dashboard_custom=current_app.config.get('DASHBOARD_CUSTOM', True),
                            software_form_legacy=current_app.config.get('SOFTWARE_FORM_LEGACY', False),
                            contract_form_legacy=current_app.config.get('CONTRACT_FORM_LEGACY', False),
+                           supplier_form_legacy=current_app.config.get('SUPPLIER_FORM_LEGACY', False),
                            documents_enabled=current_app.config.get('DOCUMENTS_ENABLED', True),
                            document_max_mb=current_app.config.get('DOCUMENT_MAX_MB', 10),
                            document_inline_view=current_app.config.get('DOCUMENT_INLINE_VIEW', True),

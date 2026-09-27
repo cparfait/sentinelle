@@ -1,0 +1,81 @@
+{# ═══ Le tableau des contrats ═══
+   Partagé par la liste des contrats (contracts/list.html) et l'onglet Contrats
+   d'une fiche fournisseur (suppliers/detail.html) : ce qu'on vient vérifier
+   devant des contrats — ce que chacun est, qui le signe, ce qu'il couvre, de
+   quand à quand, avant quand agir (le préavis) et combien il coûte.
+
+   Un acte échu ou à venir se lit en grisé ; le total annuel, en pied, ne
+   compte que ceux en cours.
+
+   `today` : la date du jour (échu ou à venir). `filtrable` : les lignes portent
+   leur classe row-<statut>, que lisent les pastilles Critique / À prévoir / OK
+   de la liste (theme.js). `total` : la ligne de total en pied — la liste s'en
+   passe, paginée, elle le dit dans son sous-titre. Le contenu du {% call %}
+   est la ligne à montrer quand il n'y a aucun contrat. #}
+{% from '_icones.html' import lucide %}
+{% from '_macros.html' import status_badge %}
+
+{% macro tableau(contracts, today, total=True, filtrable=False) %}
+{% set pied = caller() %}
+<table class="table table-hover mb-0 contrats-fournisseur{{ ' js-filterable' if filtrable }}">
+    <thead><tr><th>Réf.</th><th>Contrat</th><th>Fournisseur</th><th>Couvre</th><th>Période</th><th class="text-nowrap">Agir avant</th><th class="text-end text-nowrap" title="Montant annuel">Mt annuel</th><th class="text-center">Statut</th></tr></thead>
+    <tbody>
+        {% set somme = namespace(annuel=0) %}
+        {% for c in contracts %}
+        {% set courant = c.en_cours() %}
+        {% if courant and c.cost_yearly %}{% set somme.annuel = somme.annuel + c.cost_yearly %}{% endif %}
+        <tr class="{{ ('row-' ~ c.status()) if filtrable }}{{ ' contrat-hors-periode' if not courant }}">
+            <td class="small text-nowrap{{ ' fw-medium' if c.reference }}">{{ c.reference or '—' }}</td>
+            <td>
+                <a href="{{ url_for('contracts.detail', id=c.id) }}" class="fw-medium text-decoration-none">{{ c.name }}</a>
+                <small class="d-block text-muted">
+                    {{- [c.nature_label(), c.kind_label()] | select | join(' · ') -}}
+                    {%- if not courant %} · {{ 'échu' if c.end_date and c.end_date < today else 'à venir' }}{% endif -%}
+                </small>
+            </td>
+            <td class="small">
+                {%- if c.supplier %}<a href="{{ url_for('suppliers.detail', id=c.supplier_id) }}" class="fw-medium text-decoration-none">{{ c.supplier.name }}</a>{% else %}<span class="text-muted">—</span>{% endif -%}
+            </td>
+            <td class="small cell-couvre">
+                {%- for sw in c.software %}<a href="{{ url_for('software.detail', id=sw.id) }}" class="d-block fw-medium text-decoration-none text-truncate">{{ lucide('app-window', 13, 'me-1 kind-icon--software') }}{{ sw.name }}</a>{% endfor -%}
+                {%- for e in c.equipments %}<a href="{{ url_for('inventory.detail', id=e.id) }}" class="d-block fw-medium text-decoration-none text-truncate">{{ lucide(e.kind_icon(), 13, 'me-1 kind-icon--' ~ (e.kind or 'vm')) }}{{ e.name }}</a>{% endfor -%}
+                {%- if not c.software and not c.equipments %}<span class="text-muted">—</span>{% endif -%}
+            </td>
+            {# Le début sur l'échéance. #}
+            <td class="small cell-periode text-muted">
+                {%- if c.start_date or c.end_date -%}
+                <span class="d-block">{{ c.start_date.strftime('%d/%m/%Y') if c.start_date else '…' }}</span>
+                <span class="d-block mt-1">{{ c.end_date.strftime('%d/%m/%Y') if c.end_date else '…' }}</span>
+                {%- else %}—{% endif -%}
+            </td>
+            <td class="small text-nowrap">
+                {%- if c.action_deadline() %}{{ c.action_deadline().strftime('%d/%m/%Y') }}
+                {%- if c.notice_days %}<small class="d-block text-muted">préavis {{ c.notice_days }} j</small>{% endif -%}
+                {%- else %}—{% endif -%}
+            </td>
+            <td class="small text-end text-nowrap">
+                {%- if c.cost_yearly %}{{ '{:,.0f}'.format(c.cost_yearly).replace(',', ' ') }} €{% else %}—{% endif -%}
+                {%- if c.cost_max_yearly %}<small class="d-block text-muted">max {{ '{:,.0f}'.format(c.cost_max_yearly).replace(',', ' ') }} €</small>{% endif -%}
+            </td>
+            {# Sous le statut, le délai en couleur, sans cartouche : combien de jours reste-t-il avant de devoir agir
+               (échéance moins préavis), ou de combien on l'a dépassé. #}
+            <td class="text-nowrap text-center">
+                {{ status_badge(c.status()) }}
+                {% set jours_restants = c.days_left() %}
+                {% if jours_restants is none %}
+                <span class="delai-contrat delai-contrat--warning">{{ lucide('calendar-clock', 12) }}Date à renseigner</span>
+                {% else %}
+                <span class="delai-contrat delai-contrat--{{ c.status() }}">{{ lucide('calendar-clock', 12) }}{{ jours_restants | delai(passe='dépassé de') }}</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        {{ pied }}
+        {% endfor %}
+    </tbody>
+    {% if total and somme.annuel %}
+    <tfoot><tr><td colspan="6" class="small text-muted text-end">Total annuel des contrats en cours</td>
+        <td class="small text-end text-nowrap fw-semibold">{{ '{:,.0f}'.format(somme.annuel).replace(',', ' ') }} €</td><td></td></tr></tfoot>
+    {% endif %}
+</table>
+{% endmacro %}

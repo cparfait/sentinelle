@@ -408,3 +408,26 @@ def test_l_ancien_formulaire_de_contrat_se_choisit_dans_les_preferences(client, 
     assert [x.name for x in ct.equipments] == ['SRV-ACTE'] and ct.firm_years == 3
     client.post('/preferences', data={'action': 'save_forms'})
     assert app.config['CONTRACT_FORM_LEGACY'] is False
+
+
+def test_la_synthese_d_un_contrat_suit_l_interrupteur_du_formulaire(client, app):
+    """Nouvelle Synthèse : les cartes du formulaire en lecture, les éléments
+    couverts en pastilles liées, sans la carte « Couvre » du rail. L'ancien
+    formulaire ramène l'ancienne Synthèse et sa carte « Couvre »."""
+    from app.models import Equipment
+    e = Equipment(name='SRV-COUVERT', kind='nas')
+    sw = Software(name='Logiciel couvert')
+    ct = Contract(name='Acte lu', cost_yearly=1234.5, renewals=2, equipments=[e], software=[sw])
+    db.session.add_all([e, sw, ct])
+    db.session.commit()
+
+    html = client.get(f'/contracts/{ct.id}').get_data(as_text=True)
+    assert 'class="data-card mb-3 synthese"' in html
+    assert 'Éléments couverts' in html and 'kind-icon--nas' in html and 'kind-icon--software' in html
+    assert '1 234,50 €' in html and '2 fois' in html
+    assert 'Couvre' not in html and 'fiche-sections' not in html
+
+    client.post('/preferences', data={'action': 'save_forms', 'contract_form_legacy': 'on'})
+    html = client.get(f'/contracts/{ct.id}').get_data(as_text=True)
+    assert 'synthese' not in html and 'fiche-sections' in html and 'Couvre' in html
+    client.post('/preferences', data={'action': 'save_forms'})

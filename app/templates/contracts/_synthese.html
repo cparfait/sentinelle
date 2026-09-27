@@ -1,0 +1,56 @@
+{# ═══ La Synthèse d'un marché (nouvelle version) ═══
+   Le formulaire de l'onglet Détails (_form_corps.html), en lecture : la carte
+   « Contrat » en trois rangées (l'acte, l'argent, le temps) puis les notes,
+   et les « Éléments couverts » en pastilles, liens vers leurs fiches.
+   L'ancienne synthèse (detail.html) revient avec CONTRACT_FORM_LEGACY. #}
+{% from '_synthese.html' import rubrique, rangee, lu, lu_bloc, euros, pastille %}
+<div class="data-card mb-3 synthese">
+    {# Le titre de la rubrique EST la nature de l'acte (contrat, marché…) :
+       « Contrat » en titre puis « Nature : Contrat » dessous se répétaient. #}
+    {% call rubrique(contract.nature_label() or 'Contrat', 'bi-file-earmark-text', 'amber') %}
+    {# Rangée 1 — l'identité de l'acte, et chez qui. #}
+    {% call rangee() %}
+        {{ lu('Référence', contract.reference) }}
+        {{ lu('Type', contract.kind_label()) }}
+        {{ lu('Réf. fournisseur', contract.supplier_reference, titre='Référence fournisseur') }}
+        {% call lu_bloc('Fournisseur') %}{% if contract.supplier %}<a href="{{ url_for('suppliers.detail', id=contract.supplier_id) }}">{{ contract.supplier.name }}</a>{% endif %}{% endcall %}
+    {% endcall %}
+
+    {# Rangée 2 — l'argent : combien, sur quelle ligne du budget. #}
+    {% call rangee() %}
+        {{ lu('Mt annuel', euros(contract.cost_yearly), titre='Montant annuel') }}
+        {{ lu('Max annuel', euros(contract.cost_max_yearly), titre='Maximum annuel') }}
+        {{ lu('Mt total', euros(contract.cost_total), titre='Montant total sur la durée du marché') }}
+        {{ lu('Imputation', contract.budget_code, titre='Imputation budgétaire') }}
+    {% endcall %}
+
+    {# Rangée 3 — le temps : du bon de commande au préavis. #}
+    {% call rangee() %}
+        {{ lu('Signé le', contract.order_signed_on.strftime('%d/%m/%Y') if contract.order_signed_on else None, titre='Bon de commande signé le') }}
+        {{ lu('Début', contract.start_date.strftime('%d/%m/%Y') if contract.start_date else None) }}
+        {{ lu('Échéance', contract.end_date.strftime('%d/%m/%Y') if contract.end_date else None) }}
+        {{ lu('Durée', ('%d an%s' % (contract.firm_years, 's' if contract.firm_years > 1 else '')) if contract.firm_years else None) }}
+        {{ lu('Renouv.', ('%d fois' % contract.renewals) if contract.renewals is not none else None, titre='Renouvelable') }}
+        {{ lu('Recond.', 'Tacite' if contract.auto_renew else 'Non', titre='Reconduction') }}
+        {{ lu('Période', ('%d an%s' % (contract.renewal_years, 's' if contract.renewal_years > 1 else '')) if contract.renewal_years else None, titre='Durée de chaque reconduction') }}
+        {{ lu('Préavis', ('%d jour%s' % (contract.notice_days, 's' if contract.notice_days > 1 else '')) if contract.notice_days else None) }}
+    {% endcall %}
+
+    {% call rangee() %}
+        {{ lu('Notes', contract.description, large=True) }}
+    {% endcall %}
+    {% endcall %}
+
+    {# Le marché vit pour lui-même : il couvre autant de logiciels qu'il en
+       couvre réellement, et en perdre le dernier ne le supprime pas. #}
+    {% call rubrique('Éléments couverts', 'boxes', 'indigo') %}
+    {% if contract.software or contract.equipments %}
+    <div class="pastilles">
+        {% for sw in contract.software %}{{ pastille(url_for('software.detail', id=sw.id), 'app-window', sw.name, 'software', 'Logiciel') }}{% endfor %}
+        {% for e in contract.equipments %}{{ pastille(url_for('inventory.detail', id=e.id), e.kind_icon(), e.name, e.kind or 'vm', e.kind_label()) }}{% endfor %}
+    </div>
+    {% else %}
+    <span class="text-muted small">Aucun élément couvert.</span>
+    {% endif %}
+    {% endcall %}
+</div>

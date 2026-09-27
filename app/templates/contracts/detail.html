@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ contract.name }} - Sentinelle{% endblock %}
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
-{% from '_fiche.html' import entete, bandeau_echeance, modal_action, bouton_modal, menu_post, menu_sep, lie, lien, carte_fournisseur, historique, activite %}
+{% from '_fiche.html' import entete, bandeau_echeance, modal_action, bouton_modal, menu_post, menu_sep, lie, lien, carte_editeur, historique, activite %}
 {% from '_onglets.html' import barre, onglet, volets, volet %}
 {% from '_quick_add.html' import qa_modal_supplier %}
 {% set peut_editer = current_user.can_edit('contracts') %}
@@ -40,6 +40,9 @@
     {% call volet('detail', actif=True) %}
     <div class="row g-3">
         <div class="col-lg-8">
+        {% if not config.CONTRACT_FORM_LEGACY %}
+        {% include 'contracts/_synthese.html' %}
+        {% else %}
         <div class="data-card p-3 mb-3">
             <div class="fiche-sections">
                 <div class="fiche-bloc">
@@ -96,15 +99,20 @@
                 </div>
             </div>
         </div>
+        {% endif %}
         </div>
         <div class="col-lg-4">
-            {{ carte_fournisseur(contract.supplier) }}
+            {{ carte_editeur(contract.supplier) }}
             {# Le marché vit pour lui-même : il couvre autant de logiciels qu'il en
-               couvre réellement, et en perdre le dernier ne le supprime pas. #}
+               couvre réellement, et en perdre le dernier ne le supprime pas.
+               La nouvelle synthèse les montre dans sa rubrique « Éléments
+               couverts » : la carte ne reste que pour l'ancienne. #}
+            {% if config.CONTRACT_FORM_LEGACY %}
             {% call lie('Couvre') %}
-                {% for sw in contract.software %}{{ lien(url_for('software.detail', id=sw.id), 'app-window', sw.name) }}{% endfor %}
-                {% for e in contract.equipments %}{{ lien(url_for('inventory.detail', id=e.id), e.kind_icon(), e.name) }}{% endfor %}
+                {% for sw in contract.software %}{{ lien(url_for('software.detail', id=sw.id), 'app-window', sw.name, teinte='software') }}{% endfor %}
+                {% for e in contract.equipments %}{{ lien(url_for('inventory.detail', id=e.id), e.kind_icon(), e.name, teinte=e.kind) }}{% endfor %}
             {% endcall %}
+            {% endif %}
             {{ activite(histories) }}
             {% with entity_type='contract', entity_id=contract.id %}{% include '_snooze_card.html' %}{% endwith %}
         </div>

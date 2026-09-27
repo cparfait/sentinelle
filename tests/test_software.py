@@ -523,6 +523,25 @@ def test_l_ancien_formulaire_se_choisit_dans_les_preferences(client, app):
     assert app.config['SOFTWARE_FORM_LEGACY'] is False
 
 
+def test_la_synthese_d_un_logiciel_suit_l_interrupteur_du_formulaire(client, app):
+    """Nouvelle Synthèse : les cartes Identité et Technique du formulaire, en
+    lecture, un tiret pour ce qui manque. L'ancien formulaire ramène l'ancienne
+    Synthèse et ses rubriques."""
+    sw = Software(name='Lu', version='4.2', is_docker=True)
+    db.session.add(sw)
+    db.session.commit()
+
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    assert 'class="data-card mb-3 synthese"' in html
+    assert 'Technique' in html and 'Docker' in html and 'lu-vide' in html
+    assert 'Hébergement &amp; nature' not in html
+
+    client.post('/preferences', data={'action': 'save_forms', 'software_form_legacy': 'on'})
+    html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
+    assert 'synthese' not in html and 'Hébergement &amp; nature' in html
+    client.post('/preferences', data={'action': 'save_forms'})
+
+
 def test_l_onglet_contacts_reprend_ceux_de_l_editeur(client):
     """Troisième onglet, comme dans SoftInventory : les coordonnées de
     l'éditeur, en lecture seule ; le second commercial seulement s'il existe ;

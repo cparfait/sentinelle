@@ -122,7 +122,7 @@ def test_fiche_fournisseur_impacts(client):
     db.session.commit()
     html = client.get(f'/suppliers/{sup.id}').get_data(as_text=True)
     assert html.count('SRVWEB') and 'Hebergement' in html
-    assert 'Matériel couvert' in html and 'Contrats' in html
+    assert 'Matériels fournis' in html and 'Contrats' in html
 
 
 # ── L'annuaire tient les contacts, les fiches logiciel les remontent ──

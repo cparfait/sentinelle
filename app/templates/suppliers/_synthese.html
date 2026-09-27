@@ -1,0 +1,70 @@
+{# ═══ La Synthèse d'un fournisseur (nouvelle version) ═══
+   Le formulaire de l'onglet Détails (_form_corps.html), en lecture : les
+   rubriques Identité, Assistance, Contacts et Notes, leurs champs dans le même
+   ordre. Le nom se lit dans l'en-tête de la fiche. L'ancienne synthèse
+   (detail.html) revient avec SUPPLIER_FORM_LEGACY. #}
+{% from '_synthese.html' import rubrique, rangee, lu, lu_bloc %}
+{% set s = supplier %}
+
+{% macro tel(numero) %}{% if numero %}<a href="tel:{{ numero | replace(' ', '') }}">{{ numero }}</a>{% endif %}{% endmacro %}
+{% macro mail(adresse) %}{% if adresse %}<a href="mailto:{{ adresse }}" class="text-truncate d-block">{{ adresse }}</a>{% endif %}{% endmacro %}
+
+{# Un contact : une rangée, le rôle en intitulé du nom. Un contact dont rien
+   n'est saisi ne paraît pas : trois tirets ne disent pas qui appeler. #}
+{% macro contact(role, nom, numero, adresse) %}
+{% if nom or numero or adresse %}
+{% call rangee() %}
+    {{ lu(role, nom) }}
+    {% call lu_bloc('Téléphone') %}{{ tel(numero) }}{% endcall %}
+    {% call lu_bloc('Courriel') %}{{ mail(adresse) }}{% endcall %}
+{% endcall %}
+{% endif %}
+{% endmacro %}
+
+<div class="data-card mb-3 synthese">
+    {% call rubrique('Identité', 'bi-building', 'indigo') %}
+    {% call rangee() %}
+        {{ lu('Type', s.kind_label()) }}
+        {% call lu_bloc('Site web') %}{% if s.website %}<a href="{{ s.website }}" target="_blank" rel="noopener" class="text-truncate d-block">{{ s.website | replace('https://', '') | replace('http://', '') }}</a>{% endif %}{% endcall %}
+    {% endcall %}
+    {% call rangee() %}
+        {{ lu('Interlocuteur habituel', s.contact_name) }}
+        {% call lu_bloc('Courriel (standard)') %}{{ mail(s.email) }}{% endcall %}
+        {% call lu_bloc('Téléphone (standard)') %}{{ tel(s.phone) }}{% endcall %}
+    {% endcall %}
+    {% call rangee() %}
+        {% call lu_bloc('Adresse', pleine=True) %}
+        {%- if s.address or s.postal_code or s.city -%}
+        {{ s.address or '' }}{% if s.address and (s.postal_code or s.city) %}, {% endif %}{{ s.postal_code or '' }} {{ s.city or '' }}
+        {%- endif -%}
+        {% endcall %}
+    {% endcall %}
+    {% endcall %}
+
+    {% call rubrique('Assistance', 'bi-life-preserver', 'sky') %}
+    {% call rangee() %}
+        {% call lu_bloc('Portail de tickets') %}{% if s.support_url %}<a href="{{ s.support_url }}" target="_blank" rel="noopener">Ouvrir le portail</a>{% endif %}{% endcall %}
+        {% call lu_bloc('Hotline') %}{{ tel(s.support_phone) }}{% endcall %}
+        {% call lu_bloc("Courriel de l'assistance") %}{{ mail(s.support_email) }}{% endcall %}
+    {% endcall %}
+    {% call rangee() %}
+        {{ lu('N° client / support', s.customer_ref) }}
+        {{ lu('Horaires', s.hours) }}
+        {{ lu('Horaires (2e ligne)', s.hours2) }}
+    {% endcall %}
+    {% endcall %}
+
+    {% call rubrique('Contacts', 'bi-person-lines-fill', 'rose', onglet='contacts') %}
+    {{ contact('Commercial', s.commercial_contact, s.commercial_phone, s.commercial_email) }}
+    {{ contact('Commercial (second)', s.commercial_contact2, s.commercial_phone2, s.commercial_email2) }}
+    {{ contact('Administratif / facturation', s.admin_contact, s.admin_phone, s.admin_email) }}
+    {{ contact("DPO de l'éditeur", s.dpo_contact, s.dpo_phone, s.dpo_email) }}
+    {% if not s.has_contacts() %}<span class="text-muted small">Aucun contact renseigné.</span>{% endif %}
+    {% endcall %}
+
+    {% call rubrique('Notes', 'bi-journal-text', 'slate') %}
+    {% call rangee() %}
+        {{ lu('Notes', s.notes, large=True) }}
+    {% endcall %}
+    {% endcall %}
+</div>

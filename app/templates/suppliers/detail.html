@@ -5,7 +5,9 @@
 {% from '_macros.html' import status_badge %}
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc, faits, fait, fait_bloc %}
 {% from '_onglets.html' import barre, onglet, volets, volet %}
-{% from '_fiche.html' import entete, menu_post %}
+{% from '_fiche.html' import entete, menu_post, lien %}
+{% from '_icones.html' import lucide %}
+{% from 'contracts/_tableau.html' import tableau %}
 
 {# Un contact hors incident. Rien ne s'affiche quand les trois champs sont
    vides : une carte pleine de tirets ne dit pas qui appeler, elle dit qu'on ne
@@ -32,25 +34,43 @@
 {{ entete(supplier.name, sous_titre, primaire=primaire,
           menu=menu) }}
 
-{% call barre('ficheSupplier', modifier=url_for('suppliers.edit', id=supplier.id) if current_user.can_edit('suppliers') else None) %}
-    {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
-    {% if supplier.has_contacts() %}
+{% set peut_editer = current_user.can_edit('suppliers') %}
+{% call barre('ficheSupplier', modifier=url_for('suppliers.edit', id=supplier.id) if peut_editer else None, sur_place=True) %}
+    {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}
+    {% if peut_editer %}{{ onglet('details', 'Détails', 'bi-pencil-square') }}{% endif %}
+    {{ onglet('contrats', 'Contrats', 'bi-file-earmark-text', compteur=contracts|length) }}
+    {# La nouvelle Synthèse porte les contacts dans sa rubrique « Contacts » :
+       l'onglet ne reste que pour l'ancienne. #}
+    {% if config.SUPPLIER_FORM_LEGACY and supplier.has_contacts() %}
     {{ onglet('contacts', 'Contacts', 'bi-person-lines-fill') }}
     {% endif %}
     {% if documents_enabled %}
     {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=attached_documents('supplier', supplier.id)|length if documents_enabled else 0) }}
     {% endif %}
-    {{ onglet('materiel-couvert', 'Matériel couvert', 'bi-hdd-stack') }}
-    {{ onglet('logiciels', 'Logiciels', 'bi-window-stack') }}
+    {# Comme Domaines et Comptes : l'onglet ne paraît que s'il a quelque chose à montrer. #}
+    {% if software %}{{ onglet('logiciels', 'Logiciels fournis', 'bi-window-stack', compteur=software|length) }}{% endif %}
+    {% if equipments %}{{ onglet('materiel-couvert', 'Matériels fournis', 'bi-hdd-stack', compteur=equipments|length) }}{% endif %}
     {% if current_user.can_view('domains') and domains %}{{ onglet('domaines', 'Domaines', 'bi-globe', compteur=domains|length) }}{% endif %}
     {% if current_user.can_view('accounts') and accounts %}{{ onglet('comptes', 'Comptes', 'bi-key', compteur=accounts|length) }}{% endif %}
-    {{ onglet('contrats', 'Contrats', 'bi-file-earmark-text') }}
 {% endcall %}
 
 {% call volets() %}
     {% call volet('detail', actif=True) %}
+    {# Sans contrat, logiciel ni matériel, le rail n'a rien à montrer : la
+       Synthèse prend toute la largeur, comme sur la fiche logiciel. #}
+    {# Les certificats électroniques ne se montrent que si leur module est actif,
+       et aucun sans le droit de voir les certificats. #}
+    {% set certificats = (certificates if features.ecerts else certificates | rejectattr('kind', 'equalto', 'signature') | list)
+                         if current_user.can_view('certificates') else [] %}
+    {# La carte Contrats ne garde que ceux EN COURS, comme sur la fiche logiciel :
+       un acte échu ou à venir ne dit pas ce qui nous engage aujourd'hui. Tous se
+       lisent dans l'onglet Contrats. #}
+    {% set rail = contrats_en_cours or software or equipments or certificats %}
     <div class="row g-3">
-        <div class="col-lg-8">
+        <div class="{{ 'col-lg-8' if rail else 'col-12' }}">
+        {% if not config.SUPPLIER_FORM_LEGACY %}
+        {% include 'suppliers/_synthese.html' %}
+        {% else %}
         <div class="data-card p-3 mb-3">
             {# Un fournisseur n'a pas de statut : la question qu'on se pose devant sa
                fiche est « qui j'appelle, et pour quoi il intervient chez nous ». #}
@@ -125,20 +145,100 @@
                 {% endif %}
             </div>
         </div>
+        {% endif %}
         </div>
+    {% if rail %}
     <div class="col-lg-4">
-        {# Le rail : ce que ce fournisseur couvre chez nous, en un coup d'œil. #}
+        {# Le rail : ce que ce fournisseur couvre chez nous, carte par carte. #}
+        {# Ce qui nous engage avec lui : chaque contrat, son état, son échéance et
+           son montant annuel — la carte Contrats de la fiche logiciel. #}
+        {% if contrats_en_cours %}
         <div class="data-card mb-3">
-            <div class="card-header-custom"><h6 class="fw-bold mb-0">{{ ico_bi('bi-link-45deg', '1em', 'me-2') }}Chez nous</h6></div>
-            <div class="fiche-lies">
-                <button type="button" class="fiche-lie btn text-start" onclick="document.getElementById('ong-contrats')?.click()">{{ ico_bi('bi-file-earmark-text', '1em') }}<span class="cell2"><strong>{{ contracts|length }} contrat{{ 's' if contracts|length != 1 }}</strong></span></button>
-                <button type="button" class="fiche-lie btn text-start" onclick="document.getElementById('ong-logiciels')?.click()">{{ ico_bi('bi-window-stack', '1em') }}<span class="cell2"><strong>{{ software|length }} logiciel{{ 's' if software|length != 1 }}</strong></span></button>
-                <button type="button" class="fiche-lie btn text-start" onclick="document.getElementById('ong-materiel-couvert')?.click()">{{ ico_bi('bi-hdd-stack', '1em') }}<span class="cell2"><strong>{{ equipments|length }} équipement{{ 's' if equipments|length != 1 }}</strong></span></button>
+            <div class="card-header-custom"><h6 class="fw-bold mb-0 d-flex align-items-center">{{ ico_bi('bi-file-earmark-text', '1em', 'ico-onglet ico-onglet--contrats') }}Contrats en cours
+                <span class="badge bg-secondary ms-1">{{ contrats_en_cours|length }}</span></h6>
+                <button type="button" class="btn btn-ghost btn-sm text-nowrap" onclick="document.getElementById('ong-contrats')?.click()">Tout voir</button></div>
+            <div class="p-3">
+            <ul class="list-unstyled small mb-0 contrats-resume">
+                {% for c in contrats_en_cours %}
+                <li class="{{ 'mb-2' if not loop.last }}">
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <a href="{{ url_for('contracts.detail', id=c.id) }}" class="fw-medium text-truncate" title="{{ c.name }}">{{ c.name }}</a>
+                        {{ status_badge(c.status()) }}
+                    </div>
+                    <div class="text-muted">
+                        {%- if c.end_date %}échéance {{ c.end_date.strftime('%d/%m/%Y') }}{% endif -%}
+                        {%- if c.cost_yearly %}{% if c.end_date %} · {% endif %}{{ '{:,.0f}'.format(c.cost_yearly).replace(',', ' ') }} €/an{% endif -%}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
             </div>
         </div>
+        {% endif %}
+        {# Les certificats qu'il a délivrés : leur nom, leur état, leur échéance. #}
+        {% if certificats %}
+        <div class="data-card mb-3">
+            <div class="card-header-custom"><h6 class="fw-bold mb-0 d-flex align-items-center">{{ lucide('shield-check', 16, 'me-2 ico-carte ico-' ~ couleur_icone('bi-shield-check')) }}Certificats
+                <span class="badge bg-secondary ms-1">{{ certificats|length }}</span></h6></div>
+            <div class="p-3">
+            <ul class="list-unstyled small mb-0 contrats-resume">
+                {% for c in certificats %}
+                <li class="{{ 'mb-2' if not loop.last }}">
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <a href="{{ url_for('certificates.detail', id=c.id) }}" class="fw-medium text-truncate" title="{{ c.label() }}">{{ c.label() }}</a>
+                        {{ status_badge(c.status()) }}
+                    </div>
+                    <div class="text-muted">
+                        {{- c.kind_label() -}}
+                        {%- if c.expiry_date %} · échéance {{ c.expiry_date.strftime('%d/%m/%Y') }}{% endif -%}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            </div>
+        </div>
+        {% endif %}
+        {% if software %}
+        <div class="data-card mb-3">
+            <div class="card-header-custom"><h6 class="fw-bold mb-0 d-flex align-items-center">{{ lucide('app-window', 16, 'me-2 kind-icon--software') }}Logiciels fournis
+                <span class="badge bg-secondary ms-1">{{ software|length }}</span></h6>
+                <button type="button" class="btn btn-ghost btn-sm text-nowrap" onclick="document.getElementById('ong-logiciels')?.click()">Tout voir</button></div>
+            <div class="fiche-lies">
+                {% for sw in software %}{{ lien(url_for('software.detail', id=sw.id), 'app-window', sw.name, ('v' ~ sw.version) if sw.version else '', teinte='software') }}{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% if equipments %}
+        <div class="data-card mb-3">
+            <div class="card-header-custom"><h6 class="fw-bold mb-0 d-flex align-items-center">{{ lucide('server', 16, 'me-2 ico-carte ico-sky') }}Matériels fournis
+                <span class="badge bg-secondary ms-1">{{ equipments|length }}</span></h6>
+                <button type="button" class="btn btn-ghost btn-sm text-nowrap" onclick="document.getElementById('ong-materiel-couvert')?.click()">Tout voir</button></div>
+            <div class="fiche-lies">
+                {% for e in equipments %}{{ lien(url_for('inventory.detail', id=e.id), e.kind_icon(), e.name, e.kind_label(), teinte=e.kind or 'vm') }}{% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
+    {% endif %}
     </div>
     {% endcall %}
+
+    {# ═══ Détails ═══
+       Le formulaire de modification, sur place : le même que la page
+       Modifier. Enregistrer ramène sur cet onglet (onglets.js emporte l'ancre),
+       Annuler recharge la fiche et oublie la saisie. #}
+    {% if peut_editer %}
+    {% call volet('details') %}
+        {% set retour = url_for('suppliers.detail', id=supplier.id) ~ '#details' %}
+        <fieldset class="edition-verrou" data-edition-verrou disabled>
+        {% if config.SUPPLIER_FORM_LEGACY %}
+        <div class="data-card p-4">{% include 'suppliers/_form_corps_ancien.html' %}</div>
+        {% else %}
+        {% include 'suppliers/_form_corps.html' %}
+        {% endif %}
+        </fieldset>
+    {% endcall %}
+    {% endif %}
 
     {% call volet('contacts') %}
     {# ===== Contacts hors incident =====
@@ -162,11 +262,12 @@
     {% with doc_parent_kind='supplier', doc_parent_id=supplier.id, doc_permission='suppliers' %}{% include '_documents.html' %}{% endwith %}
     {% endcall %}
 
+    {% if equipments %}
     {% call volet('materiel-couvert') %}
     {# ===== Impacts : matériel, logiciels et contrats couverts par ce fournisseur ===== #}
     <div class="data-card mb-3">
         <div class="card-header-custom">
-            <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0">{{ icone('bi-hdd-network', 14, 'ico ico-' ~ couleur_icone('bi-hdd-network')) }}Matériel couvert
+            <h6 class="fw-bold fiche-titre fiche-titre--slate mb-0">{{ icone('bi-hdd-network', 14, 'ico ico-' ~ couleur_icone('bi-hdd-network')) }}Matériels fournis
                 <span class="badge bg-secondary ms-1">{{ equipments|length }}</span></h6>
         </div>
         <div class="table-responsive">
@@ -188,11 +289,13 @@
         </div>
     </div>
     {% endcall %}
+    {% endif %}
 
+    {% if software %}
     {% call volet('logiciels') %}
     <div class="data-card mb-3">
         <div class="card-header-custom">
-            <h6 class="fw-bold fiche-titre fiche-titre--violet mb-0">{{ icone('bi-window-stack', 14, 'ico ico-' ~ couleur_icone('bi-window-stack')) }}Logiciels
+            <h6 class="fw-bold fiche-titre fiche-titre--violet mb-0">{{ icone('bi-window-stack', 14, 'ico ico-' ~ couleur_icone('bi-window-stack')) }}Logiciels fournis
                 <span class="badge bg-secondary ms-1">{{ software|length }}</span></h6>
         </div>
         <div class="table-responsive">
@@ -213,6 +316,7 @@
         </div>
     </div>
     {% endcall %}
+    {% endif %}
 
     {% if current_user.can_view('domains') and domains %}
     {% call volet('domaines') %}
@@ -273,21 +377,9 @@
                 <span class="badge bg-secondary ms-1">{{ contracts|length }}</span></h6>
         </div>
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead><tr><th>Contrat</th><th>Type</th><th>Échéance</th><th>Statut</th></tr></thead>
-                <tbody>
-                    {% for c in contracts %}
-                    <tr>
-                        <td><a href="{{ url_for('contracts.detail', id=c.id) }}" class="fw-medium text-decoration-none">{{ c.name }}</a></td>
-                        <td class="small">{{ c.kind_label() }}</td>
-                        <td class="small text-nowrap">{{ c.end_date.strftime('%d/%m/%Y') if c.end_date else '-' }}</td>
-                        <td>{{ status_badge(c.status()) }}</td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="4" class="text-center py-3 text-muted">Aucun contrat rattaché</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            {% call tableau(contracts, today) %}
+            <tr><td colspan="8" class="text-center py-3 text-muted">Aucun contrat rattaché</td></tr>
+            {% endcall %}
         </div>
     </div>
     {% endcall %}

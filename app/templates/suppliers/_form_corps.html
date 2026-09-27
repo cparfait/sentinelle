@@ -1,0 +1,111 @@
+{# ═══ Le formulaire d'un fournisseur ═══
+   Partagé par la page de modification (form.html) et l'onglet Détails de la
+   fiche (detail.html). Contexte attendu : supplier, kind_labels, retour (où
+   mène « Annuler »).
+
+   Comme ceux des logiciels et des contrats : UNE carte, des rubriques collées
+   (Identité, Assistance, Contacts, Notes), des rangées où chaque champ prend sa
+   part de la largeur, au lieu de sept rubriques numérotées et d'un sommaire.
+   Les quatre contacts hors incident tiennent chacun sur une ligne : le rôle,
+   puis nom, téléphone, courriel — les trois vont toujours ensemble.
+
+   TOUS les champs de _fill() (suppliers.py) doivent figurer ici : un champ
+   absent du formulaire se lit vide et efface la valeur enregistrée. #}
+{% from '_formulaire.html' import pied_form %}
+{% from '_synthese.html' import rubrique %}
+
+{% macro champ(label, name, valeur, type='text', placeholder='', requis=False, titre=None) %}
+<div>
+    <label class="form-label small mb-1" for="fs-{{ name }}"{% if titre %} title="{{ titre }}"{% endif %}>{{ label }}{% if requis %} <span class="text-danger">*</span>{% endif %}</label>
+    <input type="{{ type }}" name="{{ name }}" id="fs-{{ name }}" class="form-control form-control-sm"
+           value="{{ valeur or '' }}"{% if placeholder %} placeholder="{{ placeholder }}"{% endif %}{% if requis %} required{% endif %}>
+</div>
+{% endmacro %}
+
+{# Un contact : le rôle en tête de ligne, puis ses trois champs. `prefix` : le
+   préfixe des noms de champs (commercial2_contact pour le second commercial,
+   cf. _ALIASES dans suppliers.py). Les intitulés Nom / Téléphone / Courriel
+   ne se lisent qu'une fois, en tête de colonnes (contact-entete) ; ceux des
+   lignes ne reparaissent que sur un écran étroit, où les colonnes s'empilent. #}
+{% macro contact(role, prefix, nom, tel, mail) %}
+<div class="grille grille-contact">
+    <span class="contact-role">{{ role }}</span>
+    {% for suffixe, intitule, valeur, type in [('contact', 'Nom', nom, 'text'), ('phone', 'Téléphone', tel, 'text'), ('email', 'Courriel', mail, 'email')] %}
+    <div>
+        <label class="form-label small mb-1 contact-label" for="fs-{{ prefix }}_{{ suffixe }}">{{ intitule }}</label>
+        <input type="{{ type }}" name="{{ prefix }}_{{ suffixe }}" id="fs-{{ prefix }}_{{ suffixe }}" class="form-control form-control-sm"
+               value="{{ valeur or '' }}" aria-label="{{ role }} — {{ intitule | lower }}">
+    </div>
+    {% endfor %}
+</div>
+{% endmacro %}
+
+{% set s = supplier %}
+<div class="form-seul">
+<form method="POST" id="form-principal" class="formulaire fournisseur-saisie" data-edition-visible
+      action="{{ url_for('suppliers.edit', id=s.id) if s else url_for('suppliers.create') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="data-card mb-3">
+    {% call rubrique('Identité', 'bi-building', 'indigo') %}
+    {# Rangée 1 — qui c'est. #}
+    <div class="grille grille-identite">
+        {{ champ('Nom', 'name', s.name if s, placeholder='ex : Dell, OVH, SSII locale…', requis=True) }}
+        <div>
+            <label class="form-label small mb-1" for="fs-kind">Type</label>
+            <select name="kind" id="fs-kind" class="form-select form-select-sm">
+                {% for value, label in kind_labels.items() %}
+                <option value="{{ value }}" {{ 'selected' if s and s.kind == value }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {{ champ('Site web', 'website', s.website if s, type='url', placeholder='https://…') }}
+    </div>
+    {# Rangée 2 — le standard de la société. #}
+    <div class="grille grille-3">
+        {{ champ('Interlocuteur habituel', 'contact_name', s.contact_name if s) }}
+        {{ champ('Courriel (standard)', 'email', s.email if s, type='email') }}
+        {{ champ('Téléphone (standard)', 'phone', s.phone if s) }}
+    </div>
+    {# Rangée 3 — où il est. #}
+    <div class="grille grille-adresse">
+        {{ champ('Adresse', 'address', s.address if s) }}
+        {{ champ('Code postal', 'postal_code', s.postal_code if s) }}
+        {{ champ('Ville', 'city', s.city if s) }}
+    </div>
+    {% endcall %}
+
+    {# Le support vit AU NIVEAU de la société : un même fournisseur assure
+       celui de tous ses produits. Les fiches logiciel le remontent. #}
+    {% call rubrique('Assistance', 'bi-life-preserver', 'sky') %}
+    <div class="grille grille-3">
+        {{ champ('Portail de tickets (URL)', 'support_url', s.support_url if s, type='url', placeholder='https://support.exemple.fr') }}
+        {{ champ('Hotline', 'support_phone', s.support_phone if s) }}
+        {{ champ("Courriel de l'assistance", 'support_email', s.support_email if s, type='email') }}
+    </div>
+    <div class="grille grille-3">
+        {{ champ('N° client / identifiant support', 'customer_ref', s.customer_ref if s, titre="Celui que l'éditeur redemande à chaque appel") }}
+        {{ champ('Horaires', 'hours', s.hours if s, placeholder='ex : lundi au vendredi 8h-17h') }}
+        {{ champ('Horaires (2e ligne)', 'hours2', s.hours2 if s, placeholder='ex : samedi 8h-12h') }}
+    </div>
+    {% endcall %}
+
+    {% call rubrique('Contacts', 'bi-person-lines-fill', 'rose', onglet='contacts') %}
+    <div class="grille grille-contact contact-entete" aria-hidden="true">
+        <span></span><span class="form-label small mb-0">Nom</span><span class="form-label small mb-0">Téléphone</span><span class="form-label small mb-0">Courriel</span>
+    </div>
+    {{ contact('Commercial', 'commercial', s.commercial_contact if s, s.commercial_phone if s, s.commercial_email if s) }}
+    {{ contact('Commercial (second)', 'commercial2', s.commercial_contact2 if s, s.commercial_phone2 if s, s.commercial_email2 if s) }}
+    {{ contact('Administratif / facturation', 'admin', s.admin_contact if s, s.admin_phone if s, s.admin_email if s) }}
+    {{ contact("DPO de l'éditeur", 'dpo', s.dpo_contact if s, s.dpo_phone if s, s.dpo_email if s) }}
+    {% endcall %}
+
+    {% call rubrique('Notes', 'bi-journal-text', 'slate') %}
+    <textarea name="notes" id="fs-notes" class="form-control form-control-sm" rows="3" aria-label="Notes"
+              placeholder="Procédure d'ouverture de ticket, escalade, infos contrat…">{{ s.notes or '' if s else '' }}</textarea>
+    {% endcall %}
+    </div>
+
+    {{ pied_form(retour, 'Enregistrer' if s else 'Ajouter') }}
+</form>
+</div>

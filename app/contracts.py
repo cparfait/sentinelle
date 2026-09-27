@@ -3,6 +3,8 @@
 La date qui declenche le statut/les alertes est `action_deadline()` =
 echeance - preavis de resiliation (au-dela, tacite reconduction ou coupure).
 """
+from datetime import datetime, timezone
+
 from flask import (Blueprint, render_template, redirect, url_for, request, flash,
                    jsonify)
 from flask_login import login_required, current_user
@@ -106,7 +108,8 @@ def list():
     ).filter_by(is_active=True).scalar()
     contracts, page, pages, total = paginate(contracts)
     return render_template('contracts/list.html', contracts=contracts, q=q,
-                           page=page, pages=pages, total=total, total_cost=total_cost)
+                           page=page, pages=pages, total=total, total_cost=total_cost,
+                           today=datetime.now(timezone.utc).date())
 
 
 @bp.route('/quick-create', methods=['POST'])

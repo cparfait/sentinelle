@@ -2,11 +2,14 @@
 
 Rattache a la categorie de permission « contracts » (Contrats & fournisseurs).
 """
+from datetime import datetime, timezone
+
 from flask import (Blueprint, render_template, redirect, url_for, request, flash,
                    jsonify)
 from flask_login import login_required
 from app import db
-from app.models import Supplier, Equipment, Contract, SUPPLIER_KIND_LABELS, Domain, Account
+from app.models import (Supplier, Equipment, Contract, SUPPLIER_KIND_LABELS, Domain, Account,
+                        Certificate)
 from app.decorators import require_edit, require_delete, view_guard
 from app.audit import record as audit_record
 
@@ -80,9 +83,15 @@ def detail(id):
         software.sort(key=lambda s: (s.name or '').lower())
     domains = supplier.domains.filter_by(is_active=True).order_by(Domain.name).all()
     accounts = supplier.accounts.filter_by(is_active=True).order_by(Account.service_name).all()
+    # Les certificats qu'il a delivres (TLS, signature), l'echeance la plus
+    # proche d'abord : c'est elle qu'on vient regarder.
+    certificates = supplier.certificates.filter_by(is_active=True).order_by(
+        Certificate.expiry_date.asc().nullslast()).all()
     return render_template('suppliers/detail.html', supplier=supplier,
                            equipments=equipments, contracts=contracts, software=software,
-                           domains=domains, accounts=accounts,
+                           domains=domains, accounts=accounts, certificates=certificates,
+                           contrats_en_cours=[c for c in contracts if c.en_cours()],
+                           today=datetime.now(timezone.utc).date(),
                            kind_labels=SUPPLIER_KIND_LABELS)
 
 

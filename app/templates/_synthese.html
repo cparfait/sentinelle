@@ -1,0 +1,62 @@
+{# ═══ La nouvelle Synthèse d'une fiche ═══
+   Le formulaire de l'onglet Détails, en lecture : les mêmes rubriques collées
+   dans UNE carte (même titre, même couleur, même icône), les mêmes champs dans
+   le même ordre, l'intitulé en petit au-dessus de la valeur. On retrouve une
+   information à la même place, qu'on la lise ou qu'on la saisisse.
+
+   Au contraire de l'ancienne synthèse, un champ vide reste à sa place avec un
+   tiret : la grille ne se décale pas d'une fiche à l'autre, et ce qui manque se
+   voit. L'ancienne synthèse revient avec l'interrupteur « Ancien formulaire »
+   du module (Préférences > Formulaires). #}
+{% from '_icones.html' import icone, lucide %}
+
+{# Une rubrique : son en-tête et son corps. `bi` : un nom Bootstrap (« bi-… »,
+   traduit en Lucide) ou directement un nom Lucide ; `onglet` : l'icône colorée
+   d'un onglet de la fiche (.ico-onglet--<onglet>), comme dans le formulaire. #}
+{% macro rubrique(titre, bi, couleur, onglet=None, droite='') %}
+    <div class="card-header-custom d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold fiche-titre fiche-titre--{{ couleur }} mb-0">
+            {%- if onglet %}{{ icone(bi, '1em', 'ico-onglet ico-onglet--' ~ onglet) }}
+            {%- elif bi.startswith('bi-') %}{{ icone(bi, 14, 'ico ico-' ~ couleur) }}
+            {%- else %}{{ lucide(bi, 14, 'ico ico-' ~ couleur) }}{% endif %}{{ titre }}</h6>
+        {% if droite %}<div class="d-flex gap-1">{{ droite }}</div>{% endif %}
+    </div>
+    <div class="p-3">{{ caller() }}</div>
+{% endmacro %}
+
+{# Une rangée de champs : chacun prend sa part de la largeur, et la rangée se
+   replie en dessous d'une certaine place. #}
+{% macro rangee() %}<div class="lu-rangee">{{ caller() }}</div>{% endmacro %}
+
+{# Un champ lu : l'intitulé, puis la valeur ou un tiret. `large` : toute la
+   largeur de la rangée (un paragraphe) ; `pleine` : toute la largeur aussi,
+   la valeur restant en gras sur une ligne (un champ seul dans sa rangée). #}
+{% macro lu(label, valeur, large=False, titre=None, pleine=False) %}
+<div class="lu{{ ' lu--large' if large }}{{ ' lu--pleine' if pleine }}">
+    <span class="lu-label"{% if titre %} title="{{ titre }}"{% endif %}>{{ label }}</span>
+    {% if valeur or valeur == 0 %}<span class="lu-valeur">{{ valeur }}</span>{% else %}<span class="lu-valeur lu-vide">—</span>{% endif %}
+</div>
+{% endmacro %}
+
+{# Même chose quand la valeur est du balisage (un lien, un badge). #}
+{% macro lu_bloc(label, large=False, titre=None, pleine=False) %}
+{% set contenu = caller() %}
+<div class="lu{{ ' lu--large' if large }}{{ ' lu--pleine' if pleine }}">
+    <span class="lu-label"{% if titre %} title="{{ titre }}"{% endif %}>{{ label }}</span>
+    {% if contenu | trim %}<span class="lu-valeur">{{ contenu }}</span>{% else %}<span class="lu-valeur lu-vide">—</span>{% endif %}
+</div>
+{% endmacro %}
+
+{# Un montant en euros, espaces de milliers, sans centimes quand il n'y en a pas. #}
+{% macro euros(montant) -%}
+{%- if montant is not none -%}
+{%- if montant == montant | int -%}{{ '{:,.0f}'.format(montant).replace(',', ' ') }}
+{%- else -%}{{ '{:,.2f}'.format(montant).replace(',', ' ').replace('.', ',') }}{%- endif %} €
+{%- endif -%}
+{%- endmacro %}
+
+{# Un élément lié, en pastille : l'icône de sa famille en couleur, son nom,
+   un lien vers sa fiche — la puce du formulaire, sans la croix. #}
+{% macro pastille(url, nom_icone, nom, teinte, titre='') %}
+<a href="{{ url }}" class="pastille-lien"{% if titre %} title="{{ titre }}"{% endif %}>{{ lucide(nom_icone, 14, 'kind-icon--' ~ teinte) }}{{ nom }}</a>
+{% endmacro %}
