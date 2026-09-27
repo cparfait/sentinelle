@@ -1262,7 +1262,6 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 .pile > *:has(.casse) { align-items: flex-start; }
 .pile > *:has(.casse) > :is(i, svg.lucide) { margin-top: 0.3em; }
 .pile > .pile-principal { font-size: 0.875rem; line-height: 1.4; }
-.pile > .pile-principal + * { margin-top: 2px; }
 .pile :is(i, svg.lucide) { flex-shrink: 0; font-size: 0.7rem; line-height: inherit; color: var(--faint); }
 .pile .casse { word-break: break-all; }
 /* Les liens gris et le portail en couleur d'accent : la regle generale des
@@ -1271,7 +1270,9 @@ body.dash-editing .stat-toggle { display: inline-flex; }
 .table.tableau-fournisseurs tbody td .pile a.pile-accent { color: var(--primary); }
 .table.tableau-fournisseurs tbody td .pile a:hover,
 .table.tableau-fournisseurs tbody td .pile a:hover :is(i, svg.lucide) { color: var(--primary); }
-.table.tableau-fournisseurs tbody td a.pile-site { font-size: 0.75rem; color: var(--faint); }
+/* Le site sous le nom, du gris des telephones : le :not() egale la regle
+   generale des liens de tableau (.table tbody td a:not(.btn)...), qui l'emportait. */
+.table.tableau-fournisseurs tbody td a.pile-site:not(.btn):not(.badge) { font-size: 0.75rem; color: var(--faint); }
 .table.tableau-fournisseurs tbody td a.pile-site:hover { color: var(--primary); text-decoration: underline; }
 .tableau-fournisseurs .cell-horaires { font-size: 0.75rem; line-height: 1.35; }
 /* Liste des contrats : la disposition des marches de SoftInventory. Trois
