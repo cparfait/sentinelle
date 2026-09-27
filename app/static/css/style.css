@@ -2386,21 +2386,35 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 }
 
 /* La nouvelle Synthese (_synthese.html) : le formulaire de l'onglet Details en
-   lecture. Memes rubriques collees, un filet entre elles ; les intitules a
-   12 px comme ceux du formulaire, la valeur en dessous. Toutes les rangees
-   partagent la meme grille de colonnes : les champs s'alignent d'une rangee
-   a l'autre, et la grille perd des colonnes quand la carte retrecit. */
+   lecture, rubriques collees, un filet entre elles. Dans une rubrique, une
+   grille de deux colonnes de paires « intitule | valeur » : l'intitule a
+   gauche, sur une largeur fixe pour que les valeurs s'alignent, la valeur en
+   face ; un pointille leger entre deux lignes. Les rangees du gabarit s'y
+   fondent (display: contents). Les champs vides n'y sont pas : ils forment la
+   ligne « A completer » sous la grille. Une colonne quand la carte n'a pas
+   la place de deux paires de 300 px. */
 .synthese > .p-3 + .card-header-custom { border-top: 1px solid var(--line); }
-.lu-rangee { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px 20px; margin-bottom: 12px; }
-.lu-rangee:last-child { margin-bottom: 0; }
-.lu { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lu-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); column-gap: 28px; }
+.lu-grille:empty { display: none; }
+.lu-rangee { display: contents; }
+.lu { min-width: 0; display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 6px 0; border-bottom: 1px dashed var(--line); }
 .lu--large, .lu--pleine { grid-column: 1 / -1; }
-.lu-label { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lu-valeur { font-size: 0.9rem; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.lu--large { display: block; }
+.lu--large .lu-label { display: block; margin-bottom: 2px; }
+.lu-label { font-size: 13px; color: var(--muted); }
+.lu-valeur { font-size: 0.9rem; font-weight: 600; color: var(--text); overflow-wrap: break-word; min-width: 0; }
 .lu--large .lu-valeur { font-weight: 400; white-space: pre-line; }
-.lu-vide { color: var(--faint); font-weight: 400; }
-.lu-valeur a { color: inherit; text-decoration: none; }
-.lu-valeur a:hover { color: var(--primary); text-decoration: underline; }
+.lu-valeur a { color: var(--primary); text-decoration: none; }
+.lu-valeur a:hover { text-decoration: underline; }
+.lu-valeur .badge-status { font-size: 12px; }
+.lu-contact { display: flex; flex-wrap: wrap; column-gap: 16px; }
+.lu-manques { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; font-size: 12px; color: var(--faint); }
+.lu-grille:empty + .lu-manques { margin-top: 0; }
+.lu-manque { border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; color: var(--muted); }
+@media (max-width: 767.98px) {
+    .lu-grille { grid-template-columns: 1fr; }
+    .lu { grid-template-columns: 120px minmax(0, 1fr); }
+}
 /* La nature d'un logiciel : les boutons cochés du formulaire, en étiquettes. */
 .badge-nature { display: inline-flex; align-items: center; margin: 0 6px 4px 0; padding: 2px 8px; border: 1px solid rgba(79, 70, 229, 0.45); border-radius: 6px; background: rgba(79, 70, 229, 0.12); font-size: 0.8rem; }
 /* Un élément lié : la puce du formulaire (fond et contour indigo), sans la
@@ -2572,6 +2586,10 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    couleur de sa famille : violet pour un fournisseur (comme la carte Editeur),
    ambre pour l'activite (l'onglet Historique), vert pour des alertes actives. */
 .ico-carte { color: rgb(var(--ico-rgb)); }
+/* Le vert des liaisons dans leur carte de la Synthese logiciel : l'icone du
+   titre et les fleches des flux. */
+.ico-vert { --ong-icon: #059669; color: #059669; }
+[data-theme="dark"] .ico-vert { --ong-icon: #34d399; color: #34d399; }
 [data-theme="dark"] .ico-indigo  { --ico-rgb: 129, 140, 248; }
 [data-theme="dark"] .ico-sky     { --ico-rgb: 56, 189, 248; }
 [data-theme="dark"] .ico-emerald { --ico-rgb: 52, 211, 153; }
@@ -2865,8 +2883,12 @@ a.marche-doc-nom:hover { color: var(--primary); }
 /* Le recapitulatif des liaisons d'un logiciel : un groupe par nature de lien
    (services, serveurs, flux), 8 px entre deux groupes. */
 .liaisons-groupe + .liaisons-groupe { margin-top: 8px; }
-.liaisons-resume svg, .liaisons-titre { color: var(--text); }
+.liaisons-resume svg:not([class*="kind-icon--"]):not(.ico-vert), .liaisons-titre { color: var(--text); }
 .liaisons-titre { font-weight: 600; }
+/* Les serveurs et les flux de la carte Liaisons : le nom en couleur du texte,
+   en gras. */
+.liaisons-resume .liaison-serveur { color: var(--text); font-weight: 600; }
+.liaisons-resume .liaison-serveur:hover { color: var(--primary); }
 /* Une ligne sans sous-titre (le nom seul) se serre. */
 .fiche-lie:not(:has(small)) { padding-top: 1px; padding-bottom: 1px; }
 /* Titre et sous-titre serres : pas d'ecart entre les deux, et un interligne
@@ -2976,12 +2998,14 @@ main.en-edition .fiche-onglets .js-edition { color: var(--primary); background: 
 /* Une couleur par onglet, la meme d'une fiche a l'autre : les documents sont
    bleus partout, les contrats orange partout (comme dans le menu). */
 #ong-detail     { --ong-icon: #4f46e5; } /* indigo-600 */
-#ong-liaisons,
-.ico-onglet--liaisons,
 #ong-elements   { --ong-icon: #7c3aed; } /* violet-600 */
+/* Les liaisons en vert, l'onglet comme sa carte dans la Synthese (.ico-vert) ;
+   les devis en vert fonce, pour ne pas s'y confondre. */
+#ong-liaisons,
+.ico-onglet--liaisons { --ong-icon: #059669; } /* emerald-600 */
 #ong-contrats,
 .ico-onglet--contrats { --ong-icon: #f97316; } /* orange-500 */
-#ong-devis      { --ong-icon: #059669; } /* emerald-600 */
+#ong-devis      { --ong-icon: #166534; } /* green-800 */
 #ong-suivi      { --ong-icon: #eab308; } /* yellow-500 */
 #ong-documents,
 #ong-docs       { --ong-icon: #0284c7; } /* sky-600 */
@@ -2991,12 +3015,12 @@ main.en-edition .fiche-onglets .js-edition { color: var(--primary); background: 
 #ong-contacts,
 .ico-onglet--contacts { --ong-icon: #db2777; } /* pink-600 */
 [data-theme="dark"] #ong-detail     { --ong-icon: #818cf8; }
-[data-theme="dark"] #ong-liaisons,
-[data-theme="dark"] .ico-onglet--liaisons,
 [data-theme="dark"] #ong-elements   { --ong-icon: #a78bfa; }
+[data-theme="dark"] #ong-liaisons,
+[data-theme="dark"] .ico-onglet--liaisons { --ong-icon: #34d399; }
 [data-theme="dark"] #ong-contrats,
 [data-theme="dark"] .ico-onglet--contrats { --ong-icon: #fb923c; }
-[data-theme="dark"] #ong-devis      { --ong-icon: #34d399; }
+[data-theme="dark"] #ong-devis      { --ong-icon: #4ade80; }
 [data-theme="dark"] #ong-suivi      { --ong-icon: #facc15; }
 [data-theme="dark"] #ong-documents,
 [data-theme="dark"] #ong-docs       { --ong-icon: #38bdf8; }

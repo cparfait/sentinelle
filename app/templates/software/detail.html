@@ -70,7 +70,7 @@
     {{ onglet('liaisons', 'Liaisons', 'arrow-right-left', compteur=nb_liaisons) }}
     {% if current_user.can_view('contracts') %}
     {{ onglet('contrats', 'Contrats', 'bi-file-earmark-text', compteur=marches|length) }}
-    {% if features.quotes %}{{ onglet('devis', 'Devis', 'bi-cash-coin', compteur=consultations|length) }}{% endif %}
+    {% if features.quotes %}{{ onglet('devis', 'Devis', 'banknote', compteur=consultations|length) }}{% endif %}
     {% endif %}
     {% if documents_enabled %}
     {{ onglet('documents', 'Docs', 'bi-paperclip', compteur=pieces|length) }}
@@ -250,7 +250,7 @@
                        modifications vivent dans l'onglet Liaisons. #}
                     {% if nb_liaisons %}
                     <div class="data-card mb-3">
-                        <div class="card-header-custom"><h6 class="fw-bold mb-0 d-flex align-items-center">{{ lucide('arrow-right-left', 16, 'ico-onglet ico-onglet--liaisons') }}Liaisons
+                        <div class="card-header-custom"><h6 class="fw-bold mb-0 d-flex align-items-center">{{ lucide('arrow-right-left', 16, 'ico-onglet ico-vert') }}Liaisons
                             <span class="badge bg-secondary ms-1">{{ nb_liaisons }}</span></h6>
                             <button type="button" class="btn btn-ghost btn-sm text-nowrap" onclick="document.getElementById('ong-liaisons')?.click()">Tout voir</button></div>
                         <div class="p-3 small liaisons-resume">
@@ -265,7 +265,7 @@
                                 <div class="liaisons-titre">Serveurs</div>
                                 <ul class="list-unstyled mb-0">
                                     {% for e in item.equipments %}
-                                    <li class="d-flex align-items-center gap-2">{{ lucide(e.kind_icon(), 14, 'flex-shrink-0') }}<a href="{{ url_for('inventory.detail', id=e.id) }}" class="text-truncate" title="{{ e.kind_label() }}">{{ e.name }}</a></li>
+                                    <li class="d-flex align-items-center gap-2">{{ lucide(e.kind_icon(), 14, 'flex-shrink-0 kind-icon--' ~ (e.kind or 'vm')) }}<a href="{{ url_for('inventory.detail', id=e.id) }}" class="text-truncate liaison-serveur" title="{{ e.kind_label() }}">{{ e.name }}</a></li>
                                     {% endfor %}
                                 </ul>
                             </div>
@@ -275,10 +275,10 @@
                                 <div class="liaisons-titre">Flux</div>
                                 <ul class="list-unstyled mb-0">
                                     {% for l in sortants %}
-                                    <li class="d-flex align-items-center gap-2">{{ lucide('arrow-right', 14, 'flex-shrink-0') }}<a href="{{ url_for('software.detail', id=l.target.id) }}" class="text-truncate" title="Flux sortant vers {{ l.target.name }}">{{ l.target.name }}</a></li>
+                                    <li class="d-flex align-items-center gap-2">{{ lucide('arrow-right', 14, 'flex-shrink-0 ico-vert') }}<a href="{{ url_for('software.detail', id=l.target.id) }}" class="text-truncate liaison-serveur" title="Flux sortant vers {{ l.target.name }}">{{ l.target.name }}</a></li>
                                     {% endfor %}
                                     {% for l in entrants %}
-                                    <li class="d-flex align-items-center gap-2">{{ lucide('arrow-left', 14, 'flex-shrink-0') }}<a href="{{ url_for('software.detail', id=l.source.id) }}" class="text-truncate" title="Flux entrant depuis {{ l.source.name }}">{{ l.source.name }}</a></li>
+                                    <li class="d-flex align-items-center gap-2">{{ lucide('arrow-left', 14, 'flex-shrink-0 ico-vert') }}<a href="{{ url_for('software.detail', id=l.source.id) }}" class="text-truncate liaison-serveur" title="Flux entrant depuis {{ l.source.name }}">{{ l.source.name }}</a></li>
                                     {% endfor %}
                                 </ul>
                             </div>

@@ -39,7 +39,7 @@ ICONES = [
     'paperclip', 'folder-open', 'info', 'flag', 'tag', 'tags',
     'lock-keyhole', 'badge-check', 'user-lock', 'id-card', 'user-cog', 'contact-round',
     'network', 'git-fork', 'calendar-check', 'calendar-range', 'refresh-cw',
-    'coins', 'receipt', 'cpu', 'cloud', 'life-buoy', 'wrench', 'settings',
+    'coins', 'banknote', 'receipt', 'cpu', 'cloud', 'life-buoy', 'wrench', 'settings',
     # Actions en ligne sur une fiche : modifier, retirer une liaison.
     'pencil', 'square-pen', 'link', 'unlink', 'download', 'file-text', 'plus', 'upload',
     'arrow-right', 'arrow-left', 'copy', 'check', 'x',

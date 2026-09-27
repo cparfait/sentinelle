@@ -19,7 +19,7 @@
 
     {# Rangée 2 — où il en est, ce qu'il pèse, qui en répond côté métier. #}
     {% call rangee() %}
-        {{ lu('Statut', item.lifecycle_label()) }}
+        {% call lu_bloc('Statut') %}<span class="badge-status badge-{{ {'production': 'success', 'fin_de_vie': 'warning', 'evaluation': 'info'}.get(item.lifecycle, 'muted') }}">{{ item.lifecycle_label() }}</span>{% endcall %}
         {{ lu('Criticité', item.criticality_label()) }}
         {% call lu_bloc('Utilisateurs', titre='Plafond contractuel : au-delà, dépassement de licence') %}
         {%- if item.users_count is not none %}{{ item.users_count }}{% if item.users_max %} / {{ item.users_max }}{% endif %}
@@ -45,14 +45,14 @@
        application est une question de sécurité, son silence un trou à combler. #}
     {% call rangee() %}
         {% call lu_bloc('Authentification') %}
-        {{ item.auth_mode_label() or 'Non renseignée' }}
+        {% if item.auth_mode_label() %}{{ item.auth_mode_label() }}{% else %}<span class="badge-status badge-warning">Non renseignée</span>{% endif %}
         {% if item.auth_strong %}<span class="badge bg-success-subtle text-success ms-1">2FA</span>{% endif %}
         {% endcall %}
         {{ lu('Date de mise en service', item.service_date.strftime('%d/%m/%Y') if item.service_date else None) }}
         {{ lu('Référent technique', item.tech_responsible) }}
     {% endcall %}
     {% call rangee() %}
-        {% call lu_bloc('Nature') %}
+        {% call lu_bloc('Nature', facultatif=True) %}
         {%- if item.is_docker %}<span class="badge-nature"><i class="icon-docker me-1"></i>Docker</span>{% endif -%}
         {%- if item.internal_dev %}<span class="badge-nature">{{ ico_bi('bi-code-slash', '1em', 'me-1') }}Développement interne</span>{% endif -%}
         {%- if item.no_server %}<span class="badge-nature">{{ ico_bi('bi-slash-circle', '1em', 'me-1') }}Aucun serveur</span>{% endif -%}

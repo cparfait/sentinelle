@@ -1,19 +1,25 @@
 {# ═══ La nouvelle Synthèse d'une fiche ═══
    Le formulaire de l'onglet Détails, en lecture : les mêmes rubriques collées
    dans UNE carte (même titre, même couleur, même icône), les mêmes champs dans
-   le même ordre, l'intitulé en petit au-dessus de la valeur. On retrouve une
-   information à la même place, qu'on la lise ou qu'on la saisisse.
+   le même ordre.
 
-   Au contraire de l'ancienne synthèse, un champ vide reste à sa place avec un
-   tiret : la grille ne se décale pas d'une fiche à l'autre, et ce qui manque se
-   voit. L'ancienne synthèse revient avec l'interrupteur « Ancien formulaire »
-   du module (Préférences > Formulaires). #}
+   Pour se lire d'un coup d'œil : l'intitulé à gauche, la valeur en face, sur
+   deux colonnes alignées. Un champ vide ne fait pas de trou dans la grille —
+   dix tirets sur dix-sept champs, l'œil sautait de l'un à l'autre : il laisse
+   un marqueur (data-manque), et la rubrique rassemble ces intitulés en une
+   ligne « À compléter » sous ses valeurs. Ce qui manque se voit toujours, sans
+   se mêler à ce qui est su.
+
+   L'ancienne synthèse revient avec l'interrupteur « Ancien formulaire » du
+   module (Préférences > Formulaires). #}
 {% from '_icones.html' import icone, lucide %}
 
 {# Une rubrique : son en-tête et son corps. `bi` : un nom Bootstrap (« bi-… »,
    traduit en Lucide) ou directement un nom Lucide ; `onglet` : l'icône colorée
    d'un onglet de la fiche (.ico-onglet--<onglet>), comme dans le formulaire. #}
 {% macro rubrique(titre, bi, couleur, onglet=None, droite='') %}
+    {% set contenu = caller() %}
+    {% set manques = contenu | manques %}
     <div class="card-header-custom d-flex justify-content-between align-items-center">
         <h6 class="fw-bold fiche-titre fiche-titre--{{ couleur }} mb-0">
             {%- if onglet %}{{ icone(bi, '1em', 'ico-onglet ico-onglet--' ~ onglet) }}
@@ -21,30 +27,45 @@
             {%- else %}{{ lucide(bi, 14, 'ico ico-' ~ couleur) }}{% endif %}{{ titre }}</h6>
         {% if droite %}<div class="d-flex gap-1">{{ droite }}</div>{% endif %}
     </div>
-    <div class="p-3">{{ caller() }}</div>
+    <div class="p-3">
+        <div class="lu-grille">{{ contenu }}</div>
+        {% if manques %}
+        <div class="lu-manques">{{ lucide('pencil', 12) }}À compléter :
+            {% for m in manques %}<span class="lu-manque">{{ m }}</span>{% endfor %}</div>
+        {% endif %}
+    </div>
 {% endmacro %}
 
-{# Une rangée de champs : chacun prend sa part de la largeur, et la rangée se
-   replie en dessous d'une certaine place. #}
+{# Une rangée de champs. Elle ne se voit plus : ses champs rejoignent la
+   grille de la rubrique (display: contents) ; elle garde l'ordre de lecture
+   du formulaire. #}
 {% macro rangee() %}<div class="lu-rangee">{{ caller() }}</div>{% endmacro %}
 
-{# Un champ lu : l'intitulé, puis la valeur ou un tiret. `large` : toute la
-   largeur de la rangée (un paragraphe) ; `pleine` : toute la largeur aussi,
-   la valeur restant en gras sur une ligne (un champ seul dans sa rangée). #}
-{% macro lu(label, valeur, large=False, titre=None, pleine=False) %}
+{# Un champ lu : l'intitulé, la valeur en face. Vide, il ne laisse qu'un
+   marqueur pour la ligne « À compléter » — sauf `facultatif`, dont le vide
+   n'est pas un manque (aucune case de nature cochée, un contact sans courriel).
+   `large` : toute la largeur, l'intitulé au-dessus (un paragraphe) ;
+   `pleine` : toute la largeur, l'intitulé à gauche (une valeur seule). #}
+{% macro lu(label, valeur, large=False, titre=None, pleine=False, facultatif=False) %}
+{% if valeur or valeur == 0 %}
 <div class="lu{{ ' lu--large' if large }}{{ ' lu--pleine' if pleine }}">
     <span class="lu-label"{% if titre %} title="{{ titre }}"{% endif %}>{{ label }}</span>
-    {% if valeur or valeur == 0 %}<span class="lu-valeur">{{ valeur }}</span>{% else %}<span class="lu-valeur lu-vide">—</span>{% endif %}
+    <span class="lu-valeur">{{ valeur }}</span>
 </div>
+{% elif not facultatif %}<span hidden data-manque="{{ label }}"></span>
+{% endif %}
 {% endmacro %}
 
 {# Même chose quand la valeur est du balisage (un lien, un badge). #}
-{% macro lu_bloc(label, large=False, titre=None, pleine=False) %}
+{% macro lu_bloc(label, large=False, titre=None, pleine=False, facultatif=False) %}
 {% set contenu = caller() %}
+{% if contenu | trim %}
 <div class="lu{{ ' lu--large' if large }}{{ ' lu--pleine' if pleine }}">
     <span class="lu-label"{% if titre %} title="{{ titre }}"{% endif %}>{{ label }}</span>
-    {% if contenu | trim %}<span class="lu-valeur">{{ contenu }}</span>{% else %}<span class="lu-valeur lu-vide">—</span>{% endif %}
+    <span class="lu-valeur">{{ contenu }}</span>
 </div>
+{% elif not facultatif %}<span hidden data-manque="{{ label }}"></span>
+{% endif %}
 {% endmacro %}
 
 {# Un montant en euros, espaces de milliers, sans centimes quand il n'y en a pas. #}

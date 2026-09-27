@@ -279,6 +279,13 @@ def create_app(config_class=Config):
     app.jinja_env.filters['delai'] = libelles.delai
     app.jinja_env.filters['date_longue'] = libelles.date_longue
     app.jinja_env.filters['montant'] = libelles.montant
+    # Les champs vides d'une rubrique de Synthese (_synthese.html) : chacun y
+    # laisse un marqueur data-manque, que la rubrique rassemble en une ligne
+    # « A completer ». Les intitules arrivent deja echappes.
+    import re as _re
+    from markupsafe import Markup as _Markup
+    app.jinja_env.filters['manques'] = lambda html: [
+        _Markup(m) for m in _re.findall(r'data-manque="([^"]*)"', str(html))]
     app.jinja_env.globals.update(
         status_label=libelles.status_label,
         status_label_plural=libelles.status_label_plural,
