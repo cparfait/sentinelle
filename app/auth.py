@@ -461,6 +461,13 @@ def preferences():
             audit_record('config tableau de bord personnalisable', detail=f'actif={enabled}', category='preferences')
             flash('Tableau de bord personnalisable ' + ('activé' if enabled else 'désactivé') + '.', 'success')
 
+        elif action == 'save_pagination_memory':
+            enabled = request.form.get('pagination_memory') == 'on'
+            _persist_config({'PAGINATION_MEMORY': 'true' if enabled else 'false'})
+            current_app.config['PAGINATION_MEMORY'] = enabled
+            audit_record('config pagination retenue', detail=f'actif={enabled}', category='preferences')
+            flash('Pagination ' + ('retenue pour chaque utilisateur' if enabled else 'remise à dix lignes par défaut') + '.', 'success')
+
         elif action == 'save_forms':
             etats = {'SOFTWARE_FORM_LEGACY': request.form.get('software_form_legacy') == 'on',
                      'CONTRACT_FORM_LEGACY': request.form.get('contract_form_legacy') == 'on',
@@ -728,6 +735,7 @@ def preferences():
                            software_alerts=current_app.config.get('SOFTWARE_ALERTS', True),
                            modules=_modules_context(),
                            dashboard_custom=current_app.config.get('DASHBOARD_CUSTOM', True),
+                           pagination_memory=current_app.config.get('PAGINATION_MEMORY', True),
                            software_form_legacy=current_app.config.get('SOFTWARE_FORM_LEGACY', False),
                            contract_form_legacy=current_app.config.get('CONTRACT_FORM_LEGACY', False),
                            supplier_form_legacy=current_app.config.get('SUPPLIER_FORM_LEGACY', False),

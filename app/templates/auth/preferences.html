@@ -731,6 +731,29 @@
             </div>
         </section>
 
+        <section class="form-section pref-rubrique" id="secListes">
+            <div class="form-section-titre">
+                {{ ico_bi('bi-list', '1em', 'me-2') }}Listes
+                {% if pagination_memory %}<span class="badge bg-success ms-2">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}Pagination retenue</span>{% else %}<span class="badge bg-secondary ms-2">Dix lignes par défaut</span>{% endif %}
+            </div>
+            <p class="form-section-aide">Ce dont les listes se souviennent pour chaque utilisateur.</p>
+            <div class="form-section-corps">
+                    <form method="POST" action="{{ url_for('auth.preferences') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="save_pagination_memory">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="paginationMemory" name="pagination_memory" {% if pagination_memory %}checked{% endif %}>
+                            <label class="form-check-label fw-medium" for="paginationMemory">Retenir la taille de page</label>
+                        </div>
+                        <p class="text-muted small mt-1 mb-2">Chaque utilisateur retrouve, liste par liste, le nombre de lignes par page qu'il a choisi sous le tableau (10, 15, 20… ou Tous). Désactivé : chaque liste repart à dix lignes, le choix ne valant que pour la page affichée.</p>
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer
+                        </button>
+                    </form>
+            </div>
+        </section>
+
         <section class="form-section pref-rubrique" id="secForms">
             <div class="form-section-titre">
                 {{ ico_bi('bi-window-stack', '1em', 'me-2') }}Formulaires

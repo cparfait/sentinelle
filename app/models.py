@@ -139,6 +139,9 @@ class User(UserMixin, db.Model):
     # None = disposition par defaut. Tolere l'ajout/retrait de blocs (voir
     # app.dashboard.resolve_dashboard_layout).
     dashboard_prefs = db.Column(db.Text)
+    # Taille de page retenue, liste par liste (voir app/paging.py) : JSON
+    # {"<endpoint>": 25 | "all"}. None = rien retenu, dix lignes partout.
+    list_prefs = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     @property

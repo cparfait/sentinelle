@@ -97,6 +97,9 @@ class Config:
     # Tableau de bord personnalisable (chaque utilisateur choisit et ordonne ses
     # blocs). Desactivable globalement -> disposition par defaut pour tous.
     DASHBOARD_CUSTOM = os.getenv('DASHBOARD_CUSTOM', 'true').lower() in ('true', '1', 'yes')
+    # Chaque utilisateur retrouve, liste par liste, la taille de page qu'il a
+    # choisie (voir app/paging.py). Defaut : actif.
+    PAGINATION_MEMORY = os.getenv('PAGINATION_MEMORY', 'true').lower() in ('true', '1', 'yes')
 
     # Formulaire des logiciels : l'ancien (rubriques numerotees, rattachements
     # compris) au lieu de la grille de SoftInventory. Defaut : le nouveau.

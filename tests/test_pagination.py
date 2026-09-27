@@ -48,6 +48,8 @@ def test_la_taille_demandee_est_appliquee(client):
     assert _option_choisie(html)[1] == '25 / page'
     vingt = client.get('/accounts/?per_page=20').get_data(as_text=True)
     assert '1–20 sur 30' in vingt and _option_choisie(vingt)[1] == '20 / page'
+    quinze = client.get('/accounts/?per_page=15').get_data(as_text=True)
+    assert '1–15 sur 30' in quinze and _option_choisie(quinze)[1] == '15 / page'
     tout = client.get('/accounts/?per_page=all').get_data(as_text=True)
     assert _option_choisie(tout)[1] == 'Tous'
     assert tout.count('Service ') >= 30
@@ -79,3 +81,27 @@ def test_l_inventaire_porte_le_meme_selecteur(client):
     html = client.get('/inventory/').get_data(as_text=True)
     assert html.count('pagination-perpage') == 1
     assert _option_choisie(html)[1] == '10 / page'
+
+
+def test_la_taille_choisie_est_retenue_liste_par_liste(client, app):
+    """Préférences > Listes (PAGINATION_MEMORY) : l'utilisateur retrouve la
+    taille qu'il a choisie sur une liste en y revenant, sans que les autres
+    listes en héritent ; coupé, chaque liste repart à dix lignes."""
+    from app.models import Supplier
+    _trente_comptes()
+    db.session.add_all([Supplier(name=f'Fournisseur {i:02d}') for i in range(30)])
+    db.session.commit()
+
+    client.get('/accounts/?per_page=25')
+    html = client.get('/accounts/').get_data(as_text=True)
+    assert '1–25 sur 30' in html and _option_choisie(html)[1] == '25 / page'
+    assert '1–10 sur 30' in client.get('/suppliers/').get_data(as_text=True)
+
+    client.get('/accounts/?per_page=all')
+    assert _option_choisie(client.get('/accounts/').get_data(as_text=True))[1] == 'Tous'
+
+    app.config['PAGINATION_MEMORY'] = False
+    try:
+        assert '1–10 sur 30' in client.get('/accounts/').get_data(as_text=True)
+    finally:
+        app.config['PAGINATION_MEMORY'] = True

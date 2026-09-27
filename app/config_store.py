@@ -23,7 +23,7 @@ SECRET_KEYS = {'MAIL_PASSWORD', 'O365_CLIENT_SECRET', 'LDAP_BIND_PASSWORD',
 
 # Typage applique au chargement (le reste = chaine).
 _BOOL = {'LDAP_ENABLED', 'LDAP_USE_SSL', 'LDAP_VALIDATE_CERT', 'CT_MONITORING',
-         'SESAME_API_ENABLED', 'DASHBOARD_CUSTOM', 'DOCUMENTS_ENABLED',
+         'SESAME_API_ENABLED', 'DASHBOARD_CUSTOM', 'PAGINATION_MEMORY', 'DOCUMENTS_ENABLED',
          'DOCUMENT_INLINE_VIEW', 'SOFTWARE_ALERTS', 'SOFTWARE_FORM_LEGACY',
          'CONTRACT_FORM_LEGACY', 'SUPPLIER_FORM_LEGACY',
          # Modules debrayables (voir app/features.py)
@@ -59,6 +59,7 @@ MANAGED = _BOOL | _INT | _TRIPLET | _CSV | {
     # Modules debrayables : devis, RGPD, flux entre logiciels, certificats electroniques.
     'QUOTES_ENABLED', 'GDPR_ENABLED', 'SOFTWARE_LINKS_ENABLED', 'ELECTRONIC_CERTS_ENABLED',
     'DASHBOARD_CUSTOM', # tableau de bord personnalisable par utilisateur : on/off
+    'PAGINATION_MEMORY',  # taille de page retenue par utilisateur et par liste : on/off
     'SOFTWARE_FORM_LEGACY', 'CONTRACT_FORM_LEGACY',  # anciens formulaires : on/off
     'SUPPLIER_FORM_LEGACY',
     # Pieces jointes stockees en base (actes signes, guides, deliberations).

@@ -1,15 +1,18 @@
 """Pagination simple en mémoire pour les listes (après tri par criticité)."""
+import json
+
 from flask import g, request
 
 # Dix lignes par defaut sur toutes les listes, le selecteur sous le tableau
 # permettant de voir plus large (Dom 2026-09-25).
 PER_PAGE = 10
-PER_PAGE_CHOICES = (10, 20, 25, 50, 100, 200)
+PER_PAGE_CHOICES = (10, 15, 20, 25, 50, 100, 200)
 
 
-def resolve_per_page(default=PER_PAGE):
-    """Lit ?per_page : un entier autorise, ou 'all' (=> None, tout afficher)."""
-    raw = (request.args.get('per_page') or '').strip().lower()
+def _lire(raw):
+    """Une taille telle qu'ecrite : un entier autorise, 'all' (=> None, tout
+    afficher), ou False quand elle n'est pas reconnue."""
+    raw = (str(raw) if raw is not None else '').strip().lower()
     if raw in ('all', 'tous'):
         return None
     try:
@@ -18,6 +21,55 @@ def resolve_per_page(default=PER_PAGE):
             return v
     except (TypeError, ValueError):
         pass
+    return False
+
+
+def _memoire_active():
+    """La taille se retient-elle pour l'utilisateur connecte ? (Preferences >
+    Listes, PAGINATION_MEMORY.)"""
+    from flask import current_app
+    from flask_login import current_user
+    return bool(current_app.config.get('PAGINATION_MEMORY', True)
+                and getattr(current_user, 'is_authenticated', False))
+
+
+def _prefs(user):
+    try:
+        return json.loads(user.list_prefs) if user.list_prefs else {}
+    except (TypeError, ValueError):
+        return {}
+
+
+def resolve_per_page(default=PER_PAGE):
+    """La taille de page : ?per_page s'il est donne (un entier autorise, ou
+    'all' => None, tout afficher) ; sinon celle que l'utilisateur a choisie la
+    derniere fois sur CETTE liste ; sinon `default`.
+
+    Retenue liste par liste, et non une taille pour toutes : « Tous » sur sept
+    fournisseurs ne doit pas deplier deux cents comptes. La liste se reconnait
+    a son endpoint ; un choix explicite (le selecteur) l'enregistre."""
+    from flask_login import current_user
+    cle = request.endpoint or ''
+    demande = request.args.get('per_page')
+    if demande is not None:
+        v = _lire(demande)
+        if v is False:
+            return default
+        if _memoire_active() and cle:
+            prefs = _prefs(current_user)
+            valeur = 'all' if v is None else v
+            if prefs.get(cle) != valeur:
+                prefs[cle] = valeur
+                current_user.list_prefs = json.dumps(prefs)
+                from app import db
+                db.session.commit()
+        return v
+    if _memoire_active() and cle:
+        retenue = _prefs(current_user).get(cle)
+        if retenue is not None:
+            v = _lire(retenue)
+            if v is not False:
+                return v
     return default
 
 
