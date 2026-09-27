@@ -46,6 +46,8 @@ def test_la_taille_demandee_est_appliquee(client):
     html = client.get('/accounts/?per_page=25').get_data(as_text=True)
     assert '1–25 sur 30' in html
     assert _option_choisie(html)[1] == '25 / page'
+    vingt = client.get('/accounts/?per_page=20').get_data(as_text=True)
+    assert '1–20 sur 30' in vingt and _option_choisie(vingt)[1] == '20 / page'
     tout = client.get('/accounts/?per_page=all').get_data(as_text=True)
     assert _option_choisie(tout)[1] == 'Tous'
     assert tout.count('Service ') >= 30

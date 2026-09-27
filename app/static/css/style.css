@@ -1255,7 +1255,12 @@ body.dash-editing .stat-toggle { display: inline-flex; }
    et en gris ; la premiere ligne du contact commercial garde le corps du
    texte (c'est un nom), les autres sont en 12 px. */
 .pile { display: flex; flex-direction: column; font-size: 0.75rem; line-height: 1.35; min-width: 0; }
-.pile > * { display: flex; align-items: flex-start; gap: 5px; min-width: 0; text-decoration: none; }
+.pile > * { display: flex; align-items: center; gap: 5px; min-width: 0; text-decoration: none; }
+/* L'icone se centre sur sa ligne (calee en haut, elle depassait du texte, plus
+   grand qu'elle) ; seule une valeur qui peut passer a la ligne (.casse : un
+   courriel, une adresse) la garde en haut, face a sa premiere ligne. */
+.pile > *:has(.casse) { align-items: flex-start; }
+.pile > *:has(.casse) > :is(i, svg.lucide) { margin-top: 0.3em; }
 .pile > .pile-principal { font-size: 0.875rem; line-height: 1.4; }
 .pile > .pile-principal + * { margin-top: 2px; }
 .pile :is(i, svg.lucide) { flex-shrink: 0; font-size: 0.7rem; line-height: inherit; color: var(--faint); }

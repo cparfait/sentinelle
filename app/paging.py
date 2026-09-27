@@ -4,7 +4,7 @@ from flask import g, request
 # Dix lignes par defaut sur toutes les listes, le selecteur sous le tableau
 # permettant de voir plus large (Dom 2026-09-25).
 PER_PAGE = 10
-PER_PAGE_CHOICES = (10, 25, 50, 100, 200)
+PER_PAGE_CHOICES = (10, 20, 25, 50, 100, 200)
 
 
 def resolve_per_page(default=PER_PAGE):
