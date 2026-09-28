@@ -79,7 +79,7 @@
        celui de tous ses produits. Les fiches logiciel le remontent. #}
     {% call rubrique('Assistance', 'bi-life-preserver', 'sky') %}
     <div class="grille grille-3">
-        {{ champ('Portail tickets (URL)', 'support_url', s.support_url if s, type='url', placeholder='https://support.exemple.fr') }}
+        {{ champ('Tickets (URL)', 'support_url', s.support_url if s, type='url', placeholder='https://support.exemple.fr') }}
         {{ champ('Hotline', 'support_phone', s.support_phone if s) }}
         {{ champ("Courriel de l'assistance", 'support_email', s.support_email if s, type='email') }}
     </div>
