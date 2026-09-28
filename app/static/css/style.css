@@ -2397,7 +2397,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 /* La nouvelle Synthese (_synthese.html) : le formulaire de l'onglet Details en
    lecture, rubriques collees, un filet entre elles. Dans une rubrique, une
    grille de paires « intitule | valeur » : l'intitule a gauche, la valeur en
-   face ; un pointille leger entre deux lignes. Les rangees du gabarit s'y
+   face, sans filet entre deux lignes. Les rangees du gabarit s'y
    fondent (display: contents). Les champs vides n'y sont pas : ils forment la
    ligne « A completer » sous la grille. Deux colonnes, trois pour une
    rubrique aux valeurs courtes (rubrique(colonnes=3), deux sous 1200 px),
@@ -2409,11 +2409,11 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .lu-grille--3 { grid-template-columns: repeat(3, fit-content(140px) minmax(0, 1fr)); }
 .lu-grille:empty { display: none; }
 .lu-rangee { display: contents; }
-.lu { min-width: 0; grid-column: span 2; display: grid; grid-template-columns: subgrid; column-gap: 10px; align-items: baseline; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+.lu { min-width: 0; grid-column: span 2; display: grid; grid-template-columns: subgrid; column-gap: 10px; align-items: baseline; padding: 6px 0; }
 .lu--large, .lu--pleine { grid-column: 1 / -1; }
 .lu--pleine > .lu-valeur { grid-column: 2 / -1; }
 @media (max-width: 1199.98px) { .lu-grille--3 { grid-template-columns: repeat(2, fit-content(140px) minmax(0, 1fr)); } }
-.lu--large { display: block; }
+.lu--large { display: block; padding-top: 14px; }
 .lu--large .lu-label { display: block; margin-bottom: 2px; }
 .lu-label { font-size: 13px; color: var(--muted); }
 .lu-valeur { font-size: 0.9rem; font-weight: 600; color: var(--text); overflow-wrap: break-word; min-width: 0; }
@@ -2617,15 +2617,16 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .data-card .fiche-bloc > h6.fiche-titre::after { display: none; }
 
 /* ---- L'en-tete d'un marche sur la fiche logiciel ----
-   Deux lignes, trois colonnes : ce qui NOMME l'acte (reference, intitule,
-   societe) puis ce qu'il engage (nature, periode, montant). La disposition de
+   Trois blocs de deux lignes, centres sur la hauteur de l'en-tete : ce qui
+   NOMME l'acte (reference, intitule, societe) puis ce qu'il engage (nature,
+   periode, montant). La disposition de
    SoftInventory, que les yeux connaissent. Sur un ecran etroit, les colonnes
    s'empilent. ---- */
 .marche-entete {
     display: grid;
     grid-template-columns: minmax(3rem, 6.25rem) minmax(8rem, 1fr) minmax(6rem, 15.625rem);
     column-gap: .5rem;
-    align-items: baseline;
+    align-items: center;
     min-width: 0;
 }
 .marche-entete > * { min-width: 0; }
@@ -2637,7 +2638,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .marche-entete .marche-tronque { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* La ligne du dessous, et celle de chaque document : le gris leger de
    SoftInventory (--faint), en 12 px. */
-.marche-entete.marche-sous, .marche-docs small { font-size: 12px; color: var(--faint) !important; }
+.marche-entete .marche-sous, .marche-docs small { font-size: 12px; color: var(--faint) !important; }
 .marche-docs-titre { font-size: 12px; font-weight: 600; color: var(--faint); }
 /* Les boutons de l'en-tete (maillon, +) s'alignent sur ceux des marches
    dessous : l'en-tete a 4 px de marge droite de plus que le corps, et les
@@ -2648,7 +2649,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    le filet, le titre gardant sa place. */
 .marche-docs-entete .btn-icone { margin-bottom: -4px; }
 .marche-docs-vide { font-size: 14px; color: var(--faint); }
-.marche-docs-zone { padding: 0 16px; margin-top: 5px; }  /* 5 px sous la ligne du marche */
+.marche-docs-zone { padding: 1px 16px 0; margin-top: 5px; }  /* 6 px sous la ligne du marche */
 .doc-aide { font-size: 12px; color: var(--faint); margin-top: 4px; }
 /* Le bouton de depot du fichier, dans la ligne du formulaire de piece : un
    carre de 26 px, la hauteur des champs qui l'entourent. */
@@ -2731,7 +2732,7 @@ a.marche-doc-nom:hover { color: var(--primary); }
 .marche-doc-sous { margin-top: 0; line-height: 16px; }
 .marche-doc-dl { color: var(--faint); display: inline-flex; align-items: center; }
 .marche-doc-dl:hover { color: var(--primary); }
-.marche-entete.marche-sous .marche-droite { font-variant-numeric: tabular-nums; }
+.marche-entete .marche-droite .marche-sous { font-variant-numeric: tabular-nums; }
 @media (max-width: 767.98px) {
     .marche-entete { grid-template-columns: 1fr; }
     .marche-entete .marche-droite { text-align: left; }

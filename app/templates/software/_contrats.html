@@ -59,34 +59,45 @@
            Le formulaire de modification prend la place de CES deux lignes
            seulement : les documents du marché restent dessous. #}
         <div class="d-flex justify-content-between align-items-center gap-3" id="marche-{{ c.id }}-entete">
-            <div class="flex-grow-1 min-w-0">
-                <div class="marche-entete fw-semibold">
-                    <a href="{{ url_for('contracts.detail', id=c.id) }}" class="text-decoration-none marche-tronque"
-                       title="{{ c.reference or '' }}">{{ c.reference or '' }}</a>
-                    <span class="d-flex align-items-baseline gap-2 min-w-0">
+            {# Trois blocs de deux lignes, chacun centré sur la hauteur de
+               l'en-tête : ce qui NOMME l'acte en haut (référence, intitulé,
+               société), ce qu'il engage dessous (nature, période, montant).
+               La nature de l'acte (marché public, convention, devis accepté)
+               sous sa référence, comme dans SoftInventory ; le type de
+               contrat (maintenance, abonnement) ouvre la ligne du milieu. #}
+            <div class="flex-grow-1 marche-entete">
+                {# Seule, la nature (sans référence) prend la place et le style
+                   de la référence ; le bloc, d'une ligne, reste centré. #}
+                {% set nature = c.nature_label() or c.kind_label() %}
+                {% set haut = c.reference or nature %}
+                <div>
+                    {% if haut %}<a href="{{ url_for('contracts.detail', id=c.id) }}" class="d-block fw-semibold text-decoration-none marche-tronque"
+                       title="{{ haut }}">{{ haut }}</a>{% endif %}
+                    {% if c.reference and nature %}<span class="d-block marche-sous marche-tronque" title="{{ nature }}">{{ nature }}</span>{% endif %}
+                </div>
+                <div>
+                    <span class="d-flex align-items-baseline gap-2 min-w-0 fw-semibold">
                         <a href="{{ url_for('contracts.detail', id=c.id) }}" class="text-decoration-none marche-tronque"
                            title="{{ c.name }}">{{ c.name }}</a>
                         {{ status_badge(c.status()) }}
                     </span>
-                    <span class="marche-droite marche-tronque">
-                        {%- if c.supplier %}<a href="{{ url_for('suppliers.detail', id=c.supplier_id) }}"
-                                               class="text-decoration-none" title="{{ c.supplier.name }}">{{ c.supplier.name }}</a>{% endif -%}
-                    </span>
-                </div>
-                {# La nature de l'acte (marché public, convention, devis accepté)
-                   sous sa référence, comme dans SoftInventory ; le type de
-                   contrat (maintenance, abonnement) ouvre la ligne du milieu. #}
-                <div class="marche-entete marche-sous">
-                    <span class="marche-tronque" title="{{ c.nature_label() or c.kind_label() }}">{{ c.nature_label() or c.kind_label() }}</span>
-                    <span>
+                    {#- Une seule ligne : tronquée, le texte entier en infobulle. -#}
+                    {% set detail -%}
                         {%- if c.nature_label() %}{{ c.kind_label() }}{% if c.period_label() %} · {% endif %}{% endif -%}
                         {{- c.period_label() | capitalize -}}
                         {%- set jours = c.days_left() -%}
                         {%- if jours is not none %} · agir avant le {{ c.action_deadline().strftime('%d/%m/%Y') }} ({{ jours }} j){% endif -%}
                         {%- if c.auto_renew %} · tacite reconduction{% elif c.renewal_label() %} · {{ c.renewal_label() }}{% endif -%}
                         {%- if c.supplier_reference %} · réf. fournisseur {{ c.supplier_reference }}{% endif -%}
+                    {%- endset %}
+                    <span class="d-block marche-sous marche-tronque" title="{{ detail }}">{{ detail }}</span>
+                </div>
+                <div class="marche-droite">
+                    <span class="d-block fw-semibold marche-tronque">
+                        {%- if c.supplier %}<a href="{{ url_for('suppliers.detail', id=c.supplier_id) }}"
+                                               class="text-decoration-none" title="{{ c.supplier.name }}">{{ c.supplier.name }}</a>{% endif -%}
                     </span>
-                    <span class="marche-droite marche-tronque">
+                    <span class="d-block marche-sous marche-tronque">
                         {%- if c.cost_yearly %}Mnt annuel : {{ c.cost_yearly | montant }}{% endif -%}
                         {%- if c.cost_max_yearly %}{{ ' · ' if c.cost_yearly }}Maxi : {{ c.cost_max_yearly | montant }}{% endif -%}
                         {%- if c.cost_total and not c.cost_yearly %}Total : {{ c.cost_total | montant }}{% endif -%}

@@ -39,7 +39,7 @@
     {% call rangee() %}
         {{ lu('Hébergement', item.hosting_label()) }}
         {{ lu('Technologie', item.technology.label if item.technology else None) }}
-        {{ lu('Open source / propriétaire', item.source_type_label()) }}
+        {{ lu('Type licence', item.source_type_label()) }}
     {% endcall %}
     {# « Non renseignée » en toutes lettres : savoir comment on entre dans une
        application est une question de sécurité, son silence un trou à combler. #}
