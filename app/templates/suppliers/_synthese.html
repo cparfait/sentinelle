@@ -45,9 +45,9 @@
 
     {% call rubrique('Assistance', 'bi-life-preserver', 'sky') %}
     {% call rangee() %}
-        {% call lu_bloc('Tickets') %}{% if s.support_url %}<a href="{{ s.support_url }}" target="_blank" rel="noopener" class="casse">{{ s.support_url }}</a>{% endif %}{% endcall %}
+        {% call lu_bloc('Tickets') %}{% if s.support_url %}<a href="{{ s.support_url }}" target="_blank" rel="noopener" class="text-truncate d-block" title="{{ s.support_url }}">{{ s.support_url | replace('https://', '') | replace('http://', '') }}</a>{% endif %}{% endcall %}
         {% call lu_bloc('Hotline') %}{{ tel(s.support_phone) }}{% endcall %}
-        {% call lu_bloc("Courriel de l'assistance") %}{{ mail(s.support_email) }}{% endcall %}
+        {% call lu_bloc('Courriel') %}{{ mail(s.support_email) }}{% endcall %}
     {% endcall %}
     {% call rangee() %}
         {{ lu('N° client / support', s.customer_ref) }}

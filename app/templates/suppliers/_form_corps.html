@@ -81,7 +81,7 @@
     <div class="grille grille-3">
         {{ champ('Tickets (URL)', 'support_url', s.support_url if s, type='url', placeholder='https://support.exemple.fr') }}
         {{ champ('Hotline', 'support_phone', s.support_phone if s) }}
-        {{ champ("Courriel de l'assistance", 'support_email', s.support_email if s, type='email') }}
+        {{ champ('Courriel', 'support_email', s.support_email if s, type='email') }}
     </div>
     <div class="grille grille-3">
         {{ champ('N° client / identifiant support', 'customer_ref', s.customer_ref if s, titre="Celui que l'éditeur redemande à chaque appel") }}
