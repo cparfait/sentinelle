@@ -2412,17 +2412,16 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .lu { min-width: 0; grid-column: span 2; display: grid; grid-template-columns: subgrid; column-gap: 10px; align-items: baseline; padding: 6px 0; }
 .lu--large, .lu--pleine { grid-column: 1 / -1; }
 .lu--pleine > .lu-valeur { grid-column: 2 / -1; }
-/* Quatre cartes (rubrique(colonnes=4), les contacts) : l'intitule au-dessus,
-   la valeur dessous, une carte par colonne. Un message sans champ (« Aucun
+/* Un tableau (rubrique(colonnes=4), les contacts) : une ligne par champ,
+   l'intitule puis ses trois valeurs (nom, telephone, courriel) dans des
+   colonnes alignees d'une ligne a l'autre. Un message sans champ (« Aucun
    contact ») prend toute la largeur. */
-.lu-grille--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 8px; }
-.lu-grille--4 > .lu-rangee > .lu, .lu-grille--4 > .lu { grid-column: auto; display: block; }
-.lu-grille--4 .lu-label { display: block; margin-bottom: 2px; }
-.lu-grille--4 .lu-contact { flex-direction: column; }
+.lu-grille--4 { grid-template-columns: fit-content(180px) minmax(0, 1fr) max-content minmax(0, 1.2fr); }
+.lu-grille--4 .lu { grid-column: 1 / -1; }
+.lu-grille--4 .lu-valeur, .lu-grille--4 .lu-contact { display: contents; }
 .lu-grille > .lu-vide { grid-column: 1 / -1; }
 @media (max-width: 1199.98px) {
     .lu-grille--3 { grid-template-columns: repeat(2, fit-content(140px) minmax(0, 1fr)); }
-    .lu-grille--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 .lu--large { display: block; padding-top: 14px; }
 .lu--large .lu-label { display: block; margin-bottom: 2px; }
@@ -2439,6 +2438,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 @media (max-width: 767.98px) {
     .lu-grille, .lu-grille--3 { grid-template-columns: fit-content(120px) minmax(0, 1fr); }
     .lu-grille--4 { grid-template-columns: 1fr; }
+    .lu-grille--4 .lu { display: block; }
+    .lu-grille--4 .lu-label, .lu-grille--4 .lu-contact > span { display: block; }
 }
 /* La nature d'un logiciel : les boutons cochés du formulaire, en étiquettes. */
 .badge-nature { display: inline-flex; align-items: center; margin: 0 6px 4px 0; padding: 2px 8px; border: 1px solid rgba(79, 70, 229, 0.45); border-radius: 6px; background: rgba(79, 70, 229, 0.12); font-size: 0.8rem; }

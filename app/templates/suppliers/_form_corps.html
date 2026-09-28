@@ -96,7 +96,7 @@
     </div>
     {{ contact('Commercial 1', 'commercial', s.commercial_contact if s, s.commercial_phone if s, s.commercial_email if s) }}
     {{ contact('Commercial 2', 'commercial2', s.commercial_contact2 if s, s.commercial_phone2 if s, s.commercial_email2 if s) }}
-    {{ contact('Administratif / facturation', 'admin', s.admin_contact if s, s.admin_phone if s, s.admin_email if s) }}
+    {{ contact('Administratif', 'admin', s.admin_contact if s, s.admin_phone if s, s.admin_email if s) }}
     {{ contact('DPO', 'dpo', s.dpo_contact if s, s.dpo_phone if s, s.dpo_email if s) }}
     {% endcall %}
 

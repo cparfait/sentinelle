@@ -18,7 +18,7 @@
    traduit en Lucide) ou directement un nom Lucide ; `onglet` : l'icône colorée
    d'un onglet de la fiche (.ico-onglet--<onglet>), comme dans le formulaire ;
    `colonnes` : 3 par défaut, 2 pour une rubrique aux valeurs longues, 4 pour
-   des cartes (l'intitulé au-dessus de sa valeur, une par colonne). #}
+   un tableau (une ligne par champ : l'intitulé puis trois valeurs). #}
 {% macro rubrique(titre, bi, couleur, onglet=None, droite='', colonnes=3) %}
     {% set contenu = caller() %}
     {% set manques = contenu | manques %}

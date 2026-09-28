@@ -9,15 +9,16 @@
 {% macro tel(numero) %}{% if numero %}<a href="tel:{{ numero | replace(' ', '') }}">{{ numero }}</a>{% endif %}{% endmacro %}
 {% macro mail(adresse) %}{% if adresse %}<a href="mailto:{{ adresse }}" class="text-truncate d-block">{{ adresse }}</a>{% endif %}{% endmacro %}
 
-{# Un contact : une colonne, le rôle en intitulé, puis nom, téléphone et
-   courriel l'un sous l'autre. Un contact dont rien n'est saisi ne paraît pas : trois tirets ne
+{# Un contact : une ligne, quatre colonnes alignées d'un contact à l'autre —
+   le rôle, le nom, le téléphone, le courriel (une case vide garde sa place).
+   Un contact dont rien n'est saisi ne paraît pas : trois tirets ne
    disent pas qui appeler. #}
 {% macro contact(role, nom, numero, adresse) %}
 {% if nom or numero or adresse %}
 {% call lu_bloc(role) %}<span class="lu-contact">
-    {%- if nom %}<span>{{ nom }}</span>{% endif -%}
-    {%- if numero %}<span>{{ tel(numero) }}</span>{% endif -%}
-    {%- if adresse %}<span>{{ mail(adresse) }}</span>{% endif -%}
+    <span>{{ nom or '' }}</span>
+    <span>{{ tel(numero) }}</span>
+    <span class="min-w-0">{{ mail(adresse) }}</span>
 </span>{% endcall %}
 {% endif %}
 {% endmacro %}
@@ -58,7 +59,7 @@
     {% call rubrique('Contacts', 'bi-person-lines-fill', 'rose', onglet='contacts', colonnes=4) %}
     {{ contact('Commercial 1', s.commercial_contact, s.commercial_phone, s.commercial_email) }}
     {{ contact('Commercial 2', s.commercial_contact2, s.commercial_phone2, s.commercial_email2) }}
-    {{ contact('Administratif / facturation', s.admin_contact, s.admin_phone, s.admin_email) }}
+    {{ contact('Administratif', s.admin_contact, s.admin_phone, s.admin_email) }}
     {{ contact('DPO', s.dpo_contact, s.dpo_phone, s.dpo_email) }}
     {% if not s.has_contacts() %}<span class="lu-vide text-muted small">Aucun contact renseigné.</span>{% endif %}
     {% endcall %}
