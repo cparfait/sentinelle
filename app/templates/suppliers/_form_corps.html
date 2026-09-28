@@ -63,9 +63,9 @@
     </div>
     {# Rangée 2 — le standard de la société. #}
     <div class="grille grille-3">
-        {{ champ('Interlocuteur habituel', 'contact_name', s.contact_name if s) }}
-        {{ champ('Courriel (standard)', 'email', s.email if s, type='email') }}
-        {{ champ('Téléphone (standard)', 'phone', s.phone if s) }}
+        {{ champ('Interlocuteur', 'contact_name', s.contact_name if s) }}
+        {{ champ('Courriel', 'email', s.email if s, type='email') }}
+        {{ champ('Standard', 'phone', s.phone if s) }}
     </div>
     {# Rangée 3 — où il est. #}
     <div class="grille grille-adresse">
@@ -79,7 +79,7 @@
        celui de tous ses produits. Les fiches logiciel le remontent. #}
     {% call rubrique('Assistance', 'bi-life-preserver', 'sky') %}
     <div class="grille grille-3">
-        {{ champ('Portail de tickets (URL)', 'support_url', s.support_url if s, type='url', placeholder='https://support.exemple.fr') }}
+        {{ champ('Portail tickets (URL)', 'support_url', s.support_url if s, type='url', placeholder='https://support.exemple.fr') }}
         {{ champ('Hotline', 'support_phone', s.support_phone if s) }}
         {{ champ("Courriel de l'assistance", 'support_email', s.support_email if s, type='email') }}
     </div>
@@ -94,10 +94,10 @@
     <div class="grille grille-contact contact-entete" aria-hidden="true">
         <span></span><span class="form-label small mb-0">Nom</span><span class="form-label small mb-0">Téléphone</span><span class="form-label small mb-0">Courriel</span>
     </div>
-    {{ contact('Commercial', 'commercial', s.commercial_contact if s, s.commercial_phone if s, s.commercial_email if s) }}
-    {{ contact('Commercial (second)', 'commercial2', s.commercial_contact2 if s, s.commercial_phone2 if s, s.commercial_email2 if s) }}
+    {{ contact('Commercial 1', 'commercial', s.commercial_contact if s, s.commercial_phone if s, s.commercial_email if s) }}
+    {{ contact('Commercial 2', 'commercial2', s.commercial_contact2 if s, s.commercial_phone2 if s, s.commercial_email2 if s) }}
     {{ contact('Administratif / facturation', 'admin', s.admin_contact if s, s.admin_phone if s, s.admin_email if s) }}
-    {{ contact("DPO de l'éditeur", 'dpo', s.dpo_contact if s, s.dpo_phone if s, s.dpo_email if s) }}
+    {{ contact('DPO', 'dpo', s.dpo_contact if s, s.dpo_phone if s, s.dpo_email if s) }}
     {% endcall %}
 
     {% call rubrique('Notes', 'bi-journal-text', 'slate') %}

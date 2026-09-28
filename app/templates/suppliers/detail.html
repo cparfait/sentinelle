@@ -204,7 +204,7 @@
                 <span class="badge bg-secondary ms-1">{{ software|length }}</span></h6>
                 <button type="button" class="btn btn-ghost btn-sm text-nowrap" onclick="document.getElementById('ong-logiciels')?.click()">Tout voir</button></div>
             <div class="fiche-lies">
-                {% for sw in software %}{{ lien(url_for('software.detail', id=sw.id), 'app-window', sw.name, ('v' ~ sw.version) if sw.version else '', teinte='software') }}{% endfor %}
+                {% for sw in software %}{{ lien(url_for('software.detail', id=sw.id), 'app-window', sw.name, '', teinte='software') }}{% endfor %}
             </div>
         </div>
         {% endif %}

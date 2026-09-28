@@ -29,9 +29,9 @@
         {% call lu_bloc('Site web') %}{% if s.website %}<a href="{{ s.website }}" target="_blank" rel="noopener" class="text-truncate d-block">{{ s.website | replace('https://', '') | replace('http://', '') }}</a>{% endif %}{% endcall %}
     {% endcall %}
     {% call rangee() %}
-        {{ lu('Interlocuteur habituel', s.contact_name) }}
-        {% call lu_bloc('Courriel (standard)') %}{{ mail(s.email) }}{% endcall %}
-        {% call lu_bloc('Téléphone (standard)') %}{{ tel(s.phone) }}{% endcall %}
+        {{ lu('Interlocuteur', s.contact_name) }}
+        {% call lu_bloc('Courriel') %}{{ mail(s.email) }}{% endcall %}
+        {% call lu_bloc('Standard') %}{{ tel(s.phone) }}{% endcall %}
     {% endcall %}
     {% call rangee() %}
         {% call lu_bloc('Adresse', pleine=True) %}
@@ -44,7 +44,7 @@
 
     {% call rubrique('Assistance', 'bi-life-preserver', 'sky') %}
     {% call rangee() %}
-        {% call lu_bloc('Portail de tickets') %}{% if s.support_url %}<a href="{{ s.support_url }}" target="_blank" rel="noopener">Ouvrir le portail</a>{% endif %}{% endcall %}
+        {% call lu_bloc('Portail tickets') %}{% if s.support_url %}<a href="{{ s.support_url }}" target="_blank" rel="noopener" class="casse">{{ s.support_url }}</a>{% endif %}{% endcall %}
         {% call lu_bloc('Hotline') %}{{ tel(s.support_phone) }}{% endcall %}
         {% call lu_bloc("Courriel de l'assistance") %}{{ mail(s.support_email) }}{% endcall %}
     {% endcall %}
@@ -56,10 +56,10 @@
     {% endcall %}
 
     {% call rubrique('Contacts', 'bi-person-lines-fill', 'rose', onglet='contacts') %}
-    {{ contact('Commercial', s.commercial_contact, s.commercial_phone, s.commercial_email) }}
-    {{ contact('Commercial (second)', s.commercial_contact2, s.commercial_phone2, s.commercial_email2) }}
+    {{ contact('Commercial 1', s.commercial_contact, s.commercial_phone, s.commercial_email) }}
+    {{ contact('Commercial 2', s.commercial_contact2, s.commercial_phone2, s.commercial_email2) }}
     {{ contact('Administratif / facturation', s.admin_contact, s.admin_phone, s.admin_email) }}
-    {{ contact("DPO de l'éditeur", s.dpo_contact, s.dpo_phone, s.dpo_email) }}
+    {{ contact('DPO', s.dpo_contact, s.dpo_phone, s.dpo_email) }}
     {% if not s.has_contacts() %}<span class="text-muted small">Aucun contact renseigné.</span>{% endif %}
     {% endcall %}
 

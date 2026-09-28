@@ -16,8 +16,9 @@
 
 {# Une rubrique : son en-tête et son corps. `bi` : un nom Bootstrap (« bi-… »,
    traduit en Lucide) ou directement un nom Lucide ; `onglet` : l'icône colorée
-   d'un onglet de la fiche (.ico-onglet--<onglet>), comme dans le formulaire. #}
-{% macro rubrique(titre, bi, couleur, onglet=None, droite='') %}
+   d'un onglet de la fiche (.ico-onglet--<onglet>), comme dans le formulaire ;
+   `colonnes` : 3 par défaut, 2 pour une rubrique aux valeurs longues. #}
+{% macro rubrique(titre, bi, couleur, onglet=None, droite='', colonnes=3) %}
     {% set contenu = caller() %}
     {% set manques = contenu | manques %}
     <div class="card-header-custom d-flex justify-content-between align-items-center">
@@ -28,7 +29,7 @@
         {% if droite %}<div class="d-flex gap-1">{{ droite }}</div>{% endif %}
     </div>
     <div class="p-3">
-        <div class="lu-grille">{{ contenu }}</div>
+        <div class="lu-grille{{ ' lu-grille--3' if colonnes == 3 }}">{{ contenu }}</div>
         {% if manques %}
         <div class="lu-manques">{{ lucide('pencil', 12) }}À compléter :
             {% for m in manques %}<span class="lu-manque">{{ m }}</span>{% endfor %}</div>
