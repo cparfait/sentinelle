@@ -2405,7 +2405,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    (140 px au plus, au-dela il passe a la ligne) : les valeurs ont le reste,
    et restent alignees d'une ligne a l'autre grace a la sous-grille. */
 .synthese > .p-3 + .card-header-custom { border-top: 1px solid var(--line); }
-.lu-grille { display: grid; grid-template-columns: repeat(2, fit-content(140px) minmax(0, 1fr)); column-gap: 28px; }
+.lu-grille { display: grid; grid-template-columns: repeat(2, fit-content(140px) minmax(0, 1fr)); column-gap: 10px; }
 .lu-grille--3 { grid-template-columns: repeat(3, fit-content(140px) minmax(0, 1fr)); }
 .lu-grille:empty { display: none; }
 .lu-rangee { display: contents; }
