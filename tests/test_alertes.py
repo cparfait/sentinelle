@@ -85,3 +85,33 @@ def test_destinataires_par_categorie(app):
 def test_seuils_invalides_pas_d_alerte(app):
     assert should_send_reminder('certificate', 42, 5, None) is False
     assert should_send_reminder('certificate', 42, 5, (7, 15)) is False
+
+
+# ── Interrupteur général de l'envoi des mails (Préférences > Messagerie) ──
+
+def test_mails_coupes_aucun_envoi_mais_les_webhooks_partent(app, monkeypatch):
+    """Coupé, l'envoi ne joint pas le serveur ; l'alerte se journalise en
+    échec (« désactivé ») et les canaux Teams/Slack/Discord partent quand même."""
+    import pytest
+    from app.alerts import send_alert
+    from app.email_service import send_email, MailDisabled
+    app.config['MAIL_ENABLED'] = False
+    app.config['ALERT_RECIPIENTS'] = ['dsi@exemple.fr']
+    monkeypatch.setattr('app.email_service._send_via_smtp',
+                        lambda *a, **k: pytest.fail('aucun envoi attendu'))
+    with pytest.raises(MailDisabled):
+        send_email('s', ['a@b.fr'], 'corps')
+    webhooks = []
+    monkeypatch.setattr('app.notify.notify_all', lambda *a, **k: webhooks.append(a))
+    send_alert('Objet', 'Corps', entity_type='certificate', entity_id=7, entity_name='c')
+    log = AlertLog.query.one()
+    assert log.status == 'failed' and 'désactivé' in log.message
+    assert len(webhooks) == 1
+
+
+def test_l_interrupteur_se_regle_dans_les_preferences(client, app):
+    client.post('/preferences', data={'action': 'save_mail_enabled'})
+    assert app.config['MAIL_ENABLED'] is False
+    client.post('/preferences', data={'action': 'save_mail_enabled', 'mail_enabled': 'on'})
+    assert app.config['MAIL_ENABLED'] is True
+    assert 'id="mailEnabled"' in client.get('/preferences').get_data(as_text=True)

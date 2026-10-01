@@ -250,7 +250,11 @@
             </div>
             <p class="form-section-aide">Le compte qui envoie les alertes, les bilans et les envois de test.</p>
             <div class="form-section-corps">
-                    <form method="POST" action="{{ url_for('auth.preferences') }}" class="d-flex align-items-center gap-2 mb-3">
+                    {# La méthode à gauche, l'interrupteur général de l'envoi à droite :
+                       coupé, plus aucun mail ne part (alertes, bilans, tests) ; la
+                       configuration reste, et les canaux Teams/Slack/Discord aussi. #}
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                    <form method="POST" action="{{ url_for('auth.preferences') }}" class="d-flex align-items-center gap-2">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="action" value="set_mail_method">
                         <label class="text-muted small mb-0" style="width:90px;">Méthode</label>
@@ -259,6 +263,16 @@
                             <option value="smtp" {% if mail_method == 'smtp' %}selected{% endif %}>SMTP</option>
                         </select>
                     </form>
+                    <form method="POST" action="{{ url_for('auth.preferences') }}" class="ms-auto">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="save_mail_enabled">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="mailEnabled"
+                                   name="mail_enabled" {% if mail_enabled %}checked{% endif %} onchange="this.form.submit()">
+                            <label class="form-check-label fw-medium" for="mailEnabled">Envoi des mails</label>
+                        </div>
+                    </form>
+                    </div>
 
                     {% if mail_method == 'o365' %}
                     <div class="data-card p-3 mb-0" style="background: var(--body-bg);">

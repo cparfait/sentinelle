@@ -308,7 +308,14 @@ def preferences():
     if request.method == 'POST':
         action = request.form.get('action')
 
-        if action == 'set_mail_method':
+        if action == 'save_mail_enabled':
+            enabled = request.form.get('mail_enabled') == 'on'
+            _persist_config({'MAIL_ENABLED': 'true' if enabled else 'false'})
+            current_app.config['MAIL_ENABLED'] = enabled
+            audit_record('config messagerie', detail=f'envoi actif={enabled}', category='preferences')
+            flash('Envoi des mails ' + ('activé' if enabled else 'désactivé') + '.', 'success')
+
+        elif action == 'set_mail_method':
             method = request.form.get('mail_method', 'smtp')
             _persist_config({'MAIL_METHOD': method})
             current_app.config['MAIL_METHOD'] = method
@@ -721,6 +728,7 @@ def preferences():
     }
 
     return render_template('auth/preferences.html', mail_method=mail_method,
+                           mail_enabled=current_app.config.get('MAIL_ENABLED', True),
                            configured=configured,
                            mail_configured=mail_configured, o365_config=o365_config,
                            smtp_config=smtp_config, o365_connected=o365_connected,

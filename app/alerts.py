@@ -4,7 +4,7 @@ from flask import (Blueprint, render_template, current_app, request, redirect,
 from flask_login import login_required, current_user
 from app import db
 from app.models import AlertLog
-from app.email_service import send_email, render_alert_email
+from app.email_service import send_email, render_alert_email, MailDisabled
 from app.snooze import set_snooze, clear_snooze, VALID_TYPES, permission_category
 from app.decorators import view_guard
 
@@ -159,7 +159,13 @@ def send_alert(subject, body, entity_type=None, entity_id=None, entity_name=None
                 prefix = _URL_PREFIX.get(entity_type, f"{entity_type}s")
                 url = f"{base}/{prefix}/{entity_id}"
         html_body = render_alert_email(subject, body, status=status, url=url)
-        send_email(subject, recipients, body, html_body=html_body)
+        # Mails coupes dans Preferences : les canaux additionnels partent quand
+        # meme, l'alerte se journalise ensuite en echec (« desactive »).
+        mail_coupe = None
+        try:
+            send_email(subject, recipients, body, html_body=html_body)
+        except MailDisabled as e:
+            mail_coupe = e
 
         # Canaux additionnels (best-effort) : Teams / Slack / Discord.
         # entity_type (singulier) -> categorie (pluriel) pour router les webhooks.
@@ -169,6 +175,8 @@ def send_alert(subject, body, entity_type=None, entity_id=None, entity_name=None
             notify_all(subject, body, status=status, url=url, category=category)
         except Exception:
             pass
+        if mail_coupe:
+            raise mail_coupe
 
         log = AlertLog(
             alert_type='email',

@@ -163,8 +163,16 @@ def get_o365_access_token():
     return None
 
 
+class MailDisabled(Exception):
+    """L'envoi des mails est coupe dans Preferences (MAIL_ENABLED)."""
+
+
 def send_email(subject, recipients, body, html_body=None, attachments=None):
-    """attachments : liste de tuples (nom_fichier, contenu_bytes, mimetype)."""
+    """attachments : liste de tuples (nom_fichier, contenu_bytes, mimetype).
+    Leve MailDisabled quand l'envoi est coupe dans Preferences : les appelants
+    qui savent deja traiter un echec d'envoi le journalisent comme tel."""
+    if not current_app.config.get('MAIL_ENABLED', True):
+        raise MailDisabled("Envoi des mails désactivé dans Préférences.")
     method = current_app.config.get('MAIL_METHOD', 'smtp')
     if method == 'o365':
         return _send_via_graph(subject, recipients, body, html_body, attachments)

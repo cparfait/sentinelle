@@ -113,6 +113,8 @@ class Config:
     # d'origine). Modifiable depuis Preferences -> Apparence.
     UI_PRIMARY_COLOR = os.getenv('UI_PRIMARY_COLOR', '')
 
+    # Interrupteur general de l'envoi des mails (alertes, bilans, tests).
+    MAIL_ENABLED = os.getenv('MAIL_ENABLED', 'true').lower() in ('true', '1', 'yes')
     MAIL_METHOD = os.getenv('MAIL_METHOD', 'smtp')
 
     MAIL_SERVER = os.getenv('MAIL_SERVER', 'localhost')
