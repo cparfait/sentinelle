@@ -2445,7 +2445,10 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .lu--large { display: block; padding-top: 14px; }
 .lu--large .lu-label { display: block; margin-bottom: 2px; }
 .lu-label { font-size: 12px; color: var(--muted); }
-.lu-valeur { font-size: 0.8rem; font-weight: 600; color: var(--text); overflow-wrap: break-word; min-width: 0; }
+.lu-valeur { font-size: 0.8rem; font-weight: 600; line-height: 1; color: var(--text); overflow-wrap: break-word; min-width: 0; }
+/* Interligne 1 : une valeur coupee par « … » (overflow cache) garde un peu
+   de marge en bas, sinon les jambages (g, p, j) seraient rognes. */
+.lu-valeur .text-truncate, .synthese--cases .lu:not(.lu--large) .lu-valeur { padding-bottom: .15em; }
 .lu--large .lu-valeur { font-weight: 400; white-space: pre-line; }
 .lu-valeur a { color: var(--primary); text-decoration: none; }
 .lu-valeur a:hover { text-decoration: underline; }
