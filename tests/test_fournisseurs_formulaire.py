@@ -99,7 +99,7 @@ def test_le_rail_de_la_synthese_ne_montre_que_ce_qu_il_a(client):
 
     html = client.get(f'/suppliers/{seul.id}').get_data(as_text=True)
     synthese = html.split('id="vol-detail"', 1)[1].split('id="vol-details"', 1)[0]
-    assert 'col-lg-4' not in synthese and 'Chez nous' not in synthese
+    assert 'col-lg-3' not in synthese and 'Chez nous' not in synthese
 
     html = client.get(f'/suppliers/{editeur.id}').get_data(as_text=True)
     synthese = html.split('id="vol-detail"', 1)[1].split('id="vol-details"', 1)[0]
