@@ -10,17 +10,18 @@
 {% macro mail(adresse) %}{% if adresse %}<a href="mailto:{{ adresse }}" class="text-truncate d-block">{{ adresse }}</a>{% endif %}{% endmacro %}
 
 {# Un contact : une ligne, les intitulés du formulaire à gauche de chaque
-   valeur — le rôle devant le nom (« Commercial 1 »), puis Téléphone et
-   Courriel —, en colonnes alignées d'un contact à l'autre (une case vide
-   garde sa place). Un contact dont rien n'est saisi ne paraît pas : trois
+   valeur — le rôle devant le nom (« Commercial 1 »), puis « Téléphone
+   commercial 1 » et « Courriel commercial 1 » (DPO garde ses capitales) —,
+   en colonnes alignées d'un contact à l'autre (une case vide garde sa place). Un contact dont rien n'est saisi ne paraît pas : trois
    tirets ne disent pas qui appeler. #}
 {% macro contact(role, nom, numero, adresse) %}
 {% if nom or numero or adresse %}
+{% set qui = role if role.isupper() else role | lower %}
 {% call lu_bloc(role) %}<span class="lu-contact">
     <span>{{ nom or '' }}</span>
-    <span class="lu-label">Téléphone</span>
+    <span class="lu-label">Téléphone {{ qui }}</span>
     <span>{{ tel(numero) }}</span>
-    <span class="lu-label">Courriel</span>
+    <span class="lu-label">Courriel {{ qui }}</span>
     <span class="min-w-0">{{ mail(adresse) }}</span>
 </span>{% endcall %}
 {% endif %}
