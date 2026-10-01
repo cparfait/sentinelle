@@ -9,25 +9,18 @@
 {% macro tel(numero) %}{% if numero %}<a href="tel:{{ numero | replace(' ', '') }}">{{ numero }}</a>{% endif %}{% endmacro %}
 {% macro mail(adresse) %}{% if adresse %}<a href="mailto:{{ adresse }}" class="text-truncate d-block">{{ adresse }}</a>{% endif %}{% endmacro %}
 
-{# Un contact : une ligne, les intitulés du formulaire à gauche de chaque
-   valeur — « Commercial 1 » devant le nom, puis « Téléphone commercial 1 » et
-   « Courriel commercial 1 » (DPO garde ses capitales) — le rôle n'y est
-   repris que si le nom manque. Un champ vide ne paraît
-   pas, son intitulé non plus, et ne laisse pas de place vide : les champs
-   suivants se resserrent. Un contact dont rien n'est saisi ne paraît pas. #}
+{# Un contact : ses champs comme ceux de l'Identité, des cases intitulé +
+   valeur qui coulent dans la grille à trois colonnes — « Commercial 1 »
+   devant le nom, puis « Téléphone » et « Courriel » ; sans nom, ceux-ci
+   reprennent le rôle (« Courriel DPO »). Un champ vide ne paraît pas, son
+   intitulé non plus, et ne laisse pas de place vide. #}
 {% macro contact(role, nom, numero, adresse) %}
 {% if nom or numero or adresse %}
-{# Le nom porte le rôle : derrière lui, « Téléphone » et « Courriel » suffisent.
-   Sans nom, ils le reprennent (« Téléphone commercial 1 »). #}
+{# Le nom porte le rôle : derrière lui, « Téléphone » et « Courriel » suffisent. #}
 {% set qui = '' if nom else ' ' ~ (role if role.isupper() else role | lower) %}
-<div class="lu lu-contact">
-    {% if nom %}<span class="lu-paire"><span class="lu-label">{{ role }}</span>
-        <span class="lu-valeur">{{ nom }}</span></span>{% endif %}
-    {% if numero %}<span class="lu-paire"><span class="lu-label">Téléphone{{ qui }}</span>
-        <span class="lu-valeur">{{ tel(numero) }}</span></span>{% endif %}
-    {% if adresse %}<span class="lu-paire min-w-0"><span class="lu-label">Courriel{{ qui }}</span>
-        <span class="lu-valeur min-w-0">{{ mail(adresse) }}</span></span>{% endif %}
-</div>
+{{ lu(role, nom, facultatif=True) }}
+{% call lu_bloc('Téléphone' ~ qui, facultatif=True) %}{{ tel(numero) }}{% endcall %}
+{% call lu_bloc('Courriel' ~ qui, facultatif=True) %}{{ mail(adresse) }}{% endcall %}
 {% endif %}
 {% endmacro %}
 
@@ -64,7 +57,7 @@
     {% endcall %}
     {% endcall %}
 
-    {% call rubrique('Contacts', 'bi-person-lines-fill', 'rose', onglet='contacts', colonnes=4) %}
+    {% call rubrique('Contacts', 'bi-person-lines-fill', 'rose', onglet='contacts') %}
     {# Un seul commercial renseigné : il n'est que « Commercial », sans numéro. #}
     {% set c1 = s.commercial_contact or s.commercial_phone or s.commercial_email %}
     {% set c2 = s.commercial_contact2 or s.commercial_phone2 or s.commercial_email2 %}
