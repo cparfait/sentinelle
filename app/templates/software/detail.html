@@ -84,7 +84,7 @@
             {# Le récapitulatif ne garde que les contrats EN COURS : un acte échu ou
                à venir ne dit pas ce que l'application coûte aujourd'hui. Tous se
                lisent dans l'onglet Contrats. #}
-            <div class="{{ 'col-lg-8' if (item.supplier or marches_en_cours or nb_liaisons) else 'col-12' }}">
+            <div class="{{ 'col-lg-9' if (item.supplier or marches_en_cours or nb_liaisons) else 'col-12' }}">
                 {% if not config.SOFTWARE_FORM_LEGACY %}
                 {% include 'software/_synthese.html' %}
                 {% else %}
@@ -202,7 +202,7 @@
                mais la réponse vaut pour tous les logiciels du même éditeur — la recopier
                fiche par fiche garantirait des numéros divergents. #}
             {% if item.supplier or marches_en_cours or nb_liaisons %}
-            <div class="col-lg-4">
+            <div class="col-lg-3">
                 <div class="fiche-cote">
                     {{ carte_editeur(item.supplier, 'Éditeur') }}
 

@@ -39,7 +39,7 @@
 {% call volets() %}
     {% call volet('detail', actif=True) %}
     <div class="row g-3">
-        <div class="col-lg-8">
+        <div class="col-lg-9">
         {% if not config.CONTRACT_FORM_LEGACY %}
         {% include 'contracts/_synthese.html' %}
         {% else %}
@@ -101,7 +101,7 @@
         </div>
         {% endif %}
         </div>
-        <div class="col-lg-4">
+        <div class="col-lg-3">
             {{ carte_editeur(contract.supplier) }}
             {# Le marché vit pour lui-même : il couvre autant de logiciels qu'il en
                couvre réellement, et en perdre le dernier ne le supprime pas.

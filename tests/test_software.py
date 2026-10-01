@@ -325,7 +325,7 @@ def test_la_fiche_sans_editeur_prend_toute_la_largeur(client):
     db.session.add(sw)
     db.session.commit()
     html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
-    assert 'col-lg-4' not in html
+    assert 'col-lg-3' not in html
     # Plus d'onglet RGPD : les donnees personnelles se saisissent dans l'onglet
     # Details et se lisent dans la Synthese -- meme quand il n'y a rien a
     # declarer : « non » est une reponse, la rubrique absente serait un oubli.
@@ -343,7 +343,7 @@ def test_la_synthese_resume_les_liaisons(client):
     db.session.add_all([e, sw])
     db.session.commit()
     html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
-    assert 'col-lg-4' in html
+    assert 'col-lg-3' in html
     assert 'liaisons-resume' in html
     assert '#hard-drive' in html and 'SRV-MAISON' in html
 
