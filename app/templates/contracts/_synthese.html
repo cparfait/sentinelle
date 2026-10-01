@@ -46,8 +46,8 @@
     {% call rubrique('Éléments couverts', 'boxes', 'indigo') %}
     {% if contract.software or contract.equipments %}
     <div class="pastilles">
-        {% for sw in contract.software %}{{ pastille(url_for('software.detail', id=sw.id), 'app-window', sw.name, 'software', 'Logiciel') }}{% endfor %}
-        {% for e in contract.equipments %}{{ pastille(url_for('inventory.detail', id=e.id), e.kind_icon(), e.name, e.kind or 'vm', e.kind_label()) }}{% endfor %}
+        {% for sw in contract.software | sort(attribute='name') %}{{ pastille(url_for('software.detail', id=sw.id), 'app-window', sw.name, 'software', 'Logiciel') }}{% endfor %}
+        {% for e in contract.equipments | sort(attribute='name') %}{{ pastille(url_for('inventory.detail', id=e.id), e.kind_icon(), e.name, e.kind or 'vm', e.kind_label()) }}{% endfor %}
     </div>
     {% else %}
     <span class="text-muted small">Aucun élément couvert.</span>
