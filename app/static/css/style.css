@@ -2413,10 +2413,10 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .lu--large, .lu--pleine { grid-column: 1 / -1; }
 .lu--pleine > .lu-valeur { grid-column: 2 / -1; }
 /* Un tableau (rubrique(colonnes=4), les contacts) : une ligne par champ,
-   l'intitule puis ses trois valeurs (nom, telephone, courriel) dans des
-   colonnes alignees d'une ligne a l'autre. Un message sans champ (« Aucun
+   l'intitule puis le nom, « Telephone » et le numero, « Courriel » et
+   l'adresse, dans des colonnes alignees d'une ligne a l'autre. Un message sans champ (« Aucun
    contact ») prend toute la largeur. */
-.lu-grille--4 { grid-template-columns: fit-content(180px) minmax(0, 1fr) max-content minmax(0, 1.2fr); }
+.lu-grille--4 { grid-template-columns: fit-content(180px) minmax(0, 1fr) max-content max-content max-content minmax(0, 1.2fr); }
 .lu-grille--4 .lu { grid-column: 1 / -1; }
 .lu-grille--4 .lu-valeur, .lu-grille--4 .lu-contact { display: contents; }
 .lu-grille > .lu-vide { grid-column: 1 / -1; }
@@ -2432,6 +2432,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .lu-valeur a:hover { text-decoration: underline; }
 .lu-valeur .badge-status { font-size: 12px; }
 .lu-contact { display: flex; flex-wrap: wrap; column-gap: 16px; }
+.lu-contact > .lu-label { font-weight: 400; }
 .lu-manques { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; font-size: 12px; color: var(--faint); }
 .lu-grille:empty + .lu-manques { margin-top: 0; }
 .lu-manque { border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; color: var(--muted); }
@@ -2440,6 +2441,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     .lu-grille--4 { grid-template-columns: 1fr; }
     .lu-grille--4 .lu { display: block; }
     .lu-grille--4 .lu-label, .lu-grille--4 .lu-contact > span { display: block; }
+    .lu-grille--4 .lu-contact > .lu-label { margin-top: 4px; }
 }
 /* La nature d'un logiciel : les boutons cochés du formulaire, en étiquettes. */
 .badge-nature { display: inline-flex; align-items: center; margin: 0 6px 4px 0; padding: 2px 8px; border: 1px solid rgba(79, 70, 229, 0.45); border-radius: 6px; background: rgba(79, 70, 229, 0.12); font-size: 0.8rem; }
