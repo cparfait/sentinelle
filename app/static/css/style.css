@@ -2446,6 +2446,10 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .lu--large .lu-valeur { font-weight: 400; white-space: pre-line; }
 .lu-valeur a { color: var(--primary); text-decoration: none; }
 .lu-valeur a:hover { text-decoration: underline; }
+/* Un numero de telephone se lit comme du texte : couleur du texte, rien au
+   survol. Le lien tel: reste, pour appeler depuis un poste qui sait le faire. */
+a[href^="tel:"], a[href^="tel:"]:hover, a[href^="tel:"]:focus,
+.lu-valeur a[href^="tel:"], .lu-valeur a[href^="tel:"]:hover { color: var(--text); text-decoration: none; }
 .lu-valeur .badge-status { font-size: 12px; }
 .lu-manques { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; font-size: 12px; color: var(--faint); }
 .lu-grille:empty + .lu-manques { margin-top: 0; }
