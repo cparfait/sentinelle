@@ -156,14 +156,14 @@ def test_la_carte_contrats_ne_garde_que_ceux_en_cours(client):
 
 
 def test_les_intitules_des_contacts_ne_reprennent_le_role_que_sans_nom(client):
-    """Derrière un nom (« Commercial 1  DUPONT »), « Tel » suffit ; sans
+    """Derrière un nom (« Commercial 1  DUPONT »), « Téléphone » suffit ; sans
     nom, l'intitulé reprend le rôle : « Mail DPO »."""
     sup = Supplier(name='A', commercial_contact='DUPONT', commercial_phone='0100000001',
                    dpo_email='dpo@a.fr')
     db.session.add(sup)
     db.session.commit()
     synthese = client.get(f'/suppliers/{sup.id}').get_data(as_text=True).split('id="vol-details"', 1)[0]
-    assert '<span class="lu-label">Tel</span>' in synthese
+    assert '<span class="lu-label">Téléphone</span>' in synthese
     assert 'Tel commercial 1' not in synthese
     assert '<span class="lu-label">Mail DPO</span>' in synthese
 
