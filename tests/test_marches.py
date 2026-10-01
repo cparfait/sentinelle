@@ -29,6 +29,20 @@ def test_un_marche_couvre_plusieurs_logiciels(client):
     assert [c.name for c in a.contracts] == ['Marché UGAP 2027']
 
 
+def test_creer_un_marche_depuis_un_logiciel_le_coche(client):
+    """Le + de l'onglet Contrats d'un logiciel ouvre un formulaire où ce
+    logiciel est déjà coché : le marché créé le couvre sans autre geste."""
+    sw = Software(name='Sygal')
+    autre = Software(name='Autre')
+    db.session.add_all([sw, autre])
+    db.session.commit()
+    page = client.get(f'/inventory/logiciels/{sw.id}')
+    assert f'/contracts/create?software_id={sw.id}' in page.get_data(as_text=True)
+    html = client.get(f'/contracts/create?software_id={sw.id}&inline=1').get_data(as_text=True)
+    assert f'value="software:{sw.id}" selected' in html
+    assert f'value="software:{autre.id}" selected' not in html
+
+
 def test_supprimer_un_logiciel_ne_supprime_pas_le_marche(client):
     """Effacer un acte contractuel par ricochet serait pire que de laisser un
     marché sans rattachement : lui seul dit ce à quoi la collectivité s'engage."""

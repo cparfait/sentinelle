@@ -175,7 +175,7 @@
         <label class="form-label fw-medium mb-1">Logiciels couverts</label>
         <select name="software_ids" id="contractSoftware" class="form-select" multiple size="6">
             {% for sw in software_list %}
-            <option value="{{ sw.id }}" {{ 'selected' if contract and sw in contract.software }}>{{ sw.name }}{% if sw.supplier %} — {{ sw.supplier.name }}{% endif %}</option>
+            <option value="{{ sw.id }}" {{ 'selected' if (sw in contract.software if contract else sw.id in logiciels_choisis) }}>{{ sw.name }}{% if sw.supplier %} — {{ sw.supplier.name }}{% endif %}</option>
             {% endfor %}
         </select>
         <div class="form-text">Un marché en couvre AUTANT qu'il en couvre réellement : UGAP, marchés

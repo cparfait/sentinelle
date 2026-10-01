@@ -39,7 +39,7 @@
                         aria-label="Rattacher le marché choisi">{{ lucide('link', 16) }}</button>
             </form>
             {% endif %}
-            <a href="{{ url_for('contracts.create') }}" class="btn btn-sm btn-ghost btn-icone" title="Créer un marché"
+            <a href="{{ url_for('contracts.create', software_id=item.id) }}" class="btn btn-sm btn-ghost btn-icone" title="Créer un marché"
                aria-label="Créer un marché" data-formulaire-inline data-avant="#marches-liste" data-classes="p-3 border-bottom">{{ lucide('plus', 16) }}</a>
         </div>
         {% endif %}

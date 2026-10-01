@@ -200,7 +200,7 @@
                 aria-label="Éléments couverts" data-sans-recherche>
             <optgroup label="Logiciel" data-icone="app-window">
                 {% for sw in software_list %}
-                <option value="software:{{ sw.id }}" {{ 'selected' if contract and sw in contract.software }} data-kind="software">{{ sw.name }}</option>
+                <option value="software:{{ sw.id }}" {{ 'selected' if (sw in contract.software if contract else sw.id in logiciels_choisis) }} data-kind="software">{{ sw.name }}</option>
                 {% endfor %}
             </optgroup>
             <optgroup label="Matériel" data-icone="server">

@@ -81,8 +81,10 @@ def _fill(c, f):
     c.description = f.get('description') or None
 
 
-def _form_context():
+def _form_context(logiciels_choisis=()):
     return {
+        # Un marche cree depuis la fiche d'un logiciel le couvre d'emblee.
+        'logiciels_choisis': logiciels_choisis,
         'kind_options': Referential.options('contract_kind'),
         'nature_labels': CONTRACT_NATURE_LABELS,
         'suppliers': Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all(),
@@ -140,12 +142,16 @@ def quick_create():
 @login_required
 @require_edit
 def create():
+    # Ouvert depuis l'onglet Contrats d'un logiciel (?software_id=) : ce
+    # logiciel est coche dans les elements couverts.
+    sid = parse_int(request.args.get('software_id'))
+    choisis = (sid,) if sid else ()
     if request.method == 'POST':
         c = Contract()
         _fill(c, request.form)
         if not c.name:
             flash('Le nom du contrat est obligatoire.', 'danger')
-            return render_template('contracts/form.html', contract=None, **_form_context())
+            return render_template('contracts/form.html', contract=None, **_form_context(choisis))
         db.session.add(c)
         db.session.commit()
         db.session.add(ContractHistory(contract_id=c.id, action='creation',
@@ -154,7 +160,7 @@ def create():
         db.session.commit()
         flash('Contrat ajouté', 'success')
         return redirect(url_for('contracts.list'))
-    return render_template('contracts/form.html', contract=None, **_form_context())
+    return render_template('contracts/form.html', contract=None, **_form_context(choisis))
 
 
 @bp.route('/<int:id>')
