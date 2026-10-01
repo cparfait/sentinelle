@@ -2409,6 +2409,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .lu-grille--3 { grid-template-columns: repeat(3, fit-content(140px) minmax(0, 1fr)); }
 .lu-grille:empty { display: none; }
 .lu-rangee { display: contents; }
+/* Une rangee qui commence toujours une nouvelle ligne de la grille. */
+.lu-rangee--ligne > :first-child { grid-column: 1 / span 2; }
 .lu { min-width: 0; grid-column: span 2; display: grid; grid-template-columns: subgrid; column-gap: 10px; align-items: baseline; padding: 6px 0; }
 .lu--large, .lu--pleine { grid-column: 1 / -1; }
 .lu--pleine > .lu-valeur { grid-column: 2 / -1; }
