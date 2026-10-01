@@ -77,7 +77,7 @@
     {% if item.gdpr_personal_data and item.supplier and (item.supplier.dpo_contact or item.supplier.dpo_email) %}
     {% call rangee() %}
         {{ lu("DPO de l'éditeur", item.supplier.dpo_contact) }}
-        {% call lu_bloc('Courriel du DPO') %}{% if item.supplier.dpo_email %}<a href="mailto:{{ item.supplier.dpo_email }}" class="text-truncate d-block">{{ item.supplier.dpo_email }}</a>{% endif %}{% endcall %}
+        {% call lu_bloc('Courriel DPO') %}{% if item.supplier.dpo_email %}<a href="mailto:{{ item.supplier.dpo_email }}" class="text-truncate d-block">{{ item.supplier.dpo_email }}</a>{% endif %}{% endcall %}
     {% endcall %}
     {% endif %}
     {% endcall %}
