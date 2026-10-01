@@ -3246,3 +3246,9 @@ tr:hover .row-actions, tr:focus-within .row-actions { opacity: 1; }
     .contacts-grille { grid-template-columns: 1fr; }
     .contact-ligne--large { grid-column: auto; }
 }
+
+/* Les cartes du rail (Contrats en cours, Certificats) : le nom de l'element a
+   .875em, la ligne de detail (echeance, montant) a 12px. */
+.contrats-resume { font-size: inherit; }
+.contrats-resume li > div:first-child > a { font-size: .875em; }
+.contrats-resume li > .text-muted { font-size: 12px; }
