@@ -2424,7 +2424,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    d'intitules, propres a chaque rubrique, ne decalent plus les colonnes. */
 .synthese--cases .lu-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .synthese--cases .lu-grille--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.synthese--cases .lu { grid-column: span 1; display: flex; gap: 10px; }
+.synthese--cases .lu { grid-column: span 1; display: flex; gap: 10px; padding: 3px 0; }
 /* Intitules de largeur fixe, la meme dans les trois colonnes : chaque valeur
    commence au meme endroit dans sa colonne, d'une rubrique a l'autre.
    100 px = le plus long intitule possible (« Mail commercial 2 », 97 px). */
