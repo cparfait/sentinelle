@@ -2446,7 +2446,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 /* Un élément lié : la puce du formulaire (fond et contour indigo), sans la
    croix, et lien vers sa fiche. */
 .pastilles { display: flex; flex-wrap: wrap; gap: 6px; }
-.pastille-lien { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border: 1px solid rgba(79, 70, 229, 0.45); border-radius: 6px; background: rgba(79, 70, 229, 0.12); font-size: 0.82rem; font-weight: 600; color: var(--text); text-decoration: none; }
+.pastille-lien { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 4px 10px; line-height: 1; border: 1px solid rgba(79, 70, 229, 0.45); border-radius: 6px; background: rgba(79, 70, 229, 0.12); font-size: 0.82rem; font-weight: 600; color: var(--text); text-decoration: none; }
 .pastille-lien:hover { border-color: var(--primary); color: var(--text); }
 .pastille-lien svg { flex-shrink: 0; }
 
