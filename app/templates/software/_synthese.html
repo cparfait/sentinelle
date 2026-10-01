@@ -69,7 +69,7 @@
     {% call rangee() %}
         {{ lu('Données personnelles', 'Traitées' if item.gdpr_personal_data else 'Aucune donnée personnelle', pleine=not item.gdpr_personal_data) }}
         {% if item.gdpr_personal_data %}
-        {{ lu('Catégorie de données', item.gdpr_categories) }}
+        {{ lu('Catégorie', item.gdpr_categories) }}
         {{ lu('Réf. registre', item.gdpr_registry_ref) }}
         {{ lu('Localisation', item.gdpr_location_label()) }}
         {% endif %}
