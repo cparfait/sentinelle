@@ -46,7 +46,7 @@ def test_le_nouveau_formulaire_enregistre_et_la_synthese_relit(client):
 
     html = client.get(f'/suppliers/{sup.id}').get_data(as_text=True)
     synthese = html.split('id="vol-detail"', 1)[1].split('id="vol-details"', 1)[0]
-    assert 'class="data-card mb-3 synthese"' in synthese
+    assert 'class="data-card mb-3 synthese synthese--cases"' in synthese
     assert 'MOREAU' in synthese and 'factu@arpege.fr' in synthese and 'CLI-9' in synthese
     # Les contacts vivent dans la Synthèse : plus d'onglet Contacts à part.
     assert 'id="ong-contacts"' not in html
