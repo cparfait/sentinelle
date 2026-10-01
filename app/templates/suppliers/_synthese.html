@@ -36,7 +36,7 @@
     {% call rangee() %}
         {{ lu('Interlocuteur', s.contact_name) }}
         {% call lu_bloc('Courriel') %}{{ mail(s.email) }}{% endcall %}
-        {% call lu_bloc('Standard') %}{{ tel(s.phone) }}{% endcall %}
+        {% call lu_bloc('Téléphone') %}{{ tel(s.phone) }}{% endcall %}
     {% endcall %}
     {% call rangee() %}
         {% call lu_bloc('Adresse', pleine=True) %}
