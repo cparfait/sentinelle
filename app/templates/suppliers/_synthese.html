@@ -11,17 +11,17 @@
 
 {# Un contact : ses champs comme ceux de l'Identité, des cases intitulé +
    valeur qui coulent dans la grille à trois colonnes — « Commercial 1 »
-   devant le nom, puis « Téléphone » et « Courriel » ; sans nom, ceux-ci
+   devant le nom, puis « Tel » et « Courriel » ; sans nom, ceux-ci
    reprennent le rôle (« Courriel DPO »). Un champ vide ne paraît pas, son
    intitulé non plus, et ne laisse pas de place vide. Chaque contact ouvre
    une nouvelle ligne, comme dans le formulaire (lu-rangee--ligne). #}
 {% macro contact(role, nom, numero, adresse) %}
 {% if nom or numero or adresse %}
-{# Le nom porte le rôle : derrière lui, « Téléphone » et « Courriel » suffisent. #}
+{# Le nom porte le rôle : derrière lui, « Tel » et « Courriel » suffisent. #}
 {% set qui = '' if nom else ' ' ~ (role if role.isupper() else role | lower) %}
 <div class="lu-rangee lu-rangee--ligne">
 {{ lu(role, nom, facultatif=True) }}
-{% call lu_bloc('Téléphone' ~ qui, facultatif=True) %}{{ tel(numero) }}{% endcall %}
+{% call lu_bloc('Tel' ~ qui, facultatif=True) %}{{ tel(numero) }}{% endcall %}
 {% call lu_bloc('Courriel' ~ qui, facultatif=True) %}{{ mail(adresse) }}{% endcall %}
 </div>
 {% endif %}
