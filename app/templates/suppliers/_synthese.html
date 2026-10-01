@@ -31,7 +31,7 @@
     {% call rubrique('Identité', 'bi-building', 'indigo') %}
     {% call rangee() %}
         {{ lu('Type', s.kind_label()) }}
-        {% call lu_bloc('Site web') %}{% if s.website %}<a href="{{ s.website }}" target="_blank" rel="noopener" class="text-truncate d-block">{{ s.website | replace('https://', '') | replace('http://', '') }}</a>{% endif %}{% endcall %}
+        {% call lu_bloc('Site Internet') %}{% if s.website %}<a href="{{ s.website }}" target="_blank" rel="noopener" class="text-truncate d-block">{{ s.website | replace('https://', '') | replace('http://', '') }}</a>{% endif %}{% endcall %}
     {% endcall %}
     {% call rangee() %}
         {{ lu('Interlocuteur', s.contact_name) }}
