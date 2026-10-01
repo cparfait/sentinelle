@@ -2427,6 +2427,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .synthese--cases .lu { grid-column: span 1; display: flex; gap: 10px; }
 .synthese--cases .lu-label { flex-shrink: 0; min-width: 80px; max-width: 160px; }
 .synthese--cases .lu-valeur { flex: 1 1 auto; }
+/* Faute de place, une valeur reste sur sa ligne et finit par « … ». */
+.synthese--cases .lu:not(.lu--large) .lu-valeur { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .synthese--cases .lu--large, .synthese--cases .lu--pleine,
 .synthese--cases .lu-grille > .lu-vide { grid-column: 1 / -1; }
 .synthese--cases .lu--large { display: block; }
