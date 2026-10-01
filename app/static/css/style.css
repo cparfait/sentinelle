@@ -2430,8 +2430,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    100 px = le plus long intitule possible (« Mail commercial 2 », 97 px). */
 .synthese--cases .lu:not(.lu--large) .lu-label { flex: 0 0 100px; width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .synthese--cases .lu-valeur { flex: 1 1 auto; }
-/* Faute de place, une valeur reste sur sa ligne et finit par « … ». */
-.synthese--cases .lu:not(.lu--large) .lu-valeur { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 .synthese--cases .lu--large, .synthese--cases .lu--pleine,
 .synthese--cases .lu-grille > .lu-vide { grid-column: 1 / -1; }
 .synthese--cases .lu--large { display: block; }
@@ -2448,7 +2447,11 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .lu-valeur { font-size: 0.8rem; font-weight: 600; line-height: 1; color: var(--text); overflow-wrap: break-word; min-width: 0; }
 /* Interligne 1 : une valeur coupee par « … » (overflow cache) garde un peu
    de marge en bas, sinon les jambages (g, p, j) seraient rognes. */
-.lu-valeur .text-truncate, .synthese--cases .lu:not(.lu--large) .lu-valeur { padding-bottom: .15em; }
+/* Toutes les syntheses : faute de place, une valeur reste sur sa ligne et
+   finit par « … » (texte entier au survol, texte-tronque.js). Sauf les notes
+   (lu--large) et les etiquettes (nature, statut), qui passent a la ligne. */
+.lu:not(.lu--large) .lu-valeur:not(:has(.badge-nature, .badge-status)) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lu-valeur .text-truncate, .lu:not(.lu--large) .lu-valeur { padding-bottom: .15em; }
 .lu--large .lu-valeur { font-weight: 400; white-space: pre-line; }
 .lu-valeur a { color: var(--primary); text-decoration: none; }
 .lu-valeur a:hover { text-decoration: underline; }
