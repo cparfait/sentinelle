@@ -166,3 +166,15 @@ def test_les_intitules_des_contacts_ne_reprennent_le_role_que_sans_nom(client):
     assert '<span class="lu-label">Téléphone</span>' in synthese
     assert 'Téléphone commercial 1' not in synthese
     assert '<span class="lu-label">Courriel DPO</span>' in synthese
+
+
+def test_un_seul_commercial_perd_son_numero(client):
+    """Commercial 1 et Commercial 2 ne se numérotent que s'ils sont deux."""
+    seul = Supplier(name='Seul', commercial_contact2='MOREAU')
+    deux = Supplier(name='Deux', commercial_contact='DUPONT', commercial_email2='b@d.fr')
+    db.session.add_all([seul, deux])
+    db.session.commit()
+    s = client.get(f'/suppliers/{seul.id}').get_data(as_text=True).split('id="vol-details"', 1)[0]
+    assert '<span class="lu-label">Commercial</span>' in s and 'Commercial 2' not in s
+    d = client.get(f'/suppliers/{deux.id}').get_data(as_text=True).split('id="vol-details"', 1)[0]
+    assert '<span class="lu-label">Commercial 1</span>' in d and 'Courriel commercial 2' in d

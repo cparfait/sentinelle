@@ -65,8 +65,11 @@
     {% endcall %}
 
     {% call rubrique('Contacts', 'bi-person-lines-fill', 'rose', onglet='contacts', colonnes=4) %}
-    {{ contact('Commercial 1', s.commercial_contact, s.commercial_phone, s.commercial_email) }}
-    {{ contact('Commercial 2', s.commercial_contact2, s.commercial_phone2, s.commercial_email2) }}
+    {# Un seul commercial renseigné : il n'est que « Commercial », sans numéro. #}
+    {% set c1 = s.commercial_contact or s.commercial_phone or s.commercial_email %}
+    {% set c2 = s.commercial_contact2 or s.commercial_phone2 or s.commercial_email2 %}
+    {{ contact('Commercial 1' if c2 else 'Commercial', s.commercial_contact, s.commercial_phone, s.commercial_email) }}
+    {{ contact('Commercial 2' if c1 else 'Commercial', s.commercial_contact2, s.commercial_phone2, s.commercial_email2) }}
     {{ contact('Administratif', s.admin_contact, s.admin_phone, s.admin_email) }}
     {{ contact('DPO', s.dpo_contact, s.dpo_phone, s.dpo_email) }}
     {% if not s.has_contacts() %}<span class="lu-vide text-muted small">Aucun contact renseigné.</span>{% endif %}
