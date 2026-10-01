@@ -2418,7 +2418,13 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
    contact ») prend toute la largeur. */
 .lu-grille--4 { grid-template-columns: fit-content(180px) minmax(0, 1fr) max-content max-content max-content minmax(0, 1.2fr); }
 .lu-grille--4 .lu { grid-column: 1 / -1; }
-.lu-grille--4 .lu-valeur, .lu-grille--4 .lu-contact { display: contents; }
+/* Chaque champ a sa colonne : un champ vide absent ne decale pas les suivants. */
+.lu-grille--4 .lu-label.contact-nom { grid-column: 1; }
+.lu-grille--4 .lu-valeur.contact-nom { grid-column: 2; }
+.lu-grille--4 .lu-label.contact-tel { grid-column: 3; }
+.lu-grille--4 .lu-valeur.contact-tel { grid-column: 4; }
+.lu-grille--4 .lu-label.contact-mail { grid-column: 5; }
+.lu-grille--4 .lu-valeur.contact-mail { grid-column: 6; }
 .lu-grille > .lu-vide { grid-column: 1 / -1; }
 @media (max-width: 1199.98px) {
     .lu-grille--3 { grid-template-columns: repeat(2, fit-content(140px) minmax(0, 1fr)); }
@@ -2431,8 +2437,6 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .lu-valeur a { color: var(--primary); text-decoration: none; }
 .lu-valeur a:hover { text-decoration: underline; }
 .lu-valeur .badge-status { font-size: 12px; }
-.lu-contact { display: flex; flex-wrap: wrap; column-gap: 16px; }
-.lu-contact > .lu-label { font-weight: 400; }
 .lu-manques { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; font-size: 12px; color: var(--faint); }
 .lu-grille:empty + .lu-manques { margin-top: 0; }
 .lu-manque { border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; color: var(--muted); }
@@ -2440,8 +2444,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     .lu-grille, .lu-grille--3 { grid-template-columns: fit-content(120px) minmax(0, 1fr); }
     .lu-grille--4 { grid-template-columns: 1fr; }
     .lu-grille--4 .lu { display: block; }
-    .lu-grille--4 .lu-label, .lu-grille--4 .lu-contact > span { display: block; }
-    .lu-grille--4 .lu-contact > .lu-label { margin-top: 4px; }
+    .lu-grille--4 .lu-label, .lu-grille--4 .lu-valeur { display: block; }
+    .lu-grille--4 .lu-valeur + .lu-label { margin-top: 4px; }
 }
 /* La nature d'un logiciel : les boutons cochés du formulaire, en étiquettes. */
 .badge-nature { display: inline-flex; align-items: center; margin: 0 6px 4px 0; padding: 2px 8px; border: 1px solid rgba(79, 70, 229, 0.45); border-radius: 6px; background: rgba(79, 70, 229, 0.12); font-size: 0.8rem; }
