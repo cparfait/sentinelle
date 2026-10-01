@@ -12,19 +12,18 @@
 {# Un contact : une ligne, les intitulés du formulaire à gauche de chaque
    valeur — « Commercial 1 » devant le nom, puis « Téléphone commercial 1 » et
    « Courriel commercial 1 » (DPO garde ses capitales). Un champ vide ne paraît
-   pas, son intitulé non plus ; les autres gardent leur colonne (contact-nom,
-   -tel, -mail), alignés d'un contact à l'autre. Un contact dont rien n'est
-   saisi ne paraît pas du tout. #}
+   pas, son intitulé non plus, et ne laisse pas de place vide : les champs
+   suivants se resserrent. Un contact dont rien n'est saisi ne paraît pas. #}
 {% macro contact(role, nom, numero, adresse) %}
 {% if nom or numero or adresse %}
 {% set qui = role if role.isupper() else role | lower %}
-<div class="lu">
-    {% if nom %}<span class="lu-label contact-nom">{{ role }}</span>
-    <span class="lu-valeur contact-nom">{{ nom }}</span>{% endif %}
-    {% if numero %}<span class="lu-label contact-tel">Téléphone {{ qui }}</span>
-    <span class="lu-valeur contact-tel">{{ tel(numero) }}</span>{% endif %}
-    {% if adresse %}<span class="lu-label contact-mail">Courriel {{ qui }}</span>
-    <span class="lu-valeur contact-mail min-w-0">{{ mail(adresse) }}</span>{% endif %}
+<div class="lu lu-contact">
+    {% if nom %}<span class="lu-paire"><span class="lu-label">{{ role }}</span>
+        <span class="lu-valeur">{{ nom }}</span></span>{% endif %}
+    {% if numero %}<span class="lu-paire"><span class="lu-label">Téléphone {{ qui }}</span>
+        <span class="lu-valeur">{{ tel(numero) }}</span></span>{% endif %}
+    {% if adresse %}<span class="lu-paire min-w-0"><span class="lu-label">Courriel {{ qui }}</span>
+        <span class="lu-valeur min-w-0">{{ mail(adresse) }}</span></span>{% endif %}
 </div>
 {% endif %}
 {% endmacro %}
