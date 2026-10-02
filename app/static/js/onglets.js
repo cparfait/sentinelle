@@ -24,6 +24,15 @@
 // passe donc d'elle-meme de « /logiciels/3/flux/ajouter#liaisons » a
 // « /logiciels/3#liaisons », sans qu'aucune route n'ait a la connaitre.
 (function () {
+    // Le volet arrive voile (base.html, <head>) quand l'adresse porte une
+    // ancre : on le devoile en sortant, quoi qu'il arrive ensuite.
+    try {
+        return principal();
+    } finally {
+        document.documentElement.classList.remove('onglet-a-rouvrir');
+    }
+
+function principal() {
     var ancre = (location.hash || '').replace(/^#(vol-)?/, '');
 
     function avecAncre(url, cible) {
@@ -67,9 +76,29 @@
         return actif ? (actif.getAttribute('data-bs-target') || '').replace('#vol-', '') : '';
     }
 
+    // A l'arrivee, le volet s'ouvre SANS l'animation de Bootstrap : son fondu
+    // laissait voir la Synthese (premier onglet, rendu par le serveur) le temps
+    // de s'effacer, a chaque enregistrement. Les classes suffisent — Bootstrap
+    // relit l'etat dans le DOM au clic suivant.
+    function ouvrirDirectement(cible) {
+        var bouton = barre.querySelector('[data-bs-target="#vol-' + cible + '"]');
+        var volet = document.getElementById('vol-' + cible);
+        if (!bouton || !volet || !volet.parentNode) return;
+        barre.querySelectorAll('.nav-link[data-bs-toggle="tab"]').forEach(function (b) {
+            b.classList.remove('active');
+            b.setAttribute('aria-selected', 'false');
+        });
+        Array.prototype.forEach.call(volet.parentNode.children, function (v) {
+            if (v.classList.contains('tab-pane')) v.classList.remove('show', 'active');
+        });
+        bouton.classList.add('active');
+        bouton.setAttribute('aria-selected', 'true');
+        volet.classList.add('show', 'active');
+    }
+
     // #documents dans l'URL -> l'onglet « documents ». On accepte aussi la
     // forme complete #vol-documents, celle que Bootstrap manipule.
-    if (ancre) ouvrir(ancre);
+    if (ancre) ouvrirDirectement(ancre);
     // ... et de meme quand l'ancre change sans rechargement (lien interne,
     // adresse retouchee a la main).
     window.addEventListener('hashchange', function () {
@@ -105,4 +134,5 @@
             if (cible) lien.href = avecAncre(lien.getAttribute('href'), cible);
         });
     });
+}
 })();

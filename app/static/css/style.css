@@ -3103,6 +3103,8 @@ main.en-edition .fiche-onglets .js-edition { color: var(--primary); background: 
     color: var(--text-muted);
 }
 .fiche-volets > .tab-pane { outline: none; }
+/* Voile le temps qu'onglets.js ouvre l'onglet de l'ancre (base.html). */
+.onglet-a-rouvrir .fiche-volets { visibility: hidden; }
 
 /* ==========================================================================
    PAGINATION

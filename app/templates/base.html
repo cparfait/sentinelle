@@ -9,6 +9,10 @@
     {# Anti-FOUC : applique le thème et la couleur de fond avant le premier rendu,
        pour éviter le flash noir sur OS dark-mode quand le CSS n'est pas encore chargé. #}
     <script>(function(){try{var t=new URLSearchParams(location.search).get('theme')||localStorage.getItem('theme')||'light';var h=document.documentElement;h.setAttribute('data-theme',t);h.style.backgroundColor=t==='dark'?'#0b1120':'#f5f6f8';}catch(e){}})();</script>
+    {# Meme idee pour les onglets d'une fiche : l'ancre (#documents…) dit lequel
+       ouvrir, mais le serveur rend la Synthese. Le volet reste voile jusqu'a ce
+       qu'onglets.js ait ouvert le bon, pour ne pas montrer la Synthese entre-temps. #}
+    <script>if(location.hash)document.documentElement.classList.add('onglet-a-rouvrir');</script>
     <link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='vendor/bootstrap-icons.css') }}" rel="stylesheet">
     {# Polices de la refonte — 100% hors-ligne. Les .woff2 sont servis localement
