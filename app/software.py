@@ -240,7 +240,9 @@ def detail(id):
                            consultations=consultations, marches=marches,
                            marches_en_cours=[c for c in marches if c.en_cours()],
                            marches_rattachables=_marches_rattachables(item),
-                           sortants=item.links_out.all(), entrants=item.links_in.all(),
+                           # (lien, 'sortant'|'entrant'|'double', logiciel d'en face)
+                           flux=[(l,) + l.sens_depuis(item.id)
+                                 for l in item.links_out.all() + item.links_in.all()],
                            partages=item.shares.order_by(SoftwareShare.label).all(),
                            autres_logiciels=autres,
                            taches=item.tasks.filter_by(is_active=True).all(),
@@ -340,27 +342,49 @@ def delete(id):
 @require_edit
 def link_add(id):
     features.require('links')
-    """Declare un flux SORTANT depuis cette fiche. Le sens est porte par la
-    ligne ; la fiche d'en face le verra comme entrant, sans qu'on ait a le
+    """Declare un flux depuis cette fiche, dans le sens choisi : « vers »
+    l'autre logiciel, « depuis » lui, ou dans les deux sens. Le sens est porte
+    par la ligne ; la fiche d'en face le voit a l'envers, sans qu'on ait a le
     saisir deux fois."""
     sw = Software.query.get_or_404(id)
-    cible_id = parse_int(request.form.get('target_id'))
-    cible = Software.query.get(cible_id) if cible_id else None
-    if cible is None:
-        flash('Choisissez le logiciel destinataire du flux.', 'danger')
+    autre_id = parse_int(request.form.get('other_id'))
+    autre = Software.query.get(autre_id) if autre_id else None
+    sens = request.form.get('sens', 'vers')
+    if sens not in ('vers', 'depuis', 'double'):
+        sens = 'vers'
+    if autre is None:
+        flash("Choisissez le logiciel à l'autre bout du flux.", 'danger')
         return redirect(url_for('software.detail', id=id))
-    if cible.id == sw.id:
+    if autre.id == sw.id:
         # Un flux d'un logiciel vers lui-meme ne decrit rien.
         flash("Un logiciel ne peut pas alimenter lui-même.", 'danger')
         return redirect(url_for('software.detail', id=id))
-    if SoftwareLink.query.filter_by(source_id=sw.id, target_id=cible.id).first():
+
+    source, cible = (autre, sw) if sens == 'depuis' else (sw, autre)
+    double = sens == 'double'
+    # Ce qui existe deja entre les deux, dans un sens ou dans l'autre.
+    existants = SoftwareLink.query.filter(db.or_(
+        db.and_(SoftwareLink.source_id == sw.id, SoftwareLink.target_id == autre.id),
+        db.and_(SoftwareLink.source_id == autre.id, SoftwareLink.target_id == sw.id))).all()
+    if any(l.bidirectional for l in existants):
+        flash('Un flux à double sens relie déjà ces deux logiciels.', 'warning')
+        return redirect(url_for('software.detail', id=id))
+    if double and existants:
+        # Deux flux a sens unique peuvent coexister (l'export, puis le
+        # retour) ; un double sens les couvrirait tous deux, et l'on ne sait
+        # laquelle des descriptions garder.
+        flash("Un flux à sens unique relie déjà ces deux logiciels : "
+              "supprimez-le avant de déclarer le double sens.", 'warning')
+        return redirect(url_for('software.detail', id=id))
+    if any(l.source_id == source.id for l in existants):
         flash('Ce flux est déjà déclaré.', 'warning')
         return redirect(url_for('software.detail', id=id))
     db.session.add(SoftwareLink(
-        source_id=sw.id, target_id=cible.id,
+        source_id=source.id, target_id=cible.id, bidirectional=double,
         description=(request.form.get('description', '') or '').strip() or None))
     db.session.commit()
-    audit_record('ajout interconnexion', detail=f'{sw.name} -> {cible.name}',
+    audit_record('ajout interconnexion',
+                 detail=f"{source.name} {'<->' if double else '->'} {cible.name}",
                  category='inventory')
     flash('Flux ajouté', 'success')
     return redirect(url_for('software.detail', id=id))

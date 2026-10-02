@@ -408,7 +408,7 @@ def test_un_flux_se_lit_se_corrige_et_se_supprime_depuis_la_fiche(client):
     db.session.add_all([a, b])
     db.session.commit()
     client.post(f'/inventory/logiciels/{a.id}/links/add',
-                data={'target_id': str(b.id), 'description': 'Flux PES'}, follow_redirects=True)
+                data={'other_id': str(b.id), 'description': 'Flux PES'}, follow_redirects=True)
     lien = SoftwareLink.query.one()
     html = client.get(f'/inventory/logiciels/{a.id}').get_data(as_text=True)
     assert 'Interconnexions' in html and 'lucide-arrow-right' in html and '— Flux PES' in html

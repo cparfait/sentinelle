@@ -1,15 +1,15 @@
 {% from '_icones.html' import icone, lucide %}
+{% from 'software/_flux_sens.html' import FLUX_ICONE, FLUX_TITRE %}
 {# ═══ Interconnexions ═══
    Par où passent les données : ce que ce logiciel alimente (→), ce dont il se
    nourrit (←). Le sens est porté par la ligne, jamais saisi deux fois. Comme
    dans SoftInventory : la liste d'abord, chaque flux avec son crayon (la
    description se corrige en place) et sa corbeille, puis la ligne d'ajout,
-   toujours visible : le logiciel d'en face, la description, « Ajouter ». #}
+   toujours visible : le sens (→ vers, ← depuis, ⇄ les deux), le logiciel d'en
+   face, la description, « Ajouter ». `flux` vient de la vue :
+   (lien, 'sortant'|'entrant'|'double', logiciel d'en face). #}
 {% set peut_editer = current_user.can_edit('software') %}
 {% set peut_supprimer = current_user.can_delete('software') %}
-{% set flux = [] %}
-{% for lien in sortants %}{% set _ = flux.append((lien, 'sortant', lien.target)) %}{% endfor %}
-{% for lien in entrants %}{% set _ = flux.append((lien, 'entrant', lien.source)) %}{% endfor %}
 
 <div class="data-card mb-3">
     <div class="card-header-custom">
@@ -23,9 +23,9 @@
             <li>
                 <div class="d-flex align-items-center justify-content-between gap-3">
                     <span class="d-flex align-items-center gap-2 min-w-0">
-                        {{ lucide('arrow-right' if sens == 'sortant' else 'arrow-left', 16, 'flux-sens flex-shrink-0') }}
+                        {{ lucide(FLUX_ICONE[sens], 16, 'flux-sens flex-shrink-0') }}
                         <a href="{{ url_for('software.detail', id=autre.id) }}" class="fw-medium text-decoration-none"
-                           title="{{ 'Flux sortant vers' if sens == 'sortant' else 'Flux entrant depuis' }} {{ autre.name }}">{{ autre.name }}</a>
+                           title="{{ FLUX_TITRE[sens] }} {{ autre.name }}">{{ autre.name }}</a>
                         {% if lien.description %}<span class="flux-desc text-truncate">— {{ lien.description }}</span>{% endif %}
                     </span>
                     {% if peut_editer or peut_supprimer %}
@@ -70,8 +70,18 @@
         <form method="POST" action="{{ url_for('software.link_add', id=item.id) }}"
               class="d-flex flex-wrap align-items-center gap-2">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <select name="target_id" class="form-select form-select-sm w-auto" aria-label="Vers le logiciel" required>
-                <option value="">Vers le logiciel…</option>
+            <div class="btn-group flux-sens-choix" role="group" aria-label="Sens du flux">
+                {% for valeur, sens, libelle in [('vers', 'sortant', 'Vers le logiciel choisi'),
+                                                 ('depuis', 'entrant', 'Depuis le logiciel choisi'),
+                                                 ('double', 'double', 'Dans les deux sens')] %}
+                <input type="radio" class="btn-check" name="sens" id="fluxSens-{{ valeur }}" value="{{ valeur }}"
+                       autocomplete="off"{{ ' checked' if loop.first }}>
+                <label class="btn btn-sm btn-outline-primary" for="fluxSens-{{ valeur }}" title="{{ libelle }}"
+                       aria-label="{{ libelle }}">{{ lucide(FLUX_ICONE[sens], 14) }}</label>
+                {% endfor %}
+            </div>
+            <select name="other_id" class="form-select form-select-sm w-auto" aria-label="Logiciel" required>
+                <option value="">Logiciel…</option>
                 {% for sw in autres_logiciels %}
                 <option value="{{ sw.id }}">{{ sw.name }}</option>
                 {% endfor %}

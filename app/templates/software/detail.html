@@ -7,6 +7,7 @@
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
 {% from '_onglets.html' import barre, onglet, volets, volet %}
 {% from '_fiche.html' import entete, menu_lien, menu_post, menu_sep, carte_editeur %}
+{% from 'software/_flux_sens.html' import FLUX_ICONE, FLUX_TITRE %}
 
 {# ═══ Disposition ═══
    La fiche reprend l'organisation de SoftInventory, dont l'inventaire des
@@ -61,7 +62,7 @@
    service se lisent dans la Synthèse, les serveurs dans la carte Liaisons. #}
 
 {% set pieces = attached_documents('software', item.id) if documents_enabled else [] %}
-{% set nb_liaisons = ((sortants|length) + (entrants|length) if features.links else 0)
+{% set nb_liaisons = ((flux|length) if features.links else 0)
                       + (item.equipments|length) + (item.user_services|length) %}
 {% call barre('ficheLogiciel', modifier=url_for('software.edit', id=item.id) if current_user.can_edit('software') else None, sur_place=True) %}
     {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}
@@ -270,15 +271,12 @@
                                 </ul>
                             </div>
                             {% endif %}
-                            {% if features.links and (sortants or entrants) %}
+                            {% if features.links and flux %}
                             <div class="liaisons-groupe">
                                 <div class="liaisons-titre">Flux</div>
                                 <ul class="list-unstyled mb-0">
-                                    {% for l in sortants %}
-                                    <li class="d-flex align-items-center gap-2">{{ lucide('arrow-right', 14, 'flex-shrink-0 ico-vert') }}<a href="{{ url_for('software.detail', id=l.target.id) }}" class="text-truncate liaison-serveur" title="Flux sortant vers {{ l.target.name }}">{{ l.target.name }}</a></li>
-                                    {% endfor %}
-                                    {% for l in entrants %}
-                                    <li class="d-flex align-items-center gap-2">{{ lucide('arrow-left', 14, 'flex-shrink-0 ico-vert') }}<a href="{{ url_for('software.detail', id=l.source.id) }}" class="text-truncate liaison-serveur" title="Flux entrant depuis {{ l.source.name }}">{{ l.source.name }}</a></li>
+                                    {% for l, sens, autre in flux %}
+                                    <li class="d-flex align-items-center gap-2">{{ lucide(FLUX_ICONE[sens], 14, 'flex-shrink-0 ico-vert') }}<a href="{{ url_for('software.detail', id=autre.id) }}" class="text-truncate liaison-serveur" title="{{ FLUX_TITRE[sens] }} {{ autre.name }}">{{ autre.name }}</a></li>
                                     {% endfor %}
                                 </ul>
                             </div>

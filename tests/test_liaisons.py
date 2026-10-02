@@ -60,7 +60,7 @@ def test_le_flux_est_oriente_et_se_lit_des_deux_cotes(client):
     db.session.add_all([paie, compta])
     db.session.commit()
     client.post(f'/inventory/logiciels/{paie.id}/links/add', data={
-        'target_id': str(compta.id), 'description': 'export paie mensuel'},
+        'other_id': str(compta.id), 'description': 'export paie mensuel'},
         follow_redirects=True)
 
     lien = SoftwareLink.query.one()
@@ -73,12 +73,67 @@ def test_le_flux_est_oriente_et_se_lit_des_deux_cotes(client):
     assert 'depuis' in html and 'Paie' in html
 
 
+def test_un_flux_depuis_l_autre_logiciel_l_a_pour_source(client):
+    """Déclaré depuis la comptabilité, « depuis la paie » : la ligne est la
+    même que si on l'avait saisie sur la fiche de la paie."""
+    paie = Software(name='Paie')
+    compta = Software(name='Comptabilité')
+    db.session.add_all([paie, compta])
+    db.session.commit()
+    r = client.post(f'/inventory/logiciels/{compta.id}/links/add', data={
+        'other_id': str(paie.id), 'sens': 'depuis'})
+    assert r.headers['Location'].endswith(f'/inventory/logiciels/{compta.id}')
+    lien = SoftwareLink.query.one()
+    assert (lien.source_id, lien.target_id) == (paie.id, compta.id)
+    assert not lien.bidirectional
+    assert lien.sens_depuis(compta.id) == ('entrant', paie)
+    assert lien.sens_depuis(paie.id) == ('sortant', compta)
+
+
+def test_un_flux_a_double_sens_se_lit_double_des_deux_cotes(client):
+    a = Software(name='GED')
+    b = Software(name='Parapheur')
+    db.session.add_all([a, b])
+    db.session.commit()
+    client.post(f'/inventory/logiciels/{a.id}/links/add', data={
+        'other_id': str(b.id), 'sens': 'double', 'description': 'synchro'})
+    lien = SoftwareLink.query.one()
+    assert lien.bidirectional
+    assert lien.sens_depuis(a.id) == ('double', b)
+    assert lien.sens_depuis(b.id) == ('double', a)
+    html = client.get(f'/inventory/logiciels/{b.id}').get_data(as_text=True)
+    assert 'double sens avec GED' in html
+
+    # Il couvre les deux sens : ni l'un ni l'autre ne se redéclare.
+    for depuis, autre, sens in [(a, b, 'vers'), (b, a, 'vers'), (b, a, 'double')]:
+        client.post(f'/inventory/logiciels/{depuis.id}/links/add',
+                    data={'other_id': str(autre.id), 'sens': sens})
+    assert SoftwareLink.query.count() == 1
+
+
+def test_le_double_sens_ne_double_pas_un_flux_a_sens_unique(client):
+    """L'export et son retour sont deux flux ; un double sens par-dessus
+    ferait doublon avec eux."""
+    a = Software(name='A')
+    b = Software(name='B')
+    db.session.add_all([a, b])
+    db.session.commit()
+    client.post(f'/inventory/logiciels/{a.id}/links/add', data={'other_id': str(b.id)})
+    client.post(f'/inventory/logiciels/{a.id}/links/add',
+                data={'other_id': str(b.id), 'sens': 'depuis'})
+    assert SoftwareLink.query.count() == 2
+    r = client.post(f'/inventory/logiciels/{a.id}/links/add',
+                    data={'other_id': str(b.id), 'sens': 'double'}, follow_redirects=True)
+    assert 'sens unique' in r.get_data(as_text=True)
+    assert SoftwareLink.query.count() == 2
+
+
 def test_un_logiciel_ne_s_alimente_pas_lui_meme(client):
     sw = Software(name='GED')
     db.session.add(sw)
     db.session.commit()
     r = client.post(f'/inventory/logiciels/{sw.id}/links/add',
-                    data={'target_id': str(sw.id)}, follow_redirects=True)
+                    data={'other_id': str(sw.id)}, follow_redirects=True)
     assert 'lui-m' in r.get_data(as_text=True)
     assert SoftwareLink.query.count() == 0
 
@@ -90,7 +145,7 @@ def test_le_meme_flux_deux_fois_est_refuse(client):
     db.session.commit()
     for _ in range(2):
         client.post(f'/inventory/logiciels/{a.id}/links/add',
-                    data={'target_id': str(b.id)}, follow_redirects=True)
+                    data={'other_id': str(b.id)}, follow_redirects=True)
     assert SoftwareLink.query.count() == 1
 
 
@@ -100,7 +155,7 @@ def test_le_flux_se_retire_depuis_les_deux_fiches(client):
     db.session.add_all([a, b])
     db.session.commit()
     client.post(f'/inventory/logiciels/{a.id}/links/add',
-                data={'target_id': str(b.id)}, follow_redirects=True)
+                data={'other_id': str(b.id)}, follow_redirects=True)
     lien = SoftwareLink.query.one()
     # Retiré depuis la fiche destinataire : on y revient, pas sur la source.
     r = client.post(f'/inventory/logiciels/links/{lien.id}/delete',

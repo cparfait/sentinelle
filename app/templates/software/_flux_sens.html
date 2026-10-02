@@ -1,0 +1,6 @@
+{# Le sens d'un flux vu d'une fiche (SoftwareLink.sens_depuis) : sa flèche et
+   ce qu'elle veut dire. Partagé par l'onglet Liaisons et le rail de la fiche,
+   et par le sélecteur de sens du formulaire d'ajout. #}
+{% set FLUX_ICONE = {'sortant': 'arrow-right', 'entrant': 'arrow-left', 'double': 'arrow-right-left'} %}
+{% set FLUX_TITRE = {'sortant': 'Flux sortant vers', 'entrant': 'Flux entrant depuis',
+                     'double': 'Flux à double sens avec'} %}

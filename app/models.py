@@ -1470,11 +1470,18 @@ class SoftwareLink(db.Model):
     Le sens compte -- savoir que la paie alimente la comptabilite, et non
     l'inverse, est tout l'interet de la ligne. La fiche d'un logiciel montre
     donc les DEUX sens, en les distinguant.
+
+    `bidirectional` : l'echange va dans les deux sens (une synchronisation, un
+    aller-retour). UNE ligne et non deux : sa description vaut pour l'echange
+    entier, et la retirer d'une fiche la retire de l'autre. Source et cible ne
+    disent alors que qui l'a declare.
     """
     id = db.Column(db.Integer, primary_key=True)
     source_id = db.Column(db.Integer, db.ForeignKey('software.id'), nullable=False, index=True)
     target_id = db.Column(db.Integer, db.ForeignKey('software.id'), nullable=False, index=True)
     description = db.Column(db.String(256))
+    # NULL sur les flux d'avant la colonne : a sens unique, comme alors.
+    bidirectional = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     source = db.relationship('Software', foreign_keys=[source_id],
@@ -1485,6 +1492,14 @@ class SoftwareLink(db.Model):
                                                 cascade='all, delete-orphan'))
     # Le meme flux deux fois n'apprend rien a personne.
     __table_args__ = (db.UniqueConstraint('source_id', 'target_id', name='uq_link_source_target'),)
+
+    def sens_depuis(self, software_id):
+        """Le flux vu de la fiche `software_id` : 'sortant', 'entrant' ou
+        'double' -- et le logiciel d'en face."""
+        autre = self.target if self.source_id == software_id else self.source
+        if self.bidirectional:
+            return 'double', autre
+        return ('sortant' if self.source_id == software_id else 'entrant'), autre
 
 
 class SoftwareShare(db.Model):
