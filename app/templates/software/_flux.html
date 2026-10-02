@@ -70,15 +70,25 @@
         <form method="POST" action="{{ url_for('software.link_add', id=item.id) }}"
               class="d-flex flex-wrap align-items-center gap-2">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="btn-group flux-sens-choix" role="group" aria-label="Sens du flux">
-                {% for valeur, sens, libelle in [('vers', 'sortant', 'Vers le logiciel choisi'),
-                                                 ('depuis', 'entrant', 'Depuis le logiciel choisi'),
-                                                 ('double', 'double', 'Dans les deux sens')] %}
-                <input type="radio" class="btn-check" name="sens" id="fluxSens-{{ valeur }}" value="{{ valeur }}"
-                       autocomplete="off"{{ ' checked' if loop.first }}>
-                <label class="btn btn-sm btn-outline-primary" for="fluxSens-{{ valeur }}" title="{{ libelle }}"
-                       aria-label="{{ libelle }}">{{ lucide(FLUX_ICONE[sens], 14) }}</label>
-                {% endfor %}
+            {# Une liste déroulante et non un <select> : celui-ci ne sait pas
+               afficher les flèches. Le bouton montre le sens retenu, le champ
+               caché le transmet. #}
+            {% set choix_sens = [('vers', 'sortant', 'Vers'), ('depuis', 'entrant', 'Depuis'),
+                                 ('double', 'double', 'Double sens')] %}
+            <div class="dropdown flux-sens-choix">
+                <input type="hidden" name="sens" value="vers">
+                <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle"
+                        data-bs-toggle="dropdown" aria-expanded="false"
+                        title="Sens du flux : Vers" aria-label="Sens du flux : Vers">
+                    <span class="js-sens-icone">{{ lucide(FLUX_ICONE['sortant'], 14) }}</span>
+                </button>
+                <ul class="dropdown-menu">
+                    {% for valeur, sens, libelle in choix_sens %}
+                    <li><button type="button" class="dropdown-item d-flex align-items-center gap-2{{ ' active' if loop.first }}"
+                                data-sens="{{ valeur }}" data-libelle="{{ libelle }}">
+                        {{ lucide(FLUX_ICONE[sens], 14) }}{{ libelle }}</button></li>
+                    {% endfor %}
+                </ul>
             </div>
             <select name="other_id" class="form-select form-select-sm w-auto" aria-label="Logiciel" required>
                 <option value="">Logiciel…</option>
@@ -90,6 +100,24 @@
                    placeholder="Description du flux (ex : export paie mensuel)">
             <button type="submit" class="btn btn-sm btn-outline-secondary">{{ lucide('plus', 14, 'me-1') }}Ajouter</button>
         </form>
+        <script>
+        // Le sens choisi dans la liste passe au champ caché et au bouton.
+        document.addEventListener('click', function (e) {
+            var item = e.target.closest('.flux-sens-choix [data-sens]');
+            if (!item) return;
+            var boite = item.closest('.flux-sens-choix');
+            var bouton = boite.querySelector('[data-bs-toggle="dropdown"]');
+            var libelle = 'Sens du flux : ' + item.dataset.libelle;
+            boite.querySelector('input[name="sens"]').value = item.dataset.sens;
+            boite.querySelector('.js-sens-icone').innerHTML = item.querySelector('svg').outerHTML;
+            bouton.title = libelle;
+            bouton.setAttribute('aria-label', libelle);
+            boite.querySelectorAll('[data-sens]').forEach(function (i) {
+                i.classList.toggle('active', i === item);
+            });
+            bouton.focus();
+        });
+        </script>
         {% endif %}
     </div>
 </div>
