@@ -14,7 +14,7 @@
         {%- if item.internal_dev %}Développement interne
         {%- elif item.supplier %}<a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}">{{ item.supplier.name }}</a>{% endif -%}
         {% endcall %}
-        {% call lu_bloc("URL de l'application") %}{% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener" class="text-truncate d-block">{{ item.url }}</a>{% endif %}{% endcall %}
+        {% call lu_bloc("URL application") %}{% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener" class="text-truncate d-block">{{ item.url }}</a>{% endif %}{% endcall %}
     {% endcall %}
 
     {# Rangée 2 — où il en est, ce qu'il pèse, qui en répond côté métier. #}
