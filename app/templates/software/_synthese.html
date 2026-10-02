@@ -48,7 +48,7 @@
         {% if item.auth_mode_label() %}{{ item.auth_mode_label() }}{% else %}<span class="badge-status badge-warning">Non renseignée</span>{% endif %}
         {% if item.auth_strong %}<span class="badge bg-success-subtle text-success ms-1">2FA</span>{% endif %}
         {% endcall %}
-        {{ lu('Date de mise en service', item.service_date.strftime('%d/%m/%Y') if item.service_date else None) }}
+        {{ lu('Mise en service', item.service_date.strftime('%d/%m/%Y') if item.service_date else None) }}
         {{ lu('Référent technique', item.tech_responsible) }}
     {% endcall %}
     {% call rangee() %}
