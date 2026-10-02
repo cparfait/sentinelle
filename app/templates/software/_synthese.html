@@ -5,7 +5,7 @@
    L'ancienne synthèse (detail.html) revient avec SOFTWARE_FORM_LEGACY. #}
 {% from '_synthese.html' import rubrique, rangee, lu, lu_bloc %}
 {% from '_icones.html' import icone as ico_bi %}
-<div class="data-card mb-3 synthese synthese--cases" style="--lu-intitule: 130px">
+<div class="data-card mb-3 synthese synthese--cases" style="--lu-intitule: 110px">
     {% call rubrique('Identité', 'info', 'indigo') %}
     {# Rangée 1 — ce qu'est le logiciel, qui l'édite, où il s'ouvre. #}
     {% call rangee() %}
@@ -67,7 +67,7 @@
     {% if features.gdpr %}
     {% call rubrique('RGPD', 'bi-shield-lock', 'rose', onglet='rgpd') %}
     {% call rangee() %}
-        {{ lu('Données personnelles', 'Traitées' if item.gdpr_personal_data else 'Aucune donnée personnelle', pleine=not item.gdpr_personal_data) }}
+        {{ lu('Données RGPD', 'Traitées' if item.gdpr_personal_data else 'Aucune donnée personnelle', pleine=not item.gdpr_personal_data) }}
         {% if item.gdpr_personal_data %}
         {{ lu('Catégorie', item.gdpr_categories) }}
         {{ lu('Réf. registre', item.gdpr_registry_ref) }}
