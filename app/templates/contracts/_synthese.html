@@ -4,7 +4,7 @@
    et les « Éléments couverts » en pastilles, liens vers leurs fiches.
    L'ancienne synthèse (detail.html) revient avec CONTRACT_FORM_LEGACY. #}
 {% from '_synthese.html' import rubrique, rangee, lu, lu_bloc, euros, pastille %}
-<div class="data-card mb-3 synthese">
+<div class="data-card mb-3 synthese synthese--cases">
     {# Le titre de la rubrique EST la nature de l'acte (contrat, marché…) :
        « Contrat » en titre puis « Nature : Contrat » dessous se répétaient. #}
     {% call rubrique(contract.nature_label() or 'Contrat', 'bi-file-earmark-text', 'amber') %}
