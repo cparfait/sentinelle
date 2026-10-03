@@ -1,0 +1,26 @@
+{# ═══ La Synthèse d'un test récurrent ═══
+   Les rubriques de la fiche dans UNE carte (_synthese.html), comme la Synthèse
+   d'un contrat : le test (type, rythme, dernier résultat) puis sa procédure. #}
+{% from '_synthese.html' import rubrique, rangee, lu %}
+<div class="data-card mb-3 synthese synthese--cases">
+    {% call rubrique('Test', 'bi-clipboard-check', 'emerald') %}
+    {% call rangee() %}
+        {{ lu('Type', type_label) }}
+        {{ lu('Fréquence', ('Tous les %d jours' % test.frequency_days) if test.frequency_days else None) }}
+        {{ lu('Priorité', priority_label(test.priority)) }}
+    {% endcall %}
+    {% call rangee() %}
+        {{ lu('Exécuté le', test.last_performed.strftime('%d/%m/%Y') if test.last_performed else None, titre='Dernière exécution', facultatif=True) }}
+        {{ lu('Échéance', test.next_due.strftime('%d/%m/%Y') if test.next_due else None, titre='Prochaine échéance') }}
+    {% endcall %}
+    {% call rangee() %}
+        {{ lu('Résultat du dernier test', test.result, large=True, facultatif=True) }}
+    {% endcall %}
+    {% endcall %}
+
+    {% call rubrique('Procédure', 'bi-journal-text', 'slate') %}
+    {% call rangee() %}
+        {{ lu('Procédure', test.description, large=True) }}
+    {% endcall %}
+    {% endcall %}
+</div>

@@ -27,46 +27,40 @@
     {% endcall %}
 </div>
 
-{% call barre('ficheUpdate', modifier=url_for('updates.edit', id=update.id) if peut_editer else None) %}
-    {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+{% call barre('ficheUpdate', modifier=url_for('updates.edit', id=update.id) if peut_editer else None, sur_place=True) %}
+    {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}
+    {% if peut_editer %}{{ onglet('details', 'Détails', 'bi-pencil-square') }}{% endif %}
     {{ onglet('historique', 'Historique', 'bi-clock-history', compteur=histories|length) }}
 {% endcall %}
 
 {% call volets() %}
     {% call volet('detail', actif=True) %}
     <div class="row g-3">
-        <div class="col-lg-8">
-        <div class="data-card p-3 mb-3">
-            <div class="fiche-sections">
-                <div class="fiche-bloc">
-                    {{ titre_section('La mise à jour', 'bi-arrow-up-circle', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {{ champ('Type', type_labels.get(update.system_type, update.system_type)) }}
-                        {% call champ_bloc('Réalisée par') %}
-                        {%- if update.updated_by %}{{ update.updated_by }} <span class="text-muted">({{ 'prestataire' if update.updater_type == 'prestataire' else 'interne' }})</span>{% endif -%}
-                        {% endcall %}
-                        {{ champ('Priorité', priority_label(update.priority)) }}
-                    </div>
-                </div>
-                <div class="fiche-bloc">
-                    {{ titre_section('Notes', 'bi-journal-text', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% call champ_bloc('Description', large=True) %}{{ update.description or '' }}{% endcall %}
-                    </div>
-                </div>
-            </div>
+        <div class="col-lg-9">
+        {% include 'updates/_synthese.html' %}
         </div>
-        </div>
-        <div class="col-lg-4">
-            {% call lie() %}
-                {% if update.software %}{{ lien(url_for('software.detail', id=update.software.id), 'bi-window-stack', update.software.name, 'Logiciel concerné' ~ (' · v' ~ update.software.version if update.software.version else '')) }}{% endif %}
-                {% if update.equipment %}{{ lien(url_for('inventory.detail', id=update.equipment.id), update.equipment.kind_icon(), update.equipment.name, 'Équipement concerné · ' ~ update.equipment.kind_label()) }}{% endif %}
-            {% endcall %}
+        <div class="col-lg-3">
+            {# Le logiciel et l'équipement concernés se lisent dans la rubrique
+               « Concerne » de la Synthèse. #}
             {{ activite(histories) }}
             {% with entity_type='update', entity_id=update.id %}{% include '_snooze_card.html' %}{% endwith %}
         </div>
     </div>
     {% endcall %}
+
+    {# ═══ Détails ═══
+       Le formulaire de modification, sur place : le même que la page
+       Modifier. Enregistrer ramène sur cet onglet (onglets.js emporte l'ancre),
+       Annuler recharge la fiche et oublie la saisie. #}
+    {% if peut_editer %}
+    {% call volet('details') %}
+        {% set retour = url_for('updates.detail', id=update.id) ~ '#details' %}
+        {% set action_form = url_for('updates.edit', id=update.id) %}
+        <fieldset class="edition-verrou" data-edition-verrou disabled>
+        <div class="data-card p-4">{% include 'updates/_form_corps.html' %}</div>
+        </fieldset>
+    {% endcall %}
+    {% endif %}
 
     {% call volet('historique') %}{{ historique(histories) }}{% endcall %}
 {% endcall %}

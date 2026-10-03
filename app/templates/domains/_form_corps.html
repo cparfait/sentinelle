@@ -1,0 +1,96 @@
+{# ═══ Le formulaire d'un domaine ═══
+   Partagé par la page de modification (form.html) et l'onglet Détails de la
+   fiche (detail.html). Contexte attendu : celui de la route edit, `retour`
+   (où mène « Annuler ») et, facultatif, `action_form` : l'adresse d'envoi
+   quand la page qui l'affiche n'est pas la sienne. #}
+{% from '_icones.html' import icone as ico_bi %}
+{% from '_form_section.html' import section %}
+{% from '_quick_add.html' import qa_button, qa_modal_supplier %}
+{% from '_formulaire.html' import pied_form %}
+
+<form method="POST" id="form-principal" class="formulaire" data-edition-visible{% if action_form %} action="{{ action_form }}"{% endif %}>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% call section('Identité', 'bi-globe', 'indigo') %}
+    <div class="row">
+        <div class="col-md-8 mb-3">
+            <label class="form-label fw-medium">Nom de domaine *</label>
+            <div class="input-group">
+                <input type="text" name="name" id="domainInput" class="form-control"
+                       value="{{ domain.name if domain else '' }}" required
+                       placeholder="votredomaine.fr">
+                <button type="button" class="btn btn-outline-primary" id="checkRdapBtn"
+                        title="Lire l'expiration via RDAP">
+                    {{ ico_bi('bi-globe', '1em') }} Vérifier
+                </button>
+            </div>
+            <small id="checkRdapMsg" class="d-block mt-1"></small>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label class="form-label fw-medium">Priorite</label>
+            <select name="priority" class="form-select">
+                <option value="low" {{ 'selected' if domain and domain.priority == 'low' }}>Basse</option>
+                <option value="medium" {{ 'selected' if not domain or domain.priority == 'medium' }}>Moyenne</option>
+                <option value="high" {{ 'selected' if domain and domain.priority == 'high' }}>Haute</option>
+            </select>
+        </div>
+    </div>
+    {% endcall %}
+
+    {% call section('Échéance', 'bi-calendar-event', 'emerald') %}
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label class="form-label fw-medium">Registrar</label>
+            <input type="text" name="registrar" class="form-control"
+                   value="{{ domain.registrar if domain and domain.registrar else '' }}"
+                   placeholder="OVH, Gandi, AFNIC...">
+            <small class="text-muted">Nom relevé au registre (RDAP).</small>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label class="form-label fw-medium">Fiche fournisseur</label>
+            <div class="input-group">
+                <select name="registrar_id" id="registrarSupplier" class="form-select">
+                    <option value="">— d'après le nom, ou aucune —</option>
+                    {% for s in suppliers %}
+                    <option value="{{ s.id }}" {{ 'selected' if domain and domain.registrar_id == s.id }}>{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+                {% if current_user.can_edit('suppliers') %}{{ qa_button('qaModalSupplier', 'registrarSupplier', 'Ajouter un fournisseur') }}{% endif %}
+            </div>
+            <small class="text-muted">Contacts et contrats du bureau d'enregistrement.</small>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label class="form-label fw-medium">Date d'expiration</label>
+            <input type="date" name="expiry_date" class="form-control"
+                   value="{{ domain.expiry_date.strftime('%Y-%m-%d') if domain and domain.expiry_date else '' }}">
+        </div>
+    </div>
+    <div class="mb-3">
+        <div class="form-check form-switch">
+            <input type="checkbox" name="auto_renew" class="form-check-input" id="autoRenew"
+                   {{ 'checked' if domain and domain.auto_renew }}>
+            <label class="form-check-label" for="autoRenew">Renouvellement automatique chez le registrar</label>
+        </div>
+    </div>
+    {% endcall %}
+
+    {% call section('Notes', 'bi-journal-text', 'slate') %}
+    {% endcall %}
+
+    <div class="mb-3">
+        <label class="form-label fw-medium">Description / Notes</label>
+        <textarea name="description" class="form-control" rows="3"
+                  placeholder="Usage, contacts...">{{ domain.description if domain and domain.description else '' }}</textarea>
+    </div>
+    {{ pied_form(retour, 'Enregistrer' if domain else 'Ajouter') }}
+</form>
+
+{% if current_user.can_edit('suppliers') %}{{ qa_modal_supplier() }}{% endif %}
+<script src="{{ url_for('static', filename='js/lookup_fill.js') }}"></script>
+<script>
+initLookupFill({
+    btnId: 'checkRdapBtn', msgId: 'checkRdapMsg', inputId: 'domainInput',
+    url: "{{ url_for('domains.check_rdap_domain') }}", secondField: 'registrar',
+    loadingText: 'Interrogation RDAP en cours…',
+    successPrefix: 'Lu via RDAP : expire le'
+});
+</script>

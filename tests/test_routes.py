@@ -166,7 +166,11 @@ def test_fiche_equipement_sections_par_type(client):
     db.session.commit()
 
     def fiche(e):
-        return client.get(f'/inventory/{e.id}').get_data(as_text=True)
+        # La Synthèse seule : l'onglet Détails porte le formulaire, dont les
+        # rubriques sont toutes dans la page (le navigateur cache celles qui ne
+        # concernent pas la nature choisie).
+        html = client.get(f'/inventory/{e.id}').get_data(as_text=True)
+        return html.split('id="vol-detail"', 1)[1].split('id="vol-details"', 1)[0]
 
     b = fiche(vm)
     assert 'Hyperviseur' in b and 'Adresse IP' in b and 'Continuité' in b
@@ -181,7 +185,7 @@ def test_fiche_equipement_sections_par_type(client):
 
     b = fiche(nas)
     assert 'Protocoles' in b and 'N° de série' in b and 'Adresse IP' in b
-    assert 'Usage / données stockées' in b
+    assert 'Usage / données' in b
 
     # Une baie de stockage se décrit comme un NAS et s'achète comme un serveur.
     b = fiche(baie)

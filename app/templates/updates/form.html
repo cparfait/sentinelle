@@ -1,141 +1,18 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Modifier' if update else 'Ajouter' }} une mise à jour - Sentinelle{% endblock %}
-{% from '_form_section.html' import section %}
 
 {% block content %}
-{% from '_formulaire.html' import entete_form, pied_form %}
+{% from '_formulaire.html' import entete_form %}
 {% set titre_form %}{{ 'Modifier' if update else 'Ajouter' }} — Mises à jour{% endset %}
-{{ entete_form(titre_form, (url_for('updates.detail', id=update.id) if update else url_for('updates.list'))) }}
+{% set retour = url_for('updates.detail', id=update.id) if update else url_for('updates.list') %}
+{{ entete_form(titre_form, retour) }}
 
 <div class="form-page">
     <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
     <div class="form-corps">
         <div class="data-card p-4">
-            <form method="POST" id="form-principal" class="formulaire">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                {% call section('Identité', 'bi-arrow-up-circle', 'indigo') %}
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-medium">Type</label>
-                        <select name="system_type" id="systemType" class="form-select">
-                            {% for val, lbl in type_choices %}
-                            <option value="{{ val }}" {{ 'selected' if update and update.system_type == val }}>{{ lbl }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-medium">Depuis le catalogue</label>
-                        <select id="assetPicker" class="form-select">
-                            <option value="">— Sélectionner —</option>
-                            {% for a in assets %}
-                            <option value="{{ a.name }}" data-type="{{ a.asset_type }}">{{ a.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <small class="text-muted">Matériel : inventaire — Application : logiciels métiers.</small>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-medium">Nom *</label>
-                        <input type="text" name="name" id="assetName" class="form-control" required
-                               value="{{ update.name if update else '' }}" placeholder="ou saisie libre">
-                    </div>
-                </div>
-                {% endcall %}
-
-                {% call section('Versions', 'bi-tags', 'sky') %}
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-medium">Version actuelle</label>
-                        <input type="text" name="current_version" class="form-control"
-                               value="{{ update.current_version if update and update.current_version else '' }}" placeholder="ex: 1.2.3">
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-medium">Dernière version disponible</label>
-                        <input type="text" name="latest_version" class="form-control"
-                               value="{{ update.latest_version if update and update.latest_version else '' }}" placeholder="ex: 1.3.0">
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-medium">Dernière mise à jour</label>
-                        <input type="date" name="last_update" class="form-control"
-                               value="{{ update.last_update.strftime('%Y-%m-%d') if update and update.last_update else '' }}">
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-medium">Statut *</label>
-                        <select name="status" class="form-select">
-                            {% for val, lbl in status_choices %}
-                            <option value="{{ val }}" {{ 'selected' if update and update.status == val }}>{{ lbl }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-medium">Priorité</label>
-                        <select name="priority" class="form-select">
-                            <option value="low" {{ 'selected' if update and update.priority == 'low' }}>Basse</option>
-                            <option value="medium" {{ 'selected' if not update or update.priority == 'medium' }}>Moyenne</option>
-                            <option value="high" {{ 'selected' if update and update.priority == 'high' }}>Haute</option>
-                        </select>
-                    </div>
-                </div>
-                {% endcall %}
-
-                {% call section('Qui a fait la mise à jour', 'bi-person-gear', 'violet') %}
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-medium">Réalisée par</label>
-                        <select name="updater_type" class="form-select">
-                            <option value="interne" {{ 'selected' if not update or update.updater_type == 'interne' }}>Interne</option>
-                            <option value="prestataire" {{ 'selected' if update and update.updater_type == 'prestataire' }}>Prestataire</option>
-                        </select>
-                    </div>
-                    <div class="col-md-8 mb-3">
-                        <label class="form-label fw-medium">Nom de la personne</label>
-                        <input type="text" name="updated_by" class="form-control"
-                               value="{{ update.updated_by if update and update.updated_by else '' }}"
-                               placeholder="ex: Jean Dupont (DSI) ou Société XYZ">
-                    </div>
-                </div>
-                {% endcall %}
-
-                {% call section('Équipement concerné', 'bi-hdd-stack', 'teal') %}
-                <div class="mb-3">
-                    {% with selected_id = update.equipment_id if update else none %}
-                    {% include '_equipment_select.html' %}
-                    {% endwith %}
-                </div>
-                {% endcall %}
-
-                {% call section('Notes', 'bi-journal-text', 'slate') %}
-                {% endcall %}
-
-                <div class="mb-3">
-                    <label class="form-label fw-medium">Description / notes</label>
-                    <textarea name="description" class="form-control" rows="3"
-                              placeholder="Notes de version, criticité, dépendances...">{{ update.description if update and update.description else '' }}</textarea>
-                </div>
-                {{ pied_form((url_for('updates.detail', id=update.id) if update else url_for('updates.list')), 'Enregistrer' if update else 'Ajouter') }}
-            </form>
+            {% include 'updates/_form_corps.html' %}
         </div>
     </div>
 </div>
-
-<script>
-(function () {
-    var typeSel = document.getElementById('systemType');
-    var picker = document.getElementById('assetPicker');
-    var nameInput = document.getElementById('assetName');
-    if (!typeSel || !picker || !nameInput) return;
-    function filterPicker() {
-        var want = typeSel.value;
-        Array.prototype.forEach.call(picker.options, function (o) {
-            if (!o.value) { o.hidden = false; return; }
-            o.hidden = (o.dataset.type !== want);
-        });
-        if (picker.selectedOptions[0] && picker.selectedOptions[0].hidden) picker.value = '';
-    }
-    picker.addEventListener('change', function () { if (picker.value) nameInput.value = picker.value; });
-    typeSel.addEventListener('change', filterPicker);
-    filterPicker();
-})();
-</script>
 {% endblock %}

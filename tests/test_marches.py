@@ -436,7 +436,7 @@ def test_la_synthese_d_un_contrat_suit_l_interrupteur_du_formulaire(client, app)
     db.session.commit()
 
     html = client.get(f'/contracts/{ct.id}').get_data(as_text=True)
-    assert 'class="data-card mb-3 synthese"' in html
+    assert 'class="data-card mb-3 synthese synthese--cases"' in html
     assert 'Éléments couverts' in html and 'kind-icon--nas' in html and 'kind-icon--software' in html
     assert '1 234,50 €' in html and '2 fois' in html
     assert 'Couvre' not in html and 'fiche-sections' not in html

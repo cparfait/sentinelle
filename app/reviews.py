@@ -69,7 +69,8 @@ def create():
 def detail(id):
     review = AccessReview.query.get_or_404(id)
     histories = review.histories.order_by(ReviewHistory.performed_at.desc()).all()
-    return render_template('reviews/detail.html', review=review, histories=histories)
+    return render_template('reviews/detail.html', review=review, histories=histories,
+                           assets=_app_assets())
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])

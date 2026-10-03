@@ -191,10 +191,10 @@ def test_la_fiche_porte_les_couleurs_du_formulaire(client):
     formulaire = client.get(f'/inventory/{e.id}/edit').get_data(as_text=True)
     couleurs_fiche = re.findall(r'fiche-titre--(\w+)', fiche)
     assert len(couleurs_fiche) >= 4, couleurs_fiche
-    # La couleur est portee par le BLOC, pas seulement par le titre : un simple
-    # trait d'accent ne decoupe pas une fiche de trente champs, l'oeil n'y voit
-    # qu'une suite d'intitules. Il faut le bandeau et la bordure.
-    blocs = re.findall(r'fiche-bloc fiche-bloc--(\w+)', fiche)
+    # La couleur est portee par l'EN-TETE de la rubrique (la Synthese,
+    # _synthese.html), pas seulement par un trait : un simple accent ne decoupe
+    # pas une fiche de trente champs, l'oeil n'y voit qu'une suite d'intitules.
+    blocs = re.findall(r'card-header-custom[^>]*>\s*<h6 class="fw-bold fiche-titre fiche-titre--(\w+)', fiche)
     assert len(blocs) >= 4, blocs
 
     # Le meme titre porte la meme couleur des deux cotes. On ne compare que les
@@ -225,8 +225,8 @@ def test_la_fiche_ne_delaye_plus_ses_champs(client):
     largeur : plusieurs centimètres de vide entre « Type » et « Serveur
     physique », et une section d'un seul champ qui occupait une demi-page.
 
-    Ils sont maintenant dans la grille dense, intitulé au-dessus de la valeur,
-    chaque section sur toute la largeur.
+    Ils sont maintenant dans la grille de la Synthèse (_synthese.html),
+    l'intitulé en face de la valeur, chaque rubrique sur toute la largeur.
     """
     e = Equipment(name='DD3300', kind='physical', ip_address='172.16.1.28',
                   manufacturer_model='DELL POWERPROTECT DD3300',
@@ -235,7 +235,7 @@ def test_la_fiche_ne_delaye_plus_ses_champs(client):
     db.session.commit()
 
     html = client.get(f'/inventory/{e.id}').get_data(as_text=True)
-    assert 'fiche-grille' in html
+    assert 'lu-rangee' in html
     assert 'table-borderless' not in html, 'un tableau de champs a survecu'
     # Les valeurs sont toujours la — une refonte de gabarit fait disparaitre en
     # silence, elle ne casse pas la page.

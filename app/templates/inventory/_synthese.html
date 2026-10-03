@@ -1,0 +1,125 @@
+{# ═══ La Synthèse d'un équipement ═══
+   Les rubriques de la fiche dans UNE carte (_synthese.html), comme la Synthèse
+   d'un logiciel. Les couleurs sont celles du formulaire d'équipement, rubrique
+   par rubrique : le matériel est ambre des deux côtés, le réseau turquoise, la
+   continuité verte. Un champ vide rejoint la ligne « À compléter » de sa
+   rubrique au lieu de laisser un tiret. #}
+{% from '_synthese.html' import rubrique, rangee, lu, lu_bloc %}
+{% from '_icones.html' import icone as ico_bi %}
+<div class="data-card mb-3 synthese synthese--cases" style="--lu-intitule: 110px">
+    {% call rubrique('Général', 'bi-info-circle', 'indigo') %}
+    {% call rangee() %}
+        {{ lu('Type', item.kind_label()) }}
+        {{ lu('Environnement', item.env_label()) }}
+        {{ lu('Rôle principal', item.role_principal) }}
+    {% endcall %}
+    {% call rangee() %}
+        {{ lu('Logiciels métiers', item.software_list.all()|map(attribute='name')|join(', '), pleine=True) }}
+        {% if item.porte('services') %}{{ lu('Services', item.user_services, pleine=True, titre='Services utilisateurs') }}{% endif %}
+        {% if item.porte('usage') %}{{ lu('Usage / données', item.usage, pleine=True, titre='Usage / données stockées') }}{% endif %}
+    {% endcall %}
+    {% endcall %}
+
+    {% call rubrique('Système', 'bi-cpu', 'sky') %}
+    {% call rangee() %}
+        {{ lu('OS', ((item.os or '') ~ (' ' ~ item.os_version if item.os_version else '')) | trim) }}
+        {{ lu('Dernière MAJ OS', item.os_last_update.strftime('%d/%m/%Y') if item.os_last_update else None) }}
+        {% if item.porte('supervision') %}{{ lu('Supervision', item.supervision) }}{% endif %}
+    {% endcall %}
+    {% if item.porte('virtualisation') %}
+    {% call rangee() %}
+        {% call lu_bloc('Outils', pleine=True, facultatif=True) %}
+        {%- if item.supervised %}<span class="badge-nature">{{ ico_bi('bi-check-circle-fill', '1em', 'me-1 text-success') }}Supervision</span>{% endif -%}
+        {%- if item.cyberwatch %}<span class="badge-nature">{{ ico_bi('bi-check-circle-fill', '1em', 'me-1 text-success') }}Cyberwatch</span>{% endif -%}
+        {%- if item.ninja_one %}<span class="badge-nature">{{ ico_bi('bi-check-circle-fill', '1em', 'me-1 text-success') }}Ninja One</span>{% endif -%}
+        {% endcall %}
+    {% endcall %}
+    {% endif %}
+    {% endcall %}
+
+    {% if item.porte('reseau') %}
+    {% call rubrique('Réseau', 'bi-diagram-3', 'teal') %}
+    {% call rangee() %}
+        {{ lu('Adresse IP', item.ip_address) }}
+        {% if item.porte('vlan') %}
+        {{ lu('Masque', item.netmask) }}
+        {{ lu('VLAN', item.vlan) }}
+        {% endif %}
+        {% if item.porte('ports') %}{{ lu('Nombre de ports', item.ports) }}{% endif %}
+    {% endcall %}
+    {% if item.porte('administration') %}
+    {% call rangee() %}
+        {% call lu_bloc('Administration', pleine=True, facultatif=True) %}{% if item.management_url %}<a href="{{ item.management_url }}" target="_blank" rel="noopener" class="text-truncate d-block">{{ item.management_url }}</a>{% endif %}{% endcall %}
+    {% endcall %}
+    {% endif %}
+    {% endcall %}
+    {% endif %}
+
+    {% if item.porte('virtualisation') %}
+    {% call rubrique('Hôte & ressources', 'bi-pc-display', 'violet') %}
+    {% call rangee() %}
+        {{ lu('Serveur hôte', item.host_server) }}
+        {{ lu('Hyperviseur', item.hypervisor) }}
+        {{ lu('vCPU', item.vcpu) }}
+        {{ lu('RAM (Go)', item.ram_go) }}
+        {{ lu('Stockage (Go)', [item.hdd1_go, item.hdd2_go, item.hdd3_go]|select|join(' / ')) }}
+    {% endcall %}
+    {% endcall %}
+    {% endif %}
+
+    {% if item.porte('materiel') %}
+    {% call rubrique('Matériel & garantie', 'bi-tools', 'amber') %}
+    {% call rangee() %}
+        {{ lu('Modèle', item.manufacturer_model, titre='Constructeur / Modèle') }}
+        {{ lu('N° de série', item.serial_number) }}
+        {{ lu('Service Tag', item.service_tag) }}
+    {% endcall %}
+    {% call rangee() %}
+        {{ lu('Emplacement', item.location) }}
+        {{ lu('Achat / MES', item.purchase_date.strftime('%d/%m/%Y') if item.purchase_date else None, titre='Date achat / mise en service') }}
+        {{ lu('Fin de garantie', item.warranty_end.strftime('%d/%m/%Y') if item.warranty_end else None) }}
+        {{ lu('Maintenance', item.maintenance_contract, titre='Contrat de maintenance') }}
+    {% endcall %}
+    {% endcall %}
+    {% endif %}
+
+    {% if item.porte('stockage') %}
+    {% call rubrique('Stockage', 'bi-hdd-network', 'slate') %}
+    {% call rangee() %}
+        {{ lu('Protocoles', item.protocols) }}
+        {{ lu('Capacité (To)', item.capacity_to) }}
+        {{ lu('Utilisé (To)', item.used_to) }}
+        {{ lu('RAID', item.raid) }}
+        {{ lu('Accès', item.access, titre='Accès (utilisateurs / groupes)') }}
+    {% endcall %}
+    {% endcall %}
+    {% endif %}
+
+    {# La continuité reste SUR la Synthèse : c'est elle qui dit si la machine
+       est sauvegardée, donc ce qui décide de sa couleur de statut. La reléguer
+       ailleurs cacherait la réponse à la question qu'on se pose en ouvrant la
+       fiche. #}
+    {% call rubrique('Continuité', 'bi-shield-check', 'emerald') %}
+    {% call rangee() %}
+        {{ lu('Sauvegarde 1', ((item.backup1 or '') ~ (' (' ~ item.backup1_freq ~ ')' if item.backup1_freq else '')) | trim) }}
+        {% if item.porte('virtualisation') %}
+        {{ lu('Sauvegarde 2', ((item.backup2 or '') ~ (' (' ~ item.backup2_freq ~ ')' if item.backup2_freq else '')) | trim) }}
+        {% endif %}
+        {% if item.porte('pra') %}{{ lu('PRA / PCA', item.pra_pca) }}{% endif %}
+    {% endcall %}
+    {% if not item.backup1 and not item.backup2 %}
+    <span class="lu-vide text-danger small">{{ ico_bi('bi-exclamation-triangle', '1em', 'me-1') }}Aucune sauvegarde renseignée.</span>
+    {% endif %}
+    {% endcall %}
+
+    {% call rubrique('Notes', 'bi-journal-text', 'slate') %}
+    {% call rangee() %}
+        {{ lu('Observations', item.observations, large=True) }}
+    {% endcall %}
+    {% endcall %}
+
+    <div class="px-3 py-2 border-top small text-muted">
+        {% if item.created_at %}Créé le {{ item.created_at.strftime('%d/%m/%Y') }}{% endif %}
+        {% if item.updated_at %} · dernière modification le {{ item.updated_at.strftime('%d/%m/%Y') }}{% endif %}
+    </div>
+</div>

@@ -4,50 +4,9 @@
 {% from '_macros.html' import status_badge %}
 {% set crit_colors = {1: 'secondary', 2: 'info', 3: 'warning', 4: 'danger'} %}
 
-{# Variante « seulement si renseigné » : sur la carte du fournisseur, un
-   contact vide ne dit pas qu'il n'y en a pas, il dit qu'on ne le connait pas —
-   une ligne de tirets n'apprendrait rien. #}
-{% macro row(label, value) %}
-{% if value %}
-<div class="fiche-champ">
-    <span class="fiche-label">{{ label }}</span>
-    <div class="fiche-valeur">{{ value }}</div>
-</div>
-{% endif %}
-{% endmacro %}
-
-{# Variante « toujours affichée » : la fiche montre tous les champs prévus pour
-   le type d'équipement, avec un tiret quand ils ne sont pas renseignés — un
-   blanc se lirait comme un oubli d'affichage.
-
-   L'intitulé se pose AU-DESSUS de la valeur, et non dans une colonne de 45 %
-   de la largeur : le tableau d'avant tirait plusieurs centimètres de vide entre
-   « Type » et « Serveur physique », et une section d'un seul champ occupait une
-   demi-page. #}
-{% macro champ(label, value) %}
-<div class="fiche-champ">
-    <span class="fiche-label">{{ label }}</span>
-    <div class="fiche-valeur">{{ value if value or value == 0 else '-' }}</div>
-</div>
-{% endmacro %}
-
-{# Même chose quand la valeur est du balisage (un lien). #}
-{% macro champ_bloc(label) %}
-<div class="fiche-champ">
-    <span class="fiche-label">{{ label }}</span>
-    <div class="fiche-valeur">{{ caller() }}</div>
-</div>
-{% endmacro %}
-
-{# Les couleurs sont celles du formulaire d'equipement, section par section :
-   le materiel est ambre des deux cotes, le reseau turquoise, la continuite
-   verte. Voir _fiche_section.html. #}
 {% from '_fiche_section.html' import titre_section, faits, fait, fait_bloc %}
 {% from '_onglets.html' import barre, onglet, volets, volet %}
 {% from '_fiche.html' import entete, menu_post, carte_fournisseur %}
-{% macro section(icon, title, couleur='indigo') %}
-{{ titre_section(title, icon, couleur) }}
-{% endmacro %}
 
 {% block content %}
 {% set sous_titre %}{{ item.kind_label() }}{% if item.environment %} · {{ item.env_label() }}{% endif %}{% if item.criticality %} · criticité {{ item.criticality }}{% endif %}{% if item.ip_address %} · <code>{{ item.ip_address }}</code>{% endif %}{% endset %}
@@ -59,8 +18,21 @@
 {{ entete(item.name, sous_titre, statut=item.computed_status(),
           menu=menu) }}
 
-{% call barre('ficheItem', modifier=url_for('inventory.edit', id=item.id) if current_user.can_edit('inventory') else None) %}
-    {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+{# Le bandeau de faits reste AU-DESSUS des onglets : ce qu'on vient vérifier
+   neuf fois sur dix, sans lire la Synthèse. #}
+<div class="data-card fiche-bandeau fiche-bandeau--{{ item.computed_status() }}">
+    {% call faits() %}
+        {{ fait('OS', ((item.os or '') ~ (' ' ~ item.os_version if item.os_version else '')) | trim) }}
+        {% if item.porte('reseau') %}{{ fait('Adresse IP', item.ip_address) }}{% endif %}
+        {% call fait_bloc('Sauvegarde') %}
+        {%- if item.backup1 %}{{ item.backup1 }}{% else %}<small class="text-danger">aucune</small>{% endif -%}
+        {% endcall %}
+    {% endcall %}
+</div>
+
+{% call barre('ficheItem', modifier=url_for('inventory.edit', id=item.id) if current_user.can_edit('inventory') else None, sur_place=True) %}
+    {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}
+    {% if current_user.can_edit('inventory') %}{{ onglet('details', 'Détails', 'bi-pencil-square') }}{% endif %}
     {{ onglet('elements', 'Éléments liés', 'bi-diagram-3') }}
     {{ onglet('logiciels', 'Logiciels installés', 'bi-window-stack') }}
 {% endcall %}
@@ -68,144 +40,38 @@
 {% call volets() %}
     {% call volet('detail', actif=True) %}
     <div class="row g-3">
-        {# Sans fournisseur, la colonne de droite n'a rien a montrer : la fiche
-           prend alors toute la largeur au lieu de laisser un tiers blanc. #}
-        <div class="{{ 'col-lg-8' if item.supplier else 'col-12' }}">
-        <div class="data-card p-3">
-            {% if item.status_reasons() %}
-            <div class="alert alert-warning py-2 small">
-                {{ ico_bi('bi-exclamation-triangle', '1em', 'me-1') }}
-                {{ item.status_reasons() | join(' · ') }}
-            </div>
-            {% endif %}
-
-            {% call faits() %}
-                {{ fait('OS', ((item.os or '') ~ (' ' ~ item.os_version if item.os_version else '')) | trim) }}
-                {% if item.porte('reseau') %}{{ fait('Adresse IP', item.ip_address) }}{% endif %}
-                {% call fait_bloc('Sauvegarde') %}
-                {%- if item.backup1 %}{{ item.backup1 }}{% else %}<small class="text-danger">aucune</small>{% endif -%}
-                {% endcall %}
-            {% endcall %}
-
-            <div class="fiche-sections">
-                <div class="fiche-bloc fiche-bloc--indigo">
-                    {{ section('bi-info-circle', 'Général', 'indigo') }}
-                    <div class="fiche-grille">
-                        {{ champ('Type', item.kind_label()) }}
-                        {{ champ('Environnement', item.env_label()) }}
-                        {{ champ('Rôle principal', item.role_principal) }}
-                        {{ champ('Logiciels métiers', item.software_list.all()|map(attribute='name')|join(', ')) }}
-                        {% if item.porte('services') %}{{ champ('Services utilisateurs', item.user_services) }}{% endif %}
-                        {% if item.porte('usage') %}{{ champ('Usage / données stockées', item.usage) }}{% endif %}
-                    </div>
-                </div>
-                <div class="fiche-bloc fiche-bloc--sky">
-                    {{ section('bi-cpu', 'Système', 'sky') }}
-                    <div class="fiche-grille">
-                        {{ champ('OS', ((item.os or '') ~ (' ' ~ item.os_version if item.os_version else '')) | trim) }}
-                        {{ champ('Dernière MAJ OS', item.os_last_update.strftime('%d/%m/%Y') if item.os_last_update else '') }}
-                        {% if item.porte('supervision') %}{{ champ('Supervision', item.supervision) }}{% endif %}
-                    </div>
-                    {% if item.porte('virtualisation') %}
-                    <div class="d-flex gap-3 flex-wrap small text-muted mt-1">
-                        <span>{{ ico_bi('bi-check-circle-fill' if item.supervised else 'bi-dash-circle', '1em', 'me-1 text-success' if item.supervised else 'me-1') }}Supervision</span>
-                        <span>{{ ico_bi('bi-check-circle-fill' if item.cyberwatch else 'bi-dash-circle', '1em', 'me-1 text-success' if item.cyberwatch else 'me-1') }}Cyberwatch</span>
-                        <span>{{ ico_bi('bi-check-circle-fill' if item.ninja_one else 'bi-dash-circle', '1em', 'me-1 text-success' if item.ninja_one else 'me-1') }}Ninja One</span>
-                    </div>
-                    {% endif %}
-                </div>
-                {% if item.porte('reseau') %}
-                <div class="fiche-bloc fiche-bloc--teal">
-                    {{ section('bi-diagram-3', 'Réseau', 'teal') }}
-                    <div class="fiche-grille">
-                        {{ champ('Adresse IP', item.ip_address) }}
-                        {% if item.porte('vlan') %}
-                        {{ champ('Masque', item.netmask) }}
-                        {{ champ('VLAN', item.vlan) }}
-                        {% endif %}
-                        {% if item.porte('ports') %}{{ champ('Nombre de ports', item.ports) }}{% endif %}
-                        {% if item.porte('administration') and item.management_url %}
-                        {% call champ_bloc('Administration') %}
-                        <a href="{{ item.management_url }}" target="_blank" rel="noopener">{{ item.management_url }}</a>
-                        {% endcall %}
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
-                {% if item.porte('virtualisation') %}
-                <div class="fiche-bloc fiche-bloc--violet">
-                    {{ section('bi-pc-display', 'Hôte & ressources', 'violet') }}
-                    <div class="fiche-grille">
-                        {{ champ('Serveur hôte', item.host_server) }}
-                        {{ champ('Hyperviseur', item.hypervisor) }}
-                        {{ champ('vCPU', item.vcpu) }}
-                        {{ champ('RAM (Go)', item.ram_go) }}
-                        {{ champ('Stockage (Go)', [item.hdd1_go, item.hdd2_go, item.hdd3_go]|select|join(' / ')) }}
-                    </div>
-                </div>
-                {% endif %}
-                {% if item.porte('materiel') %}
-                <div class="fiche-bloc fiche-bloc--amber">
-                    {{ section('bi-tools', 'Matériel & garantie', 'amber') }}
-                    <div class="fiche-grille">
-                        {{ champ('Constructeur / Modèle', item.manufacturer_model) }}
-                        {{ champ('N° de série', item.serial_number) }}
-                        {{ champ('Service Tag', item.service_tag) }}
-                        {{ champ('Emplacement', item.location) }}
-                        {{ champ('Date achat / MES', item.purchase_date.strftime('%d/%m/%Y') if item.purchase_date else '') }}
-                        {{ champ('Fin de garantie', item.warranty_end.strftime('%d/%m/%Y') if item.warranty_end else '') }}
-                        {{ champ('Contrat de maintenance', item.maintenance_contract) }}
-                    </div>
-                </div>
-                {% endif %}
-                {% if item.porte('stockage') %}
-                <div class="fiche-bloc fiche-bloc--slate">
-                    {{ section('bi-hdd-network', 'Stockage', 'slate') }}
-                    <div class="fiche-grille">
-                        {{ champ('Protocoles', item.protocols) }}
-                        {{ champ('Capacité (To)', item.capacity_to) }}
-                        {{ champ('Utilisé (To)', item.used_to) }}
-                        {{ champ('RAID', item.raid) }}
-                        {{ champ('Accès (utilisateurs / groupes)', item.access) }}
-                    </div>
-                </div>
-                {% endif %}
-                {# La continuite reste SUR la fiche : c'est elle qui dit si la
-                   machine est sauvegardee, donc ce qui decide de sa couleur de
-                   statut. La reléguer ailleurs cacherait la reponse a la question
-                   qu'on se pose en ouvrant la fiche. #}
-                <div class="fiche-bloc fiche-bloc--emerald">
-                    {{ titre_section('Continuité', 'bi-shield-check', 'emerald', 'mb-0') }}
-                    <div class="fiche-grille">
-                    {{ champ('Sauvegarde 1', ((item.backup1 or '') ~ (' (' ~ item.backup1_freq ~ ')' if item.backup1_freq else '')) | trim) }}
-                    {% if item.porte('virtualisation') %}
-                    {{ champ('Sauvegarde 2', ((item.backup2 or '') ~ (' (' ~ item.backup2_freq ~ ')' if item.backup2_freq else '')) | trim) }}
-                    {% endif %}
-                    {% if item.porte('pra') %}{{ champ('PRA / PCA', item.pra_pca) }}{% endif %}
-                    {% if not item.backup1 and not item.backup2 %}
-                    <div class="fiche-champ">
-                        <span class="fiche-valeur text-danger">{{ ico_bi('bi-exclamation-triangle', '1em', 'me-1') }}Aucune sauvegarde renseignée.</span>
-                    </div>
-                    {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            {% if item.observations %}
-            <div class="mt-3"><small class="text-muted d-block">Observations</small><p class="mb-0">{{ item.observations }}</p></div>
-            {% endif %}
-            <div class="mt-3 pt-2 border-top small text-muted">
-                {% if item.created_at %}Créé le {{ item.created_at.strftime('%d/%m/%Y') }}{% endif %}
-                {% if item.updated_at %} · dernière modification le {{ item.updated_at.strftime('%d/%m/%Y') }}{% endif %}
-            </div>
+        {# Sans fournisseur, la colonne de droite n'a rien a montrer : la
+           Synthèse prend alors toute la largeur au lieu de laisser un quart blanc. #}
+        <div class="{{ 'col-lg-9' if item.supplier else 'col-12' }}">
+        {% if item.status_reasons() %}
+        <div class="alert alert-warning py-2 small mb-3">
+            {{ ico_bi('bi-exclamation-triangle', '1em', 'me-1') }}
+            {{ item.status_reasons() | join(' · ') }}
         </div>
-
+        {% endif %}
+        {% include 'inventory/_synthese.html' %}
         </div>
-        <div class="col-lg-4">
+        {% if item.supplier %}
+        <div class="col-lg-3">
         {{ carte_fournisseur(item.supplier, 'Support / fournisseur') }}
         </div>
+        {% endif %}
     </div>
     {% endcall %}
+
+    {# ═══ Détails ═══
+       Le formulaire de modification, sur place : le même que la page
+       Modifier. Enregistrer ramène sur cet onglet (onglets.js emporte l'ancre),
+       Annuler recharge la fiche et oublie la saisie. #}
+    {% if current_user.can_edit('inventory') %}
+    {% call volet('details') %}
+        {% set retour = url_for('inventory.detail', id=item.id) ~ '#details' %}
+        {% set action_form = url_for('inventory.edit', id=item.id) %}
+        <fieldset class="edition-verrou" data-edition-verrou disabled>
+        <div class="data-card p-4">{% include 'inventory/_form_corps.html' %}</div>
+        </fieldset>
+    {% endcall %}
+    {% endif %}
 
     {% call volet('elements') %}
     {% set linked = item.linked_items() %}

@@ -124,7 +124,8 @@ def detail(id):
                          key=lambda c: (c.expiry_date is None, c.expiry_date))
     return render_template('domains/detail.html', domain=domain, histories=histories,
                            certificats=certificats,
-                           ct_entries=ct_entries, ct_new=ct_new)
+                           ct_entries=ct_entries, ct_new=ct_new,
+                           **_form_context())
 
 
 @bp.route('/<int:id>/scan-ct', methods=['POST'])

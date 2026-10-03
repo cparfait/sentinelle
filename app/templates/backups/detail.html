@@ -46,44 +46,38 @@
     {% endcall %}
 </div>
 
-{% call barre('ficheBackup', modifier=url_for('backups.edit', id=backup.id) if peut_editer else None) %}
-    {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+{% call barre('ficheBackup', modifier=url_for('backups.edit', id=backup.id) if peut_editer else None, sur_place=True) %}
+    {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}
+    {% if peut_editer %}{{ onglet('details', 'Détails', 'bi-pencil-square') }}{% endif %}
     {{ onglet('historique-des', 'Historique des checks', 'bi-clock-history', compteur=check_events|length) }}
 {% endcall %}
 
 {% call volets() %}
     {% call volet('detail', actif=True) %}
     <div class="row g-3">
-        <div class="col-lg-8">
-        <div class="data-card p-3 mb-3">
-            <div class="fiche-sections">
-                <div class="fiche-bloc">
-                    {{ titre_section('La sauvegarde', 'bi-cloud-arrow-up', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {{ champ('Type', type_label) }}
-                        {{ champ('Fréquence', freq_label | capitalize) }}
-                        {{ champ('Heure prévue', backup.expected_time) }}
-                        {{ champ('Emplacement', backup.location) }}
-                        {{ champ('Priorité', priority_label(backup.priority)) }}
-                    </div>
-                </div>
-                <div class="fiche-bloc">
-                    {{ titre_section('Notes', 'bi-journal-text', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% call champ_bloc('Description', large=True) %}{{ backup.description or '' }}{% endcall %}
-                    </div>
-                </div>
-            </div>
+        <div class="col-lg-9">
+        {% include 'backups/_synthese.html' %}
         </div>
-        </div>
-        <div class="col-lg-4">
-            {% call lie() %}
-                {% if backup.equipment %}{{ lien(url_for('inventory.detail', id=backup.equipment.id), backup.equipment.kind_icon(), backup.equipment.name, 'Équipement sauvegardé · ' ~ backup.equipment.kind_label()) }}{% endif %}
-            {% endcall %}
+        <div class="col-lg-3">
+            {# L'équipement sauvegardé se lit dans la Synthèse, en pastille. #}
             {% with entity_type='backup', entity_id=backup.id %}{% include '_snooze_card.html' %}{% endwith %}
         </div>
     </div>
     {% endcall %}
+
+    {# ═══ Détails ═══
+       Le formulaire de modification, sur place : le même que la page
+       Modifier. Enregistrer ramène sur cet onglet (onglets.js emporte l'ancre),
+       Annuler recharge la fiche et oublie la saisie. #}
+    {% if peut_editer %}
+    {% call volet('details') %}
+        {% set retour = url_for('backups.detail', id=backup.id) ~ '#details' %}
+        {% set action_form = url_for('backups.edit', id=backup.id) %}
+        <fieldset class="edition-verrou" data-edition-verrou disabled>
+        <div class="data-card p-4">{% include 'backups/_form_corps.html' %}</div>
+        </fieldset>
+    {% endcall %}
+    {% endif %}
 
     {% call volet('historique-des') %}
     <div class="data-card">

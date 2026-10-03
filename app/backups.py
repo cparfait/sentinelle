@@ -230,7 +230,8 @@ def detail(id):
                     .limit(200).all())
     histories = BackupHistory.query.filter_by(backup_id=id).order_by(BackupHistory.performed_at.desc()).all()
     return render_template('backups/detail.html', backup=backup, checks=checks,
-                           check_events=check_events, histories=histories)
+                           check_events=check_events, histories=histories,
+                           equipments=_active_equipments())
 
 
 @bp.route('/create', methods=['GET', 'POST'])

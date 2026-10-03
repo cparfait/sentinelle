@@ -227,8 +227,10 @@ def detail(id):
     # de son titulaire. La garde est ici, cote serveur -- ne pas l'afficher
     # suffirait a qui sait lire une page HTML.
     code = cert.revocation_code if current_user.can_edit('certificates') else None
+    # L'onglet Détails porte le formulaire : il lui faut les mêmes listes.
     return render_template('certificates/detail.html', certificate=cert,
-                           histories=histories, revocation_code=code)
+                           histories=histories, revocation_code=code,
+                           kind=cert.kind or 'tls', **_form_context())
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])

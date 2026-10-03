@@ -1,0 +1,93 @@
+{# ═══ La Synthèse d'un certificat ═══
+   Les rubriques de la fiche dans UNE carte (_synthese.html), comme la Synthèse
+   d'un contrat. Un certificat électronique a un titulaire et une commande ;
+   un certificat TLS, un nom d'hôte et un domaine. L'équipement et l'autorité
+   de certification se lisent en pastilles, liens vers leurs fiches. #}
+{% from '_synthese.html' import rubrique, rangee, lu, lu_bloc, euros, pastille %}
+{% from '_icones.html' import icone as ico_bi %}
+{% set c = certificate %}
+<div class="data-card mb-3 synthese synthese--cases">
+    {% if signature %}
+    {% call rubrique('Titulaire', 'bi-person-badge', 'indigo') %}
+    {% call rangee() %}
+        {{ lu('Titulaire', c.holder_label()) }}
+        {{ lu('Fonction', c.holder_role) }}
+        {% call lu_bloc('Courriel') %}{% if c.holder_email %}<a href="mailto:{{ c.holder_email }}" class="text-truncate d-block">{{ c.holder_email }}</a>{% endif %}{% endcall %}
+        {{ lu('Service', c.service.name if c.service else None, titre='Service utilisateur') }}
+    {% endcall %}
+    {% endcall %}
+
+    {% call rubrique('Certificat', 'bi-patch-check', 'sky') %}
+    {% call rangee() %}
+        {{ lu('Usage', c.usage_label()) }}
+        {{ lu('Support', c.support_label()) }}
+        {{ lu('Niveau', c.level) }}
+        {% call lu_bloc('N° de série') %}{% if c.serial_number %}<code>{{ c.serial_number }}</code>{% endif %}{% endcall %}
+    {% endcall %}
+    {% call rangee() %}
+        {{ lu('Émis le', c.issued_at.strftime('%d/%m/%Y') if c.issued_at else None) }}
+        {{ lu('Expire le', c.expiry_date.strftime('%d/%m/%Y') if c.expiry_date else None) }}
+        {{ lu('Durée', ('%d an%s' % (c.duration_years, 's' if c.duration_years > 1 else '')) if c.duration_years else None, titre='Durée commandée') }}
+        {{ lu('Priorité', priority_label(c.priority)) }}
+    {% endcall %}
+    {% endcall %}
+
+    {% call rubrique('Commande', 'bi-receipt', 'amber') %}
+    {% call rangee() %}
+        {{ lu('Montant TTC', euros(c.amount_ttc)) }}
+        {{ lu('Imputation', c.budget_code, titre='Imputation budgétaire') }}
+        {{ lu('Signé le', c.order_signed_on.strftime('%d/%m/%Y') if c.order_signed_on else None, titre='Bon de commande signé le') }}
+    {% endcall %}
+    {% endcall %}
+    {% else %}
+    {% call rubrique('Certificat', 'bi-patch-check', 'sky') %}
+    {% call rangee() %}
+        {% call lu_bloc("Nom d'hôte") %}{% if c.domain %}<code>{{ c.domain }}</code>{% endif %}{% endcall %}
+        {# Hors référentiel : le dire, plutôt que de le compter comme un manque. #}
+        {% call lu_bloc('Domaine') %}
+        {%- if c.registered_domain -%}
+        <a href="{{ url_for('domains.detail', id=c.domain_id) }}">{{ c.registered_domain.name }}</a>
+        {%- else -%}
+        <span class="text-muted fw-normal" title="hors du référentiel des domaines">hors référentiel</span>
+        {%- endif -%}
+        {% endcall %}
+        {{ lu('Émetteur', c.issuer) }}
+    {% endcall %}
+    {% call rangee() %}
+        {{ lu('Émis le', c.issued_at.strftime('%d/%m/%Y') if c.issued_at else None) }}
+        {{ lu('Expire le', c.expiry_date.strftime('%d/%m/%Y') if c.expiry_date else None) }}
+        {{ lu('Renouv.', 'Automatique' if c.auto_renew else 'Manuel', titre='Renouvellement') }}
+        {{ lu('Priorité', priority_label(c.priority)) }}
+    {% endcall %}
+    {% endcall %}
+    {% endif %}
+
+    {% if c.equipment or c.supplier %}
+    {% call rubrique('Rattaché à', 'boxes', 'violet') %}
+    <div class="pastilles">
+        {% if c.equipment %}{{ pastille(url_for('inventory.detail', id=c.equipment.id), c.equipment.kind_icon(), c.equipment.name, c.equipment.kind or 'vm', 'Équipement · ' ~ c.equipment.kind_label()) }}{% endif %}
+        {% if c.supplier %}{{ pastille(url_for('suppliers.detail', id=c.supplier_id), 'building', c.supplier.name, 'supplier', 'Autorité de certification') }}{% endif %}
+    </div>
+    {% endcall %}
+    {% endif %}
+
+    {% call rubrique('Notes', 'bi-journal-text', 'slate') %}
+    {% call rangee() %}
+        {{ lu('Notes', c.description, large=True) }}
+    {% endcall %}
+    {% endcall %}
+
+    {# Le code de révocation bloque les signatures de son titulaire : la
+       route ne le transmet qu'à qui peut déjà modifier la fiche, et il
+       reste masqué jusqu'au geste qui le demande. #}
+    {% if revocation_code %}
+    <div class="p-3 border-top">
+        <small class="text-muted">Code de révocation</small>
+        <div class="d-flex align-items-center gap-2">
+            <code id="revocationCode" class="fs-6">••••••••</code>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="revealCode">{{ ico_bi('bi-eye', '1em', 'me-1') }} Afficher</button>
+            <small class="text-muted">Il invalide le certificat — perte, vol, départ du titulaire.</small>
+        </div>
+    </div>
+    {% endif %}
+</div>

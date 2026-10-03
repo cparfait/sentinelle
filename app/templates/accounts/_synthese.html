@@ -1,0 +1,38 @@
+{# ═══ La Synthèse d'un compte ═══
+   Les rubriques de la fiche dans UNE carte (_synthese.html), comme la Synthèse
+   d'un contrat : le compte, sa rotation, ses notes, et ce à quoi il est
+   rattaché en pastilles, liens vers les fiches. #}
+{% from '_synthese.html' import rubrique, rangee, lu, lu_bloc, pastille %}
+<div class="data-card mb-3 synthese synthese--cases">
+    {% call rubrique('Compte', 'bi-key', 'indigo') %}
+    {% call rangee() %}
+        {{ lu('Utilisateur', account.username) }}
+        {{ lu('URL / accès', account.url) }}
+        {{ lu('Priorité', priority_label(account.priority)) }}
+    {% endcall %}
+    {% endcall %}
+
+    {% call rubrique('Rotation', 'bi-arrow-repeat', 'sky') %}
+    {% call rangee() %}
+        {{ lu('Fréquence', ('Tous les %d jours' % account.rotation_days) if account.rotation_days else None) }}
+        {{ lu('Dernier chgt', account.last_password_change.strftime('%d/%m/%Y') if account.last_password_change else None, titre='Dernier changement du mot de passe') }}
+        {{ lu('Prochain chgt', account.next_password_change.strftime('%d/%m/%Y') if account.next_password_change else None, titre='Prochain changement du mot de passe') }}
+    {% endcall %}
+    {% endcall %}
+
+    {% if account.software or account.equipment or account.supplier %}
+    {% call rubrique('Rattaché à', 'boxes', 'violet') %}
+    <div class="pastilles">
+        {% if account.software %}{{ pastille(url_for('software.detail', id=account.software_id), 'app-window', account.software.name, 'software', 'Logiciel') }}{% endif %}
+        {% if account.equipment %}{{ pastille(url_for('inventory.detail', id=account.equipment_id), account.equipment.kind_icon(), account.equipment.name, account.equipment.kind or 'vm', account.equipment.kind_label()) }}{% endif %}
+        {% if account.supplier %}{{ pastille(url_for('suppliers.detail', id=account.supplier_id), 'building', account.supplier.name, 'supplier', 'Fournisseur') }}{% endif %}
+    </div>
+    {% endcall %}
+    {% endif %}
+
+    {% call rubrique('Notes', 'bi-journal-text', 'slate') %}
+    {% call rangee() %}
+        {{ lu('Notes', account.description, large=True) }}
+    {% endcall %}
+    {% endcall %}
+</div>

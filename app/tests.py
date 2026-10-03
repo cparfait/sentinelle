@@ -129,7 +129,8 @@ def create():
 def detail(id):
     test = TestTask.query.get_or_404(id)
     histories = test.histories.order_by(TestHistory.performed_at.desc()).all()
-    return render_template('tests/detail.html', test=test, histories=histories, test_types=TEST_TYPES)
+    return render_template('tests/detail.html', test=test, histories=histories, test_types=TEST_TYPES,
+                           software_list=_software_list())
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])

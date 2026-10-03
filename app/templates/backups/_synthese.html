@@ -1,0 +1,32 @@
+{# ═══ La Synthèse d'une sauvegarde ═══
+   Les rubriques de la fiche dans UNE carte (_synthese.html), comme la Synthèse
+   d'un contrat : la sauvegarde, l'équipement sauvegardé en pastille, les notes.
+   Le check du jour et la série restent dans le bandeau, au-dessus des onglets. #}
+{% from '_synthese.html' import rubrique, rangee, lu, pastille %}
+<div class="data-card mb-3 synthese synthese--cases">
+    {% call rubrique('Sauvegarde', 'bi-cloud-arrow-up', 'emerald') %}
+    {% call rangee() %}
+        {{ lu('Type', type_label) }}
+        {{ lu('Fréquence', freq_label | capitalize) }}
+        {{ lu('Heure prévue', backup.expected_time) }}
+    {% endcall %}
+    {% call rangee() %}
+        {{ lu('Emplacement', backup.location) }}
+        {{ lu('Priorité', priority_label(backup.priority)) }}
+    {% endcall %}
+    {% endcall %}
+
+    {% if backup.equipment %}
+    {% call rubrique('Équipement sauvegardé', 'boxes', 'violet') %}
+    <div class="pastilles">
+        {{ pastille(url_for('inventory.detail', id=backup.equipment.id), backup.equipment.kind_icon(), backup.equipment.name, backup.equipment.kind or 'vm', backup.equipment.kind_label()) }}
+    </div>
+    {% endcall %}
+    {% endif %}
+
+    {% call rubrique('Notes', 'bi-journal-text', 'slate') %}
+    {% call rangee() %}
+        {{ lu('Notes', backup.description, large=True) }}
+    {% endcall %}
+    {% endcall %}
+</div>

@@ -33,8 +33,9 @@
                     complement=('renouvellement automatique chez ' ~ domain.registrar) if (domain.auto_renew and domain.registrar) else ('renouvellement automatique' if domain.auto_renew else 'renouvellement manuel'),
                     sans_date='date d\'expiration à renseigner (ou lancez la vérification au registre)') }}
 
-{% call barre('ficheDomain', modifier=url_for('domains.edit', id=domain.id) if peut_editer else None) %}
-    {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+{% call barre('ficheDomain', modifier=url_for('domains.edit', id=domain.id) if peut_editer else None, sur_place=True) %}
+    {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}
+    {% if peut_editer %}{{ onglet('details', 'Détails', 'bi-pencil-square') }}{% endif %}
     {% if current_user.can_view('certificates') %}{{ onglet('certificats', 'Certificats', 'bi-award', compteur=certificats|length) }}{% endif %}
     {{ onglet('certificate-transparency', 'Certificate Transparency', 'bi-search', compteur=ct_entries|length) }}
     {{ onglet('historique', 'Historique', 'bi-clock-history', compteur=histories|length) }}
@@ -43,45 +44,36 @@
 {% call volets() %}
     {% call volet('detail', actif=True) %}
     <div class="row g-3">
-        <div class="col-lg-8">
-        <div class="data-card p-3 mb-3">
-            <div class="fiche-sections">
-                <div class="fiche-bloc">
-                    {{ titre_section('Le domaine', 'bi-globe', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% call champ_bloc('Registrar') %}
-                        {%- if domain.registrar_supplier -%}
-                        <a href="{{ url_for('suppliers.detail', id=domain.registrar_id) }}" class="text-decoration-none">{{ ico_bi('bi-building', '1em', 'me-1') }}{{ domain.registrar_supplier.name }}</a>
-                        {%- if domain.registrar and domain.registrar != domain.registrar_supplier.name %} <small class="text-muted">({{ domain.registrar }} au registre)</small>{% endif -%}
-                        {%- elif domain.registrar -%}
-                        {{ domain.registrar }} <small class="text-muted">(sans fiche fournisseur)</small>
-                        {%- endif -%}
-                        {% endcall %}
-                        {{ champ('Renouvellement', 'Automatique' if domain.auto_renew else 'Manuel') }}
-                    </div>
-                </div>
-                <div class="fiche-bloc">
-                    {{ titre_section('Notes', 'bi-journal-text', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% call champ_bloc('Description', large=True) %}{{ domain.description or '' }}{% endcall %}
-                    </div>
-                </div>
-            </div>
-            {% if ct_new %}
-            <div class="alert alert-warning py-2 small mt-3 mb-0">
-                {{ ico_bi('bi-shield-exclamation', '1em', 'me-1') }}
-                <strong>{{ ct_new }} nouveau{{ 'x' if ct_new > 1 }} certificat{{ 's' if ct_new > 1 }}</strong> observé{{ 's' if ct_new > 1 }} dans les journaux Certificate Transparency :
-                à vérifier dans l'onglet dédié.
-            </div>
-            {% endif %}
+        <div class="col-lg-9">
+        {% if ct_new %}
+        <div class="alert alert-warning py-2 small mb-3">
+            {{ ico_bi('bi-shield-exclamation', '1em', 'me-1') }}
+            <strong>{{ ct_new }} nouveau{{ 'x' if ct_new > 1 }} certificat{{ 's' if ct_new > 1 }}</strong> observé{{ 's' if ct_new > 1 }} dans les journaux Certificate Transparency :
+            à vérifier dans l'onglet dédié.
         </div>
+        {% endif %}
+        {% include 'domains/_synthese.html' %}
         </div>
-        <div class="col-lg-4">
+        <div class="col-lg-3">
             {{ activite(histories) }}
             {% with entity_type='domain', entity_id=domain.id %}{% include '_snooze_card.html' %}{% endwith %}
         </div>
     </div>
     {% endcall %}
+
+    {# ═══ Détails ═══
+       Le formulaire de modification, sur place : le même que la page
+       Modifier. Enregistrer ramène sur cet onglet (onglets.js emporte l'ancre),
+       Annuler recharge la fiche et oublie la saisie. #}
+    {% if peut_editer %}
+    {% call volet('details') %}
+        {% set retour = url_for('domains.detail', id=domain.id) ~ '#details' %}
+        {% set action_form = url_for('domains.edit', id=domain.id) %}
+        <fieldset class="edition-verrou" data-edition-verrou disabled>
+        <div class="data-card p-4">{% include 'domains/_form_corps.html' %}</div>
+        </fieldset>
+    {% endcall %}
+    {% endif %}
 
     {% if current_user.can_view('certificates') %}
     {% call volet('certificats') %}

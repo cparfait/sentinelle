@@ -107,15 +107,21 @@ def _apply_form(eq, f):
     eq.observations = _txt(f, 'observations')
 
 
-def _render_form(item):
+def _form_context(item):
+    """Ce dont le formulaire a besoin, sur la page Modifier comme dans l'onglet
+    Détails de la fiche."""
     from app.models import Supplier
     suppliers = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
-    return render_template('inventory/form.html', item=item, kind_choices=KIND_CHOICES,
-                           env_choices=ENV_CHOICES, crit_labels=CRITICALITY_LABELS,
-                           groupes=EQUIPMENT_KIND_GROUPS_ATTR,
-                           famille=_famille_demandee(item),
-                           famille_natures=EQUIPMENT_FAMILIES,
-                           suppliers=suppliers)
+    return dict(kind_choices=KIND_CHOICES,
+                env_choices=ENV_CHOICES, crit_labels=CRITICALITY_LABELS,
+                groupes=EQUIPMENT_KIND_GROUPS_ATTR,
+                famille=_famille_demandee(item),
+                famille_natures=EQUIPMENT_FAMILIES,
+                suppliers=suppliers)
+
+
+def _render_form(item):
+    return render_template('inventory/form.html', item=item, **_form_context(item))
 
 
 @bp.route('/')
@@ -272,8 +278,7 @@ def create():
 @login_required
 def detail(id):
     item = Equipment.query.get_or_404(id)
-    return render_template('inventory/detail.html', item=item,
-                           crit_labels=CRITICALITY_LABELS)
+    return render_template('inventory/detail.html', item=item, **_form_context(item))
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])

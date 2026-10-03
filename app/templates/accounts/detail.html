@@ -24,57 +24,38 @@
                     complement=('rotation tous les %d j' % account.rotation_days if account.rotation_days else '') ~ (' · dernier changement le ' ~ account.last_password_change.strftime('%d/%m/%Y') if account.last_password_change else ''),
                     sans_date='date de rotation à renseigner') }}
 
-{% call barre('ficheAccount', modifier=url_for('accounts.edit', id=account.id) if peut_editer else None) %}
-    {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+{% call barre('ficheAccount', modifier=url_for('accounts.edit', id=account.id) if peut_editer else None, sur_place=True) %}
+    {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}
+    {% if peut_editer %}{{ onglet('details', 'Détails', 'bi-pencil-square') }}{% endif %}
     {{ onglet('historique', 'Historique', 'bi-clock-history', compteur=histories|length) }}
 {% endcall %}
 
 {% call volets() %}
     {% call volet('detail', actif=True) %}
     <div class="row g-3">
-        <div class="col-lg-8">
-        <div class="data-card p-3 mb-3">
-            <div class="fiche-sections">
-                <div class="fiche-bloc">
-                    {{ titre_section('Le compte', 'bi-key', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {{ champ('Utilisateur', account.username) }}
-                        {% call champ_bloc('URL / accès') %}{% if account.url %}{{ account.url }}{% endif %}{% endcall %}
-                        {{ champ('Priorité', priority_label(account.priority)) }}
-                    </div>
-                </div>
-                {% if account.software or account.equipment or account.supplier %}
-                <div class="fiche-bloc">
-                    {{ titre_section('Rattaché à', 'bi-diagram-3', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% if account.software %}{% call champ_bloc('Logiciel') %}<a href="{{ url_for('software.detail', id=account.software_id) }}" class="text-decoration-none">{{ ico_bi('bi-window-stack', '1em', 'me-1') }}{{ account.software.name }}</a>{% endcall %}{% endif %}
-                        {% if account.equipment %}{% call champ_bloc('Équipement') %}<a href="{{ url_for('inventory.detail', id=account.equipment_id) }}" class="text-decoration-none">{{ ico_bi('bi-hdd-stack', '1em', 'me-1') }}{{ account.equipment.name }}</a>{% endcall %}{% endif %}
-                        {% if account.supplier %}{% call champ_bloc('Fournisseur') %}<a href="{{ url_for('suppliers.detail', id=account.supplier_id) }}" class="text-decoration-none">{{ ico_bi('bi-building', '1em', 'me-1') }}{{ account.supplier.name }}</a>{% endcall %}{% endif %}
-                    </div>
-                </div>
-                {% endif %}
-                <div class="fiche-bloc">
-                    {{ titre_section('Rotation', 'bi-arrow-repeat', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {{ champ('Fréquence', 'Tous les %d jours' % account.rotation_days if account.rotation_days else None) }}
-                        {{ champ('Dernier changement', account.last_password_change.strftime('%d/%m/%Y') if account.last_password_change else None) }}
-                    </div>
-                </div>
-                <div class="fiche-bloc">
-                    {{ titre_section('Notes', 'bi-journal-text', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% call champ_bloc('Description', large=True) %}{{ account.description or '' }}{% endcall %}
-                    </div>
-                </div>
-            </div>
+        <div class="col-lg-9">
+        {% include 'accounts/_synthese.html' %}
         </div>
-        </div>
-        <div class="col-lg-4">
+        <div class="col-lg-3">
             {{ activite(histories) }}
             {% with entity_type='account', entity_id=account.id %}{% include '_snooze_card.html' %}{% endwith %}
         </div>
     </div>
     {% endcall %}
+
+    {# ═══ Détails ═══
+       Le formulaire de modification, sur place : le même que la page
+       Modifier. Enregistrer ramène sur cet onglet (onglets.js emporte l'ancre),
+       Annuler recharge la fiche et oublie la saisie. #}
+    {% if peut_editer %}
+    {% call volet('details') %}
+        {% set retour = url_for('accounts.detail', id=account.id) ~ '#details' %}
+        {% set action_form = url_for('accounts.edit', id=account.id) %}
+        <fieldset class="edition-verrou" data-edition-verrou disabled>
+        <div class="data-card p-4">{% include 'accounts/_form_corps.html' %}</div>
+        </fieldset>
+    {% endcall %}
+    {% endif %}
 
     {% call volet('historique') %}{{ historique(histories) }}{% endcall %}
 {% endcall %}

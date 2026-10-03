@@ -21,52 +21,38 @@
                     complement=('dernière revue le ' ~ review.last_review.strftime('%d/%m/%Y')) if review.last_review else 'jamais revue',
                     sans_date='à planifier') }}
 
-{% call barre('ficheReview', modifier=url_for('reviews.edit', id=review.id) if peut_editer else None) %}
-    {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+{% call barre('ficheReview', modifier=url_for('reviews.edit', id=review.id) if peut_editer else None, sur_place=True) %}
+    {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}
+    {% if peut_editer %}{{ onglet('details', 'Détails', 'bi-pencil-square') }}{% endif %}
     {{ onglet('historique', 'Historique', 'bi-clock-history', compteur=histories|length) }}
 {% endcall %}
 
 {% call volets() %}
     {% call volet('detail', actif=True) %}
     <div class="row g-3">
-        <div class="col-lg-8">
-        <div class="data-card p-3 mb-3">
-            <div class="fiche-sections">
-                <div class="fiche-bloc">
-                    {{ titre_section('La revue', 'bi-person-check', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% call champ_bloc('Logiciel') %}
-                        {%- if review.software -%}
-                        <a href="{{ url_for('software.detail', id=review.software_id) }}" class="text-decoration-none">{{ ico_bi('bi-window-stack', '1em', 'me-1') }}{{ review.software.name }}</a>
-                        {%- else -%}
-                        <span class="text-muted">{{ review.application }} <small>(hors inventaire)</small></span>
-                        {%- endif -%}
-                        {% endcall %}
-                        {% call champ_bloc('Responsable') %}
-                        {%- if review.responsible or review.responsible_email -%}
-                        {{ review.responsible or '' }}
-                        {% if review.responsible_email %}<a href="mailto:{{ review.responsible_email }}" class="d-block small text-truncate">{{ ico_bi('bi-envelope', '1em', 'me-1') }}{{ review.responsible_email }}</a>{% endif %}
-                        {%- endif -%}
-                        {% endcall %}
-                        {{ champ('Fréquence', '%d jours' % review.frequency_days if review.frequency_days else None) }}
-                        {{ champ('Priorité', priority_label(review.priority)) }}
-                    </div>
-                </div>
-                <div class="fiche-bloc">
-                    {{ titre_section('Périmètre', 'bi-journal-text', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% call champ_bloc('Ce que la revue couvre', large=True) %}{{ review.scope or '' }}{% endcall %}
-                    </div>
-                </div>
-            </div>
+        <div class="col-lg-9">
+        {% include 'reviews/_synthese.html' %}
         </div>
-        </div>
-        <div class="col-lg-4">
+        <div class="col-lg-3">
             {{ activite(histories) }}
             {% with entity_type='review', entity_id=review.id %}{% include '_snooze_card.html' %}{% endwith %}
         </div>
     </div>
     {% endcall %}
+
+    {# ═══ Détails ═══
+       Le formulaire de modification, sur place : le même que la page
+       Modifier. Enregistrer ramène sur cet onglet (onglets.js emporte l'ancre),
+       Annuler recharge la fiche et oublie la saisie. #}
+    {% if peut_editer %}
+    {% call volet('details') %}
+        {% set retour = url_for('reviews.detail', id=review.id) ~ '#details' %}
+        {% set action_form = url_for('reviews.edit', id=review.id) %}
+        <fieldset class="edition-verrou" data-edition-verrou disabled>
+        <div class="data-card p-4">{% include 'reviews/_form_corps.html' %}</div>
+        </fieldset>
+    {% endcall %}
+    {% endif %}
 
     {% call volet('historique') %}{{ historique(histories) }}{% endcall %}
 {% endcall %}

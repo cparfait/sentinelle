@@ -532,7 +532,7 @@ def test_la_synthese_d_un_logiciel_suit_l_interrupteur_du_formulaire(client, app
     db.session.commit()
 
     html = client.get(f'/inventory/logiciels/{sw.id}').get_data(as_text=True)
-    assert 'class="data-card mb-3 synthese"' in html
+    assert 'class="data-card mb-3 synthese synthese--cases"' in html
     assert 'Technique' in html and 'Docker' in html and 'À compléter' in html and 'data-manque="Version"' not in html
     assert 'Hébergement &amp; nature' not in html
 

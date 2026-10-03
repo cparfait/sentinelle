@@ -124,13 +124,15 @@ def test_chaque_fiche_repond_avant_d_etre_lue(client, jeu):
         # ou trois a six faits pour le reste (sauvegardes, materiel...).
         if 'fiche-bandeau-ligne' in html:
             assert 'fiche-bandeau-k' in html, f'{url} : bandeau d echeance sans libelle'
-        elif '/inventory/logiciels/' in url or 'mb-3 synthese' in html:
+        elif '/inventory/logiciels/' in url or '/suppliers/' in url:
             # La fiche logiciel s'en passe : ce que le bandeau repetait se lit
             # dans la Synthese (authentification, utilisateurs) et la carte
-            # Liaisons (serveurs). De meme la nouvelle Synthese d'un
-            # fournisseur : hotline et n° client sont dans sa rubrique Assistance.
+            # Liaisons (serveurs). De meme la Synthese d'un fournisseur :
+            # hotline et n° client sont dans sa rubrique Assistance.
             assert 'fiche-faits' not in html, f'{url} : le bandeau de faits est revenu'
         else:
+            # Sauvegardes, mises a jour, materiel : le bandeau de faits reste
+            # au-dessus des onglets, la Synthese ne le remplace pas.
             assert 'fiche-faits' in html, f'{url} : ni bandeau d echeance ni bandeau de faits'
             cases = len(re.findall(r'class="fiche-fait"', html))
             assert 3 <= cases <= 6, f'{url} : {cases} case(s) dans le bandeau'
@@ -175,10 +177,25 @@ def test_chaque_fiche_a_ses_onglets(client, jeu):
     pliure, sans que rien ne les annonce.
 
     Une exception assumee : la fiche serveur garde sa continuite dans l'onglet
-    « Fiche », parce que c'est elle qui dit si la machine est sauvegardee —
+    « Synthèse », parce que c'est elle qui dit si la machine est sauvegardee —
     donc ce qui decide de sa couleur de statut.
     """
     for url, base in _fiches(jeu):
         html = client.get(url).get_data(as_text=True)
         assert 'fiche-onglets' in html, f'{url} : pas de barre d onglets'
         assert 'id="vol-detail"' in html, f'{url} : pas de volet principal'
+
+
+def test_chaque_fiche_se_modifie_sur_place(client, jeu):
+    """Chaque fiche porte un onglet Détails a cote de sa Synthese : le
+    formulaire de la page Modifier, sur place, verrouille tant que le crayon
+    n'a pas ouvert la modification (edition.js). Il s'envoie a la route edit,
+    pas a l'adresse de la fiche."""
+    for url, base in _fiches(jeu):
+        html = client.get(url).get_data(as_text=True)
+        assert 'data-bs-target="#vol-details"' in html, f'{url} : pas d onglet Details'
+        assert html.count('id="form-principal"') == 1, f'{url} : formulaire absent ou en double'
+        volet = html.split('id="vol-details"', 1)[1]
+        assert 'data-edition-verrou' in volet, f'{url} : formulaire sans verrou'
+        formulaire = volet.split('id="form-principal"', 1)[1].split('>', 1)[0]
+        assert 'data-edition-visible' in formulaire and '/edit' in formulaire, url

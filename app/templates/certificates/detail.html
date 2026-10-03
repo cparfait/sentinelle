@@ -38,8 +38,9 @@
                     debut=certificate.issued_at, complement=(complement if certificate.monitored() else 'hors surveillance : ' ~ (certificate.validity_label() | lower)),
                     sans_date='date d\'expiration à renseigner') }}
 
-{% call barre('ficheCertificate', modifier=url_for('certificates.edit', id=certificate.id) if peut_editer else None) %}
-    {{ onglet('detail', 'Fiche', 'bi-card-text', actif=True) }}
+{% call barre('ficheCertificate', modifier=url_for('certificates.edit', id=certificate.id) if peut_editer else None, sur_place=True) %}
+    {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}
+    {% if peut_editer %}{{ onglet('details', 'Détails', 'bi-pencil-square') }}{% endif %}
     {% if documents_enabled %}
     {{ onglet('documents', 'Documents', 'bi-paperclip', compteur=attached_documents('certificate', certificate.id)|length) }}
     {% endif %}
@@ -49,88 +50,31 @@
 {% call volets() %}
     {% call volet('detail', actif=True) %}
     <div class="row g-3">
-        <div class="col-lg-8">
-        <div class="data-card p-3 mb-3">
-            <div class="fiche-sections">
-                {% if signature %}
-                <div class="fiche-bloc">
-                    {{ titre_section('Titulaire', 'bi-person-badge', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {{ champ('Fonction', certificate.holder_role) }}
-                        {% call champ_bloc('E-mail') %}{% if certificate.holder_email %}<a href="mailto:{{ certificate.holder_email }}">{{ certificate.holder_email }}</a>{% endif %}{% endcall %}
-                        {{ champ('Service utilisateur', certificate.service.name if certificate.service else None) }}
-                    </div>
-                </div>
-                <div class="fiche-bloc">
-                    {{ titre_section('Le certificat', 'bi-patch-check', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {{ champ('Usage', certificate.usage_label()) }}
-                        {{ champ('Support', certificate.support_label()) }}
-                        {{ champ('Niveau', certificate.level) }}
-                        {% call champ_bloc('N° de série') %}{% if certificate.serial_number %}<code>{{ certificate.serial_number }}</code>{% endif %}{% endcall %}
-                        {{ champ('Durée commandée', (certificate.duration_years ~ ' an(s)') if certificate.duration_years else None) }}
-                    </div>
-                </div>
-                <div class="fiche-bloc">
-                    {{ titre_section('Commande', 'bi-receipt', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% call champ_bloc('Montant TTC') %}
-                        {%- if certificate.amount_ttc is not none %}{{ '%.2f' | format(certificate.amount_ttc) }} €{% if certificate.budget_code %} <small class="text-muted">(imputation {{ certificate.budget_code }})</small>{% endif %}{% endif -%}
-                        {% endcall %}
-                        {{ champ('Bon de commande signé le', certificate.order_signed_on.strftime('%d/%m/%Y') if certificate.order_signed_on else None) }}
-                    </div>
-                </div>
-                {% else %}
-                <div class="fiche-bloc">
-                    {{ titre_section('Le certificat', 'bi-patch-check', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {% call champ_bloc('Domaine') %}
-                        {%- if certificate.registered_domain -%}
-                        <a href="{{ url_for('domains.detail', id=certificate.domain_id) }}" class="text-decoration-none">{{ ico_bi('bi-globe', '1em', 'me-1') }}{{ certificate.registered_domain.name }}</a>
-                        {%- else -%}
-                        <span class="text-muted">hors du référentiel des domaines</span>
-                        {%- endif -%}
-                        {% endcall %}
-                        {{ champ('Émetteur', certificate.issuer) }}
-                        {{ champ('Renouvellement', 'Automatique' if certificate.auto_renew else 'Manuel') }}
-                    </div>
-                </div>
-                {% endif %}
-
-                <div class="fiche-bloc">
-                    {{ titre_section('Suivi', 'bi-person-check', 'slate', 'mb-0') }}
-                    <div class="fiche-grille">
-                        {{ champ('Priorité', priority_label(certificate.priority)) }}
-                        {% call champ_bloc('Notes', large=True) %}{{ certificate.description or '' }}{% endcall %}
-                    </div>
-                </div>
-            </div>
-
-            {# Le code de révocation bloque les signatures de son titulaire : la
-               route ne le transmet qu'à qui peut déjà modifier la fiche, et il
-               reste masqué jusqu'au geste qui le demande. #}
-            {% if revocation_code %}
-            <div class="mt-3 pt-3 border-top">
-                <small class="text-muted">Code de révocation</small>
-                <div class="d-flex align-items-center gap-2">
-                    <code id="revocationCode" class="fs-6">••••••••</code>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="revealCode">{{ ico_bi('bi-eye', '1em', 'me-1') }} Afficher</button>
-                    <small class="text-muted">Il invalide le certificat — perte, vol, départ du titulaire.</small>
-                </div>
-            </div>
-            {% endif %}
+        <div class="col-lg-9">
+        {% include 'certificates/_synthese.html' %}
         </div>
-        </div>
-        <div class="col-lg-4">
-            {% call lie() %}
-                {% if certificate.equipment %}{{ lien(url_for('inventory.detail', id=certificate.equipment.id), certificate.equipment.kind_icon(), certificate.equipment.name, 'Équipement · ' ~ certificate.equipment.kind_label()) }}{% endif %}
-                {% if certificate.supplier %}{{ lien(url_for('suppliers.detail', id=certificate.supplier_id), 'bi-building', certificate.supplier.name, 'Autorité de certification') }}{% endif %}
-            {% endcall %}
+        <div class="col-lg-3">
+            {# L'équipement et l'autorité de certification se lisent dans la
+               rubrique « Rattaché à » de la Synthèse. #}
             {{ activite(histories) }}
             {% with entity_type='certificate', entity_id=certificate.id %}{% include '_snooze_card.html' %}{% endwith %}
         </div>
     </div>
     {% endcall %}
+
+    {# ═══ Détails ═══
+       Le formulaire de modification, sur place : le même que la page
+       Modifier. Enregistrer ramène sur cet onglet (onglets.js emporte l'ancre),
+       Annuler recharge la fiche et oublie la saisie. #}
+    {% if peut_editer %}
+    {% call volet('details') %}
+        {% set retour = url_for('certificates.detail', id=certificate.id) ~ '#details' %}
+        {% set action_form = url_for('certificates.edit', id=certificate.id) %}
+        <fieldset class="edition-verrou" data-edition-verrou disabled>
+        <div class="data-card p-4">{% include 'certificates/_form_corps.html' %}</div>
+        </fieldset>
+    {% endcall %}
+    {% endif %}
 
     {% if documents_enabled %}
     {% call volet('documents') %}

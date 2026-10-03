@@ -90,6 +90,7 @@ def detail(id):
     update = SystemUpdate.query.get_or_404(id)
     histories = update.histories.order_by(UpdateHistory.performed_at.desc()).all()
     return render_template('updates/detail.html', update=update, histories=histories,
+                           assets=_active_assets(), equipments=_active_equipments(),
                            status_choices=STATUS_CHOICES, type_choices=TYPE_CHOICES)
 
 

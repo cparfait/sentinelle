@@ -80,7 +80,9 @@ def create():
 def detail(id):
     account = Account.query.get_or_404(id)
     histories = account.histories.order_by(AccountHistory.performed_at.desc()).all()
-    return render_template('accounts/detail.html', account=account, histories=histories)
+    # L'onglet Détails porte le formulaire : il lui faut les mêmes listes.
+    return render_template('accounts/detail.html', account=account, histories=histories,
+                           **_form_context())
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
