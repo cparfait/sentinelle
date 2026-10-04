@@ -32,3 +32,22 @@
     </div>
 </fieldset>
 {% endmacro %}
+
+{# ═══ Rubrique d'un formulaire en carte ═══
+   La même section, au format des formulaires de contrat, de logiciel et de
+   fournisseur : les rubriques se suivent dans UNE carte, collées, un filet
+   entre elles, sous l'en-tête coloré de la Synthèse (_synthese.html) — pas de
+   numéro, pas de cadre par rubrique. Mêmes arguments que `section`, pour s'y
+   substituer : {% from '_form_section.html' import rubrique_form as section %}.
+   Le formulaire porte la classe `fiche-saisie` (style.css). #}
+{% macro rubrique_form(titre, icone, couleur='indigo', kinds=None, aide=None) %}
+<div class="saisie-rubrique{{ ' kind-section' if kinds }}"{% if kinds %} data-kinds="{{ kinds }}"{% endif %}>
+    <div class="card-header-custom d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold fiche-titre fiche-titre--{{ couleur }} mb-0">{{ ico_bi(icone, 14, 'ico ico-' ~ couleur) }}{{ titre }}</h6>
+    </div>
+    <div class="p-3">
+        {% if aide %}<p class="form-section-aide">{{ aide }}</p>{% endif %}
+        {{ caller() }}
+    </div>
+</div>
+{% endmacro %}

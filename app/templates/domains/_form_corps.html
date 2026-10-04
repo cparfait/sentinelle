@@ -2,15 +2,23 @@
    Partagé par la page de modification (form.html) et l'onglet Détails de la
    fiche (detail.html). Contexte attendu : celui de la route edit, `retour`
    (où mène « Annuler ») et, facultatif, `action_form` : l'adresse d'envoi
-   quand la page qui l'affiche n'est pas la sienne. #}
+   quand la page qui l'affiche n'est pas la sienne.
+
+   Comme ceux des contrats, logiciels et fournisseurs : UNE carte, des
+   rubriques collées sous leur en-tête coloré (rubrique_form), sans sommaire
+   ni numéros. #}
 {% from '_icones.html' import icone as ico_bi %}
-{% from '_form_section.html' import section %}
+{% from '_form_section.html' import rubrique_form as section %}
 {% from '_quick_add.html' import qa_button, qa_modal_supplier %}
 {% from '_formulaire.html' import pied_form %}
 
-<form method="POST" id="form-principal" class="formulaire" data-edition-visible{% if action_form %} action="{{ action_form }}"{% endif %}>
+<div class="form-seul">
+<form method="POST" id="form-principal" class="formulaire fiche-saisie" data-edition-visible{% if action_form %} action="{{ action_form }}"{% endif %}>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    {% call section('Identité', 'bi-globe', 'indigo') %}
+    <div class="data-card mb-3">
+    {# UNE rubrique, comme dans la Synthèse : le nom et sa priorité, puis le
+       registrar, l'échéance et le renouvellement. #}
+    {% call section('Domaine', 'bi-globe', 'sky') %}
     <div class="row">
         <div class="col-md-8 mb-3">
             <label class="form-label fw-medium">Nom de domaine *</label>
@@ -34,9 +42,6 @@
             </select>
         </div>
     </div>
-    {% endcall %}
-
-    {% call section('Échéance', 'bi-calendar-event', 'emerald') %}
     <div class="row">
         <div class="col-md-4 mb-3">
             <label class="form-label fw-medium">Registrar</label>
@@ -58,9 +63,9 @@
             </div>
             <small class="text-muted">Contacts et contrats du bureau d'enregistrement.</small>
         </div>
-        <div class="col-md-4 mb-3">
+        <div class="col-md-auto mb-3">
             <label class="form-label fw-medium">Date d'expiration</label>
-            <input type="date" name="expiry_date" class="form-control"
+            <input type="date" name="expiry_date" class="form-control l-date"
                    value="{{ domain.expiry_date.strftime('%Y-%m-%d') if domain and domain.expiry_date else '' }}">
         </div>
     </div>
@@ -74,15 +79,17 @@
     {% endcall %}
 
     {% call section('Notes', 'bi-journal-text', 'slate') %}
-    {% endcall %}
-
     <div class="mb-3">
         <label class="form-label fw-medium">Description / Notes</label>
         <textarea name="description" class="form-control" rows="3"
                   placeholder="Usage, contacts...">{{ domain.description if domain and domain.description else '' }}</textarea>
     </div>
+    {% endcall %}
+    </div>
+
     {{ pied_form(retour, 'Enregistrer' if domain else 'Ajouter') }}
 </form>
+</div>
 
 {% if current_user.can_edit('suppliers') %}{{ qa_modal_supplier() }}{% endif %}
 <script src="{{ url_for('static', filename='js/lookup_fill.js') }}"></script>

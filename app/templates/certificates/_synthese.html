@@ -1,29 +1,29 @@
 {# ═══ La Synthèse d'un certificat ═══
    Les rubriques de la fiche dans UNE carte (_synthese.html), comme la Synthèse
    d'un contrat. Un certificat électronique a un titulaire et une commande ;
-   un certificat TLS, un nom d'hôte et un domaine. L'équipement et l'autorité
-   de certification se lisent en pastilles, liens vers leurs fiches. #}
-{% from '_synthese.html' import rubrique, rangee, lu, lu_bloc, euros, pastille %}
+   un certificat TLS, un nom d'hôte et un domaine. L'émetteur et l'équipement
+   se lisent dans la rubrique, en liens vers leurs fiches. #}
+{% from '_synthese.html' import rubrique, rangee, lu, lu_bloc, euros %}
 {% from '_icones.html' import icone as ico_bi %}
 {% set c = certificate %}
-<div class="data-card mb-3 synthese synthese--cases">
+<div class="data-card mb-3 synthese synthese--cases" style="--lu-intitule: 80px">
     {% if signature %}
-    {% call rubrique('Titulaire', 'bi-person-badge', 'indigo') %}
-    {% call rangee() %}
-        {{ lu('Titulaire', c.holder_label()) }}
-        {{ lu('Fonction', c.holder_role) }}
-        {% call lu_bloc('Courriel') %}{% if c.holder_email %}<a href="mailto:{{ c.holder_email }}" class="text-truncate d-block">{{ c.holder_email }}</a>{% endif %}{% endcall %}
-        {{ lu('Service', c.service.name if c.service else None, titre='Service utilisateur') }}
-    {% endcall %}
-    {% endcall %}
-
+    {# Le titulaire d'abord, comme dans le formulaire : c'est lui qui nomme
+       la fiche. Le certificat reprend ensuite à la ligne (lu-rangee--ligne). #}
     {% call rubrique('Certificat', 'bi-patch-check', 'sky') %}
     {% call rangee() %}
+        {{ lu('Titulaire', c.holder_label()) }}
+        {% call lu_bloc('Courriel') %}{% if c.holder_email %}<a href="mailto:{{ c.holder_email }}" class="text-truncate d-block">{{ c.holder_email }}</a>{% endif %}{% endcall %}
+        {{ lu('Service', c.service.name if c.service else None, titre='Service utilisateur') }}
+        {{ lu('Fonction', c.holder_role) }}
+    {% endcall %}
+    <div class="lu-rangee lu-rangee--ligne">
+        {% call lu_bloc('Émetteur', titre='Autorité de certification') %}{% if c.supplier %}<a href="{{ url_for('suppliers.detail', id=c.supplier_id) }}">{{ c.supplier.name }}</a>{% endif %}{% endcall %}
         {{ lu('Usage', c.usage_label()) }}
         {{ lu('Support', c.support_label()) }}
         {{ lu('Niveau', c.level) }}
-        {% call lu_bloc('N° de série') %}{% if c.serial_number %}<code>{{ c.serial_number }}</code>{% endif %}{% endcall %}
-    {% endcall %}
+        {{ lu('N° de série', c.serial_number) }}
+    </div>
     {% call rangee() %}
         {{ lu('Émis le', c.issued_at.strftime('%d/%m/%Y') if c.issued_at else None) }}
         {{ lu('Expire le', c.expiry_date.strftime('%d/%m/%Y') if c.expiry_date else None) }}
@@ -32,17 +32,21 @@
     {% endcall %}
     {% endcall %}
 
+    {# L'équipement qui porte le certificat, s'il y en a un, se lit ici, en lien
+       vers sa fiche : pas de rubrique « Rattaché à » à part. L'autorité de
+       certification (« Émetteur ») est dans la rubrique Certificat. #}
     {% call rubrique('Commande', 'bi-receipt', 'amber') %}
     {% call rangee() %}
         {{ lu('Montant TTC', euros(c.amount_ttc)) }}
         {{ lu('Imputation', c.budget_code, titre='Imputation budgétaire') }}
         {{ lu('Signé le', c.order_signed_on.strftime('%d/%m/%Y') if c.order_signed_on else None, titre='Bon de commande signé le') }}
+        {% call lu_bloc('Équipement', facultatif=True) %}{% if c.equipment %}<a href="{{ url_for('inventory.detail', id=c.equipment.id) }}" title="{{ c.equipment.kind_label() }}">{{ c.equipment.name }}</a>{% endif %}{% endcall %}
     {% endcall %}
     {% endcall %}
     {% else %}
     {% call rubrique('Certificat', 'bi-patch-check', 'sky') %}
     {% call rangee() %}
-        {% call lu_bloc("Nom d'hôte") %}{% if c.domain %}<code>{{ c.domain }}</code>{% endif %}{% endcall %}
+        {{ lu("Nom d'hôte", c.domain) }}
         {# Hors référentiel : le dire, plutôt que de le compter comme un manque. #}
         {% call lu_bloc('Domaine') %}
         {%- if c.registered_domain -%}
@@ -51,23 +55,18 @@
         <span class="text-muted fw-normal" title="hors du référentiel des domaines">hors référentiel</span>
         {%- endif -%}
         {% endcall %}
-        {{ lu('Émetteur', c.issuer) }}
+        {# La fiche fournisseur choisie ; à défaut, le nom lu sur le certificat. #}
+        {% call lu_bloc('Émetteur') %}{% if c.supplier %}<a href="{{ url_for('suppliers.detail', id=c.supplier_id) }}">{{ c.supplier.name }}</a>{% else %}{{ c.issuer or '' }}{% endif %}{% endcall %}
     {% endcall %}
     {% call rangee() %}
         {{ lu('Émis le', c.issued_at.strftime('%d/%m/%Y') if c.issued_at else None) }}
         {{ lu('Expire le', c.expiry_date.strftime('%d/%m/%Y') if c.expiry_date else None) }}
         {{ lu('Renouv.', 'Automatique' if c.auto_renew else 'Manuel', titre='Renouvellement') }}
         {{ lu('Priorité', priority_label(c.priority)) }}
+        {# L'équipement qui porte le certificat, en lien vers sa fiche. Facultatif :
+           son absence n'est pas un manque. #}
+        {% call lu_bloc('Équipement', facultatif=True) %}{% if c.equipment %}<a href="{{ url_for('inventory.detail', id=c.equipment.id) }}" title="{{ c.equipment.kind_label() }}">{{ c.equipment.name }}</a>{% endif %}{% endcall %}
     {% endcall %}
-    {% endcall %}
-    {% endif %}
-
-    {% if c.equipment or c.supplier %}
-    {% call rubrique('Rattaché à', 'boxes', 'violet') %}
-    <div class="pastilles">
-        {% if c.equipment %}{{ pastille(url_for('inventory.detail', id=c.equipment.id), c.equipment.kind_icon(), c.equipment.name, c.equipment.kind or 'vm', 'Équipement · ' ~ c.equipment.kind_label()) }}{% endif %}
-        {% if c.supplier %}{{ pastille(url_for('suppliers.detail', id=c.supplier_id), 'building', c.supplier.name, 'supplier', 'Autorité de certification') }}{% endif %}
-    </div>
     {% endcall %}
     {% endif %}
 

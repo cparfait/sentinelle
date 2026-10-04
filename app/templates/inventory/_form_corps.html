@@ -2,16 +2,22 @@
    Partagé par la page de modification (form.html) et l'onglet Détails de la
    fiche (detail.html). Contexte attendu : celui de la route edit, `retour`
    (où mène « Annuler ») et, facultatif, `action_form` : l'adresse d'envoi
-   quand la page qui l'affiche n'est pas la sienne. #}
+   quand la page qui l'affiche n'est pas la sienne.
+
+   Comme ceux des contrats, logiciels et fournisseurs : UNE carte, des
+   rubriques collées sous leur en-tête coloré (rubrique_form), sans sommaire
+   ni numéros. #}
 {% from '_quick_add.html' import qa_button, qa_modal_supplier %}
-{% from '_form_section.html' import section %}
+{% from '_form_section.html' import rubrique_form as section %}
 {% from '_formulaire.html' import pied_form %}
 
 {% macro val(attr) %}{{ item[attr] if item and item[attr] is not none else '' }}{% endmacro %}
 
-<form method="POST" id="form-principal" class="formulaire" data-edition-visible{% if action_form %} action="{{ action_form }}"{% endif %}>
+<div class="form-seul">
+<form method="POST" id="form-principal" class="formulaire fiche-saisie" data-edition-visible{% if action_form %} action="{{ action_form }}"{% endif %}>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
+    <div class="data-card mb-3">
     {% call section('Identification', 'bi-tag', 'indigo') %}
     <div class="row g-3">
         <div class="col-md-3">
@@ -55,7 +61,7 @@
     <div class="row g-3">
         <div class="col-md-4"><label class="form-label small">OS</label><input type="text" name="os" class="form-control" value="{{ val('os') }}" placeholder="Windows Server, Debian..."></div>
         <div class="col-md-3"><label class="form-label small">Version</label><input type="text" name="os_version" class="form-control" value="{{ val('os_version') }}"></div>
-        <div class="col-md-3"><label class="form-label small">Dernière MAJ OS</label><input type="date" name="os_last_update" class="form-control" value="{{ item.os_last_update.strftime('%Y-%m-%d') if item and item.os_last_update else '' }}"></div>
+        <div class="col-md-auto"><label class="form-label small">Dernière MAJ OS</label><input type="date" name="os_last_update" class="form-control l-date" value="{{ item.os_last_update.strftime('%Y-%m-%d') if item and item.os_last_update else '' }}"></div>
         <div class="col-md-2 kind-section" data-kinds="{{ groupes.supervision }}"><label class="form-label small">Supervision</label><input type="text" name="supervision" class="form-control" value="{{ val('supervision') }}" placeholder="outil"></div>
     </div>
     <div class="row g-3 mb-2 kind-section" data-kinds="{{ groupes.virtualisation }}">
@@ -96,11 +102,11 @@
             <div class="col-md-4 kind-section" data-kinds="{{ groupes.materiel }}"><label class="form-label small">Constructeur / Modèle</label><input type="text" name="manufacturer_model" class="form-control" value="{{ val('manufacturer_model') }}"></div>
             <div class="col-md-4 kind-section" data-kinds="{{ groupes.materiel }}"><label class="form-label small">N° de série</label><input type="text" name="serial_number" class="form-control" value="{{ val('serial_number') }}"></div>
             <div class="col-md-4 kind-section" data-kinds="{{ groupes.materiel }}"><label class="form-label small">Service Tag</label><input type="text" name="service_tag" class="form-control" value="{{ val('service_tag') }}" placeholder="identifiant de support (Dell, HP…)"></div>
-            <div class="col-md-4 kind-section" data-kinds="{{ groupes.materiel }}"><label class="form-label small">Date achat / mise en service</label><input type="date" name="purchase_date" class="form-control" value="{{ item.purchase_date.strftime('%Y-%m-%d') if item and item.purchase_date else '' }}"></div>
+            <div class="col-md-auto kind-section" data-kinds="{{ groupes.materiel }}"><label class="form-label small">Date achat / mise en service</label><input type="date" name="purchase_date" class="form-control l-date" value="{{ item.purchase_date.strftime('%Y-%m-%d') if item and item.purchase_date else '' }}"></div>
             <div class="col-md-4"><label class="form-label small">Emplacement</label><input type="text" name="location" class="form-control" value="{{ val('location') }}" placeholder="salle serveur, baie 3, étage 2"></div>
             <div class="col-md-4 kind-section" data-kinds="{{ groupes.administration }}"><label class="form-label small">Interface d'administration</label><input type="text" name="management_url" class="form-control" value="{{ val('management_url') }}" placeholder="https://… ou une IP"></div>
             <div class="col-md-2 kind-section" data-kinds="{{ groupes.ports }}"><label class="form-label small">Nombre de ports</label><input type="number" min="0" name="ports" class="form-control" value="{{ val('ports') }}"></div>
-            <div class="col-md-4"><label class="form-label small">Fin de garantie</label><input type="date" name="warranty_end" class="form-control" value="{{ item.warranty_end.strftime('%Y-%m-%d') if item and item.warranty_end else '' }}"></div>
+            <div class="col-md-auto"><label class="form-label small">Fin de garantie</label><input type="date" name="warranty_end" class="form-control l-date" value="{{ item.warranty_end.strftime('%Y-%m-%d') if item and item.warranty_end else '' }}"></div>
             <div class="col-md-4"><label class="form-label small">Contrat de maintenance</label><input type="text" name="maintenance_contract" class="form-control" value="{{ val('maintenance_contract') }}"></div>
             <div class="col-md-4"><label class="form-label small">Fournisseur / support</label>
                 <div class="input-group">
@@ -164,9 +170,12 @@
     </div>
 
     {% endcall %}
+    </div>
+
 
     {{ pied_form(retour, 'Enregistrer' if item else 'Ajouter') }}
 </form>
+</div>
 
 {% if current_user.can_edit('suppliers') %}{{ qa_modal_supplier() }}{% endif %}
 

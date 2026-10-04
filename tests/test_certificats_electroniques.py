@@ -293,3 +293,76 @@ def test_la_liste_et_la_fiche_disent_a_completer(client):
     db.session.commit()
     assert 'compl' in client.get('/certificates/').get_data(as_text=True)
     assert 'compl' in client.get(f'/certificates/{c.id}').get_data(as_text=True)
+
+
+def test_le_nom_de_la_fiche_se_deduit_du_service_ou_du_titulaire(client):
+    """Le formulaire d'un certificat electronique n'a plus de champ « Service » :
+    le nom de la fiche vient du service utilisateur, a defaut du titulaire. Un
+    nom saisi autrefois (« Parapheur ») survit a une modification ; un nom
+    deduit suit le service quand il change."""
+    from app.models import UserService
+    elus, dsi = UserService(name='Élus'), UserService(name='DSI')
+    db.session.add_all([elus, dsi])
+    db.session.commit()
+
+    html = client.get('/certificates/create?kind=signature').get_data(as_text=True)
+    assert 'name="service_name"' not in html
+
+    client.post('/certificates/create', data={'kind': 'signature', 'holder': 'ARNAUD',
+                                              'first_name': 'Jean', 'service_id': elus.id})
+    c = Certificate.query.filter_by(holder='ARNAUD').one()
+    assert c.service_name == 'Élus'
+    client.post(f'/certificates/{c.id}/edit', data={'holder': 'ARNAUD', 'first_name': 'Jean',
+                                                    'service_id': dsi.id})
+    assert db.session.get(Certificate, c.id).service_name == 'DSI'
+
+    client.post('/certificates/create', data={'kind': 'signature', 'holder': 'BRUN',
+                                              'first_name': 'Anne'})
+    assert Certificate.query.filter_by(holder='BRUN').one().service_name == 'BRUN Anne'
+
+    ancien = Certificate(kind='signature', service_name='Parapheur', holder='CARON')
+    db.session.add(ancien)
+    db.session.commit()
+    client.post(f'/certificates/{ancien.id}/edit', data={'holder': 'CARON', 'service_id': dsi.id})
+    assert db.session.get(Certificate, ancien.id).service_name == 'Parapheur'
+
+
+def test_l_emetteur_d_un_certificat_tls_se_choisit_dans_l_annuaire(client):
+    """L'emetteur d'un certificat TLS est une fiche fournisseur, comme pour un
+    certificat electronique. Le nom lu sur le certificat reste enregistre a
+    part (champ cache) : il s'affiche tant qu'aucune fiche n'est choisie, et
+    un enregistrement ne l'efface pas."""
+    ca = Supplier(name='Sectigo SA')
+    c = Certificate(kind='tls', service_name='Portail', domain='portail.fr', issuer="Let's Encrypt")
+    db.session.add_all([ca, c])
+    db.session.commit()
+
+    html = client.get(f'/certificates/{c.id}/edit').get_data(as_text=True)
+    assert '<select name="supplier_id"' in html
+    assert 'type="hidden" name="issuer" value="Let&#39;s Encrypt"' in html
+    assert "Let&#39;s Encrypt" in client.get(f'/certificates/{c.id}').get_data(as_text=True)
+
+    client.post(f'/certificates/{c.id}/edit', data={
+        'service_name': 'Portail', 'domain': 'portail.fr', 'issuer': "Let's Encrypt",
+        'supplier_id': str(ca.id)})
+    c = db.session.get(Certificate, c.id)
+    assert c.supplier_id == ca.id and c.issuer == "Let's Encrypt"
+    fiche = client.get(f'/certificates/{c.id}').get_data(as_text=True)
+    assert f'/suppliers/{ca.id}' in fiche and 'Sectigo SA' in fiche
+
+
+def test_l_equipement_d_un_certificat_tls_se_lit_dans_la_rubrique_certificat(client):
+    """Plus de rubrique « Rattaché à » : l'equipement qui porte le certificat
+    est un champ de la rubrique Certificat, en lien vers sa fiche."""
+    from app.models import Equipment
+    e = Equipment(name='SRV-WEB01', kind='vm')
+    db.session.add(e)
+    db.session.commit()
+    c = Certificate(kind='tls', service_name='Portail', domain='portail.fr', equipment_id=e.id)
+    db.session.add(c)
+    db.session.commit()
+
+    html = client.get(f'/certificates/{c.id}').get_data(as_text=True)
+    synthese = html.split('id="vol-detail"', 1)[1].split('id="vol-details"', 1)[0]
+    assert 'Rattaché à' not in synthese
+    assert f'href="/inventory/{e.id}"' in synthese and 'SRV-WEB01' in synthese

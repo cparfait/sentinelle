@@ -12,7 +12,7 @@
 {% set sous_titre %}
     {%- if signature -%}Certificat électronique · {{ certificate.holder_label() }}{% if certificate.holder_role %} · {{ certificate.holder_role }}{% endif %}
     {%- if certificate.validity_label() %} · {{ certificate.validity_label() }}{% endif %}
-    {%- else -%}Certificat TLS · <code>{{ certificate.domain }}</code>{% if certificate.issuer %} · {{ certificate.issuer }}{% endif %}{%- endif -%}
+    {%- else -%}Certificat TLS · {{ certificate.domain }}{% if certificate.supplier or certificate.issuer %} · {{ certificate.supplier.name if certificate.supplier else certificate.issuer }}{% endif %}{%- endif -%}
     {%- if certificate.priority %} · priorité {{ priority_label(certificate.priority) | lower }}{% endif -%}
 {% endset %}
 {% set primaire %}{% if peut_editer %}{{ bouton_modal('renouveler', 'Marquer renouvelé', 'bi-arrow-repeat') }}{% endif %}{% endset %}
@@ -71,7 +71,7 @@
         {% set retour = url_for('certificates.detail', id=certificate.id) ~ '#details' %}
         {% set action_form = url_for('certificates.edit', id=certificate.id) %}
         <fieldset class="edition-verrou" data-edition-verrou disabled>
-        <div class="data-card p-4">{% include 'certificates/_form_corps.html' %}</div>
+        {% include 'certificates/_form_corps.html' %}
         </fieldset>
     {% endcall %}
     {% endif %}

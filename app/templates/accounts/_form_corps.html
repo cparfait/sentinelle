@@ -2,14 +2,22 @@
    Partagé par la page de modification (form.html) et l'onglet Détails de la
    fiche (detail.html). Contexte attendu : celui de la route edit, `retour`
    (où mène « Annuler ») et, facultatif, `action_form` : l'adresse d'envoi
-   quand la page qui l'affiche n'est pas la sienne. #}
-{% from '_form_section.html' import section %}
+   quand la page qui l'affiche n'est pas la sienne.
+
+   Comme ceux des contrats, logiciels et fournisseurs : UNE carte, des
+   rubriques collées sous leur en-tête coloré (rubrique_form), sans sommaire
+   ni numéros. #}
+{% from '_form_section.html' import rubrique_form as section %}
 {% from '_quick_add.html' import qa_button, qa_modal_software, qa_modal_equipment, qa_modal_supplier %}
 {% from '_formulaire.html' import pied_form %}
 
-<form method="POST" id="form-principal" class="formulaire" data-edition-visible{% if action_form %} action="{{ action_form }}"{% endif %}>
+<div class="form-seul">
+<form method="POST" id="form-principal" class="formulaire fiche-saisie" data-edition-visible{% if action_form %} action="{{ action_form }}"{% endif %}>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    {% call section('Identité', 'bi-key', 'indigo') %}
+    <div class="data-card mb-3">
+    {# UNE rubrique, comme dans la Synthèse : le compte, puis ce à quoi il
+       est rattaché. #}
+    {% call section('Compte', 'bi-key', 'indigo') %}
     <div class="row">
         <div class="col-md-6 mb-3">
             <label class="form-label fw-medium">Service *</label>
@@ -40,9 +48,6 @@
             </select>
         </div>
     </div>
-    {% endcall %}
-
-    {% call section('Rattachement', 'bi-diagram-3', 'violet') %}
     <p class="text-muted small mb-3">Ce que le compte sert. Facultatif, cumulable : l'admin d'un logiciel installé sur un serveur donné se rattache aux deux.</p>
     <div class="row">
         <div class="col-md-4 mb-3">
@@ -86,14 +91,14 @@
 
     {% call section('Rotation du mot de passe', 'bi-arrow-repeat', 'emerald') %}
     <div class="row">
-        <div class="col-md-6 mb-3">
+        <div class="col-md-auto mb-3">
             <label class="form-label fw-medium">Dernier changement de MDP</label>
-            <input type="date" name="last_password_change" class="form-control"
+            <input type="date" name="last_password_change" class="form-control l-date"
                    value="{{ account.last_password_change.strftime('%Y-%m-%d') if account and account.last_password_change else '' }}">
         </div>
-        <div class="col-md-6 mb-3">
+        <div class="col-md-auto mb-3">
             <label class="form-label fw-medium">Rotation (jours) *</label>
-            <input type="number" name="rotation_days" class="form-control"
+            <input type="number" name="rotation_days" class="form-control l-jours"
                    value="{{ account.rotation_days if account else 90 }}" min="1" required>
         </div>
     </div>
@@ -106,9 +111,12 @@
                   placeholder="Informations complementaires...">{{ account.description if account and account.description else '' }}</textarea>
     </div>
     {% endcall %}
+    </div>
+
 
     {{ pied_form(retour, 'Enregistrer' if account else 'Ajouter') }}
         </form>
+</div>
 
 {% if current_user.can_edit('software') %}{{ qa_modal_software() }}{% endif %}
 {% if current_user.can_edit('inventory') %}{{ qa_modal_equipment() }}{% endif %}

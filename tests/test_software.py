@@ -148,14 +148,15 @@ def test_quick_create_application(client):
 
 def test_revue_pointe_sur_inventaire_applications(client):
     """L'« Application métier » de la revue est un select alimente par l'inventaire
-    Logiciels, avec le bouton + (ajout rapide d'une application)."""
+    Logiciels. Pas d'ajout rapide : une application se cree dans l'inventaire,
+    pas depuis une revue de droits."""
     db.session.add_all([Software(name='GED'), Software(name='Finances')])
     db.session.commit()
     html = client.get('/reviews/create').get_data(as_text=True)
-    # select (et non plus input libre) rattache a l'inventaire + quick-add
+    # select (et non plus input libre) rattache a l'inventaire, sans quick-add
     assert '<select name="application"' in html
     assert '>GED<' in html and '>Finances<' in html
-    assert 'qaModalSoftware' in html
+    assert 'qaModalSoftware' not in html
 
 
 def test_revue_conserve_application_hors_inventaire(client):

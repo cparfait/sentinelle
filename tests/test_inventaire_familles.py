@@ -200,18 +200,17 @@ def test_la_fiche_porte_les_couleurs_du_formulaire(client):
     # Le meme titre porte la meme couleur des deux cotes. On ne compare que les
     # sections qui existent dans les deux ecrans : la fiche en fusionne
     # certaines, le formulaire en cache d'autres selon la nature.
-    def couleurs(html, motif):
-        # Les legendes du formulaire tiennent sur plusieurs lignes : on compare
-        # les intitules, pas leur mise en page.
+    def couleurs(html):
+        # L'icone du titre est un <svg> Lucide (ou, a defaut, un <i> Bootstrap).
+        # Le formulaire porte desormais les memes en-tetes que la Synthese
+        # (rubrique_form, _form_section.html) : un seul motif pour les deux.
+        motif = r'fiche-titre--(\w+)[^>]*>\s*(?:<svg[^>]*>.*?</svg>|<i[^>]*></i>)([^<]+?)</h6>'
         return {t.strip(): c for c, t in re.findall(motif, html, re.S)}
 
-    # L'icone du titre est un <svg> Lucide (ou, a defaut, un <i> Bootstrap).
-    des_fiches = couleurs(
-        fiche, r'fiche-titre--(\w+)[^>]*>\s*(?:<svg[^>]*>.*?</svg>|<i[^>]*></i>)([^<]+?)</h6>')
-    du_formulaire = couleurs(
-        formulaire,
-        r'form-section form-section--(\w+)[^>]*>\s*<legend[^>]*>'
-        r'\s*(?:<svg[^>]*>.*?</svg>|<i[^>]*></i>)([^<]+?)</legend>')
+    # La fiche porte aussi le formulaire (onglet Details) : on n'y lit que la
+    # Synthese.
+    des_fiches = couleurs(fiche.split('id="vol-details"', 1)[0])
+    du_formulaire = couleurs(formulaire)
     communes = set(des_fiches) & set(du_formulaire)
     assert communes, (sorted(des_fiches), sorted(du_formulaire))
     for titre in communes:

@@ -140,6 +140,38 @@ def check_domain():
         return jsonify(ok=False, error=str(e))
 
 
+def _sans_accents(texte):
+    import unicodedata
+    plat = unicodedata.normalize('NFKD', texte or '')
+    return ''.join(c for c in plat if not unicodedata.combining(c)).strip().lower()
+
+
+def _nom_de_fiche(kind, f, cert=None):
+    """Le `service_name` d'une fiche : son titre dans les listes et les alertes.
+
+    Un certificat TLS le saisit (champ « Nom »). Un certificat electronique ne
+    le demande plus : le formulaire porte deja le service utilisateur et le
+    titulaire, et le champ « Service » en plus faisait saisir deux fois la meme
+    chose. Il se deduit donc du service utilisateur, a defaut du titulaire.
+
+    A la modification, un nom qui ne venait PAS de la -- « Parapheur »,
+    « Signature des marches », saisis du temps ou le champ existait -- est
+    garde tel quel : le recalculer effacerait ce que quelqu'un a ecrit."""
+    saisi = (f.get('service_name') or '').strip()
+    if saisi or kind != 'signature':
+        return saisi
+    service = db.session.get(UserService, parse_int(f.get('service_id')) or 0)
+    titulaire = ' '.join(b for b in ((f.get('holder') or '').strip(),
+                                     (f.get('first_name') or '').strip()) if b)
+    deduit = service.name if service else titulaire
+    if cert is not None and cert.service_name:
+        anciens = {_sans_accents(cert.service.name) if cert.service else '',
+                   _sans_accents(' '.join(b for b in (cert.holder, cert.first_name) if b))}
+        if _sans_accents(cert.service_name) not in anciens - {''}:
+            return cert.service_name
+    return deduit
+
+
 def _domaine_pour(kind, host):
     """L'identifiant de la fiche domaine dont releve ce nom d'hote, pour un
     certificat TLS ; None sinon (certificat electronique, hote hors du
@@ -159,12 +191,15 @@ def _valide(kind, service_name, domain, expiry_date, holder):
     dont personne n'a encore releve la date, existe quand meme. La fiche passe
     en orange -- a completer -- plutot que d'etre refusee, ce qui perdrait ce
     qu'on en sait deja."""
-    if not service_name:
-        return 'Le service est obligatoire.'
     if kind == 'signature':
+        # Le nom de la fiche se deduit du service ou du titulaire
+        # (_nom_de_fiche) : seul le titulaire est exige.
         if not holder:
             return 'Le nom du titulaire est obligatoire.'
-    elif not domain:
+        return None
+    if not service_name:
+        return 'Le nom est obligatoire.'
+    if not domain:
         return 'Le domaine est obligatoire.'
     return None
 
@@ -179,7 +214,7 @@ def create():
         flash('Les certificats électroniques sont désactivés dans les Préférences.', 'warning')
         return redirect(url_for('certificates.list'))
     if request.method == 'POST':
-        service_name = (request.form.get('service_name') or '').strip()
+        service_name = _nom_de_fiche(kind, request.form)
         domain = (request.form.get('domain') or '').strip()
         expiry_date = parse_date(request.form.get('expiry_date'))
         erreur = _valide(kind, service_name, domain, expiry_date,
@@ -203,6 +238,9 @@ def create():
         )
         if kind == 'signature':
             _fill_signature(c, request.form)
+        else:
+            # L'emetteur d'un certificat TLS : une fiche de l'annuaire.
+            c.supplier_id = parse_int(request.form.get('supplier_id'))
         db.session.add(c)
         db.session.commit()
 
@@ -243,7 +281,7 @@ def edit(id):
     # titulaire sur un certificat TLS, ou un domaine sur une carte a puce.
     kind = cert.kind or 'tls'
     if request.method == 'POST':
-        service_name = (request.form.get('service_name') or '').strip()
+        service_name = _nom_de_fiche(kind, request.form, cert)
         domain = (request.form.get('domain') or '').strip()
         expiry_date = parse_date(request.form.get('expiry_date'))
         erreur = _valide(kind, service_name, domain, expiry_date,
@@ -264,6 +302,8 @@ def edit(id):
         cert.equipment_id = _parse_equipment_id(request.form.get('equipment_id'))
         if kind == 'signature':
             _fill_signature(cert, request.form)
+        else:
+            cert.supplier_id = parse_int(request.form.get('supplier_id'))
         db.session.commit()
         flash('Certificat modifié avec succès', 'success')
         return redirect(url_for('certificates.detail', id=id))

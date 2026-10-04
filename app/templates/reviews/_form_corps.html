@@ -2,44 +2,73 @@
    Partagé par la page de modification (form.html) et l'onglet Détails de la
    fiche (detail.html). Contexte attendu : celui de la route edit, `retour`
    (où mène « Annuler ») et, facultatif, `action_form` : l'adresse d'envoi
-   quand la page qui l'affiche n'est pas la sienne. #}
-{% from '_quick_add.html' import qa_button, qa_modal_software %}
-{% from '_form_section.html' import section %}
+   quand la page qui l'affiche n'est pas la sienne.
+
+   Comme ceux des contrats, logiciels et fournisseurs : UNE carte, des
+   rubriques collées sous leur en-tête coloré (rubrique_form), sans sommaire
+   ni numéros. #}
+{% from '_form_section.html' import rubrique_form as section %}
 {% from '_formulaire.html' import pied_form %}
 
-<form method="POST" id="form-principal" class="formulaire" data-edition-visible{% if action_form %} action="{{ action_form }}"{% endif %}>
+<div class="form-seul">
+<form method="POST" id="form-principal" class="formulaire fiche-saisie" data-edition-visible{% if action_form %} action="{{ action_form }}"{% endif %}>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    {% call section('Identité', 'bi-person-check', 'indigo') %}
+    <div class="data-card mb-3">
+    {# UNE rubrique, comme dans la Synthèse : l'application et son
+       responsable, puis la cadence. Le périmètre suit. #}
+    {% call section('Revue', 'bi-person-check', 'indigo') %}
     <div class="row">
-        <div class="col-md-6 mb-3">
+        <div class="col-md-auto mb-3">
             <label class="form-label fw-medium">Application métier *</label>
             {% set asset_names = assets | map(attribute='name') | list %}
-            <div class="input-group">
-                <select name="application" id="reviewApp" class="form-select" required data-qa-value-field="name">
-                    <option value="">— Choisir une application —</option>
-                    {% for a in assets %}
-                    <option value="{{ a.name }}" {{ 'selected' if review and review.application == a.name }}>{{ a.name }}</option>
-                    {% endfor %}
-                    {% if review and review.application and review.application not in asset_names %}
-                    <option value="{{ review.application }}" selected>{{ review.application }} (hors inventaire)</option>
-                    {% endif %}
-                </select>
-                {% if current_user.can_edit('software') %}{{ qa_button('qaModalSoftware', 'reviewApp', 'Ajouter une application') }}{% endif %}
-            </div>
-            <small class="text-muted">Issu de l'inventaire <a href="{{ url_for('software.list') }}">Logiciels / Applications</a>.</small>
+            {# Pas d'ajout rapide ici : une application se crée dans l'inventaire
+               des logiciels, pas depuis une revue de droits. #}
+            <select name="application" id="reviewApp" class="form-select l-contenu" required>
+                <option value="">— Choisir une application —</option>
+                {% for a in assets %}
+                <option value="{{ a.name }}" {{ 'selected' if review and review.application == a.name }}>{{ a.name }}</option>
+                {% endfor %}
+                {% if review and review.application and review.application not in asset_names %}
+                <option value="{{ review.application }}" selected>{{ review.application }} (hors inventaire)</option>
+                {% endif %}
+            </select>
         </div>
-        <div class="col-md-3 mb-3">
+        <div class="col-md mb-3">
             <label class="form-label fw-medium">Responsable</label>
             <input type="text" name="responsible" class="form-control"
                    value="{{ review.responsible if review and review.responsible else '' }}"
                    data-ad-search data-ad-email="responsible_email"
                    placeholder="Rechercher dans l'annuaire (AD)...">
         </div>
-        <div class="col-md-3 mb-3">
+        <div class="col-md mb-3">
             <label class="form-label fw-medium">Email du responsable</label>
             <input type="email" name="responsible_email" class="form-control"
                    value="{{ review.responsible_email if review and review.responsible_email else '' }}" placeholder="responsable@collectivite.fr">
-            <small class="text-muted">Destinataire du mail de validation des tâches.</small>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-auto mb-3">
+            <label class="form-label fw-medium">Fréquence (jours)</label>
+            <input type="number" name="frequency_days" class="form-control l-jours"
+                   value="{{ review.frequency_days if review else 365 }}">
+        </div>
+        <div class="col-md-auto mb-3">
+            <label class="form-label fw-medium">Dernière revue</label>
+            <input type="date" name="last_review" class="form-control l-date"
+                   value="{{ review.last_review.strftime('%Y-%m-%d') if review and review.last_review else '' }}">
+        </div>
+        <div class="col-md-auto mb-3">
+            <label class="form-label fw-medium">Prochaine revue</label>
+            <input type="date" name="next_review" class="form-control l-date"
+                   value="{{ review.next_review.strftime('%Y-%m-%d') if review and review.next_review else '' }}">
+        </div>
+        <div class="col-md-auto mb-3">
+            <label class="form-label fw-medium">Priorité</label>
+            <select name="priority" class="form-select l-contenu">
+                <option value="low" {{ 'selected' if review and review.priority == 'low' }}>Basse</option>
+                <option value="medium" {{ 'selected' if not review or review.priority == 'medium' }}>Moyenne</option>
+                <option value="high" {{ 'selected' if review and review.priority == 'high' }}>Haute</option>
+            </select>
         </div>
     </div>
     {% endcall %}
@@ -51,36 +80,8 @@
                   placeholder="Comptes concernés, profils, points à vérifier...">{{ review.scope if review and review.scope else '' }}</textarea>
     </div>
     {% endcall %}
-
-    {% call section('Cadence', 'bi-calendar-check', 'emerald') %}
-    {% endcall %}
-
-    <div class="row">
-        <div class="col-md-3 mb-3">
-            <label class="form-label fw-medium">Fréquence (jours)</label>
-            <input type="number" name="frequency_days" class="form-control"
-                   value="{{ review.frequency_days if review else 365 }}">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label class="form-label fw-medium">Dernière revue</label>
-            <input type="date" name="last_review" class="form-control"
-                   value="{{ review.last_review.strftime('%Y-%m-%d') if review and review.last_review else '' }}">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label class="form-label fw-medium">Prochaine revue</label>
-            <input type="date" name="next_review" class="form-control"
-                   value="{{ review.next_review.strftime('%Y-%m-%d') if review and review.next_review else '' }}">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label class="form-label fw-medium">Priorité</label>
-            <select name="priority" class="form-select">
-                <option value="low" {{ 'selected' if review and review.priority == 'low' }}>Basse</option>
-                <option value="medium" {{ 'selected' if not review or review.priority == 'medium' }}>Moyenne</option>
-                <option value="high" {{ 'selected' if review and review.priority == 'high' }}>Haute</option>
-            </select>
-        </div>
     </div>
+
     {{ pied_form(retour, 'Enregistrer' if review else 'Ajouter') }}
 </form>
-
-{% if current_user.can_edit('software') %}{{ qa_modal_software() }}{% endif %}
+</div>

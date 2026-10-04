@@ -62,12 +62,15 @@ def test_chaque_formulaire_porte_ses_sections(client, jeu, url):
     répétée n'est plus un repère, c'est du décor."""
     html = client.get(url).get_data(as_text=True)
     sections = re.findall(r'class="form-section form-section--(\w+)', html)
-    if url in ('/contracts/create', '/inventory/logiciels/create', '/suppliers/create'):
+    if url != '/users/create':
         # Le marché suit la grille de SoftInventory : pas de rubriques
         # numérotées, des cartes (Marché, Logiciels et Équipements couverts)
         # dont les titres portent les couleurs. Le logiciel aussi (Identité,
         # Technique, Rattachements, RGPD), et le fournisseur (Identité,
-        # Assistance, Contacts, Notes).
+        # Assistance, Contacts, Notes). Les fiches d'échéance et le matériel
+        # ont rejoint ce format (rubrique_form, _form_section.html) : seul le
+        # formulaire d'un utilisateur garde ses rubriques numérotées.
+        assert not sections, f'{url} : des rubriques numérotées ont survécu'
         sections = re.findall(r'fiche-titre fiche-titre--(\w+)', html)
     assert len(sections) >= 2, f'{url} : {len(sections)} section(s)'
     # L'ardoise est la teinte NEUTRE : elle a le droit de revenir (liste de

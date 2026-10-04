@@ -7,12 +7,5 @@
 {% set retour = url_for('accounts.detail', id=account.id) if account else url_for('accounts.list') %}
 {{ entete_form(titre_form, retour) }}
 
-<div class="form-page">
-    <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
-    <div class="form-corps">
-        <div class="data-card p-4">
-            {% include 'accounts/_form_corps.html' %}
-        </div>
-    </div>
-</div>
+{% include 'accounts/_form_corps.html' %}
 {% endblock %}

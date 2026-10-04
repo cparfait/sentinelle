@@ -1,7 +1,9 @@
 {% from '_icones.html' import icone as ico_bi %}
 {# Report des alertes (« je m'en occupe »). Variables : entity_type, entity_id.
    Compact : une ligne d'état, et le formulaire replié derrière « Reporter… » —
-   c'est un geste rare, il ne mérite pas une carte entière sur chaque fiche. #}
+   c'est un geste rare, il ne mérite pas une carte entière sur chaque fiche.
+   Les deux formulaires restent visibles en LECTURE (data-edition-visible) :
+   reporter une alerte ne modifie pas la fiche, on ne passe pas par le crayon. #}
 {% if current_user.can_edit(alert_permission(entity_type)) %}
 {% set snz = active_snooze(entity_type, entity_id) %}
 <div class="data-card fiche-alertes mb-3">
@@ -9,7 +11,7 @@
     <div class="d-flex align-items-center gap-2">
         {{ ico_bi('bi-bell-slash', '1em', 'text-muted') }}
         <div class="cell2 flex-grow-1"><strong>Alertes en pause</strong><small>jusqu'au {{ snz.snoozed_until.strftime('%d/%m/%Y') }}{% if snz.reason %} · {{ snz.reason }}{% endif %}</small></div>
-        <form method="POST" action="{{ url_for('alerts.unsnooze') }}">
+        <form method="POST" action="{{ url_for('alerts.unsnooze') }}" data-edition-visible>
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="entity_type" value="{{ entity_type }}">
             <input type="hidden" name="entity_id" value="{{ entity_id }}">
@@ -23,7 +25,7 @@
             <div class="cell2 flex-grow-1"><strong>Alertes actives</strong><small>rappels par mail selon les seuils</small></div>
             <span class="btn btn-sm btn-ghost">Reporter…</span>
         </summary>
-        <form method="POST" action="{{ url_for('alerts.snooze') }}" class="mt-2">
+        <form method="POST" action="{{ url_for('alerts.snooze') }}" class="mt-2" data-edition-visible>
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="entity_type" value="{{ entity_type }}">
             <input type="hidden" name="entity_id" value="{{ entity_id }}">

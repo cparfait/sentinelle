@@ -52,7 +52,7 @@
         {% set retour = url_for('accounts.detail', id=account.id) ~ '#details' %}
         {% set action_form = url_for('accounts.edit', id=account.id) %}
         <fieldset class="edition-verrou" data-edition-verrou disabled>
-        <div class="data-card p-4">{% include 'accounts/_form_corps.html' %}</div>
+        {% include 'accounts/_form_corps.html' %}
         </fieldset>
     {% endcall %}
     {% endif %}

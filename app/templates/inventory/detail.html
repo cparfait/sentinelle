@@ -68,7 +68,7 @@
         {% set retour = url_for('inventory.detail', id=item.id) ~ '#details' %}
         {% set action_form = url_for('inventory.edit', id=item.id) %}
         <fieldset class="edition-verrou" data-edition-verrou disabled>
-        <div class="data-card p-4">{% include 'inventory/_form_corps.html' %}</div>
+        {% include 'inventory/_form_corps.html' %}
         </fieldset>
     {% endcall %}
     {% endif %}

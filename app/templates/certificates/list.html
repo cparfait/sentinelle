@@ -102,7 +102,7 @@
                     <td class="text-muted text-truncate">{{ cert.service.name if cert.service else '—' }}</td>
                     <td class="text-muted text-truncate">
                         {%- if electronique %}{{ cert.supplier.name if cert.supplier else '—' }}
-                        {%- else %}{{ cert.issuer or '—' }}{% endif -%}
+                        {%- else %}{{ cert.supplier.name if cert.supplier else (cert.issuer or '—') }}{% endif -%}
                     </td>
                     {# Validité : les deux dates sur une ligne, et la pastille qui
                        dit où l'on en est. Un certificat révoqué n'a plus de

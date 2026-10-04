@@ -2,23 +2,31 @@
    Partagé par la page de modification (form.html) et l'onglet Détails de la
    fiche (detail.html). Contexte attendu : celui de la route edit, `retour`
    (où mène « Annuler ») et, facultatif, `action_form` : l'adresse d'envoi
-   quand la page qui l'affiche n'est pas la sienne. #}
-{% from '_form_section.html' import section %}
+   quand la page qui l'affiche n'est pas la sienne.
+
+   Comme ceux des contrats, logiciels et fournisseurs : UNE carte, des
+   rubriques collées sous leur en-tête coloré (rubrique_form), sans sommaire
+   ni numéros. #}
+{% from '_form_section.html' import rubrique_form as section %}
 {% from '_formulaire.html' import pied_form %}
 
-        <form method="POST" id="form-principal" class="formulaire" data-edition-visible{% if action_form %} action="{{ action_form }}"{% endif %}>
+        <div class="form-seul">
+<form method="POST" id="form-principal" class="formulaire fiche-saisie" data-edition-visible{% if action_form %} action="{{ action_form }}"{% endif %}>
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            {% call section('Identité', 'bi-hdd', 'indigo') %}
+    <div class="data-card mb-3">
+            {# UNE rubrique, comme dans la Synthèse : la sauvegarde, sa
+               planification et l'équipement sauvegardé. #}
+            {% call section('Sauvegarde', 'bi-cloud-arrow-up', 'emerald') %}
             <div class="row">
-                <div class="col-md-6 mb-3">
+                <div class="col-md mb-3">
                     <label class="form-label fw-medium">Service *</label>
                     <input type="text" name="service_name" class="form-control"
                            value="{{ backup.service_name if backup else '' }}" required
                            placeholder="ex: Serveur SQL, Active Directory...">
                 </div>
-                <div class="col-md-6 mb-3">
+                <div class="col-md-auto mb-3">
                     <label class="form-label fw-medium">Type de backup</label>
-                    <select name="backup_type" class="form-select">
+                    <select name="backup_type" class="form-select l-contenu">
                         <option value="">— Sélectionner —</option>
                         <option value="full" {{ 'selected' if backup and backup.backup_type == 'full' }}>Complet</option>
                         <option value="incremental" {{ 'selected' if backup and backup.backup_type == 'incremental' }}>Incremental</option>
@@ -28,45 +36,37 @@
                     </select>
                 </div>
             </div>
-            {% endcall %}
-
-            {% call section('Planification', 'bi-calendar-check', 'emerald') %}
             <div class="row">
-                <div class="col-md-6 mb-3">
+                <div class="col-md mb-3">
                     <label class="form-label fw-medium">Emplacement</label>
                     <input type="text" name="location" class="form-control"
                            value="{{ backup.location if backup and backup.location else '' }}"
                            placeholder="NAS, Cloud, Bande...">
                 </div>
-                <div class="col-md-6 mb-3">
+                <div class="col-md-auto mb-3">
                     <label class="form-label fw-medium">Frequence</label>
-                    <select name="frequency" class="form-select">
+                    <select name="frequency" class="form-select l-contenu">
                         <option value="">— Sélectionner —</option>
                         <option value="daily" {{ 'selected' if backup and backup.frequency == 'daily' }}>Quotidien</option>
                         <option value="weekly" {{ 'selected' if backup and backup.frequency == 'weekly' }}>Hebdomadaire</option>
                         <option value="monthly" {{ 'selected' if backup and backup.frequency == 'monthly' }}>Mensuel</option>
                     </select>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6 mb-3">
+                <div class="col-md-auto mb-3">
                     <label class="form-label fw-medium">Heure prevue</label>
-                    <input type="time" name="expected_time" class="form-control"
+                    <input type="time" name="expected_time" class="form-control l-heure"
                            value="{{ backup.expected_time if backup and backup.expected_time else '' }}"
                            placeholder="ex: 02:00">
                 </div>
-                <div class="col-md-6 mb-3">
+                <div class="col-md-auto mb-3">
                     <label class="form-label fw-medium">Priorite</label>
-                    <select name="priority" class="form-select">
+                    <select name="priority" class="form-select l-contenu">
                         <option value="low" {{ 'selected' if backup and backup.priority == 'low' }}>Basse</option>
                         <option value="medium" {{ 'selected' if not backup or backup.priority == 'medium' }}>Moyenne</option>
                         <option value="high" {{ 'selected' if backup and backup.priority == 'high' }}>Haute</option>
                     </select>
                 </div>
             </div>
-            {% endcall %}
-
-            {% call section('Équipement sauvegardé', 'bi-hdd-stack', 'teal') %}
             <div class="mb-3">
                 {% with selected_id = backup.equipment_id if backup else none %}
                 {% include '_equipment_select.html' %}
@@ -75,12 +75,14 @@
             {% endcall %}
 
             {% call section('Notes', 'bi-journal-text', 'slate') %}
-            {% endcall %}
-
             <div class="mb-3">
                 <label class="form-label fw-medium">Description / Notes</label>
                 <textarea name="description" class="form-control" rows="3"
                           placeholder="Details complementaires...">{{ backup.description if backup and backup.description else '' }}</textarea>
             </div>
+            {% endcall %}
+    </div>
+
             {{ pied_form(retour, 'Enregistrer' if backup else 'Ajouter') }}
         </form>
+</div>

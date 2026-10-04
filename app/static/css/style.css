@@ -2394,6 +2394,57 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     .fournisseur-saisie .contact-label { display: block; }
 }
 
+/* Les formulaires des fiches d'echeance et du parc (comptes, certificats,
+   domaines, sauvegardes, tests, mises a jour, revues, materiel) : le format
+   des trois precedents — UNE carte, des rubriques collees sous l'en-tete
+   colore de la Synthese (rubrique_form, _form_section.html), des champs de
+   26 px sous des intitules de 12 px. Leurs champs restent ranges par les
+   colonnes Bootstrap ; seuls les ecarts se resserrent. */
+.fiche-saisie .saisie-rubrique + .saisie-rubrique > .card-header-custom { border-top: 1px solid var(--line); }
+.fiche-saisie .form-label { font-size: 12px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fiche-saisie .form-control, .fiche-saisie .form-select { padding: 2px 10px; font-size: 0.8rem; line-height: 20px; min-height: 26px; }
+.fiche-saisie .form-select { padding-right: 28px; }
+.fiche-saisie .input-group > .btn { padding: 2px 6px; line-height: 1; min-height: 26px; display: inline-flex; align-items: center; justify-content: center; }
+.fiche-saisie .row { --bs-gutter-x: 12px; }
+.fiche-saisie .row.g-3 { --bs-gutter-y: 8px; }
+.fiche-saisie .mb-3, .fiche-saisie .mb-2 { margin-bottom: 8px !important; }
+.fiche-saisie .saisie-rubrique > .p-3 > :last-child,
+.fiche-saisie .saisie-rubrique > .p-3 > .row:last-child > [class*="col-"] { margin-bottom: 0 !important; }
+.fiche-saisie .form-section-aide { padding: 0; margin-bottom: 8px; }
+/* Une date a sa largeur naturelle, comme dans le formulaire d'un marche
+   (.marche-saisie .l-date) : « 31/12/2030 » et le pictogramme, 108 px. */
+.fiche-saisie .form-control.l-date { width: 108px; padding-left: 6px; padding-right: 4px; }
+/* Un nombre de jours : trois chiffres (« 999 ») et les fleches du champ,
+   comme le preavis d'un marche (.marche-saisie .l-jours). */
+.fiche-saisie .form-control.l-jours { width: 54px; padding-left: 6px; padding-right: 4px; }
+/* Une liste a la largeur de son choix le plus long, une heure a celle de
+   « 23:59 » et de son pictogramme. */
+.fiche-saisie .form-select.l-contenu { width: auto; padding-right: 34px; }
+/* Accolee a un bouton d'ajout, la liste garde sa largeur au lieu de s'etirer. */
+.fiche-saisie .input-group > .form-select.l-contenu { flex: 0 0 auto; }
+.fiche-saisie .form-control.l-heure { width: 78px; padding-left: 6px; padding-right: 4px; }
+/* Un numero de version : dix-huit caracteres (« 2024.10.15-rc12+b7 »). */
+.fiche-saisie .form-control.l-version { width: calc(18ch + 22px); }
+/* Un montant : « 9 999 999,99 ». */
+.fiche-saisie .form-control.l-montant { width: calc(12ch + 22px); }
+@media (max-width: 767.98px) { .fiche-saisie .form-control:is(.l-date, .l-jours, .l-heure, .l-version, .l-montant), .fiche-saisie .form-select.l-contenu { width: 100%; } }
+/* Le ? d'aide tient dans la ligne de l'intitule (16 px) : a 20 px il etait
+   rogne par l'intitule et descendait son champ sous celui du voisin. */
+.fiche-saisie .form-label .help-toggle { width: 16px; height: 16px; font-size: 0.65rem; vertical-align: top; }
+/* Sous un champ a sa largeur naturelle, l'aide depliee se replie dans la
+   colonne au lieu de l'elargir et de pousser les champs voisins. */
+.fiche-saisie .col-md-auto > .form-text { width: 0; min-width: 100%; }
+/* L'aide sur la ligne de l'intitule (.saisie-intitule) : a droite du ?, en une
+   seule ligne. Elle ne prend aucune largeur dans sa colonne (flex 0 0 0) et
+   deborde sur l'espace libre au-dessus des champs voisins, sans les pousser. */
+.fiche-saisie .saisie-intitule { display: flex; align-items: center; margin-bottom: 4px; }
+.fiche-saisie .saisie-intitule > .form-label { margin-bottom: 0; flex: 0 0 auto; overflow: visible; }
+.fiche-saisie .saisie-intitule > .form-text { flex: 0 0 0; width: 0; margin: 0 -8px 0 8px; white-space: nowrap; overflow: visible; line-height: 16px; }
+/* Un interrupteur dans une rangee de champs : un intitule vide au-dessus le
+   pose sur la ligne des champs, quelle que soit la hauteur des voisins. */
+.fiche-saisie .saisie-interrupteur { min-height: 26px; display: flex; align-items: center; gap: 6px; margin: 0; }
+.fiche-saisie .saisie-interrupteur .form-check-input { margin-top: 0; }
+
 /* La nouvelle Synthese (_synthese.html) : le formulaire de l'onglet Details en
    lecture, rubriques collees, un filet entre elles. Dans une rubrique, une
    grille de paires « intitule | valeur » : l'intitule a gauche, la valeur en
@@ -2446,6 +2497,11 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 }
 .lu--large { display: block; padding-top: 14px; }
 .lu--large .lu-label { display: block; margin-bottom: 2px; }
+/* Un paragraphe en TETE de rubrique n'a rien a detacher au-dessus de lui : il
+   reprend l'ecart d'un champ ordinaire. Seul dans sa rubrique (Notes,
+   Procedure, Perimetre), son intitule repeterait le titre juste au-dessus. */
+.lu-grille > .lu-rangee:first-child > .lu--large:first-child { padding-top: 3px; }
+.lu-grille > .lu-rangee:only-child > .lu--large:only-child > .lu-label { display: none; }
 .lu-label { font-size: 12px; color: var(--muted); }
 .lu-valeur { font-size: 0.8rem; font-weight: 600; line-height: 1; color: var(--text); overflow-wrap: break-word; min-width: 0; }
 /* Interligne 1 : une valeur coupee par « … » (overflow cache) garde un peu
@@ -3036,10 +3092,11 @@ a.marche-doc-nom:hover { color: var(--primary); }
 
 /* ---- Modification sur place (edition.js, barre(sur_place=True)) ----
    En LECTURE, une fiche ne montre que des valeurs : tout formulaire d'envoi
-   des onglets (rattacher, retirer, déposer, reporter une alerte), les liens qui
+   des onglets (rattacher, retirer, déposer), les liens qui
    ouvrent un formulaire dans la liste, les boutons qui en déplient un, et ce
    que le gabarit marque [data-edition-seule], disparaissent. Les formulaires
-   [data-edition-visible] (l'onglet Détails, les services cochés) restent, grisés
+   [data-edition-visible] (l'onglet Détails, les services cochés, le report
+   d'une alerte) restent, les deux premiers grisés
    par leur <fieldset disabled>. Le crayon ajoute .en-edition à <main> : tout
    revient. Le CSS agit seul, sans attendre le script : pas d'éclair au chargement. */
 main:has([data-onglets][data-edition]):not(.en-edition) .fiche-volets :is(

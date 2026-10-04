@@ -7,12 +7,5 @@
 {% set retour = url_for('reviews.detail', id=review.id) if review else url_for('reviews.list') %}
 {{ entete_form(titre_form, retour) }}
 
-<div class="form-page">
-    <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
-    <div class="form-corps">
-        <div class="data-card p-4">
-            {% include 'reviews/_form_corps.html' %}
-        </div>
-    </div>
-</div>
+{% include 'reviews/_form_corps.html' %}
 {% endblock %}

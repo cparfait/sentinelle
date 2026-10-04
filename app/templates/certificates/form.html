@@ -26,12 +26,5 @@
 {% set retour = url_for('certificates.detail', id=certificate.id) if certificate else url_for('certificates.list') %}
 {{ entete_form(titre_form, retour, sous_titre_form) }}
 
-<div class="form-page">
-    <nav class="form-sommaire" aria-label="Rubriques du formulaire"></nav>
-    <div class="form-corps">
-        <div class="data-card p-4">
-            {% include 'certificates/_form_corps.html' %}
-        </div>
-    </div>
-</div>
+{% include 'certificates/_form_corps.html' %}
 {% endblock %}
