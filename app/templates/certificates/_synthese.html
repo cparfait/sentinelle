@@ -21,7 +21,7 @@
         {% call lu_bloc('Émetteur', titre='Autorité de certification') %}{% if c.supplier %}<a href="{{ url_for('suppliers.detail', id=c.supplier_id) }}">{{ c.supplier.name }}</a>{% endif %}{% endcall %}
         {{ lu('Usage', c.usage_label()) }}
         {{ lu('Support', c.support_label()) }}
-        {{ lu('Niveau', c.level) }}
+        {{ lu('Intitulé', c.level) }}
         {{ lu('N° de série', c.serial_number) }}
     </div>
     {% call rangee() %}

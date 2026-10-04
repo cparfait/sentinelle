@@ -154,10 +154,10 @@
             </select>
         </div>
         <div class="col-md mb-3" {{ nature('signature') }}>
-            <label class="form-label fw-medium" title="Niveau de garantie">Niveau</label>
+            <label class="form-label fw-medium" title="Intitulé du certificat chez l'autorité, niveau de garantie compris">Intitulé</label>
             <input type="text" name="level" class="form-control"
                    value="{{ certificate.level or '' if certificate else '' }}"
-                   placeholder="RGS**, eIDAS qualifié...">
+                   placeholder="Décideur - G2, RGS**...">
         </div>
         <div class="col-md mb-3">
             <label class="form-label fw-medium">N° de série</label>
