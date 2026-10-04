@@ -58,10 +58,9 @@
     {% call volet('detail', actif=True) %}
     {# Sans contrat, logiciel ni matériel, le rail n'a rien à montrer : la
        Synthèse prend toute la largeur, comme sur la fiche logiciel. #}
-    {# Les certificats électroniques ne se montrent que si leur module est actif,
-       et aucun sans le droit de voir les certificats. #}
-    {% set certificats = (certificates if features.ecerts else certificates | rejectattr('kind', 'equalto', 'signature') | list)
-                         if current_user.can_view('certificates') else [] %}
+    {# Aucun certificat sans le droit de les voir -- ce que le module coupé dans
+       les Préférences retire à tout le monde. #}
+    {% set certificats = certificates if current_user.can_view('certificates') else [] %}
     {# La carte Contrats ne garde que ceux EN COURS, comme sur la fiche logiciel :
        un acte échu ou à venir ne dit pas ce qui nous engage aujourd'hui. Tous se
        lisent dans l'onglet Contrats. #}

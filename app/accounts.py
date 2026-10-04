@@ -57,7 +57,6 @@ def create():
             description=request.form.get('description'),
             last_password_change=parse_date(request.form.get('last_password_change')),
             rotation_days=parse_int(request.form.get('rotation_days'), 90, minimum=1),
-            priority=request.form.get('priority', 'medium'),
         )
         if a.last_password_change:
             a.next_password_change = a.last_password_change + timedelta(days=a.rotation_days)
@@ -104,7 +103,6 @@ def edit(id):
         account.description = request.form.get('description')
         account.last_password_change = parse_date(request.form.get('last_password_change'))
         account.rotation_days = parse_int(request.form.get('rotation_days'), 90, minimum=1)
-        account.priority = request.form.get('priority', 'medium')
         if account.last_password_change:
             account.next_password_change = account.last_password_change + timedelta(days=account.rotation_days)
         db.session.commit()

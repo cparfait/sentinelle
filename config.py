@@ -83,7 +83,7 @@ class Config:
     QUOTES_ENABLED = os.getenv('QUOTES_ENABLED', 'true').lower() in ('true', '1', 'yes')
     GDPR_ENABLED = os.getenv('GDPR_ENABLED', 'true').lower() in ('true', '1', 'yes')
     SOFTWARE_LINKS_ENABLED = os.getenv('SOFTWARE_LINKS_ENABLED', 'true').lower() in ('true', '1', 'yes')
-    ELECTRONIC_CERTS_ENABLED = os.getenv('ELECTRONIC_CERTS_ENABLED', 'true').lower() in ('true', '1', 'yes')
+    CERTIFICATES_ENABLED = os.getenv('CERTIFICATES_ENABLED', 'true').lower() in ('true', '1', 'yes')
     # Pieces jointes : actives par defaut -- elles ne coutent rien tant qu'on
     # n'en depose pas, et l'ecran serait introuvable autrement. La taille
     # maximale borne ce que la base a vocation a heberger : une piece jointe est

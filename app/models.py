@@ -176,6 +176,12 @@ class User(UserMixin, db.Model):
 
     def perm_level(self, category):
         """Niveau de droit (0-3) sur une categorie."""
+        # Un module coupe dans les Preferences n'accorde plus de droit a
+        # personne, administrateur compris : ses ecrans disparaissent partout
+        # ou ce droit se teste (menu, tableau de bord, recherche, onglets).
+        from app import features
+        if not features.category_enabled(category):
+            return 0
         r = self._role_obj()
         if r is not None:
             if r.is_admin:

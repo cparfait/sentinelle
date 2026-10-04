@@ -7,7 +7,7 @@
 {% set peut_editer = current_user.can_edit('reviews') %}
 
 {% block content %}
-{% set sous_titre %}Revue de droits{% if review.responsible %} · {{ review.responsible }}{% endif %}{% if review.frequency_days %} · tous les {{ review.frequency_days }} j{% endif %}{% if review.priority %} · priorité {{ priority_label(review.priority) | lower }}{% endif %}{% endset %}
+{% set sous_titre %}Revue de droits{% if review.responsible %} · {{ review.responsible }}{% endif %}{% if review.frequency_days %} · tous les {{ review.frequency_days }} j{% endif %}{% endset %}
 {% set primaire %}{% if peut_editer %}{{ bouton_modal('valider', 'Valider la revue', 'bi-check-lg') }}{% endif %}{% endset %}
 {% set menu %}
     {% if current_user.can_delete('reviews') %}

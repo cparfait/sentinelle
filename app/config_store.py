@@ -28,7 +28,7 @@ _BOOL = {'MAIL_ENABLED', 'LDAP_ENABLED', 'LDAP_USE_SSL', 'LDAP_VALIDATE_CERT', '
          'CONTRACT_FORM_LEGACY', 'SUPPLIER_FORM_LEGACY',
          # Modules debrayables (voir app/features.py)
          'QUOTES_ENABLED', 'GDPR_ENABLED', 'SOFTWARE_LINKS_ENABLED',
-         'ELECTRONIC_CERTS_ENABLED'}
+         'CERTIFICATES_ENABLED'}
 _INT = {'LDAP_PORT', 'MAIL_PORT', 'DOCUMENT_MAX_MB', 'BACKUP_DB_KEEP'}
 _TRIPLET = {'THRESHOLD_EXPIRY', 'THRESHOLD_DOMAIN', 'THRESHOLD_TASK', 'THRESHOLD_CONTRACT'}
 
@@ -57,8 +57,8 @@ MANAGED = _BOOL | _INT | _TRIPLET | _CSV | {
     'REPORT_SCHEDULE',  # envoi planifie du bilan PDF : off / monthly / weekly
     'CT_MONITORING',    # surveillance Certificate Transparency (crt.sh) : on/off
     'SOFTWARE_ALERTS',  # alertes logiciels (fin de vie, licences depassees) : on/off
-    # Modules debrayables : devis, RGPD, flux entre logiciels, certificats electroniques.
-    'QUOTES_ENABLED', 'GDPR_ENABLED', 'SOFTWARE_LINKS_ENABLED', 'ELECTRONIC_CERTS_ENABLED',
+    # Modules debrayables : devis, RGPD, flux entre logiciels, certificats.
+    'QUOTES_ENABLED', 'GDPR_ENABLED', 'SOFTWARE_LINKS_ENABLED', 'CERTIFICATES_ENABLED',
     'DASHBOARD_CUSTOM', # tableau de bord personnalisable par utilisateur : on/off
     'PAGINATION_MEMORY',  # taille de page retenue par utilisateur et par liste : on/off
     'SOFTWARE_FORM_LEGACY', 'CONTRACT_FORM_LEGACY',  # anciens formulaires : on/off

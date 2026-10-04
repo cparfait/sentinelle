@@ -1,7 +1,19 @@
 {# Select « Équipement lié » (vue 360°). Attend dans le contexte :
    - equipments : liste des équipements actifs
-   - selected_id : id de l'équipement actuellement lié (ou none) #}
+   - selected_id : id de l'équipement actuellement lié (ou none)
+   - compact (facultatif) : le champ tient dans une rangée, à côté d'autres —
+     l'intitulé et la liste, sans aide ni ajout rapide : un équipement se
+     crée dans l'inventaire, pas depuis la fiche qui s'y rattache. #}
 {% from '_quick_add.html' import qa_add_link, qa_modal_equipment %}
+{% if compact %}
+<label class="form-label fw-medium" for="equipmentSelect">Équipement lié (inventaire)</label>
+<select name="equipment_id" id="equipmentSelect" class="form-select">
+    <option value="">— Aucun —</option>
+    {% for e in equipments %}
+    <option value="{{ e.id }}" {{ 'selected' if selected_id == e.id }}>{{ e.name }} ({{ e.kind_label() }}{% if e.environment %} · {{ e.env_label() }}{% endif %})</option>
+    {% endfor %}
+</select>
+{% else %}
 <div class="d-flex justify-content-between align-items-center">
     <label class="form-label fw-medium mb-0">Équipement lié (inventaire)</label>
     {% if current_user.can_edit('inventory') %}{{ qa_add_link('qaModalEquipment', 'equipmentSelect', 'Nouvel équipement') }}{% endif %}
@@ -14,3 +26,4 @@
 </select>
 <small class="text-muted">Relie cet élément à un serveur/NAS de l'inventaire (fiche 360°).</small>
 {% if current_user.can_edit('inventory') %}{{ qa_modal_equipment() }}{% endif %}
+{% endif %}

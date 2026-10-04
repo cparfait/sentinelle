@@ -1,7 +1,7 @@
 {% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Revues de droits - Sentinelle{% endblock %}
-{% from '_macros.html' import status_badge, delai_badge, priorite %}
+{% from '_macros.html' import status_badge, delai_badge %}
 {% from '_liste.html' import barre, cellule, vide %}
 
 {% block content %}
@@ -31,7 +31,6 @@
                     <th>Prochaine revue</th>
                     <th>Responsable</th>
                     <th>Fréquence</th>
-                    <th>Priorité</th>
                     <th>Statut</th>
                 </tr>
             </thead>
@@ -46,7 +45,6 @@
                     </td>
                     <td>{{ r.responsible or '—' }}</td>
                     <td>tous les {{ r.frequency_days }} j</td>
-                    <td>{{ priorite(r.priority) }}</td>
                     <td>{{ status_badge(r.computed_status()) }}</td>
                 </tr>
                 {% else %}

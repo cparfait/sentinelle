@@ -56,19 +56,29 @@ def test_un_certificat_electronique_n_exige_pas_de_domaine(client):
     assert Certificate.query.count() == 0
 
 
-def test_la_nature_ne_change_plus_apres_creation(client):
-    """Basculer de l'une à l'autre laisserait un titulaire sur un certificat
-    TLS, ou un domaine sur une carte à puce."""
+def test_le_type_se_change_dans_le_formulaire(client):
+    """Un seul formulaire pour les deux types : le champ « Type » se modifie
+    aussi après la création. La fiche prend alors les champs du nouveau type."""
     c = Certificate(kind='signature', service_name='Parapheur', holder='ARNAUD',
                     expiry_date=_demain(200))
     db.session.add(c)
     db.session.commit()
+
+    html = client.get(f'/certificates/{c.id}/edit').get_data(as_text=True)
+    assert '<select name="kind"' in html and 'name="domain"' in html and 'name="holder"' in html
+
     client.post(f'/certificates/{c.id}/edit', data={
-        'kind': 'tls', 'service_name': 'Parapheur', 'holder': 'ARNAUD',
+        'kind': 'tls', 'service_name': 'Parapheur',
         'domain': 'www.ville.fr', 'expiry_date': _demain(200).isoformat()},
         follow_redirects=True)
     db.session.expire(c)
-    assert c.kind == 'signature'
+    assert c.kind == 'tls' and c.domain == 'www.ville.fr'
+
+    client.post(f'/certificates/{c.id}/edit', data={
+        'kind': 'signature', 'holder': 'ARNAUD', 'expiry_date': _demain(200).isoformat()},
+        follow_redirects=True)
+    db.session.expire(c)
+    assert c.kind == 'signature' and c.domain is None and c.service_name == 'Parapheur'
 
 
 # ── Ce qu'on a DÉCIDÉ, et ce que les dates disent ──
@@ -304,9 +314,6 @@ def test_le_nom_de_la_fiche_se_deduit_du_service_ou_du_titulaire(client):
     elus, dsi = UserService(name='Élus'), UserService(name='DSI')
     db.session.add_all([elus, dsi])
     db.session.commit()
-
-    html = client.get('/certificates/create?kind=signature').get_data(as_text=True)
-    assert 'name="service_name"' not in html
 
     client.post('/certificates/create', data={'kind': 'signature', 'holder': 'ARNAUD',
                                               'first_name': 'Jean', 'service_id': elus.id})

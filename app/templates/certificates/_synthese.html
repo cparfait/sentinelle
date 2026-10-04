@@ -28,18 +28,8 @@
         {{ lu('Émis le', c.issued_at.strftime('%d/%m/%Y') if c.issued_at else None) }}
         {{ lu('Expire le', c.expiry_date.strftime('%d/%m/%Y') if c.expiry_date else None) }}
         {{ lu('Durée', ('%d an%s' % (c.duration_years, 's' if c.duration_years > 1 else '')) if c.duration_years else None, titre='Durée commandée') }}
-        {{ lu('Priorité', priority_label(c.priority)) }}
-    {% endcall %}
-    {% endcall %}
-
-    {# L'équipement qui porte le certificat, s'il y en a un, se lit ici, en lien
-       vers sa fiche : pas de rubrique « Rattaché à » à part. L'autorité de
-       certification (« Émetteur ») est dans la rubrique Certificat. #}
-    {% call rubrique('Commande', 'bi-receipt', 'amber') %}
-    {% call rangee() %}
         {{ lu('Montant TTC', euros(c.amount_ttc)) }}
         {{ lu('Imputation', c.budget_code, titre='Imputation budgétaire') }}
-        {{ lu('Signé le', c.order_signed_on.strftime('%d/%m/%Y') if c.order_signed_on else None, titre='Bon de commande signé le') }}
         {% call lu_bloc('Équipement', facultatif=True) %}{% if c.equipment %}<a href="{{ url_for('inventory.detail', id=c.equipment.id) }}" title="{{ c.equipment.kind_label() }}">{{ c.equipment.name }}</a>{% endif %}{% endcall %}
     {% endcall %}
     {% endcall %}
@@ -62,7 +52,6 @@
         {{ lu('Émis le', c.issued_at.strftime('%d/%m/%Y') if c.issued_at else None) }}
         {{ lu('Expire le', c.expiry_date.strftime('%d/%m/%Y') if c.expiry_date else None) }}
         {{ lu('Renouv.', 'Automatique' if c.auto_renew else 'Manuel', titre='Renouvellement') }}
-        {{ lu('Priorité', priority_label(c.priority)) }}
         {# L'équipement qui porte le certificat, en lien vers sa fiche. Facultatif :
            son absence n'est pas un manque. #}
         {% call lu_bloc('Équipement', facultatif=True) %}{% if c.equipment %}<a href="{{ url_for('inventory.detail', id=c.equipment.id) }}" title="{{ c.equipment.kind_label() }}">{{ c.equipment.name }}</a>{% endif %}{% endcall %}

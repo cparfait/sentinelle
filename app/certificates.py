@@ -17,6 +17,9 @@ bp = Blueprint('certificates', __name__)
 
 @bp.before_request
 def _guard_view():
+    # Module coupe dans les Preferences : aucune route ne repond, lecture
+    # comprise -- ni la liste, ni une fiche gardee ouverte dans un onglet.
+    features.require('certificates')
     return view_guard('certificates')
 
 
@@ -58,7 +61,6 @@ def _fill_signature(cert, f):
     cert.duration_years = parse_int(f.get('duration_years'), minimum=0)
     cert.amount_ttc = parse_float(f.get('amount_ttc'))
     cert.budget_code = (f.get('budget_code', '') or '').strip() or None
-    cert.order_signed_on = parse_date(f.get('order_signed_on'))
     cert.validity = (f.get('validity') if f.get('validity') in CERT_VALIDITY_LABELS
                      else 'valide')
     code = (f.get('revocation_code', '') or '').strip()
@@ -210,9 +212,6 @@ def _valide(kind, service_name, domain, expiry_date, holder):
 def create():
     kind = request.values.get('kind')
     kind = kind if kind in CERT_KIND_LABELS else 'tls'
-    if kind == 'signature' and not features.enabled('ecerts'):
-        flash('Les certificats électroniques sont désactivés dans les Préférences.', 'warning')
-        return redirect(url_for('certificates.list'))
     if request.method == 'POST':
         service_name = _nom_de_fiche(kind, request.form)
         domain = (request.form.get('domain') or '').strip()
@@ -233,7 +232,6 @@ def create():
             expiry_date=expiry_date,
             auto_renew=request.form.get('auto_renew') == 'on',
             description=request.form.get('description'),
-            priority=request.form.get('priority', 'medium'),
             equipment_id=_parse_equipment_id(request.form.get('equipment_id')),
         )
         if kind == 'signature':
@@ -276,11 +274,14 @@ def detail(id):
 @require_edit
 def edit(id):
     cert = Certificate.query.get_or_404(id)
-    # La nature ne se change pas en cours de route : elle decide des champs que
-    # la fiche porte, et basculer de l'une a l'autre laisserait derriere soi un
-    # titulaire sur un certificat TLS, ou un domaine sur une carte a puce.
     kind = cert.kind or 'tls'
     if request.method == 'POST':
+        # Le type se choisit dans le formulaire, a la modification aussi : il
+        # decide des champs envoyes (le formulaire desactive ceux de l'autre
+        # type).
+        demande = request.form.get('kind')
+        if demande in CERT_KIND_LABELS:
+            kind = demande
         service_name = _nom_de_fiche(kind, request.form, cert)
         domain = (request.form.get('domain') or '').strip()
         expiry_date = parse_date(request.form.get('expiry_date'))
@@ -290,15 +291,15 @@ def edit(id):
             flash(erreur, 'danger')
             return render_template('certificates/form.html', certificate=cert,
                                    kind=kind, **_form_context())
+        cert.kind = kind
         cert.service_name = service_name
         cert.domain = domain or None
-        cert.domain_id = _domaine_pour(cert.kind, domain)
+        cert.domain_id = _domaine_pour(kind, domain)
         cert.issuer = request.form.get('issuer')
         cert.issued_at = parse_date(request.form.get('issued_at'))
         cert.expiry_date = expiry_date
         cert.auto_renew = request.form.get('auto_renew') == 'on'
         cert.description = request.form.get('description')
-        cert.priority = request.form.get('priority', 'medium')
         cert.equipment_id = _parse_equipment_id(request.form.get('equipment_id'))
         if kind == 'signature':
             _fill_signature(cert, request.form)

@@ -107,9 +107,13 @@ def test_formulaires_affichent_bouton_ajout_rapide(client):
     # Equipement : fournisseur.
     html = client.get('/inventory/create').get_data(as_text=True)
     assert 'qaModalSupplier' in html
-    # Certificat (partial _equipment_select) : equipement.
-    html = client.get('/certificates/create').get_data(as_text=True)
+    # Sauvegarde (partial _equipment_select) : equipement.
+    html = client.get('/backups/create').get_data(as_text=True)
     assert 'qaModalEquipment' in html
+    # Certificat : la liste des equipements, sans ajout rapide -- un equipement
+    # se cree dans l'inventaire, pas depuis le certificat qui s'y rattache.
+    html = client.get('/certificates/create').get_data(as_text=True)
+    assert 'name="equipment_id"' in html and 'qaModalEquipment' not in html
 
 
 def test_fiche_fournisseur_impacts(client):

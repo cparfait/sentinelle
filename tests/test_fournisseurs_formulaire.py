@@ -109,7 +109,8 @@ def test_le_rail_de_la_synthese_ne_montre_que_ce_qu_il_a(client):
 
 def test_la_carte_certificats_suit_le_fournisseur_et_le_module(client, app):
     """Les certificats délivrés par le fournisseur, dans le rail, seulement
-    s'il en a ; un certificat électronique disparaît avec son module."""
+    s'il en a ; la carte disparaît avec le module Certificats, TLS comme
+    électroniques."""
     from datetime import date
     from app.models import Certificate
     sup = Supplier(name='Certinomis')
@@ -128,12 +129,13 @@ def test_la_carte_certificats_suit_le_fournisseur_et_le_module(client, app):
     # Le menu dit aussi « Certificats » : on cherche l'icône de la carte.
     assert 'lucide-shield-check me-2' not in client.get(f'/suppliers/{vide.id}').get_data(as_text=True)
 
-    app.config['ELECTRONIC_CERTS_ENABLED'] = False
+    app.config['CERTIFICATES_ENABLED'] = False
     try:
         html = client.get(f'/suppliers/{sup.id}').get_data(as_text=True)
-        assert 'Portail - portail.fr' in html and 'Mairie - DUPONT' not in html
+        assert 'Portail - portail.fr' not in html and 'Mairie - DUPONT' not in html
+        assert 'lucide-shield-check me-2' not in html
     finally:
-        app.config['ELECTRONIC_CERTS_ENABLED'] = True
+        app.config['CERTIFICATES_ENABLED'] = True
 
 
 def test_la_carte_contrats_ne_garde_que_ceux_en_cours(client):

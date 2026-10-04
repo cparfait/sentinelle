@@ -7,7 +7,7 @@
 {% set peut_editer = current_user.can_edit('accounts') %}
 
 {% block content %}
-{% set sous_titre %}Compte <strong>{{ account.username }}</strong>{% if account.url %} · {{ account.url }}{% endif %}{% if account.priority %} · priorité {{ priority_label(account.priority) | lower }}{% endif %}{% endset %}
+{% set sous_titre %}Compte <strong>{{ account.username }}</strong>{% if account.url %} · {{ account.url }}{% endif %}{% endset %}
 {% set primaire %}{% if peut_editer %}{{ bouton_modal('mdp-change', 'Mot de passe changé', 'bi-key') }}{% endif %}{% endset %}
 {% set menu %}
     {{ menu_lien(url_for('pdf_export.account_pdf', id=account.id), 'Exporter en PDF', 'bi-file-earmark-pdf') }}

@@ -2408,8 +2408,15 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .fiche-saisie .row { --bs-gutter-x: 12px; }
 .fiche-saisie .row.g-3 { --bs-gutter-y: 8px; }
 .fiche-saisie .mb-3, .fiche-saisie .mb-2 { margin-bottom: 8px !important; }
-.fiche-saisie .saisie-rubrique > .p-3 > :last-child,
-.fiche-saisie .saisie-rubrique > .p-3 > .row:last-child > [class*="col-"] { margin-bottom: 0 !important; }
+/* Le bas d'une rubrique : pas d'ecart apres le dernier champ. Une rangee
+   finale dont les champs passent a la ligne garde ses 8 px ENTRE ses lignes
+   -- les annuler sur chaque colonne collait la derniere ligne a la
+   precedente -- et rend l'ecart du bas par une marge negative. */
+.fiche-saisie .saisie-rubrique > .p-3 > :last-child:not(.row) { margin-bottom: 0 !important; }
+.fiche-saisie .saisie-rubrique > .p-3 > .row:last-child:not(.g-3) { margin-bottom: -8px; }
+/* Un message encore vide sous un champ (« Vérifier ») ne pousse pas la ligne
+   suivante. */
+.fiche-saisie small:empty { display: none !important; }
 .fiche-saisie .form-section-aide { padding: 0; margin-bottom: 8px; }
 /* Une date a sa largeur naturelle, comme dans le formulaire d'un marche
    (.marche-saisie .l-date) : « 31/12/2030 » et le pictogramme, 108 px. */

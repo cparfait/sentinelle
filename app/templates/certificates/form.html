@@ -2,29 +2,13 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Modifier' if certificate else 'Ajouter' }} un certificat - Sentinelle{% endblock %}
 
-{% set signature = kind == 'signature' %}
-
-
 {% block content %}
 {% from '_formulaire.html' import entete_form %}
-{% set titre_form %}{{ 'Modifier' if certificate else 'Ajouter' }}
-            {{ 'un certificat électronique' if signature else 'un certificat TLS' }}{% endset %}
-{% set sous_titre_form %}{% if not certificate %}
-        {# La nature se choisit à la création et ne change plus ensuite : elle
-           décide des champs que la fiche porte, et basculer de l'une à l'autre
-           laisserait un titulaire sur un certificat TLS. #}
-        <small class="text-muted">
-            {% if signature %}
-            Carte, clé USB ou fichier d'un élu ou d'un agent —
-            <a href="{{ url_for('certificates.create', kind='tls') }}">c'est un certificat TLS ?</a>
-            {% else %}
-            Certificat serveur lu sur le domaine{% if features.ecerts %} —
-            <a href="{{ url_for('certificates.create', kind='signature') }}">c'est un certificat électronique ?</a>{% endif %}
-            {% endif %}
-        </small>
-        {% endif %}{% endset %}
+{# Un seul formulaire pour les deux types : le type se choisit dans le champ
+   « Type » du formulaire (ouvert sur `kind`). #}
+{% set titre_form %}{{ 'Modifier' if certificate else 'Ajouter' }} un certificat{% endset %}
 {% set retour = url_for('certificates.detail', id=certificate.id) if certificate else url_for('certificates.list') %}
-{{ entete_form(titre_form, retour, sous_titre_form) }}
+{{ entete_form(titre_form, retour) }}
 
 {% include 'certificates/_form_corps.html' %}
 {% endblock %}

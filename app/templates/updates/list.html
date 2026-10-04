@@ -32,7 +32,6 @@
                     <th>Version actuelle</th>
                     <th>Dernière version</th>
                     <th>Dernière mise à jour</th>
-                    <th>Priorité</th>
                     <th>Statut</th>
                 </tr>
             </thead>
@@ -46,7 +45,6 @@
                     <td><code>{{ u.current_version or '—' }}</code></td>
                     <td><code>{{ u.latest_version or '—' }}</code></td>
                     <td>{{ u.last_update.strftime('%d/%m/%Y') if u.last_update else '—' }}</td>
-                    <td>{{ priority_label(u.priority) }}</td>
                     <td><span class="badge-status badge-{{ u.status_color() }}">{{ status_labels.get(u.status, u.status) }}</span></td>
                 </tr>
                 {% else %}

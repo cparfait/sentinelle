@@ -46,6 +46,9 @@ def check_passwords():
 
 def check_certificates():
     with _app.app_context():
+        from app import features
+        if not features.enabled('certificates'):
+            return      # module coupe dans les Preferences : plus d'alerte
         today = datetime.now(timezone.utc).date()
         thresholds = threshold_for('THRESHOLD_EXPIRY')
         # Un certificat revoque n'est plus utilisable : sa date ne veut plus
@@ -364,6 +367,9 @@ def refresh_certificates_tls():
     """Lit en direct la date d'expiration reelle de chaque certificat actif et
     met a jour les fiches. Tourne avant l'alerte certificats du matin."""
     with _app.app_context():
+        from app import features
+        if not features.enabled('certificates'):
+            return      # module coupe : on n'interroge plus les serveurs
         from app.certificates import refresh_certificate_tls
         # Seuls les certificats TLS s'interrogent sur le reseau : la date d'un
         # certificat electronique vient de l'autorite, pas d'une poignee de main.

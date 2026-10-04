@@ -18,7 +18,6 @@
     {% endcall %}
     {% call rangee() %}
         {{ lu('Fréquence', ('Tous les %d jours' % review.frequency_days) if review.frequency_days else None) }}
-        {{ lu('Priorité', priority_label(review.priority)) }}
         {{ lu('Dernière revue', review.last_review.strftime('%d/%m/%Y') if review.last_review else None, facultatif=True) }}
     {% endcall %}
     {% endcall %}

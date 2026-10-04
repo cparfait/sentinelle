@@ -9,7 +9,7 @@
 
 {% block content %}
 {% set badges %} <span class="badge-status badge-{{ update.status_color() }}">{{ status_labels.get(update.status, update.status) }}</span>{% endset %}
-{% set sous_titre %}{{ type_labels.get(update.system_type, update.system_type) }}{% if update.current_version %} · version <code>{{ update.current_version }}</code>{% endif %}{% if update.priority %} · priorité {{ priority_label(update.priority) | lower }}{% endif %}{% endset %}
+{% set sous_titre %}{{ type_labels.get(update.system_type, update.system_type) }}{% if update.current_version %} · version <code>{{ update.current_version }}</code>{% endif %}{% endset %}
 {% set primaire %}{% if peut_editer and update.status != 'up_to_date' %}{{ bouton_modal('a-jour', 'Marquer à jour', 'bi-check-lg') }}{% endif %}{% endset %}
 {% set menu %}
     {% if current_user.can_delete('updates') %}

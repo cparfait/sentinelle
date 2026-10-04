@@ -69,7 +69,6 @@ def create():
             updater_type=request.form.get('updater_type', 'interne'),
             updated_by=request.form.get('updated_by', '').strip() or None,
             description=request.form.get('description'),
-            priority=request.form.get('priority', 'medium'),
         )
         u.software_id, u.equipment_id = _cible(name, request.form.get('equipment_id'))
         db.session.add(u)
@@ -115,7 +114,6 @@ def edit(id):
         update.updater_type = request.form.get('updater_type', 'interne')
         update.updated_by = request.form.get('updated_by', '').strip() or None
         update.description = request.form.get('description')
-        update.priority = request.form.get('priority', 'medium')
         update.software_id, update.equipment_id = _cible(name, request.form.get('equipment_id'))
         db.session.commit()
         flash('Mise a jour modifiee', 'success')

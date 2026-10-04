@@ -52,7 +52,6 @@ def create():
             last_review=last_review,
             next_review=next_review,
             status='pending',
-            priority=request.form.get('priority', 'medium'),
         )
         db.session.add(r)
         db.session.commit()
@@ -92,7 +91,6 @@ def edit(id):
         review.frequency_days = parse_int(request.form.get('frequency_days'), 365, minimum=1)
         review.last_review = parse_date(request.form.get('last_review'))
         review.next_review = parse_date(request.form.get('next_review'))
-        review.priority = request.form.get('priority', 'medium')
         db.session.commit()
         flash('Revue modifiee', 'success')
         return redirect(url_for('reviews.detail', id=id))

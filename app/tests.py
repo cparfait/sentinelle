@@ -106,7 +106,6 @@ def create():
             next_due=next_due,
             frequency_days=freq,
             status='pending',
-            priority=request.form.get('priority', 'medium'),
             software_id=parse_int(request.form.get('software_id')),
         )
         db.session.add(t)
@@ -150,7 +149,6 @@ def edit(id):
         test.last_performed = parse_date(request.form.get('last_performed'))
         test.frequency_days = parse_int(request.form.get('frequency_days'), 90, minimum=1)
         test.next_due = parse_date(request.form.get('next_due'))
-        test.priority = request.form.get('priority', 'medium')
         test.software_id = parse_int(request.form.get('software_id'))
         db.session.commit()
         flash('Test modifié avec succès', 'success')

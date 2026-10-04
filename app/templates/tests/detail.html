@@ -9,7 +9,7 @@
 {% set type_label = type_label.v %}
 
 {% block content %}
-{% set sous_titre %}Test récurrent{% if type_label %} · {{ type_label }}{% endif %}{% if test.frequency_days %} · tous les {{ test.frequency_days }} j{% endif %}{% if test.priority %} · priorité {{ priority_label(test.priority) | lower }}{% endif %}{% endset %}
+{% set sous_titre %}Test récurrent{% if type_label %} · {{ type_label }}{% endif %}{% if test.frequency_days %} · tous les {{ test.frequency_days }} j{% endif %}{% endset %}
 {% set primaire %}{% if peut_editer %}{{ bouton_modal('effectue', 'Marquer effectué', 'bi-check-lg') }}{% endif %}{% endset %}
 {% set menu %}
     {{ menu_lien(url_for('pdf_export.test_pdf', id=test.id), 'Exporter en PDF', 'bi-file-earmark-pdf') }}

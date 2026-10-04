@@ -7,7 +7,6 @@
     {% call rangee() %}
         {{ lu('Type', type_label) }}
         {{ lu('Fréquence', ('Tous les %d jours' % test.frequency_days) if test.frequency_days else None) }}
-        {{ lu('Priorité', priority_label(test.priority)) }}
     {% endcall %}
     {% call rangee() %}
         {{ lu('Exécuté le', test.last_performed.strftime('%d/%m/%Y') if test.last_performed else None, titre='Dernière exécution', facultatif=True) }}

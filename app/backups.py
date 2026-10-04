@@ -251,7 +251,6 @@ def create():
             frequency=request.form.get('frequency'),
             expected_time=request.form.get('expected_time'),
             description=request.form.get('description'),
-            priority=request.form.get('priority', 'medium'),
             equipment_id=_parse_equipment_id(request.form.get('equipment_id')),
         )
         db.session.add(b)
@@ -286,7 +285,6 @@ def edit(id):
         backup.frequency = request.form.get('frequency')
         backup.expected_time = request.form.get('expected_time')
         backup.description = request.form.get('description')
-        backup.priority = request.form.get('priority', 'medium')
         backup.equipment_id = _parse_equipment_id(request.form.get('equipment_id'))
         db.session.commit()
         flash('Backup modifie avec succes', 'success')

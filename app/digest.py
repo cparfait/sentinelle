@@ -46,19 +46,21 @@ def _collect():
                           'status': s, 'path': f'/accounts/{a.id}'})
     domains.append({'key': 'Comptes', 'total': len(accounts), 'items': items})
 
-    # Certificats
-    certs = [c for c in Certificate.query.filter_by(is_active=True).all()
-             if c.monitored()]
-    items = []
-    for c in certs:
-        if ('certificate', c.id) in snoozed:
-            continue
-        s = c.status()
-        if s in ('danger', 'warning'):
-            items.append({'name': c.label(),
-                          'detail': 'Certificat ' + days_txt(c.expiry_date, 'expire'),
-                          'status': s, 'path': f'/certificates/{c.id}'})
-    domains.append({'key': 'Certificats', 'total': len(certs), 'items': items})
+    # Certificats (sauf module coupe dans les Preferences)
+    from app import features
+    if features.enabled('certificates'):
+        certs = [c for c in Certificate.query.filter_by(is_active=True).all()
+                 if c.monitored()]
+        items = []
+        for c in certs:
+            if ('certificate', c.id) in snoozed:
+                continue
+            s = c.status()
+            if s in ('danger', 'warning'):
+                items.append({'name': c.label(),
+                              'detail': 'Certificat ' + days_txt(c.expiry_date, 'expire'),
+                              'status': s, 'path': f'/certificates/{c.id}'})
+        domains.append({'key': 'Certificats', 'total': len(certs), 'items': items})
 
     # Noms de domaine
     doms = Domain.query.filter_by(is_active=True).all()

@@ -25,9 +25,3 @@
 <span class="delai {{ couleur }}">{{ d|delai(passe=passe) }}</span>
 {%- endif -%}
 {%- endmacro %}
-
-{# priorite(value) : la priorité en texte simple. Elle n'est pas un statut :
-   elle ne prend pas de couleur, la couleur ne dit que l'urgence. #}
-{% macro priorite(value) -%}
-{%- if value %}<span class="prio">{{ priority_label(value) }}</span>{% endif -%}
-{%- endmacro %}

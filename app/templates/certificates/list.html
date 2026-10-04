@@ -1,7 +1,7 @@
 {% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Certificats - Sentinelle{% endblock %}
-{% from '_macros.html' import status_badge, delai_badge, priorite %}
+{% from '_macros.html' import status_badge, delai_badge %}
 {% from '_liste.html' import barre, vide %}
 {% from '_icones.html' import icone, lucide %}
 
@@ -24,7 +24,7 @@
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li><a class="dropdown-item" href="{{ url_for('certificates.create', kind='tls') }}">{{ ico_bi('bi-award', '1em', 'me-2') }}Certificat TLS</a></li>
-                {% if features.ecerts %}<li><a class="dropdown-item" href="{{ url_for('certificates.create', kind='signature') }}">{{ ico_bi('bi-person-badge', '1em', 'me-2') }}Certificat électronique</a></li>{% endif %}
+                <li><a class="dropdown-item" href="{{ url_for('certificates.create', kind='signature') }}">{{ ico_bi('bi-person-badge', '1em', 'me-2') }}Certificat électronique</a></li>
             </ul>
         </div>
         {% endif %}
@@ -53,7 +53,7 @@
 {% set segments %}
 <div class="seg-tabs">
     <a class="seg-tab {% if not kind %}active{% endif %}" href="{{ url_for('certificates.list', q=q) }}">Tous <span class="seg-tab-count">{{ total_all }}</span></a>
-    {% for value, label in kind_labels.items() if value != 'signature' or features.ecerts or counts[value] %}
+    {% for value, label in kind_labels.items() %}
     <a class="seg-tab {% if kind == value %}active{% endif %}" href="{{ url_for('certificates.list', kind=value, q=q) }}">{{ label }} <span class="seg-tab-count">{{ counts[value] }}</span></a>
     {% endfor %}
 </div>

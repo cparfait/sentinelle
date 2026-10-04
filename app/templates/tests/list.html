@@ -1,7 +1,7 @@
 {% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Tests - Sentinelle{% endblock %}
-{% from '_macros.html' import status_badge, delai_badge, priorite %}
+{% from '_macros.html' import status_badge, delai_badge %}
 {% from '_liste.html' import barre, cellule, vide %}
 
 {% block content %}
@@ -33,7 +33,6 @@
                     <th>Test</th>
                     <th>Prochaine échéance</th>
                     <th>Dernière exécution</th>
-                    <th>Priorité</th>
                     <th>Statut</th>
                 </tr>
             </thead>
@@ -50,7 +49,6 @@
                         {% else %}<span class="text-muted">à planifier</span>{% endif %}
                     </td>
                     <td>{{ test.last_performed.strftime('%d/%m/%Y') if test.last_performed else '—' }}</td>
-                    <td>{{ priorite(test.priority) }}</td>
                     <td>{{ status_badge(test.computed_status()) }}</td>
                 </tr>
                 {% else %}

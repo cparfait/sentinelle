@@ -61,14 +61,6 @@
                     <input type="number" name="frequency_days" class="form-control l-jours"
                            value="{{ test.frequency_days if test else 90 }}" min="1" required>
                 </div>
-                <div class="col-md-auto mb-3">
-                    <label class="form-label fw-medium">Priorite</label>
-                    <select name="priority" class="form-select l-contenu">
-                        <option value="low" {{ 'selected' if test and test.priority == 'low' }}>Basse</option>
-                        <option value="medium" {{ 'selected' if not test or test.priority == 'medium' }}>Moyenne</option>
-                        <option value="high" {{ 'selected' if test and test.priority == 'high' }}>Haute</option>
-                    </select>
-                </div>
             </div>
             {% endcall %}
 

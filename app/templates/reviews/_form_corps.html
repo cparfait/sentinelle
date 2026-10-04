@@ -62,14 +62,6 @@
             <input type="date" name="next_review" class="form-control l-date"
                    value="{{ review.next_review.strftime('%Y-%m-%d') if review and review.next_review else '' }}">
         </div>
-        <div class="col-md-auto mb-3">
-            <label class="form-label fw-medium">Priorité</label>
-            <select name="priority" class="form-select l-contenu">
-                <option value="low" {{ 'selected' if review and review.priority == 'low' }}>Basse</option>
-                <option value="medium" {{ 'selected' if not review or review.priority == 'medium' }}>Moyenne</option>
-                <option value="high" {{ 'selected' if review and review.priority == 'high' }}>Haute</option>
-            </select>
-        </div>
     </div>
     {% endcall %}
 

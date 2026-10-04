@@ -1,7 +1,7 @@
 {% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}{{ certificate.service_name }} - Sentinelle{% endblock %}
-{% from '_macros.html' import status_badge, priorite %}
+{% from '_macros.html' import status_badge %}
 {% from '_fiche_section.html' import titre_section, champ, champ_bloc %}
 {% from '_fiche.html' import entete, bandeau_echeance, modal_action, bouton_modal, menu_lien, menu_post, menu_sep, lie, lien, carte_fournisseur, historique, activite %}
 {% from '_onglets.html' import barre, onglet, volets, volet %}
@@ -13,7 +13,7 @@
     {%- if signature -%}Certificat électronique · {{ certificate.holder_label() }}{% if certificate.holder_role %} · {{ certificate.holder_role }}{% endif %}
     {%- if certificate.validity_label() %} · {{ certificate.validity_label() }}{% endif %}
     {%- else -%}Certificat TLS · {{ certificate.domain }}{% if certificate.supplier or certificate.issuer %} · {{ certificate.supplier.name if certificate.supplier else certificate.issuer }}{% endif %}{%- endif -%}
-    {%- if certificate.priority %} · priorité {{ priority_label(certificate.priority) | lower }}{% endif -%}
+    
 {% endset %}
 {% set primaire %}{% if peut_editer %}{{ bouton_modal('renouveler', 'Marquer renouvelé', 'bi-arrow-repeat') }}{% endif %}{% endset %}
 {% set menu %}

@@ -26,7 +26,6 @@ def account_pdf(id):
         ('URL', account.url or '—'),
         ('Dernier changement', account.last_password_change.strftime('%d/%m/%Y') if account.last_password_change else '—'),
         ('Prochain changement', account.next_password_change.strftime('%d/%m/%Y') if account.next_password_change else '—'),
-        ('Priorité', account.priority or '—'),
         ('Description', account.description or '—'),
     ]
     pdf = _build(account.service_name, account.username, rows, account.status(), histories)
@@ -48,7 +47,6 @@ def certificate_pdf(id):
         ('Émetteur', cert.issuer or '—'),
         ('Expiration', cert.expiry_date.strftime('%d/%m/%Y') if cert.expiry_date else '—'),
         ('Auto-renouvellement', 'Oui' if cert.auto_renew else 'Non'),
-        ('Priorité', cert.priority or '—'),
         ('Description', cert.description or '—'),
     ]
     pdf = _build(cert.service_name, cert.domain, rows, cert.status(), histories)
@@ -69,7 +67,6 @@ def domain_pdf(id):
         ('Registrar', domain.registrar or '—'),
         ('Expiration', domain.expiry_date.strftime('%d/%m/%Y') if domain.expiry_date else '—'),
         ('Renouvellement auto', 'Oui' if domain.auto_renew else 'Non'),
-        ('Priorité', domain.priority or '—'),
         ('Description', domain.description or '—'),
     ]
     pdf = _build(domain.name, domain.registrar or '', rows, domain.status(), histories)
@@ -92,7 +89,6 @@ def test_pdf(id):
         ('Prochain test', test.next_due.strftime('%d/%m/%Y') if test.next_due else '—'),
         ('Fréquence', f'{test.frequency_days} jour(s)' if test.frequency_days else '—'),
         ('Statut', test.status or '—'),
-        ('Priorité', test.priority or '—'),
         ('Description', test.description or '—'),
     ]
     pdf = _build(test.name, test.test_type or '', rows, test.computed_status(), histories)

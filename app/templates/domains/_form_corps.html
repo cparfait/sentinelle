@@ -16,7 +16,7 @@
 <form method="POST" id="form-principal" class="formulaire fiche-saisie" data-edition-visible{% if action_form %} action="{{ action_form }}"{% endif %}>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="data-card mb-3">
-    {# UNE rubrique, comme dans la Synthèse : le nom et sa priorité, puis le
+    {# UNE rubrique, comme dans la Synthèse : le nom, puis le
        registrar, l'échéance et le renouvellement. #}
     {% call section('Domaine', 'bi-globe', 'sky') %}
     <div class="row">
@@ -32,14 +32,6 @@
                 </button>
             </div>
             <small id="checkRdapMsg" class="d-block mt-1"></small>
-        </div>
-        <div class="col-md-4 mb-3">
-            <label class="form-label fw-medium">Priorite</label>
-            <select name="priority" class="form-select">
-                <option value="low" {{ 'selected' if domain and domain.priority == 'low' }}>Basse</option>
-                <option value="medium" {{ 'selected' if not domain or domain.priority == 'medium' }}>Moyenne</option>
-                <option value="high" {{ 'selected' if domain and domain.priority == 'high' }}>Haute</option>
-            </select>
         </div>
     </div>
     <div class="row">

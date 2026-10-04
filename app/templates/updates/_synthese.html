@@ -9,7 +9,6 @@
     {% call rangee() %}
         {{ lu('Type', type_labels.get(update.system_type, update.system_type)) }}
         {{ lu('Statut', status_labels.get(update.status, update.status)) }}
-        {{ lu('Priorité', priority_label(update.priority)) }}
     {% endcall %}
     {% call rangee() %}
         {{ lu('Réalisée par', update.updated_by) }}

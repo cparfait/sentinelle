@@ -1,7 +1,7 @@
 {% from '_icones.html' import icone as ico_bi %}
 {% extends "base.html" %}
 {% block title %}Comptes - Sentinelle{% endblock %}
-{% from '_macros.html' import status_badge, delai_badge, priorite %}
+{% from '_macros.html' import status_badge, delai_badge %}
 {% from '_liste.html' import barre, cellule, vide %}
 
 {% block content %}
@@ -41,7 +41,6 @@
                     <th class="th-2l">Prochain<br>changement</th>
                     <th class="th-2l">Dernier<br>changement</th>
                     <th>Rotation</th>
-                    <th>Priorité</th>
                     <th>Statut</th>
                 </tr>
             </thead>
@@ -60,7 +59,6 @@
                     </td>
                     <td>{{ account.last_password_change.strftime('%d/%m/%Y') if account.last_password_change else '—' }}</td>
                     <td>{{ 'tous les %d j' % account.rotation_days if account.rotation_days else '—' }}</td>
-                    <td>{{ priorite(account.priority) }}</td>
                     <td>{{ status_badge(account.status()) }}</td>
                 </tr>
                 {% else %}

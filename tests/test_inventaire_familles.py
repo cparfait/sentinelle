@@ -145,7 +145,7 @@ def test_l_ajout_rapide_propose_toutes_les_natures(client):
     contexte, d'où une variable globale. Sans cela, la liste y serait vide."""
     b = client.get('/inventory/create').get_data(as_text=True)
     assert 'qaModalEquipment' not in b or 'Équipement réseau' in b
-    b = client.get('/certificates/create').get_data(as_text=True)
+    b = client.get('/backups/create').get_data(as_text=True)
     assert 'Baie de stockage' in b and 'Équipement réseau' in b
 
 

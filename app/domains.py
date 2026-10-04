@@ -97,7 +97,6 @@ def create():
             expiry_date=parse_date(request.form.get('expiry_date')),
             auto_renew=request.form.get('auto_renew') == 'on',
             description=request.form.get('description'),
-            priority=request.form.get('priority', 'medium'),
         )
         db.session.add(d)
         db.session.commit()
@@ -186,7 +185,6 @@ def edit(id):
         domain.expiry_date = parse_date(request.form.get('expiry_date'))
         domain.auto_renew = request.form.get('auto_renew') == 'on'
         domain.description = request.form.get('description')
-        domain.priority = request.form.get('priority', 'medium')
         domain.rattacher_certificats()
         db.session.commit()
         flash('Domaine modifie avec succes', 'success')
