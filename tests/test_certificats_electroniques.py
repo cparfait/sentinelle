@@ -6,6 +6,11 @@ from app import db
 from app.models import Certificate, Supplier, Referential
 
 
+def _ref(kind, label):
+    """La valeur d'un référentiel, par son libellé."""
+    return Referential.query.filter_by(kind=kind, label=label).one()
+
+
 def _demain(n):
     return date.today() + timedelta(days=n)
 
@@ -23,7 +28,8 @@ def test_creation_d_un_certificat_electronique(client):
         'civility': 'mme', 'first_name': 'Claire', 'holder': 'ARNAUD',
         'holder_role': 'Adjointe', 'holder_email': 'c.arnaud@ville.fr',
         'supplier_id': str(ca.id), 'service_id': str(sv.id),
-        'cert_usage': 'signature', 'support': 'carte', 'level': 'RGS**',
+        'usage_id': str(_ref('cert_usage', 'Signature').id),
+        'support_id': str(_ref('cert_support', 'Carte à puce').id), 'level': 'RGS**',
         'serial_number': 'A1B2C3', 'duration_years': '3',
         'amount_ttc': '120,50', 'budget_code': '60632',
         'order_signed_on': '2026-01-15', 'revocation_code': 'SECRET-42',
@@ -373,3 +379,115 @@ def test_l_equipement_d_un_certificat_tls_se_lit_dans_la_rubrique_certificat(cli
     synthese = html.split('id="vol-detail"', 1)[1].split('id="vol-details"', 1)[0]
     assert 'Rattaché à' not in synthese
     assert f'href="/inventory/{e.id}"' in synthese and 'SRV-WEB01' in synthese
+
+
+def test_l_usage_et_le_support_sont_des_referentiels(client):
+    """L'usage et le support, communs aux deux types, sont des listes
+    administrables (écran Référentiels) : elles proposent les valeurs de
+    départ, s'enregistrent sur un certificat TLS et se lisent dans sa Synthèse.
+    Une valeur ajoutée par l'administrateur est proposée aussitôt ; un
+    identifiant d'une autre liste est refusé."""
+    html = client.get('/certificates/create').get_data(as_text=True)
+    for libelle in ('Serveur TLS / SSL', 'Signature', 'Authentification', 'Cachet serveur',
+                    'Messagerie (S/MIME)', 'Signature de code', 'Horodatage',
+                    'Carte à puce', 'Clé USB', 'Fichier logiciel'):
+        assert f'>{libelle}</option>' in html, libelle
+
+    usage = _ref('cert_usage', 'Serveur TLS / SSL')
+    support = _ref('cert_support', 'Fichier logiciel')
+    client.post('/certificates/create', data={
+        'kind': 'tls', 'service_name': 'Portail', 'domain': 'portail.fr',
+        'usage_id': str(usage.id), 'support_id': str(support.id)})
+    c = Certificate.query.filter_by(service_name='Portail').one()
+    assert c.usage_id == usage.id and c.usage_label() == 'Serveur TLS / SSL'
+    assert c.support_id == support.id and c.support_label() == 'Fichier logiciel'
+    fiche = client.get(f'/certificates/{c.id}').get_data(as_text=True)
+    assert 'Serveur TLS / SSL' in fiche and 'Fichier logiciel' in fiche
+
+    # Une valeur ajoutée dans les Référentiels est proposée.
+    client.post('/referentiels/add', data={'kind': 'cert_usage', 'label': 'Chiffrement de disque'})
+    assert '>Chiffrement de disque</option>' in client.get('/certificates/create').get_data(as_text=True)
+
+    # Un identifiant pris dans une AUTRE liste ne s'enregistre pas.
+    client.post(f'/certificates/{c.id}/edit', data={
+        'kind': 'tls', 'service_name': 'Portail', 'domain': 'portail.fr',
+        'usage_id': str(support.id), 'support_id': str(support.id)})
+    c = db.session.get(Certificate, c.id)
+    assert c.usage_id is None and c.support_id == support.id
+
+
+def test_les_anciens_usages_et_supports_sont_repris(app):
+    """Une base d'avant le passage en référentiel porte des clés (« signature »,
+    « cle_usb ») : la reprise les verse dans les listes, sans toucher un lien
+    déjà posé, et le libellé reste lisible entre-temps."""
+    from app import _migrate_certificate_lists
+    c = Certificate(kind='signature', service_name='Parapheur', holder='ARNAUD',
+                    cert_usage_code='signature', support_code='cle_usb')
+    db.session.add(c)
+    db.session.commit()
+    assert c.usage_label() == 'Signature' and c.support_label() == 'Clé USB'   # avant reprise
+    _migrate_certificate_lists()
+    c = db.session.get(Certificate, c.id)
+    assert c.usage_id == _ref('cert_usage', 'Signature').id
+    assert c.support_id == _ref('cert_support', 'Clé USB').id
+
+    autre = _ref('cert_usage', 'Autre')
+    c.usage_id = autre.id
+    db.session.commit()
+    _migrate_certificate_lists()
+    assert db.session.get(Certificate, c.id).usage_id == autre.id
+
+
+def test_le_csv_lit_l_usage_par_libelle_ou_par_ancienne_cle(app):
+    from app import csv_io
+    contenu = ('service_name;kind;domain;cert_usage;support\n'
+               'Par libellé;tls;a.ville.fr;Serveur TLS / SSL;Fichier logiciel\n'
+               'Par clé;tls;b.ville.fr;signature;cle_usb\n'
+               'Inconnu;tls;c.ville.fr;Télépathie;\n')
+    created, errors = csv_io.import_csv('certificates', contenu.encode('utf-8'))
+    assert created == 3 and not errors
+    par_nom = {c.service_name: c for c in Certificate.query.all()}
+    assert par_nom['Par libellé'].usage_label() == 'Serveur TLS / SSL'
+    assert par_nom['Par libellé'].support_label() == 'Fichier logiciel'
+    assert par_nom['Par clé'].usage_label() == 'Signature' and par_nom['Par clé'].support_label() == 'Clé USB'
+    assert par_nom['Inconnu'].usage_id is None
+    export = csv_io.export_csv('certificates')
+    assert 'Serveur TLS / SSL' in export and 'Fichier logiciel' in export
+
+
+def test_un_usage_se_reserve_a_un_type_de_certificat(client, app):
+    """Chaque usage porte le type de certificat auquel il est réservé : le
+    formulaire ne propose que ceux du type choisi (attribut data-portee, lu par
+    le script). La portée se règle dans les Référentiels ; une base semée avant
+    reçoit les portées de départ, sans toucher un choix déjà fait."""
+    from app import _migrate_referential_scopes
+    assert _ref('cert_usage', 'Serveur TLS / SSL').scope == 'tls'
+    assert _ref('cert_usage', 'Signature').scope == 'signature'
+    assert _ref('cert_usage', 'Autre').scope == 'tous'
+    assert _ref('cert_support', 'Clé USB').scope is None        # liste sans portée
+
+    html = client.get('/certificates/create').get_data(as_text=True)
+    assert 'data-portee="tls"' in html and 'data-portee="signature"' in html and 'data-portee="tous"' in html
+
+    # Référentiels : la portée se choisit à l'ajout, et se change ensuite.
+    assert 'name="scope"' in client.get('/referentiels').get_data(as_text=True)
+    client.post('/referentiels/add', data={'kind': 'cert_usage', 'label': 'Client VPN', 'scope': 'tls'})
+    vpn = _ref('cert_usage', 'Client VPN')
+    assert vpn.scope == 'tls'
+    client.post(f'/referentiels/{vpn.id}/scope', data={'scope': 'tous'})
+    assert _ref('cert_usage', 'Client VPN').scope == 'tous'
+    client.post(f'/referentiels/{vpn.id}/scope', data={'scope': 'n-importe-quoi'})
+    assert _ref('cert_usage', 'Client VPN').scope == 'tous'
+    # Une liste sans portée n'en reçoit pas.
+    client.post('/referentiels/add', data={'kind': 'cert_support', 'label': 'HSM', 'scope': 'tls'})
+    assert _ref('cert_support', 'HSM').scope is None
+
+    # Reprise : une valeur semée sans portée la reçoit ; un choix fait reste.
+    sig = _ref('cert_usage', 'Signature')
+    sig.scope = None
+    autre = _ref('cert_usage', 'Horodatage')
+    autre.scope = 'tous'
+    db.session.commit()
+    _migrate_referential_scopes()
+    assert _ref('cert_usage', 'Signature').scope == 'signature'
+    assert _ref('cert_usage', 'Horodatage').scope == 'tous'

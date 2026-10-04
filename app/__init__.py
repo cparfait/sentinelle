@@ -244,6 +244,8 @@ def create_app(config_class=Config):
         _seed_roles()
         _seed_referentials()
         _migrate_contract_kinds()
+        _migrate_certificate_lists()
+        _migrate_referential_scopes()
         _seed_default_user()
         # Configuration applicative persistee en base (messagerie, LDAP, seuils,
         # webhooks...). seed_from_env migre l'existant .env au 1er demarrage,
@@ -673,13 +675,15 @@ def _seed_referentials():
     Ligne par ligne, on rendrait indefiniment une valeur que l'administrateur
     vient de supprimer -- et une liste se vide parfois exprès, pour la
     remplacer par celle de la collectivite."""
-    from app.models import Referential, REFERENTIAL_SEEDS
+    from app.models import Referential, REFERENTIAL_SEEDS, REFERENTIAL_SEED_SCOPES
     changed = False
     for kind, labels in REFERENTIAL_SEEDS.items():
         if Referential.query.filter_by(kind=kind).first() is not None:
             continue
+        portees = REFERENTIAL_SEED_SCOPES.get(kind, {})
         for i, label in enumerate(labels):
-            db.session.add(Referential(kind=kind, label=label, position=i))
+            db.session.add(Referential(kind=kind, label=label, position=i,
+                                       scope=portees.get(label)))
         changed = True
     if changed:
         db.session.commit()
@@ -709,6 +713,55 @@ def _migrate_contract_kinds():
             par_libelle[libelle] = ref
         c.kind_id = ref.id
     db.session.commit()
+
+
+def _migrate_referential_scopes():
+    """Donne leur portee de depart aux valeurs semees AVANT que la portee
+    existe (colonne `scope` encore vide). Une portee deja choisie -- y compris
+    « tous » -- n'est pas touchee : l'administrateur a tranche."""
+    from app.models import Referential, REFERENTIAL_SEED_SCOPES
+    change = False
+    for kind, portees in REFERENTIAL_SEED_SCOPES.items():
+        for r in Referential.query.filter_by(kind=kind).filter(Referential.scope.is_(None)).all():
+            if r.label in portees:
+                r.scope = portees[r.label]
+                change = True
+    if change:
+        db.session.commit()
+
+
+def _migrate_certificate_lists():
+    """Verse une fois l'ancien usage et l'ancien support d'un certificat
+    (colonnes `cert_usage` et `support`, cles de CERT_USAGE_LABELS et de
+    CERT_SUPPORT_LABELS) dans usage_id et support_id, vers les listes « Usages
+    de certificat » et « Supports de certificat » des referentiels. Une valeur
+    absente de la liste y est recreee plutot que perdue. Ne touche pas un lien
+    deja pose."""
+    from app.models import (Certificate, Referential, CERT_USAGE_LABELS,
+                            CERT_SUPPORT_LABELS)
+    reprises = (('cert_usage_code', 'usage_id', 'cert_usage', CERT_USAGE_LABELS),
+                ('support_code', 'support_id', 'cert_support', CERT_SUPPORT_LABELS))
+    change = False
+    for ancien, lien, kind, libelles in reprises:
+        a_reprendre = Certificate.query.filter(getattr(Certificate, lien).is_(None),
+                                               getattr(Certificate, ancien).isnot(None)).all()
+        if not a_reprendre:
+            continue
+        par_libelle = {r.label: r for r in Referential.query.filter_by(kind=kind).all()}
+        for c in a_reprendre:
+            libelle = libelles.get(getattr(c, ancien))
+            if not libelle:
+                continue
+            ref = par_libelle.get(libelle)
+            if ref is None:
+                ref = Referential(kind=kind, label=libelle, position=len(par_libelle))
+                db.session.add(ref)
+                db.session.flush()
+                par_libelle[libelle] = ref
+            setattr(c, lien, ref.id)
+            change = True
+    if change:
+        db.session.commit()
 
 
 # Les natures qu'une « piece du marche » pouvait porter, et la categorie de

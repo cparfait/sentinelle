@@ -2406,6 +2406,9 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .fiche-saisie .form-select { padding-right: 28px; }
 .fiche-saisie .input-group > .btn { padding: 2px 6px; line-height: 1; min-height: 26px; display: inline-flex; align-items: center; justify-content: center; }
 .fiche-saisie .row { --bs-gutter-x: 12px; }
+/* Un champ qui prend « la place qui reste » ne descend pas sous 150 px :
+   en dessous, une liste ne montre plus son choix. Il passe a la ligne. */
+@media (min-width: 768px) { .fiche-saisie .row > .col-md { min-width: 150px; } }
 .fiche-saisie .row.g-3 { --bs-gutter-y: 8px; }
 .fiche-saisie .mb-3, .fiche-saisie .mb-2 { margin-bottom: 8px !important; }
 /* Le bas d'une rubrique : pas d'ecart apres le dernier champ. Une rangee
@@ -2432,8 +2435,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .fiche-saisie .form-control.l-heure { width: 78px; padding-left: 6px; padding-right: 4px; }
 /* Un numero de version : dix-huit caracteres (« 2024.10.15-rc12+b7 »). */
 .fiche-saisie .form-control.l-version { width: calc(18ch + 22px); }
-/* Un montant : « 9 999 999,99 ». */
-.fiche-saisie .form-control.l-montant { width: calc(12ch + 22px); }
+/* Un montant : « 99 999,99 ». */
+.fiche-saisie .form-control.l-montant { width: calc(9ch + 22px); }
 @media (max-width: 767.98px) { .fiche-saisie .form-control:is(.l-date, .l-jours, .l-heure, .l-version, .l-montant), .fiche-saisie .form-select.l-contenu { width: 100%; } }
 /* Le ? d'aide tient dans la ligne de l'intitule (16 px) : a 20 px il etait
    rogne par l'intitule et descendait son champ sous celui du voisin. */

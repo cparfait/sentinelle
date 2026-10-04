@@ -12,7 +12,7 @@
 {% set sous_titre %}
     {%- if signature -%}Certificat électronique · {{ certificate.holder_label() }}{% if certificate.holder_role %} · {{ certificate.holder_role }}{% endif %}
     {%- if certificate.validity_label() %} · {{ certificate.validity_label() }}{% endif %}
-    {%- else -%}Certificat TLS · {{ certificate.domain }}{% if certificate.supplier or certificate.issuer %} · {{ certificate.supplier.name if certificate.supplier else certificate.issuer }}{% endif %}{%- endif -%}
+    {%- else -%}Certificat TLS · {{ certificate.domain }}{% if certificate.supplier or certificate.issuer %} · {{ certificate.supplier.name if certificate.supplier else certificate.issuer }}{% endif %}{% if certificate.validity and certificate.validity != 'valide' %} · {{ certificate.validity_label() }}{% endif %}{%- endif -%}
     
 {% endset %}
 {% set primaire %}{% if peut_editer %}{{ bouton_modal('renouveler', 'Marquer renouvelé', 'bi-arrow-repeat') }}{% endif %}{% endset %}

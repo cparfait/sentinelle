@@ -18,6 +18,22 @@ def _lookup_equipment(name):
     return Equipment.query.filter_by(name=name, is_active=True).first()
 
 
+# Anciennes cles des listes passees en referentiel : un fichier exporte avant
+# le passage les porte encore (« signature », « cle_usb »).
+def _lookup_referential(kind, value):
+    """La valeur active de la liste `kind` que designe ce texte : son libelle
+    (casse ignoree), ou l'ancienne cle d'avant le passage en referentiel.
+    None si rien ne correspond."""
+    from app.models import Referential, CERT_USAGE_LABELS, CERT_SUPPORT_LABELS
+    anciennes = {'cert_usage': CERT_USAGE_LABELS, 'cert_support': CERT_SUPPORT_LABELS}
+    texte = (value or '').strip()
+    texte = anciennes.get(kind, {}).get(texte.lower(), texte)
+    for r in Referential.options(kind):
+        if r.label.lower() == texte.lower():
+            return r
+    return None
+
+
 def _parse_date(value):
     value = (value or '').strip()
     for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y'):
@@ -68,6 +84,10 @@ def _parse(value, kind):
     if kind == 'equipment_ref':
         # Renvoie l'objet Equipment : affecte a la relation, il fixe equipment_id.
         return _lookup_equipment(value)
+    if kind.startswith('ref:'):
+        # Renvoie la valeur du referentiel : affectee a la relation, elle fixe
+        # son identifiant.
+        return _lookup_referential(kind[4:], value)
     return value
 
 
@@ -90,6 +110,8 @@ def _fmt(value, kind):
         return 'oui' if value else 'non'
     if kind == 'equipment_ref':
         return _csv_safe(value.name)  # value est l'objet Equipment lie
+    if kind.startswith('ref:'):
+        return _csv_safe(value.label)  # value est la valeur du referentiel
     return _csv_safe(str(value))
 
 
@@ -136,7 +158,7 @@ SPECS = {
                     ('equipment', 'equipment_ref'),
                     ('civility', 'str'), ('first_name', 'str'), ('holder', 'str'),
                     ('holder_role', 'str'), ('holder_email', 'str'),
-                    ('cert_usage', 'str'), ('support', 'str'), ('level', 'str'),
+                    ('cert_usage', 'ref:cert_usage'), ('support', 'ref:cert_support'), ('level', 'str'),
                     ('serial_number', 'str'), ('duration_years', 'int'),
                     ('amount_ttc', 'float'), ('budget_code', 'str'),
                     ('validity', 'str')],

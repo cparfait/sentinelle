@@ -17,7 +17,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required
 
 from app import db
-from app.models import Referential, UserService, REFERENTIAL_KINDS
+from app.models import Referential, UserService, REFERENTIAL_KINDS, REFERENTIAL_SCOPES
 from app.decorators import require_admin
 from app.forms_util import parse_int
 from app.audit import record as audit_record
@@ -34,7 +34,8 @@ def index():
               for kind in REFERENTIAL_KINDS}
     services = (UserService.query.order_by(UserService.position, UserService.name).all())
     return render_template('referentials/index.html', listes=listes,
-                           kind_labels=REFERENTIAL_KINDS, services=services)
+                           kind_labels=REFERENTIAL_KINDS, services=services,
+                           portees=REFERENTIAL_SCOPES)
 
 
 @bp.route('/referentiels/add', methods=['POST'])
@@ -53,11 +54,39 @@ def add():
         flash(f'« {label} » existe déjà dans cette liste.', 'warning')
         return redirect(url_for('referentials.index'))
     position = parse_int(request.form.get('position'), 0, minimum=0)
-    db.session.add(Referential(kind=kind, label=label, position=position))
+    db.session.add(Referential(kind=kind, label=label, position=position,
+                               scope=_portee(kind, request.form.get('scope'))))
     db.session.commit()
     audit_record('ajout referentiel', detail=f'{REFERENTIAL_KINDS[kind]} : {label}',
                  category='preferences')
     flash('Valeur ajoutée', 'success')
+    return redirect(url_for('referentials.index'))
+
+
+def _portee(kind, valeur):
+    """La portee demandee si la liste en a et qu'elle est connue ; « tous »
+    pour une liste a portee sans choix valide ; None pour les autres listes."""
+    portees = REFERENTIAL_SCOPES.get(kind)
+    if not portees:
+        return None
+    return valeur if valeur in portees else 'tous'
+
+
+@bp.route('/referentiels/<int:id>/scope', methods=['POST'])
+@login_required
+@require_admin
+def scope(id):
+    """Change le type de fiche auquel une valeur est reservee."""
+    item = Referential.query.get_or_404(id)
+    if item.kind not in REFERENTIAL_SCOPES:
+        flash('Cette liste ne distingue pas de type.', 'warning')
+        return redirect(url_for('referentials.index'))
+    item.scope = _portee(item.kind, request.form.get('scope'))
+    db.session.commit()
+    audit_record('portee referentiel',
+                 detail=f'{REFERENTIAL_KINDS[item.kind]} : {item.label} -> {item.scope_label()}',
+                 category='preferences')
+    flash('Valeur mise à jour', 'success')
     return redirect(url_for('referentials.index'))
 
 

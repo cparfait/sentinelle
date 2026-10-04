@@ -33,6 +33,19 @@
                 {% for item in listes[kind] %}
                 <li class="list-group-item d-flex justify-content-between align-items-center py-2">
                     <span>{{ item.label }}</span>
+                    {# Une liste à portée : le type de fiche auquel la valeur est
+                       réservée, modifiable sur place. #}
+                    {% if portees.get(kind) %}
+                    <form method="POST" action="{{ url_for('referentials.scope', id=item.id) }}" class="ms-auto me-2">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <select name="scope" class="form-select form-select-sm" style="width: auto"
+                                aria-label="Type de fiche pour {{ item.label }}" onchange="this.form.requestSubmit()">
+                            {% for valeur, libelle in portees[kind].items() %}
+                            <option value="{{ valeur }}" {{ 'selected' if (item.scope or 'tous') == valeur }}>{{ libelle }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                    {% endif %}
                     <form method="POST" action="{{ url_for('referentials.delete', id=item.id) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer de la liste"
@@ -50,6 +63,14 @@
                 <div class="input-group input-group-sm">
                     <input type="text" name="label" class="form-control" placeholder="Nouvelle valeur"
                            aria-label="Nouvelle valeur pour {{ label }}" required>
+                    {% if portees.get(kind) %}
+                    <select name="scope" class="form-select" style="max-width: 9rem"
+                            aria-label="Type de fiche de la nouvelle valeur">
+                        {% for valeur, libelle in portees[kind].items() %}
+                        <option value="{{ valeur }}">{{ libelle }}</option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
                     <button type="submit" class="btn btn-outline-primary" title="Ajouter"
                             aria-label="Ajouter">{{ ico_bi('bi-plus-lg', '1em') }}</button>
                 </div>

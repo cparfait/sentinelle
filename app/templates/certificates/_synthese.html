@@ -27,6 +27,7 @@
     {% call rangee() %}
         {{ lu('Émis le', c.issued_at.strftime('%d/%m/%Y') if c.issued_at else None) }}
         {{ lu('Expire le', c.expiry_date.strftime('%d/%m/%Y') if c.expiry_date else None) }}
+        {{ lu('Validité', c.validity_label()) }}
         {{ lu('Durée', ('%d an%s' % (c.duration_years, 's' if c.duration_years > 1 else '')) if c.duration_years else None, titre='Durée commandée') }}
         {{ lu('Montant TTC', euros(c.amount_ttc)) }}
         {{ lu('Imputation', c.budget_code, titre='Imputation budgétaire') }}
@@ -47,10 +48,14 @@
         {% endcall %}
         {# La fiche fournisseur choisie ; à défaut, le nom lu sur le certificat. #}
         {% call lu_bloc('Émetteur') %}{% if c.supplier %}<a href="{{ url_for('suppliers.detail', id=c.supplier_id) }}">{{ c.supplier.name }}</a>{% else %}{{ c.issuer or '' }}{% endif %}{% endcall %}
+        {{ lu('Support', c.support_label()) }}
+        {{ lu('Usage', c.usage_label()) }}
+        {{ lu('N° de série', c.serial_number) }}
     {% endcall %}
     {% call rangee() %}
         {{ lu('Émis le', c.issued_at.strftime('%d/%m/%Y') if c.issued_at else None) }}
         {{ lu('Expire le', c.expiry_date.strftime('%d/%m/%Y') if c.expiry_date else None) }}
+        {{ lu('Validité', c.validity_label()) }}
         {{ lu('Renouv.', 'Automatique' if c.auto_renew else 'Manuel', titre='Renouvellement') }}
         {# L'équipement qui porte le certificat, en lien vers sa fiche. Facultatif :
            son absence n'est pas un manque. #}

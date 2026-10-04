@@ -269,11 +269,26 @@ CIVILITY_LABELS = {'m': 'M.', 'mme': 'Mme'}
 # rangerait sous M, avec les autres, et ni le tri ni la recherche ne seraient
 # justes. NULLE pour un certificat de machine -- lui en inventer une serait
 # pire que de la laisser vide.
-CERT_USAGE_LABELS = {'signature': 'Signature', 'authentification': 'Authentification',
-                     'cachet': 'Cachet serveur', 'autre': 'Autre'}
+# A quoi sert le certificat, pour les deux types (TLS, electronique). Purement
+# descriptif, aucun calcul n'en depend : la liste vit dans les referentiels
+# (Referential kind='cert_usage'). Ce dictionnaire en donne les valeurs de
+# depart, et sert a la reprise des bases anterieures ou la colonne `cert_usage`
+# portait l'une de ces cles (cf. _migrate_certificate_lists).
+CERT_USAGE_LABELS = {
+    'serveur': 'Serveur TLS / SSL',           # chiffrer et authentifier un site ou un service (HTTPS)
+    'signature': 'Signature',                 # signer des actes au nom d'une personne
+    'authentification': 'Authentification',   # prouver l'identite d'une personne ou d'un poste
+    'cachet': 'Cachet serveur',               # signer au nom de l'organisme, sans personne physique
+    'messagerie': 'Messagerie (S/MIME)',      # signer et chiffrer des courriels
+    'code': 'Signature de code',              # signer des logiciels ou des scripts
+    'horodatage': 'Horodatage',               # dater un document de facon probante
+    'autre': 'Autre',
+}
 # Ce qui porte la cle privee. La distinction n'est pas cosmetique : une carte ou
 # une cle USB se restituent en fin de vie et se perdent, un fichier logiciel se
-# copie et ne se rend pas.
+# copie et ne se rend pas. Descriptif lui aussi : la liste vit dans les
+# referentiels (Referential kind='cert_support') ; ce dictionnaire en donne les
+# valeurs de depart et sert a la reprise de l'ancienne colonne `support`.
 CERT_SUPPORT_LABELS = {'carte': 'Carte à puce', 'cle_usb': 'Clé USB',
                        'logiciel': 'Fichier logiciel', 'autre': 'Autre'}
 # Ce qu'on a DECIDE du certificat -- et rien de ce que les dates disent deja.
@@ -332,8 +347,17 @@ class Certificate(db.Model):
     # C'est elle qui donne sa portee juridique a la signature, pas le service.
     holder_role = db.Column(db.String(128))
     holder_email = db.Column(db.String(120))
-    cert_usage = db.Column(db.String(24))
-    support = db.Column(db.String(16))
+    # Anciennes colonnes de l'usage et du support (cles de CERT_USAGE_LABELS et
+    # de CERT_SUPPORT_LABELS) : versees une fois dans usage_id et support_id au
+    # demarrage, plus rien ne les ecrit. SQLite ne sait pas les retirer sans
+    # reconstruire la table.
+    cert_usage_code = db.Column('cert_usage', db.String(24))
+    support_code = db.Column('support', db.String(16))
+    # L'usage et le support, valeurs des referentiels (ecran Referentiels).
+    usage_id = db.Column(db.Integer, db.ForeignKey('referential.id'), index=True)
+    support_id = db.Column(db.Integer, db.ForeignKey('referential.id'), index=True)
+    cert_usage = db.relationship('Referential', foreign_keys=[usage_id])
+    support = db.relationship('Referential', foreign_keys=[support_id])
     # Niveau de garantie tel que l'autorite l'atteste : « RGS** », « eIDAS
     # qualifie ». Texte libre plutot qu'enumere, les appellations changeant au
     # rythme des referentiels et non a celui de l'application.
@@ -363,10 +387,14 @@ class Certificate(db.Model):
         return CIVILITY_LABELS.get(self.civility, '')
 
     def usage_label(self):
-        return CERT_USAGE_LABELS.get(self.cert_usage, '')
+        if self.cert_usage is not None:
+            return self.cert_usage.label
+        return CERT_USAGE_LABELS.get(self.cert_usage_code, '')
 
     def support_label(self):
-        return CERT_SUPPORT_LABELS.get(self.support, '')
+        if self.support is not None:
+            return self.support.label
+        return CERT_SUPPORT_LABELS.get(self.support_code, '')
 
     def validity_label(self):
         return CERT_VALIDITY_LABELS.get(self.validity, 'Valide')
@@ -1409,7 +1437,14 @@ class Referential(db.Model):
     label = db.Column(db.String(64), nullable=False)
     position = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True)
+    # A quel type de fiche la valeur est reservee, pour les listes qui en ont
+    # (REFERENTIAL_SCOPES) : un usage de certificat propre aux serveurs ne se
+    # propose pas sur un certificat nominatif. NULL ou « tous » : partout.
+    scope = db.Column(db.String(16))
     __table_args__ = (db.UniqueConstraint('kind', 'label', name='uq_referential_kind_label'),)
+
+    def scope_label(self):
+        return REFERENTIAL_SCOPES.get(self.kind, {}).get(self.scope or 'tous', '')
 
     @staticmethod
     def options(kind):
@@ -1424,6 +1459,25 @@ REFERENTIAL_KINDS = {
     'doc_category': 'Catégories de pièces jointes',
     'task_type': 'Types de tâches récurrentes',
     'contract_kind': 'Types de contrat',
+    'cert_usage': 'Usages de certificat',
+    'cert_support': 'Supports de certificat',
+}
+
+# Les listes dont chaque valeur peut etre reservee a un type de fiche, et les
+# portees possibles. `cert_usage` : le type du certificat (Certificate.kind).
+# Le formulaire ne propose que les valeurs du type choisi, plus celles de
+# « tous ». C'est un tri de confort a la saisie, pas une regle : l'enregistrement
+# accepte toute valeur de la liste.
+REFERENTIAL_SCOPES = {
+    'cert_usage': {'tous': 'Tous les types', 'tls': 'Serveur (TLS)', 'signature': 'Nominatif'},
+}
+# La portee de depart des valeurs semees (cf. _seed_referentials et
+# _migrate_referential_scopes) ; une valeur absente d'ici vaut pour tous.
+REFERENTIAL_SEED_SCOPES = {
+    'cert_usage': {'Serveur TLS / SSL': 'tls', 'Signature': 'signature',
+                   'Authentification': 'signature', 'Cachet serveur': 'signature',
+                   'Messagerie (S/MIME)': 'signature', 'Signature de code': 'signature',
+                   'Horodatage': 'signature', 'Autre': 'tous'},
 }
 
 # Valeurs de depart, versees au premier demarrage (cf. _seed_referentials).
@@ -1434,6 +1488,8 @@ REFERENTIAL_SEEDS = {
     'task_type': ['Mise à jour', 'Renouvellement de contrat', 'Purge',
                   'Revue des comptes', 'Renouvellement de certificat'],
     'contract_kind': ['Maintenance', 'Licence', 'Abonnement', 'Marché public', 'Autre'],
+    'cert_usage': list(CERT_USAGE_LABELS.values()),
+    'cert_support': list(CERT_SUPPORT_LABELS.values()),
 }
 
 # Services utilisateurs d'un logiciel (relation N:N). Un logiciel sert souvent

@@ -4,8 +4,8 @@ from flask_login import login_required, current_user
 from app import db
 from app import features
 from app.models import (Certificate, CertificateHistory, Supplier, UserService, Domain,
-                        CERT_KIND_LABELS, CIVILITY_LABELS, CERT_USAGE_LABELS,
-                        CERT_SUPPORT_LABELS, CERT_VALIDITY_LABELS)
+                        Referential, CERT_KIND_LABELS, CIVILITY_LABELS,
+                        CERT_VALIDITY_LABELS)
 from app.cert_checker import fetch_cert_info
 from app.inventory import active_equipments as _active_equipments
 from app.inventory import parse_equipment_id as _parse_equipment_id
@@ -33,10 +33,35 @@ def _form_context():
         'services': UserService.options(),
         'kind_labels': CERT_KIND_LABELS,
         'civility_labels': CIVILITY_LABELS,
-        'usage_labels': CERT_USAGE_LABELS,
-        'support_labels': CERT_SUPPORT_LABELS,
+        # Listes administrables (ecran Referentiels).
+        'usage_options': Referential.options('cert_usage'),
+        'support_options': Referential.options('cert_support'),
         'validity_labels': CERT_VALIDITY_LABELS,
     }
+
+
+def _ref_id(valeur, kind):
+    """L'identifiant d'une valeur de referentiel, si elle existe dans CETTE
+    liste ; None sinon -- un identifiant d'une autre liste ne passe pas."""
+    ident = parse_int(valeur)
+    if ident and Referential.query.filter_by(id=ident, kind=kind).first():
+        return ident
+    return None
+
+
+def _validite(f):
+    """Ce qu'on a decide du certificat (valide, suspendu, revoque), pour les
+    deux types. Un certificat revoque sort de la surveillance (monitored())."""
+    return f.get('validity') if f.get('validity') in CERT_VALIDITY_LABELS else 'valide'
+
+
+def _fill_communs(cert, f):
+    """Les champs que les deux types partagent, en plus de l'emetteur, des
+    dates et des notes : support, usage, n° de serie, validite."""
+    cert.support_id = _ref_id(f.get('support_id'), 'cert_support')
+    cert.validity = _validite(f)
+    cert.usage_id = _ref_id(f.get('usage_id'), 'cert_usage')
+    cert.serial_number = (f.get('serial_number', '') or '').strip() or None
 
 
 def _fill_signature(cert, f):
@@ -54,15 +79,10 @@ def _fill_signature(cert, f):
     cert.first_name = (f.get('first_name', '') or '').strip() or None
     cert.holder_role = (f.get('holder_role', '') or '').strip() or None
     cert.holder_email = (f.get('holder_email', '') or '').strip() or None
-    cert.cert_usage = f.get('cert_usage') if f.get('cert_usage') in CERT_USAGE_LABELS else None
-    cert.support = f.get('support') if f.get('support') in CERT_SUPPORT_LABELS else None
     cert.level = (f.get('level', '') or '').strip() or None
-    cert.serial_number = (f.get('serial_number', '') or '').strip() or None
     cert.duration_years = parse_int(f.get('duration_years'), minimum=0)
     cert.amount_ttc = parse_float(f.get('amount_ttc'))
     cert.budget_code = (f.get('budget_code', '') or '').strip() or None
-    cert.validity = (f.get('validity') if f.get('validity') in CERT_VALIDITY_LABELS
-                     else 'valide')
     code = (f.get('revocation_code', '') or '').strip()
     if code == '-':
         cert.revocation_code = None
@@ -239,6 +259,7 @@ def create():
         else:
             # L'emetteur d'un certificat TLS : une fiche de l'annuaire.
             c.supplier_id = parse_int(request.form.get('supplier_id'))
+        _fill_communs(c, request.form)
         db.session.add(c)
         db.session.commit()
 
@@ -305,6 +326,7 @@ def edit(id):
             _fill_signature(cert, request.form)
         else:
             cert.supplier_id = parse_int(request.form.get('supplier_id'))
+        _fill_communs(cert, request.form)
         db.session.commit()
         flash('Certificat modifié avec succès', 'success')
         return redirect(url_for('certificates.detail', id=id))

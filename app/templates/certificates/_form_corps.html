@@ -9,7 +9,8 @@
    électronique) montre les champs du type choisi et cache ceux de l'autre.
    Un bloc propre à un type porte `data-nature` ; le script en fin de fichier
    le cache ET désactive ses champs, pour qu'ils ne soient ni exigés ni
-   envoyés. Les champs communs (émetteur, dates, notes) n'en portent pas.
+   envoyés. Les champs communs (émetteur, support, usage, n° de série, dates,
+   validité, notes) n'en portent pas.
 
    Comme ceux des contrats, logiciels et fournisseurs : UNE carte, des
    rubriques collées sous leur en-tête coloré (rubrique_form), sans sommaire
@@ -46,8 +47,8 @@
         <div class="col-md-auto mb-3">
             <label class="form-label fw-medium" for="certKind">Type</label>
             <select name="kind" id="certKind" class="form-select l-contenu">
-                <option value="tls" {{ 'selected' if not signature }}>TLS</option>
-                <option value="signature" {{ 'selected' if signature }}>Certificat électronique</option>
+                <option value="tls" {{ 'selected' if not signature }}>Serveur (TLS)</option>
+                <option value="signature" {{ 'selected' if signature }}>Nominatif (personne ou service)</option>
             </select>
         </div>
         <div class="col-md mb-3" {{ nature('tls') }}>
@@ -107,19 +108,18 @@
                 <option value="{{ sv.id }}" {{ 'selected' if certificate and certificate.service_id == sv.id }}>{{ sv.name }}</option>
                 {% endfor %}
             </select>
-            <div class="form-text">Souvent vide pour un élu, qui n'en relève pas.</div>
         </div>
         <div class="col-md mb-3">
             <label class="form-label fw-medium">Fonction</label>
             <input type="text" name="holder_role" class="form-control"
                    value="{{ certificate.holder_role or '' if certificate else '' }}"
                    placeholder="Maire, Adjoint, DGA, Agent...">
-            <div class="form-text">C'est elle qui donne sa portée juridique à la signature, pas le service.</div>
         </div>
     </div>
 
-    {# ── Qui l'émet, ce qu'il vaut, jusqu'à quand. L'émetteur et les deux
-          dates sont communs aux deux types. ── #}
+    {# ── Qui l'émet, ce qu'il vaut, jusqu'à quand. L'émetteur, le support,
+          l'usage, le n° de série, les deux dates et la validité sont communs
+          aux deux types. ── #}
     <div class="row">
         <div class="col-md mb-3">
             <label class="form-label fw-medium" title="Autorité de certification">Émetteur</label>
@@ -130,14 +130,28 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="col-md mb-3" {{ nature('signature') }}>
-            <label class="form-label fw-medium">Usage</label>
-            {{ sel('cert_usage', usage_labels, certificate.cert_usage if certificate else None, blank='— Non renseigné —') }}
-        </div>
-        <div class="col-md mb-3" {{ nature('signature') }}>
+        <div class="col-md mb-3">
             <label class="form-label fw-medium">Support</label>
-            {{ sel('support', support_labels, certificate.support if certificate else None, blank='— Non renseigné —') }}
-            <div class="form-text">Une carte se restitue, un fichier se copie.</div>
+            {# Liste administrable : écran Référentiels, « Supports de certificat ». #}
+            <select name="support_id" class="form-select">
+                <option value="">— Non renseigné —</option>
+                {% for u in support_options %}
+                <option value="{{ u.id }}" {{ 'selected' if certificate and certificate.support_id == u.id }}>{{ u.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md mb-3">
+            <label class="form-label fw-medium">Usage</label>
+            {# Liste administrable : écran Référentiels, « Usages de certificat ». #}
+            {# Chaque usage peut être réservé à un type (Référentiels) : la liste
+               ne propose que ceux du type choisi et ceux de tous les types
+               (data-portee, script en fin de fichier). #}
+            <select name="usage_id" id="certUsage" class="form-select">
+                <option value="">— Non renseigné —</option>
+                {% for u in usage_options %}
+                <option value="{{ u.id }}" data-portee="{{ u.scope or 'tous' }}" {{ 'selected' if certificate and certificate.usage_id == u.id }}>{{ u.label }}</option>
+                {% endfor %}
+            </select>
         </div>
         <div class="col-md mb-3" {{ nature('signature') }}>
             <label class="form-label fw-medium" title="Niveau de garantie">Niveau</label>
@@ -145,7 +159,7 @@
                    value="{{ certificate.level or '' if certificate else '' }}"
                    placeholder="RGS**, eIDAS qualifié...">
         </div>
-        <div class="col-md mb-3" {{ nature('signature') }}>
+        <div class="col-md mb-3">
             <label class="form-label fw-medium">N° de série</label>
             <input type="text" name="serial_number" class="form-control"
                    value="{{ certificate.serial_number or '' if certificate else '' }}">
@@ -154,33 +168,27 @@
            certificat TLS les garde à côté de l'émetteur. #}
         <div class="w-100" {{ nature('signature') }}></div>
         <div class="col-md-auto mb-3">
-            <label class="form-label fw-medium" title="Date d'émission">Émission</label>
+            <label class="form-label fw-medium" title="Date d'émission">Émis le</label>
             <input type="date" name="issued_at" class="form-control l-date"
                    value="{{ certificate.issued_at.strftime('%Y-%m-%d') if certificate and certificate.issued_at else '' }}">
         </div>
         <div class="col-md-auto mb-3">
-            {# L'aide se déplie SUR la ligne de l'intitulé, à droite du « ? »,
-               en une ligne : sous le champ, elle se hachait dans une colonne
-               de la largeur d'une date. #}
-            <div class="saisie-intitule">
-                <label class="form-label fw-medium" title="Date d'expiration">Expiration</label>
-                <div class="form-text">Laissée vide, la fiche passe en orange : à compléter.</div>
-            </div>
+            <label class="form-label fw-medium" title="Date d'expiration. Laissée vide, la fiche passe en orange : à compléter.">Expire le</label>
             <input type="date" name="expiry_date" class="form-control l-date"
                    value="{{ certificate.expiry_date.strftime('%Y-%m-%d') if certificate and certificate.expiry_date else '' }}">
+        </div>
+        <div class="col-md-auto mb-3">
+            <label class="form-label fw-medium" title="« Expiré » se déduit de la date.">Validité</label>
+            {{ sel('validity', validity_labels, certificate.validity if certificate else 'valide', classe='l-contenu') }}
         </div>
         <div class="col-md-auto mb-3" {{ nature('signature') }}>
             <label class="form-label fw-medium" title="Durée commandée, en années. Ce qui a été commandé ; les dates disent ce qui a été délivré.">Durée (ans)</label>
             <input type="number" name="duration_years" class="form-control l-jours" min="0" max="10"
                    value="{{ certificate.duration_years if certificate and certificate.duration_years is not none else '' }}">
         </div>
-        <div class="col-md-auto mb-3" {{ nature('signature') }}>
-            <label class="form-label fw-medium" title="« Expiré » se déduit de la date.">Validité</label>
-            {{ sel('validity', validity_labels, certificate.validity if certificate else 'valide', classe='l-contenu') }}
-        </div>
         {# Ce que le certificat a coûté, et sur quelle ligne du budget. #}
         <div class="col-md-auto mb-3" {{ nature('signature') }}>
-            <label class="form-label fw-medium">Montant TTC (€)</label>
+            <label class="form-label fw-medium" title="Montant TTC, en euros">Montant TTC</label>
             <input type="text" name="amount_ttc" class="form-control l-montant" inputmode="decimal"
                    value="{{ certificate.amount_ttc if certificate and certificate.amount_ttc is not none else '' }}">
         </div>
@@ -248,8 +256,25 @@
             });
         });
     }
-    type.addEventListener('change', appliquer);
+    // Les usages : seuls ceux du type choisi (et ceux de tous les types) se
+    // proposent. A l'ouverture, l'usage deja enregistre reste visible meme
+    // s'il releve de l'autre type -- on ne l'efface pas en silence ; au
+    // changement de type, un usage qui n'en releve plus est retire.
+    function usages(auChangement) {
+        var liste = document.getElementById('certUsage');
+        if (!liste) return;
+        Array.prototype.forEach.call(liste.options, function (o) {
+            var portee = o.dataset.portee;
+            var ok = !portee || portee === 'tous' || portee === type.value;
+            if (!ok && o.selected && !auChangement) ok = true;
+            o.hidden = !ok;
+            o.disabled = !ok;
+        });
+        if (liste.selectedOptions[0] && liste.selectedOptions[0].disabled) liste.value = '';
+    }
+    type.addEventListener('change', function () { appliquer(); usages(true); });
     appliquer();
+    usages(false);
 })();
 </script>
 <script src="{{ url_for('static', filename='js/lookup_fill.js') }}"></script>
