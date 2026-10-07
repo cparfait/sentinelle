@@ -3,7 +3,7 @@
    d'un contrat : la sauvegarde, l'équipement sauvegardé en pastille, les notes.
    Le check du jour et la série restent dans le bandeau, au-dessus des onglets. #}
 {% from '_synthese.html' import rubrique, rangee, lu, pastille %}
-<div class="data-card mb-3 synthese synthese--cases">
+<div class="data-card mb-3 synthese synthese--cases" style="--lu-intitule: 80px">
     {% call rubrique('Sauvegarde', 'bi-cloud-arrow-up', 'emerald') %}
     {% call rangee() %}
         {{ lu('Type', type_label) }}

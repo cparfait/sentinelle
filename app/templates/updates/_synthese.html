@@ -4,7 +4,7 @@
    les fiches), les notes. Les versions restent dans le bandeau, au-dessus des
    onglets. #}
 {% from '_synthese.html' import rubrique, rangee, lu, lu_bloc, pastille %}
-<div class="data-card mb-3 synthese synthese--cases">
+<div class="data-card mb-3 synthese synthese--cases" style="--lu-intitule: 75px">
     {% call rubrique('Mise à jour', 'bi-arrow-up-circle', 'sky') %}
     {% call rangee() %}
         {{ lu('Type', type_labels.get(update.system_type, update.system_type)) }}

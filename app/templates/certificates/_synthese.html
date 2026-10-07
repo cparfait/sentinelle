@@ -6,10 +6,11 @@
 {% from '_synthese.html' import rubrique, rangee, lu, lu_bloc, euros %}
 {% from '_icones.html' import icone as ico_bi %}
 {% set c = certificate %}
-<div class="data-card mb-3 synthese synthese--cases" style="--lu-intitule: 80px">
+<div class="data-card mb-3 synthese synthese--cases" style="--lu-intitule: 75px">
     {% if signature %}
     {# Le titulaire d'abord, comme dans le formulaire : c'est lui qui nomme
-       la fiche. Le certificat reprend ensuite à la ligne (lu-rangee--ligne). #}
+       la fiche. Le certificat suit dans la grille, sans reprendre à la ligne :
+       un champ vide (service, courriel) laisserait sinon une case blanche. #}
     {% call rubrique('Certificat', 'bi-patch-check', 'sky') %}
     {% call rangee() %}
         {{ lu('Titulaire', c.holder_label()) }}
@@ -17,13 +18,13 @@
         {{ lu('Service', c.service.name if c.service else None, titre='Service utilisateur') }}
         {{ lu('Fonction', c.holder_role) }}
     {% endcall %}
-    <div class="lu-rangee lu-rangee--ligne">
+    {% call rangee() %}
         {% call lu_bloc('Émetteur', titre='Autorité de certification') %}{% if c.supplier %}<a href="{{ url_for('suppliers.detail', id=c.supplier_id) }}">{{ c.supplier.name }}</a>{% endif %}{% endcall %}
         {{ lu('Usage', c.usage_label()) }}
         {{ lu('Support', c.support_label()) }}
         {{ lu('Intitulé', c.level) }}
         {{ lu('N° de série', c.serial_number) }}
-    </div>
+    {% endcall %}
     {% call rangee() %}
         {{ lu('Émis le', c.issued_at.strftime('%d/%m/%Y') if c.issued_at else None) }}
         {{ lu('Expire le', c.expiry_date.strftime('%d/%m/%Y') if c.expiry_date else None) }}

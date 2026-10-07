@@ -5,7 +5,7 @@
    L'ancienne synthèse (detail.html) revient avec SOFTWARE_FORM_LEGACY. #}
 {% from '_synthese.html' import rubrique, rangee, lu, lu_bloc %}
 {% from '_icones.html' import icone as ico_bi %}
-<div class="data-card mb-3 synthese synthese--cases" style="--lu-intitule: 110px">
+<div class="data-card mb-3 synthese synthese--cases" style="--lu-intitule: 80px">
     {% call rubrique('Identité', 'info', 'indigo') %}
     {# Rangée 1 — ce qu'est le logiciel, qui l'édite, où il s'ouvre. #}
     {% call rangee() %}
@@ -14,7 +14,7 @@
         {%- if item.internal_dev %}Développement interne
         {%- elif item.supplier %}<a href="{{ url_for('suppliers.detail', id=item.supplier_id) }}">{{ item.supplier.name }}</a>{% endif -%}
         {% endcall %}
-        {% call lu_bloc("URL application") %}{% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener" class="text-truncate d-block">{{ item.url }}</a>{% endif %}{% endcall %}
+        {% call lu_bloc('URL', titre="URL de l'application") %}{% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener" class="text-truncate d-block">{{ item.url }}</a>{% endif %}{% endcall %}
     {% endcall %}
 
     {# Rangée 2 — où il en est, ce qu'il pèse, qui en répond côté métier. #}
@@ -26,8 +26,8 @@
         {%- if item.over_licence() %} <span class="badge bg-warning-subtle text-warning-emphasis ms-1">dépassement</span>{% endif %}
         {%- elif item.users_max %}max {{ item.users_max }}{% endif -%}
         {% endcall %}
-        {{ lu('Référent métier', item.responsible) }}
-        {% call lu_bloc('Courriel métier') %}{% if item.responsible_email %}<a href="mailto:{{ item.responsible_email }}" class="text-truncate d-block">{{ item.responsible_email }}</a>{% endif %}{% endcall %}
+        {{ lu('Réf. métier', item.responsible, titre='Référent métier') }}
+        {% call lu_bloc('Mail métier', titre='Courriel du référent métier') %}{% if item.responsible_email %}<a href="mailto:{{ item.responsible_email }}" class="text-truncate d-block">{{ item.responsible_email }}</a>{% endif %}{% endcall %}
     {% endcall %}
 
     {% call rangee() %}
@@ -44,12 +44,12 @@
     {# « Non renseignée » en toutes lettres : savoir comment on entre dans une
        application est une question de sécurité, son silence un trou à combler. #}
     {% call rangee() %}
-        {% call lu_bloc('Authentification') %}
+        {% call lu_bloc('Authentif.', titre='Authentification') %}
         {% if item.auth_mode_label() %}{{ item.auth_mode_label() }}{% else %}<span class="badge-status badge-warning">Non renseignée</span>{% endif %}
         {% if item.auth_strong %}<span class="badge bg-success-subtle text-success ms-1">2FA</span>{% endif %}
         {% endcall %}
-        {{ lu('Mise en service', item.service_date.strftime('%d/%m/%Y') if item.service_date else None) }}
-        {{ lu('Référent technique', item.tech_responsible) }}
+        {{ lu('Mise en serv.', item.service_date.strftime('%d/%m/%Y') if item.service_date else None, titre='Mise en service') }}
+        {{ lu('Réf. technique', item.tech_responsible, titre='Référent technique') }}
     {% endcall %}
     {% call rangee() %}
         {% call lu_bloc('Nature', facultatif=True) %}
@@ -57,7 +57,7 @@
         {%- if item.internal_dev %}<span class="badge-nature">{{ ico_bi('bi-code-slash', '1em', 'me-1') }}Développement interne</span>{% endif -%}
         {%- if item.no_server %}<span class="badge-nature">{{ ico_bi('bi-slash-circle', '1em', 'me-1') }}Aucun serveur</span>{% endif -%}
         {% endcall %}
-        {% call lu_bloc('Courriel technique') %}{% if item.tech_responsible_email %}<a href="mailto:{{ item.tech_responsible_email }}" class="text-truncate d-block">{{ item.tech_responsible_email }}</a>{% endif %}{% endcall %}
+        {% call lu_bloc('Mail technique', titre='Courriel du référent technique') %}{% if item.tech_responsible_email %}<a href="mailto:{{ item.tech_responsible_email }}" class="text-truncate d-block">{{ item.tech_responsible_email }}</a>{% endif %}{% endcall %}
     {% endcall %}
     {% endcall %}
 
@@ -67,7 +67,7 @@
     {% if features.gdpr %}
     {% call rubrique('RGPD', 'bi-shield-lock', 'rose', onglet='rgpd') %}
     {% call rangee() %}
-        {{ lu('Données RGPD', 'Traitées' if item.gdpr_personal_data else 'Aucune donnée personnelle', pleine=not item.gdpr_personal_data) }}
+        {{ lu('RGPD', 'Traitées' if item.gdpr_personal_data else 'Aucune donnée personnelle', pleine=not item.gdpr_personal_data, titre='Données personnelles') }}
         {% if item.gdpr_personal_data %}
         {{ lu('Catégorie', item.gdpr_categories) }}
         {{ lu('Réf. registre', item.gdpr_registry_ref) }}
@@ -76,7 +76,7 @@
     {% endcall %}
     {% if item.gdpr_personal_data and item.supplier and (item.supplier.dpo_contact or item.supplier.dpo_email) %}
     {% call rangee() %}
-        {{ lu("DPO de l'éditeur", item.supplier.dpo_contact) }}
+        {{ lu('DPO éditeur', item.supplier.dpo_contact, titre="DPO de l'éditeur") }}
         {% call lu_bloc('Courriel DPO') %}{% if item.supplier.dpo_email %}<a href="mailto:{{ item.supplier.dpo_email }}" class="text-truncate d-block">{{ item.supplier.dpo_email }}</a>{% endif %}{% endcall %}
     {% endcall %}
     {% endif %}

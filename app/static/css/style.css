@@ -2489,8 +2489,9 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 /* Intitules de largeur fixe, la meme dans les trois colonnes : chaque valeur
    commence au meme endroit dans sa colonne, d'une rubrique a l'autre.
    100 px = le plus long intitule d'un fournisseur ou d'un contrat (« Mail
-   commercial 2 », 98 px) ; un logiciel en a un plus long (« Référent
-   technique », 102 px) et prend 110 px (software/_synthese.html). */
+   commercial 2 », 98 px). Chaque _synthese.html peut poser sa propre largeur
+   (style="--lu-intitule: …") : 75 ou 80 px pour les fiches aux intitules
+   courts, 110 px pour le materiel. */
 .synthese--cases { --lu-intitule: 100px; }
 .synthese--cases .lu:not(.lu--large) .lu-label { flex: 0 0 var(--lu-intitule); width: var(--lu-intitule); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .synthese--cases .lu-valeur { flex: 1 1 auto; }

@@ -61,7 +61,7 @@
     <div class="row g-3">
         <div class="col-md-4"><label class="form-label small">OS</label><input type="text" name="os" class="form-control" value="{{ val('os') }}" placeholder="Windows Server, Debian..."></div>
         <div class="col-md-3"><label class="form-label small">Version</label><input type="text" name="os_version" class="form-control" value="{{ val('os_version') }}"></div>
-        <div class="col-md-auto"><label class="form-label small">Dernière MAJ OS</label><input type="date" name="os_last_update" class="form-control l-date" value="{{ item.os_last_update.strftime('%Y-%m-%d') if item and item.os_last_update else '' }}"></div>
+        <div class="col-md-auto"><label class="form-label small" title="Dernière mise à jour de l'OS">Dernière MAJ</label><input type="date" name="os_last_update" class="form-control l-date" value="{{ item.os_last_update.strftime('%Y-%m-%d') if item and item.os_last_update else '' }}"></div>
         <div class="col-md-2 kind-section" data-kinds="{{ groupes.supervision }}"><label class="form-label small">Supervision</label><input type="text" name="supervision" class="form-control" value="{{ val('supervision') }}" placeholder="outil"></div>
     </div>
     <div class="row g-3 mb-2 kind-section" data-kinds="{{ groupes.virtualisation }}">
@@ -136,23 +136,11 @@
 
     {% call section('Rôle & logiciels', 'bi-gear-wide-connected', 'rose') %}
     <div class="row g-3 mb-2">
+        {# Les logiciels ne se saisissent pas ici : le rattachement se pose
+           sur la FICHE DU LOGICIEL, qui liste ses serveurs d'installation ;
+           la Synthèse les affiche. Une saisie libre a cote donnerait deux
+           reponses a la meme question, dont une perimee. #}
         <div class="col-md-4"><label class="form-label small">Rôle principal</label><input type="text" name="role_principal" class="form-control" value="{{ val('role_principal') }}"></div>
-        {# Les logiciels ne se saisissent plus ici : le rattachement se
-           pose sur la FICHE DU LOGICIEL, qui liste ses serveurs
-           d'installation. Une saisie libre a cote donnerait deux reponses
-           a la meme question, dont une perimee. #}
-        <div class="col-md-4">
-            <label class="form-label small">Logiciels métiers</label>
-            <div class="form-control bg-light" style="min-height:2.375rem">
-                {%- if item and item.software_list.count() -%}
-                <span class="small">{{ item.software_list.all()|map(attribute='name')|join(', ') }}</span>
-                {%- else -%}
-                <span class="text-muted small">—</span>
-                {%- endif -%}
-            </div>
-            <div class="form-text">Se rattachent depuis la
-                <a href="{{ url_for('software.list') }}">fiche du logiciel</a>.</div>
-        </div>
         <div class="col-md-4 kind-section" data-kinds="{{ groupes.services }}"><label class="form-label small">Services utilisateurs</label><input type="text" name="user_services" class="form-control" value="{{ val('user_services') }}"></div>
         <div class="col-12 kind-section" data-kinds="{{ groupes.usage }}"><label class="form-label small">Usage principal / données stockées</label><input type="text" name="usage" class="form-control" value="{{ val('usage') }}"></div>
     </div>

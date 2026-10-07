@@ -3,7 +3,7 @@
    d'un contrat : le compte, sa rotation, ses notes, et ce à quoi il est
    rattaché en pastilles, liens vers les fiches. #}
 {% from '_synthese.html' import rubrique, rangee, lu, lu_bloc, pastille %}
-<div class="data-card mb-3 synthese synthese--cases">
+<div class="data-card mb-3 synthese synthese--cases" style="--lu-intitule: 80px">
     {% call rubrique('Compte', 'bi-key', 'indigo') %}
     {% call rangee() %}
         {{ lu('Utilisateur', account.username) }}

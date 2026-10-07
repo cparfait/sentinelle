@@ -2,7 +2,7 @@
    Les rubriques de la fiche dans UNE carte (_synthese.html), comme la Synthèse
    d'un contrat : le test (type, rythme, dernier résultat) puis sa procédure. #}
 {% from '_synthese.html' import rubrique, rangee, lu %}
-<div class="data-card mb-3 synthese synthese--cases">
+<div class="data-card mb-3 synthese synthese--cases" style="--lu-intitule: 75px">
     {% call rubrique('Test', 'bi-clipboard-check', 'emerald') %}
     {% call rangee() %}
         {{ lu('Type', type_label) }}

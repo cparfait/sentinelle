@@ -159,15 +159,16 @@ def test_la_carte_contrats_ne_garde_que_ceux_en_cours(client):
 
 def test_les_intitules_des_contacts_ne_reprennent_le_role_que_sans_nom(client):
     """Derrière un nom (« Commercial 1  DUPONT »), « Téléphone » suffit ; sans
-    nom, l'intitulé reprend le rôle : « Mail DPO »."""
+    nom, l'intitulé reprend le rôle, abrégé, le rôle entier au survol :
+    « Mail DPO », « Tel com. 1 »."""
     sup = Supplier(name='A', commercial_contact='DUPONT', commercial_phone='0100000001',
                    dpo_email='dpo@a.fr')
     db.session.add(sup)
     db.session.commit()
     synthese = client.get(f'/suppliers/{sup.id}').get_data(as_text=True).split('id="vol-details"', 1)[0]
     assert '<span class="lu-label">Téléphone</span>' in synthese
-    assert 'Tel commercial 1' not in synthese
-    assert '<span class="lu-label">Mail DPO</span>' in synthese
+    assert 'Tel com. 1' not in synthese and 'Tel commercial 1' not in synthese
+    assert '<span class="lu-label" title="Courriel DPO">Mail DPO</span>' in synthese
 
 
 def test_un_seul_commercial_perd_son_numero(client):
@@ -179,4 +180,5 @@ def test_un_seul_commercial_perd_son_numero(client):
     s = client.get(f'/suppliers/{seul.id}').get_data(as_text=True).split('id="vol-details"', 1)[0]
     assert '<span class="lu-label">Commercial</span>' in s and 'Commercial 2' not in s
     d = client.get(f'/suppliers/{deux.id}').get_data(as_text=True).split('id="vol-details"', 1)[0]
-    assert '<span class="lu-label">Commercial 1</span>' in d and 'Mail commercial 2' in d
+    assert '<span class="lu-label">Commercial 1</span>' in d
+    assert '<span class="lu-label" title="Courriel commercial 2">Mail com. 2</span>' in d

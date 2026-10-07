@@ -185,7 +185,7 @@ def test_fiche_equipement_sections_par_type(client):
 
     b = fiche(nas)
     assert 'Protocoles' in b and 'N° de série' in b and 'Adresse IP' in b
-    assert 'Usage / données' in b
+    assert 'data-manque="Usage"' in b or 'Usage / données stockées' in b
 
     # Une baie de stockage se décrit comme un NAS et s'achète comme un serveur.
     b = fiche(baie)
@@ -197,7 +197,7 @@ def test_fiche_equipement_sections_par_type(client):
     # volumétrie ni de services utilisateurs.
     b = fiche(sw)
     assert 'N° de série' in b and 'Adresse IP' in b and 'VLAN' in b
-    assert 'Nombre de ports' in b
+    assert 'data-manque="Ports"' in b or 'Nombre de ports' in b
     assert 'Protocoles' not in b and 'Hyperviseur' not in b
 
 

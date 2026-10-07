@@ -12,22 +12,24 @@
 {# Un contact : ses champs comme ceux de l'Identité, des cases intitulé +
    valeur qui coulent dans la grille à trois colonnes — « Commercial 1 »
    devant le nom, puis « Téléphone » et « Courriel » ; sans nom, ils
-   reprennent le rôle sous leur forme courte (« Tel DPO », « Mail DPO »). Un champ vide ne paraît pas, son
-   intitulé non plus, et ne laisse pas de place vide. Chaque contact ouvre
-   une nouvelle ligne, comme dans le formulaire (lu-rangee--ligne). #}
-{% macro contact(role, nom, numero, adresse) %}
+   reprennent le rôle sous sa forme abrégée `court` (« Tel com. 1 »,
+   « Mail DPO »), le rôle entier au survol, pour tenir dans 80 px. Un champ
+   vide ne paraît pas, son intitulé non plus, et ne laisse pas de place vide.
+   Chaque contact ouvre une nouvelle ligne, comme dans le formulaire
+   (lu-rangee--ligne). #}
+{% macro contact(role, court, nom, numero, adresse) %}
 {% if nom or numero or adresse %}
 {# Le nom porte le rôle : derrière lui, « Téléphone » et « Courriel » suffisent. #}
 {% set qui = role if role.isupper() else role | lower %}
 <div class="lu-rangee lu-rangee--ligne">
 {{ lu(role, nom, facultatif=True) }}
-{% call lu_bloc('Téléphone' if nom else 'Tel ' ~ qui, facultatif=True) %}{{ tel(numero) }}{% endcall %}
-{% call lu_bloc('Courriel' if nom else 'Mail ' ~ qui, facultatif=True) %}{{ mail(adresse) }}{% endcall %}
+{% call lu_bloc('Téléphone' if nom else 'Tel ' ~ court, facultatif=True, titre=None if nom else 'Téléphone ' ~ qui) %}{{ tel(numero) }}{% endcall %}
+{% call lu_bloc('Courriel' if nom else 'Mail ' ~ court, facultatif=True, titre=None if nom else 'Courriel ' ~ qui) %}{{ mail(adresse) }}{% endcall %}
 </div>
 {% endif %}
 {% endmacro %}
 
-<div class="data-card mb-3 synthese synthese--cases">
+<div class="data-card mb-3 synthese synthese--cases" style="--lu-intitule: 80px">
     {% call rubrique('Identité', 'bi-building', 'indigo') %}
     {% call rangee() %}
         {{ lu('Type', s.kind_label()) }}
@@ -54,9 +56,9 @@
         {% call lu_bloc('Courriel') %}{{ mail(s.support_email) }}{% endcall %}
     {% endcall %}
     {% call rangee() %}
-        {{ lu('N° client / support', s.customer_ref) }}
+        {{ lu('N° client', s.customer_ref, titre='N° client / identifiant support') }}
         {{ lu('Horaires', s.hours) }}
-        {{ lu('Horaires (2e ligne)', s.hours2) }}
+        {{ lu('Horaires 2', s.hours2, titre='Horaires (2e ligne)') }}
     {% endcall %}
     {% endcall %}
 
@@ -64,10 +66,10 @@
     {# Un seul commercial renseigné : il n'est que « Commercial », sans numéro. #}
     {% set c1 = s.commercial_contact or s.commercial_phone or s.commercial_email %}
     {% set c2 = s.commercial_contact2 or s.commercial_phone2 or s.commercial_email2 %}
-    {{ contact('Commercial 1' if c2 else 'Commercial', s.commercial_contact, s.commercial_phone, s.commercial_email) }}
-    {{ contact('Commercial 2' if c1 else 'Commercial', s.commercial_contact2, s.commercial_phone2, s.commercial_email2) }}
-    {{ contact('Administratif', s.admin_contact, s.admin_phone, s.admin_email) }}
-    {{ contact('DPO', s.dpo_contact, s.dpo_phone, s.dpo_email) }}
+    {{ contact('Commercial 1' if c2 else 'Commercial', 'com. 1' if c2 else 'com.', s.commercial_contact, s.commercial_phone, s.commercial_email) }}
+    {{ contact('Commercial 2' if c1 else 'Commercial', 'com. 2' if c1 else 'com.', s.commercial_contact2, s.commercial_phone2, s.commercial_email2) }}
+    {{ contact('Administratif', 'admin.', s.admin_contact, s.admin_phone, s.admin_email) }}
+    {{ contact('DPO', 'DPO', s.dpo_contact, s.dpo_phone, s.dpo_email) }}
     {% if not s.has_contacts() %}<span class="lu-vide text-muted small">Aucun contact renseigné.</span>{% endif %}
     {% endcall %}
 
