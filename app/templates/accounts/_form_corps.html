@@ -40,10 +40,11 @@
                    placeholder="https://...">
         </div>
     </div>
-    <p class="text-muted small mb-3">Ce que le compte sert. Facultatif, cumulable : l'admin d'un logiciel installé sur un serveur donné se rattache aux deux.</p>
+    {# Les rattachements : « rattaché » dans chaque intitulé, l'aide sous les
+       trois listes — placée au-dessus, elle se lisait comme la suite de l'URL. #}
     <div class="row">
-        <div class="col-md-4 mb-3">
-            <label class="form-label fw-medium">Logiciel</label>
+        <div class="col-md-4">
+            <label class="form-label fw-medium">Logiciel rattaché</label>
             <div class="input-group">
                 <select name="software_id" id="accountSoftware" class="form-select">
                     <option value="">— aucun —</option>
@@ -54,8 +55,8 @@
                 {% if current_user.can_edit('software') %}{{ qa_button('qaModalSoftware', 'accountSoftware', 'Ajouter un logiciel') }}{% endif %}
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <label class="form-label fw-medium">Équipement</label>
+        <div class="col-md-4">
+            <label class="form-label fw-medium">Équipement rattaché</label>
             <div class="input-group">
                 <select name="equipment_id" id="accountEquipment" class="form-select">
                     <option value="">— aucun —</option>
@@ -66,8 +67,8 @@
                 {% if current_user.can_edit('inventory') %}{{ qa_button('qaModalEquipment', 'accountEquipment', 'Ajouter un équipement') }}{% endif %}
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <label class="form-label fw-medium">Fournisseur</label>
+        <div class="col-md-4">
+            <label class="form-label fw-medium">Fournisseur rattaché</label>
             <div class="input-group">
                 <select name="supplier_id" id="accountSupplier" class="form-select">
                     <option value="">— aucun —</option>
@@ -79,6 +80,8 @@
             </div>
         </div>
     </div>
+    {# data-visible : l'aide reste sous les listes au lieu de se replier derrière un « ? » (formulaire.js). #}
+    <div class="form-text mb-3" data-visible>Facultatif ; plusieurs choix possibles : le compte admin d'un logiciel installé sur un serveur se rattache au logiciel et au serveur.</div>
     {% endcall %}
 
     {% call section('Rotation du mot de passe', 'bi-arrow-repeat', 'emerald') %}

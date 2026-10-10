@@ -25,7 +25,8 @@
         {% set courant = c.en_cours() %}
         {% if courant and c.cost_yearly %}{% set somme.annuel = somme.annuel + c.cost_yearly %}{% endif %}
         <tr class="{{ ('row-' ~ c.status()) if filtrable }}{{ ' contrat-hors-periode' if not courant }}">
-            <td class="small text-nowrap{{ ' fw-medium' if c.reference }}">{{ c.reference or '—' }}</td>
+            {# La référence mène à la fiche, comme le libellé : c'est par elle qu'on cherche un acte. #}
+            <td class="small text-nowrap{{ ' fw-medium' if c.reference }}">{% if c.reference %}<a href="{{ url_for('contracts.detail', id=c.id) }}" class="text-decoration-none">{{ c.reference }}</a>{% else %}—{% endif %}</td>
             <td>
                 <a href="{{ url_for('contracts.detail', id=c.id) }}" class="fw-medium text-decoration-none">{{ c.name }}</a>
                 <small class="d-block text-muted">

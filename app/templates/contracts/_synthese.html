@@ -30,8 +30,8 @@
         {{ lu('Début', contract.start_date.strftime('%d/%m/%Y') if contract.start_date else None) }}
         {{ lu('Échéance', contract.end_date.strftime('%d/%m/%Y') if contract.end_date else None) }}
         {{ lu('Durée', ('%d an%s' % (contract.firm_years, 's' if contract.firm_years > 1 else '')) if contract.firm_years else None) }}
-        {{ lu('Renouv.', ('%d fois' % contract.renewals) if contract.renewals is not none else None, titre='Renouvelable') }}
-        {{ lu('Recond.', 'Tacite' if contract.auto_renew else 'Non', titre='Reconduction') }}
+        {{ lu('Renouvelable', ('%d fois' % contract.renewals) if contract.renewals is not none else None) }}
+        {{ lu('Reconduction', 'Tacite' if contract.auto_renew else 'Non') }}
         {{ lu('Période', ('%d an%s' % (contract.renewal_years, 's' if contract.renewal_years > 1 else '')) if contract.renewal_years else None, titre='Durée de chaque reconduction') }}
         {{ lu('Préavis', ('%d jour%s' % (contract.notice_days, 's' if contract.notice_days > 1 else '')) if contract.notice_days else None) }}
     {% endcall %}
