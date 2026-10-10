@@ -7,7 +7,7 @@
 {% set peut_editer = current_user.can_edit('contracts') %}
 
 {% block content %}
-{% set sous_titre %}{{ contract.kind_label() }}{% if contract.nature_label() %} · {{ contract.nature_label() }}{% endif %}{% if contract.supplier %} · {{ contract.supplier.name }}{% endif %}{% if contract.reference %} · réf. <code>{{ contract.reference }}</code>{% endif %}{% endset %}
+{% set sous_titre %}{{ contract.kind_label() }}{% if contract.nature_label() %} · {{ contract.nature_label() }}{% endif %}{% if contract.supplier %} · {{ contract.supplier.name }}{% endif %}{% if contract.reference %} · réf. {{ contract.reference }}{% endif %}{% endset %}
 {% set primaire %}{% if peut_editer %}{{ bouton_modal('renouveler', 'Marquer renouvelé', 'bi-arrow-repeat') }}{% endif %}{% endset %}
 {% set menu %}
     {% if peut_editer %}
