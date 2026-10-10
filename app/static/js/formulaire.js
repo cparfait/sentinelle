@@ -140,7 +140,11 @@
                 options().filter(function (o) { return o.selected; }).forEach(function (o) {
                     var puce = document.createElement('span');
                     puce.className = 'puce';
-                    puce.innerHTML = '<span></span><button type="button" aria-label="Retirer">&times;</button>';
+                    // Une option qui connaît sa fiche (data-url) fait de sa puce un
+                    // lien : actif quand le formulaire est verrouillé (la fiche en
+                    // lecture), inerte en modification (style.css, .puce a).
+                    puce.innerHTML = (o.dataset.url ? '<a href="' + o.dataset.url + '"></a>' : '<span></span>')
+                        + '<button type="button" aria-label="Retirer">&times;</button>';
                     libelle(puce.firstChild, o);
                     puce.lastChild.addEventListener('click', function () {
                         o.selected = false;

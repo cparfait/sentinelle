@@ -200,12 +200,12 @@
                 aria-label="Éléments couverts" data-sans-recherche>
             <optgroup label="Logiciel" data-icone="app-window">
                 {% for sw in software_list %}
-                <option value="software:{{ sw.id }}" {{ 'selected' if (sw in contract.software if contract else sw.id in logiciels_choisis) }} data-kind="software">{{ sw.name }}</option>
+                <option value="software:{{ sw.id }}" {{ 'selected' if (sw in contract.software if contract else sw.id in logiciels_choisis) }} data-kind="software" data-url="{{ url_for('software.detail', id=sw.id) }}">{{ sw.name }}</option>
                 {% endfor %}
             </optgroup>
             <optgroup label="Matériel" data-icone="server">
                 {% for e in equipments %}
-                <option value="equipment:{{ e.id }}" {{ 'selected' if contract and e in contract.equipments }} data-icone="{{ e.kind_icon() }}" data-kind="{{ e.kind or 'vm' }}" title="{{ e.kind_label() }}">{{ e.name }}</option>
+                <option value="equipment:{{ e.id }}" {{ 'selected' if contract and e in contract.equipments }} data-icone="{{ e.kind_icon() }}" data-kind="{{ e.kind or 'vm' }}" data-url="{{ url_for('inventory.detail', id=e.id) }}" title="{{ e.kind_label() }}">{{ e.name }}</option>
                 {% endfor %}
             </optgroup>
         </select>
