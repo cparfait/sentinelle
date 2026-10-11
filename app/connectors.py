@@ -2,8 +2,10 @@
 
 Espace dédié regroupant les connecteurs de Sentinelle, pensé pour accueillir les
 futures intégrations. Aujourd'hui : « Sesame » (le catalogue des applications est
-exposé via l'API, cf. app/api.py). L'activation/désactivation et la clé d'API sont
-gérées ici (auparavant dans la page Préférences).
+exposé via l'API, cf. app/api.py) et « chatIA » (l'assistant IA de la Ville lit
+les échéances suivies, en lecture seule, cf. app/suivi.py). L'activation/
+désactivation et la clé d'API de chacun sont gérées ici (auparavant dans la page
+Préférences).
 
 Réservé aux administrateurs (comme les Préférences)."""
 import secrets
@@ -19,19 +21,34 @@ from app.decorators import require_admin
 bp = Blueprint('connectors', __name__, url_prefix='/connecteurs')
 
 
-def _sesame_context():
-    tok = current_app.config.get('SESAME_API_TOKEN') or ''
+# Connecteurs machine-à-machine : préfixe des variables du gabarit -> (nom
+# affiché, clé d'activation, clé de l'API, adresse à donner à l'outil). Le même
+# mécanisme pour chacun, une clé par outil : couper l'un ne coupe pas l'autre.
+_CARTES_API = {
+    'sesame': ('Sesame', 'SESAME_API_ENABLED', 'SESAME_API_TOKEN', '/api/assets?type=application'),
+    # chatIA ajoute lui-même les chemins /api/chatia/… : on lui donne l'adresse
+    # de Sentinelle, rien de plus.
+    'chatia': ('chatIA', 'CHATIA_API_ENABLED', 'CHATIA_API_TOKEN', ''),
+}
+
+
+def _carte_context(prefixe):
+    _nom, cle_active, cle_token, chemin = _CARTES_API[prefixe]
+    tok = current_app.config.get(cle_token) or ''
     masked = (tok[:6] + '…' + tok[-4:]) if len(tok) >= 12 \
         else ('•' * len(tok) if tok else '')
-    endpoint = (current_app.config.get('APP_BASE_URL', '').rstrip('/')
-                + '/api/assets?type=application')
+    endpoint = current_app.config.get('APP_BASE_URL', '').rstrip('/') + chemin
     return {
-        'sesame_enabled': bool(current_app.config.get('SESAME_API_ENABLED', False)),
-        'sesame_key_set': bool(tok),
-        'sesame_key_masked': masked,
-        'sesame_new_key': session.pop('sesame_new_key', None),
-        'sesame_endpoint': endpoint,
+        f'{prefixe}_enabled': bool(current_app.config.get(cle_active, False)),
+        f'{prefixe}_key_set': bool(tok),
+        f'{prefixe}_key_masked': masked,
+        f'{prefixe}_new_key': session.pop(f'{prefixe}_new_key', None),
+        f'{prefixe}_endpoint': endpoint,
     }
+
+
+def _sesame_context():
+    return _carte_context('sesame')
 
 
 def _webhooks_context():
@@ -55,6 +72,7 @@ def _webhooks_context():
 @require_admin
 def index():
     ctx = _sesame_context()
+    ctx.update(_carte_context('chatia'))
     ctx.update(_webhooks_context())
     return render_template('connectors/index.html', **ctx)
 
@@ -136,20 +154,34 @@ def webhooks():
 @require_admin
 def sesame():
     """Active/désactive le connecteur Sesame ou (re)génère sa clé d'API."""
+    return _regler_carte('sesame')
+
+
+@bp.route('/chatia', methods=['POST'])
+@login_required
+@require_admin
+def chatia():
+    """Active/désactive le connecteur chatIA ou (re)génère sa clé d'API."""
+    return _regler_carte('chatia')
+
+
+def _regler_carte(prefixe):
+    nom, cle_active, cle_token, _chemin = _CARTES_API[prefixe]
     action = request.form.get('action', '')
     if action == 'save':
-        enabled = request.form.get('sesame_enabled') == 'on'
-        config_store.save({'SESAME_API_ENABLED': 'true' if enabled else 'false'})
-        current_app.config['SESAME_API_ENABLED'] = enabled
-        audit_record('config connecteur Sesame', detail=f'actif={enabled}', category='preferences')
-        flash('Connecteur Sesame ' + ('activé' if enabled else 'désactivé') + '.', 'success')
+        enabled = request.form.get(f'{prefixe}_enabled') == 'on'
+        config_store.save({cle_active: 'true' if enabled else 'false'})
+        current_app.config[cle_active] = enabled
+        audit_record(f'config connecteur {nom}', detail=f'actif={enabled}', category='preferences')
+        flash(f'Connecteur {nom} ' + ('activé' if enabled else 'désactivé') + '.', 'success')
     elif action == 'generate_key':
         key = secrets.token_urlsafe(32)
-        config_store.save({'SESAME_API_TOKEN': key})
-        current_app.config['SESAME_API_TOKEN'] = key
+        config_store.save({cle_token: key})
+        current_app.config[cle_token] = key
         # Affichée UNE fois via la session (champ copiable) : un flash serait rendu
         # en toast auto-disparaissant, donc non copiable.
-        session['sesame_new_key'] = key
-        audit_record('rotation clé API Sesame', category='preferences')
-        flash("Nouvelle clé API Sesame générée — copiez-la ci-dessous, elle ne sera plus affichée.", 'success')
+        session[f'{prefixe}_new_key'] = key
+        audit_record(f'rotation clé API {nom}', category='preferences')
+        flash(f"Nouvelle clé API {nom} générée — copiez-la ci-dessous, elle ne sera plus affichée.",
+              'success')
     return redirect(url_for('connectors.index'))

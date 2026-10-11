@@ -14,7 +14,8 @@
 #}
 {% macro carte_api(prefixe, titre, icone, description, url_action, champ_switch,
                    actif, cle_set, cle_masquee, nouvelle_cle, endpoint,
-                   endpoint_note, reponse) %}
+                   endpoint_note, reponse, libelle_url='URL',
+                   libelle_reponse='Réponse : tableau JSON') %}
 <div class="data-card mb-3">
     <div class="card-header-custom d-flex justify-content-between align-items-center">
         <h6 class="fw-bold mb-0">{{ ico_bi(icone, '1em', 'me-2 text-primary') }}{{ titre }}</h6>
@@ -96,9 +97,9 @@
         <div class="border-top pt-3 mt-3">
             <h6 class="fw-bold mb-1">{{ ico_bi('bi-link-45deg', '1em', 'me-2 text-primary') }}Configuration côté {{ titre }}</h6>
             <ul class="small mb-0">
-                <li>URL : <code>{{ endpoint }}</code></li>
+                <li>{{ libelle_url }} : <code>{{ endpoint }}</code></li>
                 <li>En-tête : <code>Authorization: Bearer &lt;clé&gt;</code></li>
-                <li>Réponse : tableau JSON <code>{{ reponse }}</code></li>
+                <li>{{ libelle_reponse }} <code>{{ reponse }}</code></li>
             </ul>
         </div>
     </div>

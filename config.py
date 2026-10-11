@@ -168,6 +168,12 @@ class Config:
     SESAME_API_ENABLED = os.getenv('SESAME_API_ENABLED', 'false').lower() in ('true', '1', 'yes')
     SESAME_API_TOKEN = os.getenv('SESAME_API_TOKEN', '')
 
+    # Integration chatIA (assistant IA de la Ville) : API GET /api/chatia/...
+    # en lecture seule, avec SA cle (Authorization: Bearer). Geree depuis la page
+    # Connecteurs (cle chiffree en base). Repli .env. Desactivee par defaut.
+    CHATIA_API_ENABLED = os.getenv('CHATIA_API_ENABLED', 'false').lower() in ('true', '1', 'yes')
+    CHATIA_API_TOKEN = os.getenv('CHATIA_API_TOKEN', '')
+
     # Repertoire ou sont deposes les mails recap de backup (.eml/.txt/.html).
     # Sentinelle le scanne automatiquement. Laisser vide pour desactiver.
     BACKUP_INBOX_DIR = os.getenv('BACKUP_INBOX_DIR', '')

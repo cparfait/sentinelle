@@ -25,6 +25,20 @@
     '{ id, name, description, is_active, responsible, responsible_email }'
 ) }}
 
+{{ carte_api(
+    'chatia', 'chatIA', 'bi-stars',
+    "Permet à l'assistant <strong>chatIA</strong> de la Ville de répondre aux questions de la DSI sur
+     les échéances suivies ici : mots de passe à renouveler, certificats, noms de domaine, sauvegardes
+     non vérifiées, tests, revues de droits, mises à jour, contrats. <strong>Lecture seule</strong> :
+     aucun mot de passe, aucune clé ni aucun texte libre (description, notes) dans les réponses.",
+    url_for('connectors.chatia'), 'chatia_enabled',
+    chatia_enabled, chatia_key_set, chatia_key_masked, chatia_new_key,
+    chatia_endpoint, '/api/chatia/…',
+    'echeances?dans=30&type=certificat · synthese · recherche?q=…',
+    libelle_url='Adresse de Sentinelle (à saisir dans chatIA : Administration › Applications › Sentinelle)',
+    libelle_reponse='Lectures (GET, objets JSON) :'
+) }}
+
 {# ===================== CONNECTEUR NOTIFICATIONS (WEBHOOKS) ===================== #}
 <div class="data-card mb-3">
     <div class="card-header-custom d-flex justify-content-between align-items-center">

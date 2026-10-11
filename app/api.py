@@ -1,5 +1,6 @@
 """API JSON — endpoints légers pour le polling navigateur (session) et
-l'intégration machine-to-machine avec l'outil Sesame (clé API)."""
+l'intégration machine-to-machine avec les outils Sesame et chatIA (une clé API
+chacun)."""
 import hmac
 from datetime import datetime, timezone
 from flask import Blueprint, jsonify, request, current_app
@@ -66,6 +67,64 @@ def assets():
          'responsible_email': s.responsible_email or ''}
         for s in rows
     ])
+
+
+# ── chatIA ──
+# L'assistant de la Ville lit les échéances suivies ici pour répondre aux
+# questions de la DSI (« quels certificats expirent ce mois-ci ? »). LECTURE
+# SEULE, avec SA clé : la révoquer ne coupe pas Sesame. Ce qui sort, et ce qui ne
+# sort jamais (aucun secret, aucun texte libre), est décrit dans app/suivi.py.
+# Limite de débit plus large que Sesame : chatIA appelle pour tous les agents
+# depuis une seule adresse, et une question peut demander plusieurs lectures.
+
+def _chatia_auth_error():
+    return _bearer_auth_error('CHATIA_API_ENABLED', 'CHATIA_API_TOKEN', 'chatIA')
+
+
+def _reponse_chatia(lire):
+    """Garde, paramètres invalides en 400, et pas de mise en cache : les
+    échéances changent d'un jour à l'autre."""
+    err = _chatia_auth_error()
+    if err is not None:
+        return err
+    try:
+        resp = jsonify(lire())
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+    resp.headers['Cache-Control'] = 'no-store'
+    return resp
+
+
+@bp.route('/chatia/echeances')
+@csrf.exempt
+@limiter.limit('120 per minute')
+def chatia_echeances():
+    """Éléments à échéance dans `?dans=<jours>` (30 par défaut) ou en retard,
+    filtrables par `?type=certificat,domaine…`."""
+    from app import suivi
+    return _reponse_chatia(lambda: suivi.echeances(
+        suivi.lire_horizon(request.args.get('dans')),
+        suivi.lire_types(request.args.getlist('type'))))
+
+
+@bp.route('/chatia/synthese')
+@csrf.exempt
+@limiter.limit('120 per minute')
+def chatia_synthese():
+    """Comptes par type et par statut, conformité globale, alertes ouvertes."""
+    from app import suivi
+    return _reponse_chatia(suivi.synthese)
+
+
+@bp.route('/chatia/recherche')
+@csrf.exempt
+@limiter.limit('120 per minute')
+def chatia_recherche():
+    """Éléments suivis dont le nom contient `?q=` (types filtrables)."""
+    from app import suivi
+    return _reponse_chatia(lambda: suivi.recherche(
+        suivi.lire_recherche(request.args.get('q')),
+        suivi.lire_types(request.args.getlist('type'))))
 
 
 @bp.route('/directory/search')

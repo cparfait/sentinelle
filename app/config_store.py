@@ -19,11 +19,12 @@ logger = logging.getLogger(__name__)
 
 # Cles dont la valeur est un secret -> chiffree en base.
 SECRET_KEYS = {'MAIL_PASSWORD', 'O365_CLIENT_SECRET', 'LDAP_BIND_PASSWORD',
-               'SESAME_API_TOKEN'}
+               'SESAME_API_TOKEN', 'CHATIA_API_TOKEN'}
 
 # Typage applique au chargement (le reste = chaine).
 _BOOL = {'MAIL_ENABLED', 'LDAP_ENABLED', 'LDAP_USE_SSL', 'LDAP_VALIDATE_CERT', 'CT_MONITORING',
-         'SESAME_API_ENABLED', 'DASHBOARD_CUSTOM', 'PAGINATION_MEMORY', 'DOCUMENTS_ENABLED',
+         'SESAME_API_ENABLED', 'CHATIA_API_ENABLED',
+         'DASHBOARD_CUSTOM', 'PAGINATION_MEMORY', 'DOCUMENTS_ENABLED',
          'DOCUMENT_INLINE_VIEW', 'SOFTWARE_ALERTS', 'SOFTWARE_FORM_LEGACY',
          'CONTRACT_FORM_LEGACY', 'SUPPLIER_FORM_LEGACY',
          # Modules debrayables (voir app/features.py)
@@ -69,6 +70,7 @@ MANAGED = _BOOL | _INT | _TRIPLET | _CSV | {
     # ne devrait pas demander un redeploiement pour changer.
     'BACKUP_DB_KEEP',
     'SESAME_API_ENABLED', 'SESAME_API_TOKEN',  # integration Sesame (API + cle)
+    'CHATIA_API_ENABLED', 'CHATIA_API_TOKEN',  # integration chatIA (API + cle)
     'UI_PRIMARY_COLOR',  # couleur principale de l'interface (hex, vide = defaut)
 }
 
