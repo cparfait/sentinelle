@@ -13,19 +13,14 @@
 {% set sous_titre %}Sauvegarde {{ freq_label }}{% if backup.expected_time %} à {{ backup.expected_time }}{% endif %}{% if type_label %} · {{ type_label }}{% endif %}{% if backup.location %} · {{ backup.location }}{% endif %}{% endset %}
 {% set primaire %}{% if peut_editer %}{{ bouton_modal('check', 'Enregistrer un check', 'bi-check2-square') }}{% endif %}{% endset %}
 {% set menu %}
-    {{ menu_lien(url_for('backups.stats'), 'Statistiques des sauvegardes', 'bi-bar-chart') }}
-    {% if peut_editer %}
-    {{ menu_sep() }}
-    {{ menu_post(url_for('backups.delete', id=backup.id), 'Supprimer', 'bi-trash', confirm='Supprimer cette sauvegarde ?', danger=True) }}
-    {% endif %}
+    {# Les statistiques sont une vue de la LISTE des sauvegardes : elles
+       s'ouvrent depuis elle, pas d'ici. Le menu est vide : pas de « ⋯ ». #}
 {% endset %}
-{{ entete(backup.service_name, sous_titre, statut=backup.computed_status(), primaire=primaire,
-          menu=menu, voisins=voisins) }}
-
 {# Pas d'échéance ici : ce qu'on vient vérifier, c'est le check du jour, la
-   série en cours et le taux de réussite. #}
+   série en cours et le taux de réussite — dans l'en-tête, à droite du titre. #}
 {% set tc = backup.today_check() %}
 {% set rate = backup.success_rate(30) %}
+{% set bandeau %}
 <div class="data-card fiche-bandeau fiche-bandeau--{{ backup.computed_status() }}">
     {% call faits() %}
         {% call fait_bloc("Aujourd'hui") %}
@@ -45,6 +40,9 @@
         {% endcall %}
     {% endcall %}
 </div>
+{% endset %}
+{{ entete(backup.service_name, sous_titre, statut=backup.computed_status(), primaire=primaire,
+          menu=menu, voisins=voisins, bandeau=bandeau) }}
 
 {% call barre('ficheBackup', modifier=url_for('backups.edit', id=backup.id) if peut_editer else None, sur_place=True) %}
     {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}

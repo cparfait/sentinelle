@@ -74,6 +74,8 @@
     {% endcall %}
     </div>
 
-    {{ pied_form(retour, 'Enregistrer' if review else 'Ajouter') }}
+    {{ pied_form(retour, 'Enregistrer' if review else 'Ajouter',
+                 supprimer=url_for('reviews.delete', id=review.id) if review and current_user.can_delete('reviews') else None,
+                 confirmation='Supprimer cette revue ?') }}
 </form>
 </div>

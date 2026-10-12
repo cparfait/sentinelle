@@ -204,5 +204,7 @@
     </div>
     {% endcall %}
 
-    {{ pied_form(retour, 'Enregistrer' if contract else 'Ajouter') }}
+    {{ pied_form(retour, 'Enregistrer' if contract else 'Ajouter',
+                 supprimer=url_for('contracts.delete', id=contract.id) if contract and current_user.can_delete('contracts') else None,
+                 confirmation='Supprimer ce contrat ?') }}
 </form>

@@ -79,7 +79,9 @@
     {% endcall %}
     </div>
 
-    {{ pied_form(retour, 'Enregistrer' if domain else 'Ajouter') }}
+    {{ pied_form(retour, 'Enregistrer' if domain else 'Ajouter',
+                 supprimer=url_for('domains.delete', id=domain.id) if domain and current_user.can_delete('domains') else None,
+                 confirmation='Supprimer ce domaine ?') }}
 </form>
 </div>
 

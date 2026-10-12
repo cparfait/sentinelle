@@ -73,6 +73,8 @@
             {% endcall %}
     </div>
 
-            {{ pied_form(retour, 'Enregistrer' if test else 'Ajouter') }}
+            {{ pied_form(retour, 'Enregistrer' if test else 'Ajouter',
+                         supprimer=url_for('tests.delete', id=test.id) if test and current_user.can_delete('tests') else None,
+                         confirmation='Supprimer ce test ?') }}
         </form>
 </div>

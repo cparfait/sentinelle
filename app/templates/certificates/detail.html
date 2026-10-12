@@ -21,22 +21,19 @@
     {% if peut_editer and not signature and certificate.domain %}
     {{ menu_post(url_for('certificates.check_tls', id=certificate.id), 'Vérifier le TLS maintenant', 'bi-shield-check') }}
     {% endif %}
-    {% if peut_editer %}
-    {{ menu_sep() }}
-    {{ menu_post(url_for('certificates.delete', id=certificate.id), 'Supprimer', 'bi-trash', confirm='Supprimer ce certificat ?', danger=True) }}
-    {% endif %}
 {% endset %}
-{{ entete(certificate.service_name, sous_titre, statut=certificate.status(), primaire=primaire,
-          menu=menu, voisins=voisins) }}
-
 {% set complement %}
     {%- if certificate.issued_at %}émis le {{ certificate.issued_at.strftime('%d/%m/%Y') }}{% endif -%}
-    {%- if not signature %}{% if certificate.issued_at %} · {% endif %}renouvellement {{ 'automatique' if certificate.auto_renew else 'manuel' }}{% endif -%}
+    {%- if not signature %}{% if certificate.issued_at %} · {% endif %}renouv. {{ 'automatique' if certificate.auto_renew else 'manuel' }}{% endif -%}
 {% endset %}
+{% set bandeau %}
 {{ bandeau_echeance('Expiration', certificate.expiry_date if certificate.monitored() or not certificate.expiry_date else certificate.expiry_date,
                     certificate.status() if certificate.monitored() else None, passe='expiré depuis',
                     debut=certificate.issued_at, complement=(complement if certificate.monitored() else 'hors surveillance : ' ~ (certificate.validity_label() | lower)),
                     sans_date='date d\'expiration à renseigner') }}
+{% endset %}
+{{ entete(certificate.service_name, sous_titre, statut=certificate.status(), primaire=primaire,
+          menu=menu, voisins=voisins, bandeau=bandeau) }}
 
 {% call barre('ficheCertificate', modifier=url_for('certificates.edit', id=certificate.id) if peut_editer else None, sur_place=True) %}
     {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}

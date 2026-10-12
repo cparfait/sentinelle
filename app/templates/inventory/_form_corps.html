@@ -161,7 +161,9 @@
     </div>
 
 
-    {{ pied_form(retour, 'Enregistrer' if item else 'Ajouter') }}
+    {{ pied_form(retour, 'Enregistrer' if item else 'Ajouter',
+                 supprimer=url_for('inventory.delete', id=item.id) if item and current_user.can_delete('inventory') else None,
+                 confirmation='Supprimer cet équipement ?') }}
 </form>
 </div>
 

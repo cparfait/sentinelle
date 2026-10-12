@@ -39,16 +39,12 @@
     · {{ item.lifecycle_label() | lower }} · {{ item.hosting_label() | lower }}{% if item.is_docker %} (Docker){% endif %}
     {%- if item.criticality %} · criticité {{ item.criticality_label() | lower }}{% endif -%}
 {% endset %}
-{% set primaire %}
-    {% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener" class="btn btn-outline-secondary">{{ ico_bi('bi-box-arrow-up-right', '1em', 'me-1') }} Ouvrir l'application</a>{% endif %}
-{% endset %}
-{% set menu %}
-    {% if current_user.can_delete('software') %}
-    {{ menu_post(url_for('software.delete', id=item.id), 'Supprimer', 'bi-trash', confirm='Supprimer ce logiciel ?', danger=True) }}
-    {% endif %}
-{% endset %}
-{{ entete(item.name, sous_titre, statut=item.computed_status(), primaire=primaire,
-          menu=menu, voisins=voisins) }}
+{# L'application s'ouvre depuis le titre : une petite flèche juste après le
+   nom, avant le badge de statut — pas de bouton « Ouvrir l'application »
+   dans les actions, qui restent aux gestes sur la fiche. #}
+{% set titre %}{{ item.name }}{% if item.url %} <a href="{{ item.url }}" target="_blank" rel="noopener" class="titre-lien" title="Ouvrir l'application ({{ item.url }})" aria-label="Ouvrir l'application">{{ ico_bi('bi-box-arrow-up-right', '0.65em') }}</a>{% endif %}{% endset %}
+{# Supprimer est au pied du formulaire de l'onglet Détails (_formulaire.html). #}
+{{ entete(titre, sous_titre, statut=item.computed_status(), voisins=voisins) }}
 
 {% if item.over_licence() %}
 <div class="alert alert-warning py-2 px-3 small">

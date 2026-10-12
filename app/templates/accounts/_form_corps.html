@@ -109,7 +109,9 @@
     </div>
 
 
-    {{ pied_form(retour, 'Enregistrer' if account else 'Ajouter') }}
+    {{ pied_form(retour, 'Enregistrer' if account else 'Ajouter',
+                 supprimer=url_for('accounts.delete', id=account.id) if account and current_user.can_delete('accounts') else None,
+                 confirmation='Supprimer ce compte ?') }}
         </form>
 </div>
 

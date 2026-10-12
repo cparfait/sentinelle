@@ -43,8 +43,19 @@
 </div>
 {% endmacro %}
 
-{% macro pied_form(retour, libelle='Enregistrer') %}
+{# `supprimer` : l'adresse POST qui supprime la fiche, quand on la modifie et
+   qu'on en a le droit — jamais à la création. Supprimer est un geste de
+   modification : il vit avec Annuler et Enregistrer, derrière le crayon, pas
+   dans le menu « ⋯ » de l'en-tête sous les yeux de qui ne fait que lire. Tout
+   à gauche, à l'opposé d'Enregistrer, en rouge discret, et derrière la
+   confirmation (_confirm_modal.html, qui porte le formulaire #form-supprimer :
+   un <form> dans le formulaire serait invalide). #}
+{% macro pied_form(retour, libelle='Enregistrer', supprimer=None, confirmation='Supprimer cette fiche ?') %}
 <div class="form-pied">
+    {% if supprimer %}
+    <button type="button" class="btn btn-ghost btn-ghost-danger form-pied-supprimer"
+            data-confirm="{{ confirmation }}" data-confirm-form="#form-supprimer" data-confirm-action="{{ supprimer }}">{{ ico_bi('bi-trash', '1em', 'me-1') }} Supprimer</button>
+    {% endif %}
     <span class="form-pied-note text-muted small"><span class="text-danger">*</span> champ obligatoire</span>
     <a href="{{ retour }}" class="btn btn-outline-secondary js-retour">Annuler</a>
     <button type="submit" class="btn btn-primary">{{ ico_bi('bi-check-lg', '1em', 'me-1') }} {{ libelle }}</button>

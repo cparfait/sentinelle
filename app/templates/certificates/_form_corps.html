@@ -236,7 +236,9 @@
     </div>
 
 
-    {{ pied_form(retour, 'Enregistrer' if certificate else 'Ajouter') }}
+    {{ pied_form(retour, 'Enregistrer' if certificate else 'Ajouter',
+                 supprimer=url_for('certificates.delete', id=certificate.id) if certificate and current_user.can_delete('certificates') else None,
+                 confirmation='Supprimer ce certificat ?') }}
 </form>
 </div>
 

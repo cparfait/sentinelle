@@ -106,6 +106,8 @@
     {% endcall %}
     </div>
 
-    {{ pied_form(retour, 'Enregistrer' if s else 'Ajouter') }}
+    {{ pied_form(retour, 'Enregistrer' if s else 'Ajouter',
+                 supprimer=url_for('suppliers.delete', id=s.id) if s and current_user.can_delete('suppliers') else None,
+                 confirmation='Supprimer ce fournisseur ?') }}
 </form>
 </div>

@@ -12,20 +12,17 @@
 {% set sous_titre %}Test récurrent{% if type_label %} · {{ type_label }}{% endif %}{% if test.frequency_days %} · tous les {{ test.frequency_days }} j{% endif %}{% endset %}
 {% set primaire %}{% if peut_editer %}{{ bouton_modal('effectue', 'Marquer effectué', 'bi-check-lg') }}{% endif %}{% endset %}
 {% set menu %}
+    {# Le kanban est une vue de la LISTE des tests : il s'ouvre depuis elle, pas d'ici. #}
     {{ menu_lien(url_for('pdf_export.test_pdf', id=test.id), 'Exporter en PDF', 'bi-file-earmark-pdf') }}
-    {{ menu_lien(url_for('tests.kanban'), 'Voir le kanban des tests', 'bi-kanban') }}
-    {% if peut_editer %}
-    {{ menu_sep() }}
-    {{ menu_post(url_for('tests.delete', id=test.id), 'Supprimer', 'bi-trash', confirm='Supprimer ce test ?', danger=True) }}
-    {% endif %}
+{% endset %}
+{% set bandeau %}
+{{ bandeau_echeance('Prochaine échéance', test.next_due, test.computed_status(), passe='retard',
+                    debut=test.last_performed,
+                    complement=('dernière exéc. le ' ~ test.last_performed.strftime('%d/%m/%Y')) if test.last_performed else 'jamais exécuté',
+                    sans_date='à planifier') }}
 {% endset %}
 {{ entete(test.name, sous_titre, statut=test.computed_status(), primaire=primaire,
-          menu=menu, voisins=voisins) }}
-
-{{ bandeau_echeance('Prochaine échéance', test.next_due, test.computed_status(), passe='en retard de',
-                    debut=test.last_performed,
-                    complement=('dernière exécution le ' ~ test.last_performed.strftime('%d/%m/%Y')) if test.last_performed else 'jamais exécuté',
-                    sans_date='à planifier') }}
+          menu=menu, voisins=voisins, bandeau=bandeau) }}
 
 {% call barre('ficheTest', modifier=url_for('tests.edit', id=test.id) if peut_editer else None, sur_place=True) %}
     {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}

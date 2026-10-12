@@ -22,16 +22,15 @@
     {% if peut_editer %}
     {{ menu_post(url_for('domains.scan_ct', id=domain.id), 'Scanner les journaux CT (crt.sh)', 'bi-search') }}
     {% if ct_new %}{{ menu_post(url_for('domains.ct_ack', id=domain.id), 'Marquer les ' ~ ct_new ~ ' nouveaux certificats comme vérifiés', 'bi-check2-all') }}{% endif %}
-    {{ menu_sep() }}
-    {{ menu_post(url_for('domains.delete', id=domain.id), 'Supprimer', 'bi-trash', confirm='Supprimer ce domaine ?', danger=True) }}
     {% endif %}
 {% endset %}
-{{ entete(domain.name, sous_titre, statut=domain.status(), primaire=primaire,
-          menu=menu, voisins=voisins) }}
-
+{% set bandeau %}
 {{ bandeau_echeance('Expiration', domain.expiry_date, domain.status(), passe='expiré depuis',
-                    complement=('renouvellement automatique chez ' ~ domain.registrar) if (domain.auto_renew and domain.registrar) else ('renouvellement automatique' if domain.auto_renew else 'renouvellement manuel'),
+                    complement=('renouv. automatique chez ' ~ domain.registrar) if (domain.auto_renew and domain.registrar) else ('renouv. automatique' if domain.auto_renew else 'renouv. manuel'),
                     sans_date='date d\'expiration à renseigner (ou lancez la vérification au registre)') }}
+{% endset %}
+{{ entete(domain.name, sous_titre, statut=domain.status(), primaire=primaire,
+          menu=menu, voisins=voisins, bandeau=bandeau) }}
 
 {% call barre('ficheDomain', modifier=url_for('domains.edit', id=domain.id) if peut_editer else None, sur_place=True) %}
     {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}

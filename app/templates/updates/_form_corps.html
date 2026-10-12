@@ -97,7 +97,9 @@
     {% endcall %}
     </div>
 
-    {{ pied_form(retour, 'Enregistrer' if update else 'Ajouter') }}
+    {{ pied_form(retour, 'Enregistrer' if update else 'Ajouter',
+                 supprimer=url_for('updates.delete', id=update.id) if update and current_user.can_delete('updates') else None,
+                 confirmation='Supprimer cette entrée ?') }}
 </form>
 </div>
 

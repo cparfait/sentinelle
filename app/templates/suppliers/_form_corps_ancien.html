@@ -151,5 +151,7 @@
         <textarea name="notes" class="form-control" rows="3"
                   placeholder="Procédure d'ouverture de ticket, escalade, infos contrat...">{{ supplier.notes or '' if supplier else '' }}</textarea>
     {% endcall %}
-    {{ pied_form(retour, 'Enregistrer' if supplier else 'Ajouter') }}
+    {{ pied_form(retour, 'Enregistrer' if supplier else 'Ajouter',
+                 supprimer=url_for('suppliers.delete', id=supplier.id) if supplier and current_user.can_delete('suppliers') else None,
+                 confirmation='Supprimer ce fournisseur ?') }}
 </form>

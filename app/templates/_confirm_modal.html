@@ -3,7 +3,13 @@
    Usage : <button ... data-confirm="Message ?" data-confirm-form="#form-id">
    Ou : <form id="form-id"><button data-confirm="Message ?">
    Le bouton doit avoir data-confirm="..." et soit être dans un <form>, soit
-   avoir data-confirm-form="#selecteur" pointant vers le formulaire à soumettre. #}
+   avoir data-confirm-form="#selecteur" pointant vers le formulaire à soumettre.
+   data-confirm-action="/url" : l'adresse que ce formulaire prend avant l'envoi —
+   pour un bouton qui ne peut pas avoir son propre <form> (le « Supprimer » au
+   pied d'un formulaire de fiche, _formulaire.html) : il envoie #form-supprimer. #}
+<form method="POST" id="form-supprimer" class="d-none" aria-hidden="true">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
 <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -42,6 +48,7 @@
       pendingForm = formSel ? document.querySelector(formSel) : btn.closest('form');
       if (!pendingForm) return;
       e.preventDefault();
+      if (btn.dataset.confirmAction) pendingForm.action = btn.dataset.confirmAction;
       textEl.textContent = msg;
       modal.show();
     });

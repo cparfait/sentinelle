@@ -9,17 +9,10 @@
 {% from '_fiche.html' import entete, menu_post, carte_fournisseur %}
 
 {% block content %}
-{% set sous_titre %}{{ item.kind_label() }}{% if item.environment %} · {{ item.env_label() }}{% endif %}{% if item.criticality %} · criticité {{ item.criticality }}{% endif %}{% if item.ip_address %} · <code>{{ item.ip_address }}</code>{% endif %}{% endset %}
-{% set menu %}
-    {% if current_user.can_delete('inventory') %}
-    {{ menu_post(url_for('inventory.delete', id=item.id), 'Supprimer', 'bi-trash', confirm='Supprimer cet équipement ?', danger=True) }}
-    {% endif %}
-{% endset %}
-{{ entete(item.name, sous_titre, statut=item.computed_status(),
-          menu=menu, voisins=voisins) }}
-
-{# Le bandeau de faits reste AU-DESSUS des onglets : ce qu'on vient vérifier
-   neuf fois sur dix, sans lire la Synthèse. #}
+{% set sous_titre %}{{ item.kind_label() }}{% if item.environment %} · {{ item.env_label() }}{% endif %}{% if item.criticality %} · criticité {{ item.criticality }}{% endif %}{% if item.ip_address %} · {{ item.ip_address }}{% endif %}{% endset %}
+{# Le bandeau de faits dans l'en-tête, à droite du titre : ce qu'on vient
+   vérifier neuf fois sur dix, sans lire la Synthèse. #}
+{% set bandeau %}
 <div class="data-card fiche-bandeau fiche-bandeau--{{ item.computed_status() }}">
     {% call faits() %}
         {{ fait('OS', ((item.os or '') ~ (' ' ~ item.os_version if item.os_version else '')) | trim) }}
@@ -29,6 +22,9 @@
         {% endcall %}
     {% endcall %}
 </div>
+{% endset %}
+{# Supprimer est au pied du formulaire de l'onglet Détails (_formulaire.html). #}
+{{ entete(item.name, sous_titre, statut=item.computed_status(), voisins=voisins, bandeau=bandeau) }}
 
 {% call barre('ficheItem', modifier=url_for('inventory.edit', id=item.id) if current_user.can_edit('inventory') else None, sur_place=True) %}
     {{ onglet('detail', 'Synthèse', 'bi-card-text', actif=True) }}

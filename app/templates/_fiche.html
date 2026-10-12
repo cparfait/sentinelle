@@ -42,21 +42,37 @@
 {% endmacro %}
 
 {# ---- L'en-tête ----
-   `primaire` et `menu` sont des blocs capturés ({% set x %}...{% endset %}).
-   `voisins` : le couple (précédente, suivante), voir fiche_voisins. #}
-{% macro entete(titre, sous_titre='', statut=None, primaire='', menu='', badges='', voisins=None) %}
+   `primaire`, `menu` et `bandeau` sont des blocs capturés ({% set x %}...{% endset %}).
+   `bandeau` : l'étiquette d'échéance (bandeau_echeance), à droite du titre,
+   sur sa ligne. `voisins` : le couple (précédente, suivante), voir
+   fiche_voisins. #}
+{% macro entete(titre, sous_titre='', statut=None, primaire='', menu='', badges='', voisins=None, bandeau='') %}
 <div class="page-header fiche-entete">
     <div class="fiche-entete-titre">
         <h1 class="page-title">{{ titre }}{% if statut %} {{ status_badge(statut) }}{% endif %}{{ badges }}</h1>
         {% if sous_titre %}<p class="page-subtitle">{{ sous_titre }}</p>{% endif %}
     </div>
-    <div class="page-actions">
+    {% if bandeau | trim %}<div class="fiche-entete-bandeau">{{ bandeau }}</div>{% endif %}
+    {# Deux lignes de petits boutons (26 px), calées à droite : les chevrons en
+       haut, dans le coin ; l'action métier et le menu sur la ligne du dessous,
+       sur toutes les fiches (.fiche-actions, style.css). #}
+    <div class="page-actions fiche-actions">
         {{ fiche_voisins(voisins) }}
-        {{ primaire }}
-        {% if menu | trim %}
-        <div class="dropdown">
-            <button class="btn btn-outline-secondary btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Autres actions" aria-label="Autres actions">{{ ico_bi('bi-three-dots', '1em') }}</button>
-            <ul class="dropdown-menu dropdown-menu-end">{{ menu }}</ul>
+        {# Un menu pour un seul choix serait un clic de trop : l'entrée unique
+           devient un bouton à icône, son libellé au survol (.menu-seul). Le
+           « ⋯ » reste à partir de deux entrées (les séparateurs ne comptent pas). #}
+        {% set entrees = menu.count('<li>') - menu.count('dropdown-divider') %}
+        {% if primaire | trim or entrees %}
+        <div class="fiche-actions-ligne">
+            {{ primaire }}
+            {% if entrees == 1 %}
+            <ul class="menu-seul">{{ menu }}</ul>
+            {% elif entrees > 1 %}
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Autres actions" aria-label="Autres actions">{{ ico_bi('bi-three-dots', '1em') }}</button>
+                <ul class="dropdown-menu dropdown-menu-end">{{ menu }}</ul>
+            </div>
+            {% endif %}
         </div>
         {% endif %}
     </div>
@@ -64,16 +80,17 @@
 {% endmacro %}
 
 {# Un élément du menu ⋯ : lien simple, ou action POST (avec jeton CSRF et
-   confirmation facultative). `danger` : rouge, pour supprimer. #}
+   confirmation facultative). `danger` : rouge, pour supprimer. Le libellé est
+   aussi en `title`, et dans un <span> que l'entrée unique (.menu-seul) cache. #}
 {% macro menu_lien(url, libelle, icone, cible=None) %}
-<li><a class="dropdown-item" href="{{ url }}"{% if cible %} target="{{ cible }}" rel="noopener"{% endif %}>{{ ico_bi(icone, '1em', 'me-2') }}{{ libelle }}</a></li>
+<li><a class="dropdown-item" href="{{ url }}" title="{{ libelle }}"{% if cible %} target="{{ cible }}" rel="noopener"{% endif %}>{{ ico_bi(icone, '1em', 'me-2') }}<span class="menu-libelle">{{ libelle }}</span></a></li>
 {% endmacro %}
 
 {% macro menu_post(url, libelle, icone, confirm=None, danger=False) %}
 <li>
     <form method="POST" action="{{ url }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="dropdown-item{{ ' text-danger' if danger }}"{% if confirm %} data-confirm="{{ confirm }}"{% endif %}>{{ ico_bi(icone, '1em', 'me-2') }}{{ libelle }}</button>
+        <button type="submit" class="dropdown-item{{ ' text-danger' if danger }}" title="{{ libelle }}"{% if confirm %} data-confirm="{{ confirm }}"{% endif %}>{{ ico_bi(icone, '1em', 'me-2') }}<span class="menu-libelle">{{ libelle }}</span></button>
     </form>
 </li>
 {% endmacro %}
@@ -116,7 +133,7 @@
    `complement` : ce qui explique la date (« rotation tous les 90 j »,
    « renouvellement automatique »). `sans_date` : la phrase quand il n'y a pas
    d'échéance (« à renseigner », « hors surveillance »). #}
-{% macro bandeau_echeance(libelle, date, statut, passe='en retard de', debut=None, complement='', sans_date='à renseigner', seuil_libelle=None) %}
+{% macro bandeau_echeance(libelle, date, statut, passe='retard', debut=None, complement='', sans_date='à renseigner', seuil_libelle=None) %}
 <div class="data-card fiche-bandeau fiche-bandeau--{{ statut or 'muted' }}">
     <div class="fiche-bandeau-ligne">
         <span class="fiche-bandeau-k">{{ libelle }}</span>

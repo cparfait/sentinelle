@@ -360,7 +360,7 @@ details.sidebar-section--repliable > summary:hover { color: var(--muted); }
     align-items: center;
     gap: 6px;
     margin: -6px 0 6px;
-    font-size: 0.8rem;
+    font-size: 0.74rem;  /* celle du sous-titre d'une fiche */
     color: var(--muted);
 }
 .fil-ariane a { color: var(--muted); text-decoration: none; }
@@ -387,7 +387,7 @@ details.sidebar-section--repliable > summary:hover { color: var(--muted); }
     font-size: 0.64rem;
     font-weight: 700;
     line-height: 1rem;
-    letter-spacing: 0.13em;
+    letter-spacing: normal;
     color: var(--faint);
     text-transform: uppercase;
 }
@@ -508,7 +508,7 @@ svg.lucide { flex-shrink: 0; vertical-align: -0.18em; fill: none; stroke: curren
     font-weight: 700;
     color: var(--faint);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: normal;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -645,6 +645,11 @@ svg.lucide { flex-shrink: 0; vertical-align: -0.18em; fill: none; stroke: curren
     color: var(--strong);
 }
 .page-title :is(i, svg.lucide) { display: none; }
+/* Un lien dans le titre d'une fiche (ouvrir l'application d'un logiciel) : la
+   seule icône que le titre montre, discrète, indigo au survol. */
+.page-title .titre-lien { display: inline-flex; align-items: center; color: var(--muted); text-decoration: none; }
+.page-title .titre-lien svg.lucide { display: inline-block; }
+.page-title .titre-lien:hover { color: var(--primary); }
 /* Le compteur dans le titre (« Certificats 5 ») et le ? d'aide. */
 .page-count { margin-left: 6px; font-size: 1.05rem; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
 .help-toggle {
@@ -677,7 +682,7 @@ svg.lucide { flex-shrink: 0; vertical-align: -0.18em; fill: none; stroke: curren
 
 /* La liste « A traiter » : des groupes par horizon, un statut, un delai, un geste. */
 .urgent-table td { vertical-align: middle; }
-.urgent-table .urgent-groupe td { padding: 6px 16px; background: var(--inset); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.urgent-table .urgent-groupe td { padding: 6px 16px; background: var(--inset); font-size: 0.72rem; font-weight: 700; letter-spacing: normal; text-transform: uppercase; }
 .urgent-table .urgent-statut { width: 110px; }
 .urgent-table .urgent-icone { width: 32px; padding-right: 0; }
 .urgent-table .urgent-detail { width: 220px; }
@@ -739,7 +744,7 @@ a:hover .stat-card,
     font-size: 0.74rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: normal;
     color: var(--muted);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1001,7 +1006,7 @@ body.dash-editing .stat-toggle { display: inline-flex; }
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: normal;
     color: var(--text);
 }
 .card-header-custom h6 :is(i, svg.lucide) { margin-right: 6px; }
@@ -1016,7 +1021,7 @@ body.dash-editing .stat-toggle { display: inline-flex; }
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: normal;
     color: var(--text);
 }
 .data-card h6.fw-bold:not(.card-header-custom h6):not(.fiche-bloc > h6)::before {
@@ -1085,7 +1090,7 @@ body.dash-editing .stat-toggle { display: inline-flex; }
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.72rem;
-    letter-spacing: 0.06em;
+    letter-spacing: normal;
     color: var(--text-muted);
     padding: 10px 12px;
     white-space: nowrap;
@@ -1579,7 +1584,7 @@ a.badge-status:hover { filter: brightness(0.96); }
     font-size: 0.78rem;
     font-weight: 600;
     line-height: 1rem;
-    letter-spacing: 0.04em;
+    letter-spacing: normal;
     text-transform: uppercase;
     color: var(--muted);
 }
@@ -2056,7 +2061,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 
 /* ── Kanban ────────────────────────────────────────────── */
 .kanban-column { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 1rem; }
-.kanban-col-header { font-size: .85rem; letter-spacing: .04em; text-transform: uppercase; }
+.kanban-col-header { font-size: .85rem; letter-spacing: normal; text-transform: uppercase; }
 .kanban-card { cursor: default; transition: box-shadow .15s; }
 .kanban-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.1); }
 .btn-xs { padding: .15rem .45rem; font-size: .7rem; line-height: 1.4; border-radius: .25rem; }
@@ -2154,6 +2159,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 .form-pied-note { margin-right: auto; }
+/* Supprimer, tout à gauche du pied : rouge dès le repos, le fond rouge pâle au survol. */
+.form-pied-supprimer { color: var(--danger); margin-right: 8px; }
 
 /* L'aide repliee : masquee, revelee par le ? de l'intitule. */
 .formulaire .form-text--repliee { display: none; }
@@ -2216,7 +2223,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover { opacity:
 .choix-ligne:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 1px; }
 @media (max-width: 679.98px) { .choix-liste { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 575.98px) { .choix-liste { grid-template-columns: 1fr; } }
-.puce-groupe { display: inline-block; margin-right: 6px; padding: 0 5px; border-radius: 4px; background: var(--surface); border: 1px solid var(--line); font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); vertical-align: 1px; }
+.puce-groupe { display: inline-block; margin-right: 6px; padding: 0 5px; border-radius: 4px; background: var(--surface); border: 1px solid var(--line); font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: normal; color: var(--muted); vertical-align: 1px; }
 /* La puce d'un élément qui a sa fiche (option data-url, formulaire.js) : un lien
    quand le formulaire est verrouillé — la fiche se lit, on va voir l'élément ;
    du texte en modification, où le geste est de retirer, pas de naviguer. */
@@ -2276,14 +2283,14 @@ fieldset.edition-verrou[disabled] .puce:has(> a:hover) { border-color: var(--pri
 .pref-etat { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
 .pref-etat .badge-status { font-size: 0.75rem; padding: 3px 10px; gap: 6px; }
 .pref-etat .badge-status :is(i, svg.lucide) { font-size: 0.8rem; }
-.pref-page .som-famille { margin: 14px 0 4px; padding: 0 10px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+.pref-page .som-famille { margin: 14px 0 4px; padding: 0 10px; font-size: 0.68rem; font-weight: 700; letter-spacing: normal; text-transform: uppercase; color: var(--faint); }
 .pref-page .som-famille:first-child { margin-top: 0; }
 .pref-page .form-sommaire-lien :is(i, svg.lucide) { width: 16px; text-align: center; color: var(--faint); font-size: 0.9rem; }
 .pref-page .form-sommaire-lien.active :is(i, svg.lucide) { color: var(--primary); }
 .som-etat { margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: var(--faint); opacity: 0.5; flex: 0 0 auto; }
 .som-etat.ok { background: var(--success); opacity: 1; }
 .som-etat.ko { background: var(--danger); opacity: 1; }
-.form-famille { margin: 0 0 10px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.form-famille { margin: 0 0 10px; font-size: 0.72rem; font-weight: 700; letter-spacing: normal; text-transform: uppercase; color: var(--muted); }
 .form-section + .form-famille { margin-top: 28px; }
 .pref-rubrique { scroll-margin-top: 16px; }
 .pref-rubrique > .form-section-titre { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
@@ -2604,7 +2611,7 @@ a[href^="tel:"], a[href^="tel:"]:hover, a[href^="tel:"]:focus,
     display: block;
     font-size: 0.66rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: normal;
     text-transform: uppercase;
     color: var(--text-muted);
     white-space: nowrap;
@@ -2669,7 +2676,7 @@ a[href^="tel:"], a[href^="tel:"]:hover, a[href^="tel:"]:focus,
     padding: 0;
     font-size: 0.71rem;
     font-weight: 800;
-    letter-spacing: 0.09em;
+    letter-spacing: normal;
     text-transform: uppercase;
     color: var(--text);
     background: none;
@@ -2955,42 +2962,89 @@ a.marche-doc-nom:hover { color: var(--primary); }
    L'en-tete porte l'identite et le statut, le bandeau porte l'echeance, les
    rubriques portent le detail. Rien n'est ecrit deux fois.
    ========================================================================== */
-.fiche-entete { margin-bottom: 12px; }
-.fiche-entete .page-title { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.fiche-entete .page-title .badge-status { font-size: 0.78rem; vertical-align: middle; }
+/* 16 px sous l'en-tete, l'ecart standard d'un .page-header : le bandeau est
+   dans l'en-tete, les onglets doivent respirer. */
+.fiche-entete { margin-bottom: 16px; }
+/* Les actions d'une fiche (_fiche.html, entete) sur deux lignes calées à
+   droite : les chevrons Précédent / Suivant en haut, dans le coin ; l'action
+   métier et le menu « ⋯ » sur la ligne du dessous, qui ne se replie pas. En
+   petits boutons de 26 px (la taille .btn-sm), chevrons compris : ils ne
+   doivent pas peser plus que le titre à côté. */
+.fiche-actions { flex-direction: column; align-items: flex-end; justify-content: space-between; gap: 6px; }
+/* Les colonnes de l'en-tête ont la même hauteur (les chevrons en haut, l'action
+   métier en bas). Le bandeau d'échéance se pose à droite du titre, sur sa
+   ligne, et laisse le reste de la largeur aux actions. */
+.fiche-entete { align-items: stretch; flex-wrap: nowrap; }
+/* Pas de repli, et le titre ne se casse pas : quand la place manque, c'est le
+   complément du bandeau (« rotation tous les 180 j · dernier changement… »)
+   qui se coupe par « … », en dernier. */
+.fiche-entete-titre { flex: 0 0 auto; }
+.fiche-entete-bandeau { flex: 0 1 auto; min-width: 0; margin-right: auto; align-self: flex-start; margin-top: -1px; }
+.fiche-entete-bandeau .fiche-bandeau { max-width: 100%; }
+.fiche-entete .fiche-actions { flex: 0 0 auto; }
+@media (max-width: 767.98px) { .fiche-entete { flex-wrap: wrap; } }
+.fiche-entete-bandeau .fiche-bandeau { margin: 0; }
+.fiche-actions-ligne { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.fiche-actions-ligne .btn { white-space: nowrap; }
+.fiche-actions .btn, .fiche-actions .menu-seul .dropdown-item { padding: 2px 10px; font-size: 0.8rem; line-height: 20px; height: 26px; }
+.fiche-actions .btn-icon, .fiche-actions .menu-seul .dropdown-item { padding-left: 6px; padding-right: 6px; }
+/* Le titre d'une fiche, un poil plus petit que celui d'une liste (1.35 rem
+   au lieu de 1.5), son badge de statut avec lui. */
+.fiche-entete .page-title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 1.35rem; line-height: 1.1; }
+.fiche-entete .page-title .badge-status { font-size: 0.72rem; vertical-align: middle; }
+/* Le sous-titre d'une fiche : plus petit que celui d'une liste, collé au titre. */
+/* Le sous-titre ne dépasse pas la largeur du titre (width: 0, il ne compte pas
+   dans la largeur du bloc ; min-width: 100 %, il la remplit), et au moins
+   200 px sous un titre court. */
+.fiche-entete .page-subtitle { margin-top: -1px; width: 0; min-width: max(200px, 100%); font-size: 0.74rem; line-height: 1.25; }
 .fiche-entete .page-subtitle code { font-size: 0.85em; }
 
-/* Le bandeau : une ligne, la date en grand, le delai a cote, le complement a
-   droite ; puis la frise entre le debut et l'echeance. Un liseret de la
-   couleur du statut sur le haut du bandeau -- c'est le seul endroit ou la
-   fiche porte sa couleur en dehors des badges. */
+/* Le bandeau : la date, le delai a cote, le complement dessous ; puis la frise
+   entre le debut et l'echeance. Un liseret de la couleur du statut sur le haut
+   du bandeau -- c'est le seul endroit ou la fiche porte sa couleur en dehors
+   des badges. Petit, sous le sous-titre de l'en-tete, sur UNE ligne quelle que
+   soit la place : la carte prend la largeur de son contenu, pas plus — une
+   etiquette, pas une banniere (Dom, 2026-10-12). */
 .fiche-bandeau {
-    padding: 14px 18px 12px;
-    margin-bottom: 16px;
-    border-top: 3px solid var(--sub);
+    width: max-content; max-width: 100%;
+    height: 26px; box-sizing: border-box;  /* la hauteur du bouton d'action en face */
+    display: flex; align-items: center;
+    padding: 0 12px;
+    margin-bottom: 12px;
+    border-top: 2px solid var(--sub);
+    border-radius: 10px;
+    line-height: 1.25;
 }
+/* Avec une frise (compte, contrat, revue), le bandeau prend la hauteur qu'il faut. */
+.fiche-bandeau:has(.fiche-frise) { height: auto; display: block; padding: 4px 12px 3px; }
 .fiche-bandeau--danger  { border-top-color: var(--danger); }
 .fiche-bandeau--warning { border-top-color: var(--warning); }
 .fiche-bandeau--info    { border-top-color: var(--info); }
 .fiche-bandeau--success { border-top-color: var(--success); }
-.fiche-bandeau .fiche-faits { margin-bottom: 0; }
-.fiche-bandeau .fiche-fait { border: 0; padding: 4px 18px 4px 0; background: none; border-left: 0; border-radius: 0; flex: 0 1 auto; }
-.fiche-bandeau .fiche-fait + .fiche-fait { border-left: 1px solid var(--line); padding-left: 18px; }
-.fiche-bandeau-ligne { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+/* Un bandeau de faits (matériel, sauvegarde, mise à jour) : chaque fait sur
+   deux lignes, l'intitulé au-dessus de sa valeur, un filet entre les faits ;
+   le bandeau prend la hauteur qu'il faut. Faute de place (fenêtre étroite),
+   les faits se replient plutôt que d'être coupés. */
+.fiche-bandeau:has(.fiche-faits) { height: auto; display: block; padding: 6px 12px 5px; }
+.fiche-bandeau .fiche-faits { flex-wrap: wrap; gap: 0; margin: 0; }
+.fiche-bandeau .fiche-fait { border: 0; padding: 0 14px 0 0; background: none; border-radius: 0; flex: 0 0 auto; white-space: nowrap; }
+.fiche-bandeau .fiche-fait + .fiche-fait { border-left: 1px solid var(--line); padding-left: 14px; }
+.fiche-bandeau-ligne { display: flex; flex-wrap: nowrap; white-space: nowrap; align-items: baseline; gap: 10px; min-width: 0; }
+.fiche-bandeau-ligne > * { flex: 0 0 auto; }
 .fiche-bandeau-k {
-    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    font-size: 0.62rem; font-weight: 700; letter-spacing: normal; text-transform: uppercase;
     color: var(--muted);
 }
-.fiche-bandeau-date { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
-.fiche-bandeau .delai { font-size: 0.95rem; }
-.fiche-bandeau-c { margin-left: auto; font-size: 0.82rem; color: var(--muted); }
-.fiche-frise { position: relative; height: 8px; margin-top: 10px; border-radius: 4px; background: var(--inset); overflow: hidden; }
+.fiche-bandeau-date { font-size: 0.9rem; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.fiche-bandeau .delai { font-size: 0.8rem; }
+.fiche-bandeau-c { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; margin-left: 6px; font-size: 0.74rem; color: var(--muted); }
+.fiche-frise { position: relative; height: 6px; margin-top: 8px; border-radius: 3px; background: var(--inset); overflow: hidden; }
 .fiche-frise-fait { display: block; height: 100%; border-radius: 4px; background: var(--sub); }
 .fiche-bandeau--danger  .fiche-frise-fait { background: var(--danger); }
 .fiche-bandeau--warning .fiche-frise-fait { background: var(--warning); }
 .fiche-bandeau--info    .fiche-frise-fait { background: var(--info); }
 .fiche-bandeau--success .fiche-frise-fait { background: var(--success); }
-.fiche-frise-legende { display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.72rem; color: var(--faint); font-variant-numeric: tabular-nums; }
+.fiche-frise-legende { display: flex; justify-content: space-between; margin-top: 3px; font-size: 0.66rem; color: var(--faint); font-variant-numeric: tabular-nums; }
 
 /* Le rail droit : « Lie a », activite, alertes. */
 /* Les liens se suivent a 8 px (4 px de marge chacun) : deux lignes de texte
@@ -3295,6 +3349,20 @@ tr:hover .row-actions, tr:focus-within .row-actions { opacity: 1; }
 }
 .dropdown-item { border-radius: 6px; padding: 6px 8px; color: var(--body); }
 .dropdown-item:hover, .dropdown-item:focus { background: var(--inset); color: var(--strong); }
+/* L'entrée unique du menu d'une fiche (_fiche.html, entete) : pas de « ⋯ »
+   pour un seul choix, l'entrée elle-même en bouton à icône — l'aspect de
+   .btn.btn-outline-secondary.btn-icon — son libellé au survol (title). */
+.menu-seul { list-style: none; margin: 0; padding: 0; display: flex; }
+.menu-seul form { margin: 0; }
+.menu-seul .dropdown-item {
+    display: inline-flex; align-items: center; width: auto; height: 30px;
+    padding: 4px 8px; line-height: 20px; font-size: 0.875rem;
+    border: 1px solid var(--sub); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--body); box-shadow: var(--shadow-sm);
+}
+.menu-seul .dropdown-item:hover, .menu-seul .dropdown-item:focus { background: var(--surface); border-color: var(--primary); color: var(--strong); }
+.menu-seul .dropdown-item svg.lucide { margin-right: 0 !important; }
+.menu-seul .menu-libelle { display: none; }
 .dropdown-divider { border-color: var(--line); }
 
 /* Titres de section hors carte (h5/h6 gras dans le contenu) : micro-capitales. */
@@ -3335,7 +3403,7 @@ tr:hover .row-actions, tr:focus-within .row-actions { opacity: 1; }
 .contact-ligne { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
 .contact-ligne--large { grid-column: span 2; }
 .contact-ico { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 32px; height: 32px; margin-top: 2px; border-radius: 8px; background: var(--inset); color: var(--muted); }
-.contact-ligne dt { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.contact-ligne dt { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: normal; color: var(--muted); }
 .contact-ligne dd { margin: 0; font-size: 0.875rem; color: var(--text); }
 .contact-vide { color: var(--faint); }
 .contacts-filet { grid-column: 1 / -1; border-top: 1px solid var(--line); margin: 4px 0; }

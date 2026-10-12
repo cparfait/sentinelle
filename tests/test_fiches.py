@@ -68,6 +68,30 @@ def test_chaque_fiche_s_ouvre(client, jeu):
         assert client.get(url).status_code == 200, url
 
 
+def test_un_menu_d_une_seule_entree_devient_un_bouton(client, jeu):
+    """Un « ⋯ » pour un seul choix serait un clic de trop : l'entrée unique
+    (Exporter en PDF, sur un compte) est un bouton à icône, libellé au survol.
+    Le menu reste à partir de deux entrées (un domaine : PDF et scan CT)."""
+    compte = client.get(f'/accounts/{jeu["/accounts"].id}').get_data(as_text=True)
+    assert '<ul class="menu-seul">' in compte and 'dropdown-menu' not in compte
+    assert 'title="Exporter en PDF"' in compte
+    domaine = client.get(f'/domains/{jeu["/domains"].id}').get_data(as_text=True)
+    assert 'dropdown-menu' in domaine and 'menu-seul' not in domaine
+
+
+def test_supprimer_est_au_pied_du_formulaire(client, jeu):
+    """Supprimer est un geste de modification : au pied du formulaire de
+    l'onglet Détails, avec Annuler et Enregistrer, derrière la confirmation —
+    plus dans le menu « ⋯ » de l'en-tête, sous les yeux de qui ne fait que
+    lire. Le bouton vise #form-supprimer (_confirm_modal.html) : un <form>
+    dans le formulaire serait invalide."""
+    for url, _ in _fiches(jeu):
+        html = client.get(url).get_data(as_text=True)
+        assert f'data-confirm-action="{url}/delete"' in html, url
+        assert 'id="form-supprimer"' in html, url
+        assert 'dropdown-item text-danger' not in html, f'{url} : Supprimer encore dans le menu'
+
+
 def test_aucune_fiche_ne_delaye_ses_champs(client, jeu):
     """Le tableau a deux colonnes, dont l'intitule occupait 45 % de la largeur,
     tirait un vide de plusieurs centimetres entre le libelle et sa valeur."""

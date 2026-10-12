@@ -75,6 +75,8 @@
             {% endcall %}
     </div>
 
-            {{ pied_form(retour, 'Enregistrer' if backup else 'Ajouter') }}
+            {{ pied_form(retour, 'Enregistrer' if backup else 'Ajouter',
+                         supprimer=url_for('backups.delete', id=backup.id) if backup and current_user.can_delete('backups') else None,
+                         confirmation='Supprimer cette sauvegarde ?') }}
         </form>
 </div>

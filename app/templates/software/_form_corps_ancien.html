@@ -306,5 +306,7 @@
     </div>
     {% endcall %}
 
-    {{ pied_form(retour, 'Enregistrer' if item else 'Ajouter') }}
+    {{ pied_form(retour, 'Enregistrer' if item else 'Ajouter',
+                 supprimer=url_for('software.delete', id=item.id) if item and current_user.can_delete('software') else None,
+                 confirmation='Supprimer ce logiciel ?') }}
 </form>
