@@ -14,6 +14,7 @@
         {%- endif -%}
         {% endcall %}
         {{ lu('Renouv.', 'Automatique' if domain.auto_renew else 'Manuel', titre='Renouvellement') }}
+        {{ lu('Renouvelé le', domain.renewed_on.strftime('%d/%m/%Y') if domain.renewed_on else None, titre='Dernier renouvellement (ou enregistrement), lu au registre') }}
         {{ lu('Expire le', domain.expiry_date.strftime('%d/%m/%Y') if domain.expiry_date else None) }}
     {% endcall %}
     {% endcall %}

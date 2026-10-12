@@ -38,6 +38,8 @@ def refresh_domain_rdap(domain, performed_by):
 
     old = domain.expiry_date
     domain.expiry_date = info['expiry_date']
+    if info.get('renewed_on'):
+        domain.renewed_on = info['renewed_on']
     if info.get('registrar'):
         domain.registrar = info['registrar']
         if domain.registrar_id is None:
@@ -76,6 +78,7 @@ def check_rdap_domain():
         info = fetch_domain_info(name)
         return jsonify(ok=True,
                        expiry_date=info['expiry_date'].isoformat() if info['expiry_date'] else '',
+                       renewed_on=info['renewed_on'].isoformat() if info.get('renewed_on') else '',
                        registrar=info.get('registrar') or '')
     except Exception as e:
         return jsonify(ok=False, error=str(e))
@@ -96,6 +99,7 @@ def create():
             registrar=registrar,
             registrar_id=registrar_id,
             expiry_date=parse_date(request.form.get('expiry_date')),
+            renewed_on=parse_date(request.form.get('renewed_on')),
             auto_renew=request.form.get('auto_renew') == 'on',
             description=request.form.get('description'),
         )
@@ -184,6 +188,7 @@ def edit(id):
         domain.name = name
         domain.registrar, domain.registrar_id = _registrar_depuis(request.form)
         domain.expiry_date = parse_date(request.form.get('expiry_date'))
+        domain.renewed_on = parse_date(request.form.get('renewed_on'))
         domain.auto_renew = request.form.get('auto_renew') == 'on'
         domain.description = request.form.get('description')
         domain.rattacher_certificats()

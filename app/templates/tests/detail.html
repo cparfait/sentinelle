@@ -18,7 +18,7 @@
 {% set bandeau %}
 {{ bandeau_echeance('Prochaine échéance', test.next_due, test.computed_status(), passe='retard',
                     debut=test.last_performed,
-                    complement=('dernière exéc. le ' ~ test.last_performed.strftime('%d/%m/%Y')) if test.last_performed else 'jamais exécuté',
+                    complement=('dernière exéc. ' ~ test.last_performed.strftime('%d/%m/%Y')) if test.last_performed else 'jamais exécuté',
                     sans_date='à planifier') }}
 {% endset %}
 {{ entete(test.name, sous_titre, statut=test.computed_status(), primaire=primaire,

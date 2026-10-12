@@ -30,6 +30,11 @@ function initLookupFill(opts) {
                             var exp = document.querySelector('input[name=expiry_date]');
                             if (exp) exp.value = d.expiry_date;
                         }
+                        // Le dernier renouvellement d'un domaine (RDAP), s'il y a un champ pour lui.
+                        if (d.renewed_on) {
+                            var ren = document.querySelector('input[name=renewed_on]');
+                            if (ren) ren.value = d.renewed_on;
+                        }
                         var sec = document.querySelector('input[name=' + opts.secondField + ']');
                         if (sec && d[opts.secondField] && !sec.value) sec.value = d[opts.secondField];
                         msg.className = 'd-block mt-1 text-success';

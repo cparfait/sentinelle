@@ -21,8 +21,11 @@ def _clean_domain(value):
 
 
 def fetch_domain_info(domain, timeout=15):
-    """Retourne {'expiry_date': date|None, 'registrar': str|None}.
-    Leve une exception si le domaine est introuvable ou la requete echoue."""
+    """Retourne {'expiry_date': date|None, 'renewed_on': date|None,
+    'registrar': str|None}. `renewed_on` : le dernier renouvellement, lu dans
+    l'evenement « last changed » (a defaut l'enregistrement) — le debut de la
+    frise du bandeau. Leve une exception si le domaine est introuvable ou la
+    requete echoue."""
     name = _clean_domain(domain)
     if not name:
         raise ValueError("Domaine vide")
@@ -35,15 +38,28 @@ def fetch_domain_info(domain, timeout=15):
         raise ValueError(f"RDAP a repondu HTTP {resp.status_code}")
     data = resp.json()
 
-    expiry = None
+    expiry = changed = registration = None
     for event in data.get('events', []):
-        if event.get('eventAction') in ('expiration', 'expiry'):
-            try:
-                dt = datetime.fromisoformat(event['eventDate'].replace('Z', '+00:00'))
-                expiry = dt.astimezone(timezone.utc).date()
-            except (ValueError, KeyError):
-                pass
-            break
+        action = event.get('eventAction')
+        if action not in ('expiration', 'expiry', 'last changed', 'registration'):
+            continue
+        try:
+            dt = datetime.fromisoformat(event['eventDate'].replace('Z', '+00:00'))
+            d = dt.astimezone(timezone.utc).date()
+        except (ValueError, KeyError):
+            continue
+        if action in ('expiration', 'expiry'):
+            expiry = expiry or d
+        elif action == 'last changed':
+            changed = d
+        else:
+            registration = d
+    # « last changed » date aussi une simple mise a jour administrative, mais
+    # c'est le plus souvent le renouvellement ; un debut posterieur a
+    # l'expiration ne ferait pas une frise.
+    renewed_on = changed or registration
+    if renewed_on and expiry and renewed_on >= expiry:
+        renewed_on = None
 
     registrar = None
     for ent in data.get('entities', []):
@@ -52,7 +68,7 @@ def fetch_domain_info(domain, timeout=15):
             registrar = _vcard_name(ent) or registrar
             break
 
-    return {'expiry_date': expiry, 'registrar': registrar}
+    return {'expiry_date': expiry, 'renewed_on': renewed_on, 'registrar': registrar}
 
 
 def _vcard_name(entity):

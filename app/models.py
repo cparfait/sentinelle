@@ -638,6 +638,10 @@ class Domain(db.Model):
     registrar_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), index=True)
     registrar_supplier = db.relationship('Supplier', backref=db.backref('domains', lazy='dynamic'))
     expiry_date = db.Column(db.Date)
+    # Le dernier renouvellement (ou l'enregistrement) : le debut de la frise
+    # du bandeau, d'un renouvellement a l'expiration. Lu au registre (RDAP,
+    # evenement « last changed ») ou saisi a la main.
+    renewed_on = db.Column(db.Date)
     auto_renew = db.Column(db.Boolean, default=False)
     description = db.Column(db.Text)
     priority = db.Column(db.String(20), default='medium')

@@ -56,6 +56,11 @@
             <small class="text-muted">Contacts et contrats du bureau d'enregistrement.</small>
         </div>
         <div class="col-md-auto mb-3">
+            <label class="form-label fw-medium" title="Le dernier renouvellement (ou l'enregistrement), lu au registre par « Vérifier » : le début de la frise, jusqu'à l'expiration">Renouvelé le</label>
+            <input type="date" name="renewed_on" class="form-control l-date"
+                   value="{{ domain.renewed_on.strftime('%Y-%m-%d') if domain and domain.renewed_on else '' }}">
+        </div>
+        <div class="col-md-auto mb-3">
             <label class="form-label fw-medium">Date d'expiration</label>
             <input type="date" name="expiry_date" class="form-control l-date"
                    value="{{ domain.expiry_date.strftime('%Y-%m-%d') if domain and domain.expiry_date else '' }}">

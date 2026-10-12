@@ -25,7 +25,7 @@
     {% endif %}
 {% endset %}
 {% set bandeau %}
-{{ bandeau_echeance('Expiration', domain.expiry_date, domain.status(), passe='expiré depuis',
+{{ bandeau_echeance('Expiration', domain.expiry_date, domain.status(), passe='expiré depuis', debut=domain.renewed_on,
                     complement=('renouv. automatique chez ' ~ domain.registrar) if (domain.auto_renew and domain.registrar) else ('renouv. automatique' if domain.auto_renew else 'renouv. manuel'),
                     sans_date='date d\'expiration à renseigner (ou lancez la vérification au registre)') }}
 {% endset %}
