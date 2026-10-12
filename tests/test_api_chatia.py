@@ -6,6 +6,8 @@ Contrat attendu par le connecteur de chatIA :
   en_retard, tronque, elements: [{type, type_libelle, id, nom, objet, echeance,
   jours_restants, en_retard, detail, statut, statut_libelle, responsable,
   reporte_jusqu_au, lien}]} ;
+- /api/chatia/alertes?type=<types>&reportees=1 -> {total, critiques, urgentes,
+  reportees_incluses, tronque, elements} : une ligne par fiche critique ou urgente ;
 - /api/chatia/synthese -> {categories, totaux, conformite, alertes} ;
 - /api/chatia/recherche?q=<texte> -> {q, total, tronque, elements (+ details)}.
 """
@@ -21,7 +23,8 @@ from app.models import (Account, AccessReview, AlertLog, AlertSnooze, AppConfig,
 
 CLE = 'cle-chatia-de-test'
 ENTETE = {'Authorization': f'Bearer {CLE}'}
-ROUTES = ('/api/chatia/echeances', '/api/chatia/synthese', '/api/chatia/recherche?q=portail')
+ROUTES = ('/api/chatia/echeances', '/api/chatia/alertes', '/api/chatia/synthese',
+          '/api/chatia/recherche?q=portail')
 
 
 def _jour(n):
@@ -50,7 +53,7 @@ def _peupler():
     db.session.add_all([
         Certificate(service_name='Portail', domain='www.mairie.fr', expiry_date=_jour(10),
                     description='mdp du keystore : Secret-Keystore-42'),
-        Certificate(kind='signature', service_name='Élus', holder='DORFIAC', first_name='Elodie',
+        Certificate(kind='signature', service_name='Élus', holder='EXEMPLE', first_name='Anne',
                     civility='mme', expiry_date=_jour(20), supplier_id=sup.id,
                     revocation_code='REVOC-SECRET-9876'),
         Certificate(service_name='Ancien', domain='old.mairie.fr', expiry_date=_jour(5),
@@ -127,7 +130,7 @@ def test_echeances_dans_l_horizon_et_en_retard(api):
     assert data['dans'] == 30 and data['jusqu_au'] == _jour(30).isoformat()
     # Datées, dans les 30 jours ou dépassées
     assert 'Portail - www.mairie.fr' in noms
-    assert 'Élus - Mme DORFIAC Elodie' in noms
+    assert 'Élus - Mme EXEMPLE Anne' in noms
     assert 'GLPI (svc-admin)' in noms                 # en retard de 3 jours
     assert 'PRA annuel' in noms
     assert 'SRV-AD01 (garantie)' in noms
@@ -168,7 +171,7 @@ def test_forme_d_un_element(api):
     assert portail['detail'] == 'Certificat expire dans 10 j'
     assert portail['lien'] == f"https://sentinelle.ville.local/certificates/{portail['id']}"
     elus = next(e for e in data['elements'] if e['type_libelle'] == 'Certificat électronique')
-    assert elus['titulaire'] == 'Mme DORFIAC Elodie'
+    assert elus['titulaire'] == 'Mme EXEMPLE Anne'
 
 
 def test_retard_et_responsable(api):
@@ -257,6 +260,50 @@ def test_une_alerte_reportee_n_est_plus_ouverte(api):
     assert avant['critiques'] == 1 and apres['critiques'] == 0 and apres['reportees'] == 1
 
 
+# ── Alertes ──
+
+def test_alertes_detaillent_les_comptes_de_la_synthese(api):
+    """« Liste moi les alertes » (DSI, 11/10/2026) : une ligne par fiche critique
+    ou urgente, la règle de la synthèse — les comptes concordent, type par type,
+    fiches sans date comprises."""
+    _peupler()
+    resume = _lire(api, '/api/chatia/synthese')['alertes']
+    data = _lire(api, '/api/chatia/alertes')
+    assert (data['total'], data['critiques'], data['urgentes']) == (
+        resume['ouvertes'], resume['critiques'], resume['urgentes'])
+    par_type = {}
+    for e in data['elements']:
+        compte = par_type.setdefault(e['type'], {'critiques': 0, 'urgents': 0})
+        compte['critiques' if e['statut'] == 'danger' else 'urgents'] += 1
+    assert par_type == resume['par_type']
+    noms = [e['nom'] for e in data['elements']]
+    assert {'GLPI (svc-admin)', 'Veeam serveurs', 'Zimbra'} <= set(noms)
+    assert 'Firefox' not in noms and 'mairie.fr' not in noms
+    statuts = [e['statut'] for e in data['elements']]
+    assert statuts == sorted(statuts, key=['danger', 'warning'].index)  # critiques d'abord
+    assert not data['reportees_incluses'] and not data['tronque']
+
+
+def test_alertes_materiel_par_fiche_et_filtre_par_type(api):
+    _peupler()
+    materiel = _lire(api, '/api/chatia/alertes?type=materiel')['elements']
+    assert {e['type'] for e in materiel} <= {'materiel'}
+    assert all('(garantie)' not in e['nom'] for e in materiel)  # la fiche, pas une échéance
+    assert _lire(api, '/api/chatia/alertes?type=domaine')['total'] == 0
+
+
+def test_alertes_reportees_a_la_demande(api):
+    db.session.add(SystemUpdate(name='Zimbra', status='critical'))
+    db.session.commit()
+    u = SystemUpdate.query.one()
+    db.session.add(AlertSnooze(entity_type='update', entity_id=u.id, snoozed_until=_jour(7)))
+    db.session.commit()
+    assert _lire(api, '/api/chatia/alertes')['total'] == 0
+    data = _lire(api, '/api/chatia/alertes?reportees=1')
+    assert data['total'] == 1 and data['reportees_incluses']
+    assert data['elements'][0]['reporte_jusqu_au'] == _jour(7).isoformat()
+
+
 # ── Recherche ──
 
 def test_recherche_sans_accent_ni_majuscule(api):
@@ -264,8 +311,8 @@ def test_recherche_sans_accent_ni_majuscule(api):
     data = _lire(api, '/api/chatia/recherche?q=elus')
     assert data['total'] == 1
     el = data['elements'][0]
-    assert el['nom'] == 'Élus - Mme DORFIAC Elodie' and el['details']['autorite'] == 'Certinomis'
-    assert _lire(api, '/api/chatia/recherche?q=DORFIAC')['total'] == 1
+    assert el['nom'] == 'Élus - Mme EXEMPLE Anne' and el['details']['autorite'] == 'Certinomis'
+    assert _lire(api, '/api/chatia/recherche?q=EXEMPLE')['total'] == 1
 
 
 def test_recherche_par_responsable_et_details(api):
@@ -298,7 +345,7 @@ def test_aucun_secret_dans_aucune_reponse(api, app):
                             message='ERREUR: SMTP Mot-De-Passe-SMTP', recipients='dsi@ville.fr'))
     db.session.commit()
     corps = ''
-    for chemin in ('/api/chatia/echeances?dans=730', '/api/chatia/synthese',
+    for chemin in ('/api/chatia/echeances?dans=730', '/api/chatia/alertes?reportees=1', '/api/chatia/synthese',
                    '/api/chatia/recherche?q=portail', '/api/chatia/recherche?q=elus',
                    '/api/chatia/recherche?q=glpi', '/api/chatia/recherche?q=e.magnus'):
         corps += json.dumps(_lire(api, chemin), ensure_ascii=False)

@@ -107,6 +107,18 @@ def chatia_echeances():
         suivi.lire_types(request.args.getlist('type'))))
 
 
+@bp.route('/chatia/alertes')
+@csrf.exempt
+@limiter.limit('120 per minute')
+def chatia_alertes():
+    """Alertes ouvertes, une par fiche critique ou urgente (`?type=` filtrable,
+    `?reportees=1` : alertes reportées comprises)."""
+    from app import suivi
+    return _reponse_chatia(lambda: suivi.alertes(
+        suivi.lire_types(request.args.getlist('type')),
+        suivi.lire_oui(request.args.get('reportees'))))
+
+
 @bp.route('/chatia/synthese')
 @csrf.exempt
 @limiter.limit('120 per minute')

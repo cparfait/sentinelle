@@ -1,4 +1,4 @@
-"""Éléments suivis, lus par un outil tiers : échéances, synthèse, recherche.
+"""Éléments suivis, lus par un outil tiers : échéances, alertes, synthèse, recherche.
 
 Ce que l'assistant chatIA de la Ville vient lire par l'API (routes /api/chatia/…,
 app/api.py), avec sa propre clé. LECTURE SEULE : rien ici n'écrit en base.
@@ -22,7 +22,11 @@ Deux familles d'échéances :
   de vie) : retenues quand le statut est critique ou urgent, quel que soit
   l'horizon — une sauvegarde en échec n'attend pas une date.
 Une fiche sans date (« à compléter ») n'est pas une échéance : elle compte dans
-la synthèse, pas dans la liste.
+la synthèse, pas dans la liste des échéances.
+
+Les ALERTES, elles, sont les fiches critiques ou urgentes du tableau de bord
+(hors alertes reportées) : la règle de la synthèse, dont elles détaillent les
+comptes, une ligne par fiche — sans date comprises, quel que soit l'horizon.
 """
 import unicodedata
 from datetime import datetime, timezone, timedelta
@@ -92,6 +96,11 @@ def lire_types(valeurs):
         raise ValueError(f"Type inconnu : {', '.join(inconnus)}. Types admis : "
                          f"{', '.join(TYPES)}.")
     return list(dict.fromkeys(demandes))
+
+
+def lire_oui(brut):
+    """« 1 », « true », « oui » : vrai ; absent ou autre chose : faux."""
+    return str(brut or '').strip().lower() in ('1', 'true', 'oui', 'yes')
 
 
 def lire_recherche(brut):
@@ -383,6 +392,41 @@ def echeances(dans=HORIZON_DEFAUT, types=None):
         'types': _actifs(types),
         'total': len(retenus),
         'en_retard': sum(1 for e in retenus if e['en_retard']),
+        'tronque': len(retenus) > ELEMENTS_MAX,
+        'elements': retenus[:ELEMENTS_MAX],
+    }
+
+
+def alertes(types=None, reportees=False):
+    """Les alertes ouvertes, une par fiche : fiches critiques ou urgentes, hors
+    alertes reportées (sauf `reportees`). Même règle que la synthèse, dont les
+    comptes concordent ; le matériel se présente par son statut d'ensemble et ses
+    motifs. Les critiques d'abord, puis l'échéance la plus proche (retards en
+    tête), les fiches sans date à la fin."""
+    ctx = _Contexte()
+    retenus = []
+    for t in _actifs(types):
+        statut_de = _SOURCES[t][2]
+        for o in _fiches(t):
+            s = statut_de(o)
+            if s not in ('danger', 'warning'):
+                continue
+            if (TYPES[t][2], o.id) in ctx.reports and not reportees:
+                continue
+            el = _fiche(t, o, ctx)
+            el.update(statut=s, statut_libelle=status_label(s))  # le statut de la fiche, celui des comptes
+            retenus.append(el)
+    rang = {s: i for i, s in enumerate(STATUTS)}
+    retenus.sort(key=lambda e: (rang.get(e['statut'], 9), e['echeance'] is None, e['echeance'] or '',
+                                e['nom'].lower()))
+    return {
+        'genere_le': _maintenant(),
+        'aujourd_hui': ctx.aujourdhui.isoformat(),
+        'types': _actifs(types),
+        'reportees_incluses': bool(reportees),
+        'total': len(retenus),
+        'critiques': sum(1 for e in retenus if e['statut'] == 'danger'),
+        'urgentes': sum(1 for e in retenus if e['statut'] == 'warning'),
         'tronque': len(retenus) > ELEMENTS_MAX,
         'elements': retenus[:ELEMENTS_MAX],
     }
