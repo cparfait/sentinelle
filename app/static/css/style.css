@@ -2979,7 +2979,8 @@ a.marche-doc-nom:hover { color: var(--primary); }
    complément du bandeau (« rotation tous les 180 j · dernier changement… »)
    qui se coupe par « … », en dernier. */
 .fiche-entete-titre { flex: 0 0 auto; }
-.fiche-entete-bandeau { flex: 0 1 auto; min-width: 0; margin-right: auto; align-self: flex-start; margin-top: -1px; }
+/* Le bandeau se centre entre le titre et les actions (marges auto des deux côtés). */
+.fiche-entete-bandeau { flex: 0 1 auto; min-width: 0; margin: -1px auto 0; align-self: flex-start; }
 .fiche-entete-bandeau .fiche-bandeau { max-width: 100%; }
 .fiche-entete .fiche-actions { flex: 0 0 auto; }
 @media (max-width: 767.98px) { .fiche-entete { flex-wrap: wrap; } }
