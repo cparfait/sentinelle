@@ -12,6 +12,7 @@ from app.inventory import parse_equipment_id as _parse_equipment_id
 from app.forms_util import parse_date, parse_int, parse_float, status_rank
 
 from app.decorators import require_edit, require_delete, view_guard
+from app.voisins import voisins
 bp = Blueprint('certificates', __name__)
 
 
@@ -287,6 +288,7 @@ def detail(id):
     # L'onglet Détails porte le formulaire : il lui faut les mêmes listes.
     return render_template('certificates/detail.html', certificate=cert,
                            histories=histories, revocation_code=code,
+                           voisins=voisins(Certificate, cert, Certificate.service_name),
                            kind=cert.kind or 'tls', **_form_context())
 
 

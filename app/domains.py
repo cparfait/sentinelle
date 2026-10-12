@@ -9,6 +9,7 @@ from app.domain_checker import fetch_domain_info
 from app.ct_monitor import scan_domain
 from app.forms_util import parse_date, parse_int, status_rank
 from app.decorators import require_edit, require_delete, view_guard
+from app.voisins import voisins
 
 bp = Blueprint('domains', __name__)
 
@@ -122,7 +123,7 @@ def detail(id):
     certificats = sorted(domain.certificates.filter_by(is_active=True).all(),
                          key=lambda c: (c.expiry_date is None, c.expiry_date))
     return render_template('domains/detail.html', domain=domain, histories=histories,
-                           certificats=certificats,
+                           certificats=certificats, voisins=voisins(Domain, domain),
                            ct_entries=ct_entries, ct_new=ct_new,
                            **_form_context())
 

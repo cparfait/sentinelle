@@ -10,6 +10,7 @@ from app.inventory import parse_equipment_id as _parse_equipment_id
 from app.forms_util import status_rank
 
 from app.decorators import require_edit, require_delete, view_guard
+from app.voisins import voisins
 bp = Blueprint('backups', __name__)
 
 
@@ -231,6 +232,7 @@ def detail(id):
     histories = BackupHistory.query.filter_by(backup_id=id).order_by(BackupHistory.performed_at.desc()).all()
     return render_template('backups/detail.html', backup=backup, checks=checks,
                            check_events=check_events, histories=histories,
+                           voisins=voisins(Backup, backup, Backup.service_name),
                            equipments=_active_equipments())
 
 

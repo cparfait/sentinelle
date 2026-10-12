@@ -27,7 +27,7 @@
     {% endif %}
 {% endset %}
 {{ entete(domain.name, sous_titre, statut=domain.status(), primaire=primaire,
-          menu=menu) }}
+          menu=menu, voisins=voisins) }}
 
 {{ bandeau_echeance('Expiration', domain.expiry_date, domain.status(), passe='expiré depuis',
                     complement=('renouvellement automatique chez ' ~ domain.registrar) if (domain.auto_renew and domain.registrar) else ('renouvellement automatique' if domain.auto_renew else 'renouvellement manuel'),

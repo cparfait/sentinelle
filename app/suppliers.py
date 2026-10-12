@@ -11,6 +11,7 @@ from app import db
 from app.models import (Supplier, Equipment, Contract, SUPPLIER_KIND_LABELS, Domain, Account,
                         Certificate)
 from app.decorators import require_edit, require_delete, view_guard
+from app.voisins import voisins
 from app.audit import record as audit_record
 
 bp = Blueprint('suppliers', __name__)
@@ -88,6 +89,7 @@ def detail(id):
     certificates = supplier.certificates.filter_by(is_active=True).order_by(
         Certificate.expiry_date.asc().nullslast()).all()
     return render_template('suppliers/detail.html', supplier=supplier,
+                           voisins=voisins(Supplier, supplier),
                            equipments=equipments, contracts=contracts, software=software,
                            domains=domains, accounts=accounts, certificates=certificates,
                            contrats_en_cours=[c for c in contracts if c.en_cours()],

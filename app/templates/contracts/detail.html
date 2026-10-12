@@ -15,7 +15,7 @@
     {% endif %}
 {% endset %}
 {{ entete(contract.name, sous_titre, statut=contract.status(), primaire=primaire,
-          menu=menu) }}
+          menu=menu, voisins=voisins) }}
 
 {# La date qui compte pour AGIR n'est pas l'échéance mais l'échéance moins le
    préavis : au-delà, on subit la tacite reconduction ou la coupure. #}

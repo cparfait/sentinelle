@@ -6,6 +6,7 @@ from app.models import Account, AccountHistory
 from app.forms_util import parse_date, parse_int, status_rank
 
 from app.decorators import require_edit, require_delete, view_guard
+from app.voisins import voisins
 bp = Blueprint('accounts', __name__)
 
 
@@ -81,6 +82,7 @@ def detail(id):
     histories = account.histories.order_by(AccountHistory.performed_at.desc()).all()
     # L'onglet Détails porte le formulaire : il lui faut les mêmes listes.
     return render_template('accounts/detail.html', account=account, histories=histories,
+                           voisins=voisins(Account, account, Account.service_name),
                            **_form_context())
 
 

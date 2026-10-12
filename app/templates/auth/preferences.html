@@ -768,6 +768,29 @@
             </div>
         </section>
 
+        <section class="form-section pref-rubrique" id="secFiches">
+            <div class="form-section-titre">
+                {{ ico_bi('bi-card-text', '1em', 'me-2') }}Fiches
+                {% if fiche_navigation %}<span class="badge bg-success ms-2">{{ ico_bi('bi-check-circle', '1em', 'me-1') }}Précédent / Suivant</span>{% else %}<span class="badge bg-secondary ms-2">Sans feuilletage</span>{% endif %}
+            </div>
+            <p class="form-section-aide">Ce que toutes les fiches ont en commun.</p>
+            <div class="form-section-corps">
+                    <form method="POST" action="{{ url_for('auth.preferences') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="save_fiche_navigation">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="ficheNavigation" name="fiche_navigation" {% if fiche_navigation %}checked{% endif %}>
+                            <label class="form-check-label fw-medium" for="ficheNavigation">Boutons Précédent / Suivant</label>
+                        </div>
+                        <p class="text-muted small mt-1 mb-2">Deux chevrons en tête de chaque fiche pour passer à la précédente ou à la suivante dans l'ordre des noms, sans repasser par la liste — comme dans SoftInventory. Désactivé : on revient à la liste pour changer de fiche.</p>
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            {{ ico_bi('bi-check-lg', '1em', 'me-1') }} Enregistrer
+                        </button>
+                    </form>
+            </div>
+        </section>
+
         <section class="form-section pref-rubrique" id="secForms">
             <div class="form-section-titre">
                 {{ ico_bi('bi-window-stack', '1em', 'me-2') }}Formulaires

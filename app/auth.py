@@ -475,6 +475,13 @@ def preferences():
             audit_record('config pagination retenue', detail=f'actif={enabled}', category='preferences')
             flash('Pagination ' + ('retenue pour chaque utilisateur' if enabled else 'remise à dix lignes par défaut') + '.', 'success')
 
+        elif action == 'save_fiche_navigation':
+            enabled = request.form.get('fiche_navigation') == 'on'
+            _persist_config({'FICHE_NAVIGATION': 'true' if enabled else 'false'})
+            current_app.config['FICHE_NAVIGATION'] = enabled
+            audit_record('config feuilletage des fiches', detail=f'actif={enabled}', category='preferences')
+            flash('Boutons Précédent / Suivant ' + ('affichés' if enabled else 'masqués') + ' en tête des fiches.', 'success')
+
         elif action == 'save_forms':
             etats = {'SOFTWARE_FORM_LEGACY': request.form.get('software_form_legacy') == 'on',
                      'CONTRACT_FORM_LEGACY': request.form.get('contract_form_legacy') == 'on',
@@ -744,6 +751,7 @@ def preferences():
                            modules=_modules_context(),
                            dashboard_custom=current_app.config.get('DASHBOARD_CUSTOM', True),
                            pagination_memory=current_app.config.get('PAGINATION_MEMORY', True),
+                           fiche_navigation=current_app.config.get('FICHE_NAVIGATION', True),
                            software_form_legacy=current_app.config.get('SOFTWARE_FORM_LEGACY', False),
                            contract_form_legacy=current_app.config.get('CONTRACT_FORM_LEGACY', False),
                            supplier_form_legacy=current_app.config.get('SUPPLIER_FORM_LEGACY', False),

@@ -15,6 +15,7 @@ from app.models import (Contract, ContractHistory, Consultation,
                         CONTRACT_NATURE_LABELS, Referential)
 from app.forms_util import parse_date, parse_int, parse_float, status_rank
 from app.decorators import require_edit, require_delete, view_guard
+from app.voisins import voisins
 from app.audit import record as audit_record
 
 bp = Blueprint('contracts', __name__)
@@ -172,7 +173,7 @@ def detail(id):
     # chargent que pour qui peut s'en servir.
     formulaire = _form_context() if current_user.can_edit('contracts') else {}
     return render_template('contracts/detail.html', contract=contract, histories=histories,
-                           **formulaire)
+                           voisins=voisins(Contract, contract), **formulaire)
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])

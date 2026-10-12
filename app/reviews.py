@@ -5,6 +5,7 @@ from app import db
 from app.models import AccessReview, ReviewHistory
 from app.forms_util import parse_date, parse_int, status_rank
 from app.decorators import require_edit, require_delete, view_guard
+from app.voisins import voisins
 
 bp = Blueprint('reviews', __name__)
 
@@ -69,6 +70,7 @@ def detail(id):
     review = AccessReview.query.get_or_404(id)
     histories = review.histories.order_by(ReviewHistory.performed_at.desc()).all()
     return render_template('reviews/detail.html', review=review, histories=histories,
+                           voisins=voisins(AccessReview, review, AccessReview.application),
                            assets=_app_assets())
 
 

@@ -16,7 +16,7 @@
     {% endif %}
 {% endset %}
 {{ entete(item.name, sous_titre, statut=item.computed_status(),
-          menu=menu) }}
+          menu=menu, voisins=voisins) }}
 
 {# Le bandeau de faits reste AU-DESSUS des onglets : ce qu'on vient vérifier
    neuf fois sur dix, sans lire la Synthèse. #}

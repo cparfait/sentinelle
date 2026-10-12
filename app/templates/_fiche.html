@@ -23,15 +23,35 @@
 #}
 {% from '_macros.html' import status_badge, delai_badge %}
 
+{# ---- Précédent / suivant ----
+   Deux chevrons pour feuilleter les fiches dans l'ordre des noms, comme dans
+   SoftInventory : `voisins` est le couple (précédente, suivante) de
+   app/voisins.py, chaque voisin portant son id et son nom (l'infobulle dit où
+   l'on va). Un bout sans voisin garde son chevron, grisé : la paire reste à sa
+   place d'une fiche à l'autre. Rien du tout sans aucun voisin (une seule
+   fiche) ni quand le feuilletage est coupé (Préférences > Fiches). #}
+{% macro fiche_voisins(voisins) %}
+{% if voisins and (voisins[0] or voisins[1]) %}
+<div class="btn-group fiche-voisins" role="group" aria-label="Feuilleter les fiches">
+    {% if voisins[0] %}<a href="{{ url_for(request.endpoint, id=voisins[0].id) }}" class="btn btn-outline-secondary btn-icon" title="Précédente : {{ voisins[0].nom }}" aria-label="Fiche précédente : {{ voisins[0].nom }}">{{ ico_bi('bi-chevron-left', '1em') }}</a>
+    {% else %}<span class="btn btn-outline-secondary btn-icon disabled" aria-hidden="true">{{ ico_bi('bi-chevron-left', '1em') }}</span>{% endif %}
+    {% if voisins[1] %}<a href="{{ url_for(request.endpoint, id=voisins[1].id) }}" class="btn btn-outline-secondary btn-icon" title="Suivante : {{ voisins[1].nom }}" aria-label="Fiche suivante : {{ voisins[1].nom }}">{{ ico_bi('bi-chevron-right', '1em') }}</a>
+    {% else %}<span class="btn btn-outline-secondary btn-icon disabled" aria-hidden="true">{{ ico_bi('bi-chevron-right', '1em') }}</span>{% endif %}
+</div>
+{% endif %}
+{% endmacro %}
+
 {# ---- L'en-tête ----
-   `primaire` et `menu` sont des blocs capturés ({% set x %}...{% endset %}). #}
-{% macro entete(titre, sous_titre='', statut=None, primaire='', menu='', badges='') %}
+   `primaire` et `menu` sont des blocs capturés ({% set x %}...{% endset %}).
+   `voisins` : le couple (précédente, suivante), voir fiche_voisins. #}
+{% macro entete(titre, sous_titre='', statut=None, primaire='', menu='', badges='', voisins=None) %}
 <div class="page-header fiche-entete">
     <div class="fiche-entete-titre">
         <h1 class="page-title">{{ titre }}{% if statut %} {{ status_badge(statut) }}{% endif %}{{ badges }}</h1>
         {% if sous_titre %}<p class="page-subtitle">{{ sous_titre }}</p>{% endif %}
     </div>
     <div class="page-actions">
+        {{ fiche_voisins(voisins) }}
         {{ primaire }}
         {% if menu | trim %}
         <div class="dropdown">

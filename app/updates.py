@@ -5,6 +5,7 @@ from app import db
 from app.models import SystemUpdate, UpdateHistory
 from app.forms_util import parse_date, status_rank
 from app.decorators import require_edit, require_delete, view_guard
+from app.voisins import voisins
 from app.inventory import active_equipments as _active_equipments
 from app.inventory import parse_equipment_id as _parse_equipment_id
 
@@ -89,6 +90,7 @@ def detail(id):
     update = SystemUpdate.query.get_or_404(id)
     histories = update.histories.order_by(UpdateHistory.performed_at.desc()).all()
     return render_template('updates/detail.html', update=update, histories=histories,
+                           voisins=voisins(SystemUpdate, update),
                            assets=_active_assets(), equipments=_active_equipments(),
                            status_choices=STATUS_CHOICES, type_choices=TYPE_CHOICES)
 

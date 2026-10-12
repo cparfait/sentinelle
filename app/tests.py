@@ -6,6 +6,7 @@ from app.models import TestTask, TestHistory
 from app.forms_util import parse_date, parse_int, status_rank
 
 from app.decorators import require_edit, require_delete, view_guard
+from app.voisins import voisins
 bp = Blueprint('tests', __name__)
 
 
@@ -129,6 +130,7 @@ def detail(id):
     test = TestTask.query.get_or_404(id)
     histories = test.histories.order_by(TestHistory.performed_at.desc()).all()
     return render_template('tests/detail.html', test=test, histories=histories, test_types=TEST_TYPES,
+                           voisins=voisins(TestTask, test),
                            software_list=_software_list())
 
 

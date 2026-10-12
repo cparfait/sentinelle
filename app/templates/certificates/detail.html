@@ -27,7 +27,7 @@
     {% endif %}
 {% endset %}
 {{ entete(certificate.service_name, sous_titre, statut=certificate.status(), primaire=primaire,
-          menu=menu) }}
+          menu=menu, voisins=voisins) }}
 
 {% set complement %}
     {%- if certificate.issued_at %}émis le {{ certificate.issued_at.strftime('%d/%m/%Y') }}{% endif -%}

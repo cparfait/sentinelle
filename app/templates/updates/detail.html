@@ -17,7 +17,7 @@
     {% endif %}
 {% endset %}
 {{ entete(update.name, sous_titre, primaire=primaire, badges=badges,
-          menu=menu) }}
+          menu=menu, voisins=voisins) }}
 
 <div class="data-card fiche-bandeau fiche-bandeau--{{ update.status_color() }}">
     {% call faits() %}

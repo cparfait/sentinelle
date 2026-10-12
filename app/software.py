@@ -15,6 +15,7 @@ from app.models import (Software, Supplier, Contract, Equipment, Referential,
                         AUTH_MODE_LABELS, DATA_LOCATION_LABELS)
 from app.forms_util import parse_int, parse_date, status_rank
 from app.decorators import require_edit, require_delete, view_guard
+from app.voisins import voisins
 from app.audit import record as audit_record
 
 bp = Blueprint('software', __name__)
@@ -234,6 +235,7 @@ def detail(id):
     formulaire = _form_context() if current_user.can_edit('software') else {
         'suppliers': Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()}
     return render_template('software/detail.html', item=item, updates=updates,
+                           voisins=voisins(Software, item),
                            revues=revues, comptes=comptes,
                            tous_les_services=UserService.options(),
                            serveurs_disponibles=serveurs_disponibles,

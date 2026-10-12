@@ -20,7 +20,7 @@
     {% endif %}
 {% endset %}
 {{ entete(backup.service_name, sous_titre, statut=backup.computed_status(), primaire=primaire,
-          menu=menu) }}
+          menu=menu, voisins=voisins) }}
 
 {# Pas d'échéance ici : ce qu'on vient vérifier, c'est le check du jour, la
    série en cours et le taux de réussite. #}

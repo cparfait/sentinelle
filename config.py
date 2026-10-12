@@ -100,6 +100,8 @@ class Config:
     # Chaque utilisateur retrouve, liste par liste, la taille de page qu'il a
     # choisie (voir app/paging.py). Defaut : actif.
     PAGINATION_MEMORY = os.getenv('PAGINATION_MEMORY', 'true').lower() in ('true', '1', 'yes')
+    # Precedent / suivant en tete de chaque fiche (app/voisins.py). Defaut : actif.
+    FICHE_NAVIGATION = os.getenv('FICHE_NAVIGATION', 'true').lower() in ('true', '1', 'yes')
 
     # Formulaire des logiciels : l'ancien (rubriques numerotees, rattachements
     # compris) au lieu de la grille de SoftInventory. Defaut : le nouveau.

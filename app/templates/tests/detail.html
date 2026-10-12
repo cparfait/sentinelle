@@ -20,7 +20,7 @@
     {% endif %}
 {% endset %}
 {{ entete(test.name, sous_titre, statut=test.computed_status(), primaire=primaire,
-          menu=menu) }}
+          menu=menu, voisins=voisins) }}
 
 {{ bandeau_echeance('Prochaine échéance', test.next_due, test.computed_status(), passe='en retard de',
                     debut=test.last_performed,

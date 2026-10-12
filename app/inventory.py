@@ -8,6 +8,7 @@ from app.models import (Equipment, EQUIPMENT_KIND_LABELS, CRITICALITY_LABELS,
 from app.forms_util import (parse_date as _pd, parse_int as _pi,
                             parse_float as _pf, status_rank)
 from app.decorators import require_edit, require_delete, view_guard
+from app.voisins import voisins
 from app.audit import record as audit_record
 
 bp = Blueprint('inventory', __name__)
@@ -278,7 +279,8 @@ def create():
 @login_required
 def detail(id):
     item = Equipment.query.get_or_404(id)
-    return render_template('inventory/detail.html', item=item, **_form_context(item))
+    return render_template('inventory/detail.html', item=item, voisins=voisins(Equipment, item),
+                           **_form_context(item))
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])

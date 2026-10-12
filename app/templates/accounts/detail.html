@@ -17,7 +17,7 @@
     {% endif %}
 {% endset %}
 {{ entete(account.service_name, sous_titre, statut=account.status(), primaire=primaire,
-          menu=menu) }}
+          menu=menu, voisins=voisins) }}
 
 {{ bandeau_echeance('Prochain changement', account.next_password_change, account.status(),
                     debut=account.last_password_change,
