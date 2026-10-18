@@ -243,8 +243,8 @@ def detail(id):
                            marches_en_cours=[c for c in marches if c.en_cours()],
                            marches_rattachables=_marches_rattachables(item),
                            # (lien, 'sortant'|'entrant'|'double', logiciel d'en face)
-                           flux=[(l,) + l.sens_depuis(item.id)
-                                 for l in item.links_out.all() + item.links_in.all()],
+                           flux=[(lien,) + lien.sens_depuis(item.id)
+                                 for lien in item.links_out.all() + item.links_in.all()],
                            partages=item.shares.order_by(SoftwareShare.label).all(),
                            autres_logiciels=autres,
                            taches=item.tasks.filter_by(is_active=True).all(),
@@ -368,7 +368,7 @@ def link_add(id):
     existants = SoftwareLink.query.filter(db.or_(
         db.and_(SoftwareLink.source_id == sw.id, SoftwareLink.target_id == autre.id),
         db.and_(SoftwareLink.source_id == autre.id, SoftwareLink.target_id == sw.id))).all()
-    if any(l.bidirectional for l in existants):
+    if any(lien.bidirectional for lien in existants):
         flash('Un flux à double sens relie déjà ces deux logiciels.', 'warning')
         return redirect(url_for('software.detail', id=id))
     if double and existants:
@@ -378,7 +378,7 @@ def link_add(id):
         flash("Un flux à sens unique relie déjà ces deux logiciels : "
               "supprimez-le avant de déclarer le double sens.", 'warning')
         return redirect(url_for('software.detail', id=id))
-    if any(l.source_id == source.id for l in existants):
+    if any(lien.source_id == source.id for lien in existants):
         flash('Ce flux est déjà déclaré.', 'warning')
         return redirect(url_for('software.detail', id=id))
     db.session.add(SoftwareLink(
