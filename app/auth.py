@@ -34,13 +34,9 @@ def _safe_next(value):
 
 
 def _client_ip():
-    """IP source pour l'anti-bruteforce. On ne fait confiance a l'en-tete
-    X-Forwarded-For (forgeable par le client) que si TRUST_PROXY est actif
-    (app derriere un reverse proxy de confiance). Par defaut : remote_addr."""
-    if current_app.config.get('TRUST_PROXY'):
-        xff = request.headers.get('X-Forwarded-For', '')
-        if xff:
-            return xff.split(',')[0].strip()
+    """IP source pour l'anti-bruteforce. Derriere un reverse proxy de confiance
+    (TRUST_PROXY), ProxyFix (cf. create_app) y a deja place l'adresse ajoutee
+    par le proxy — jamais la valeur de X-Forwarded-For fournie par le client."""
     return request.remote_addr or ''
 
 
@@ -77,7 +73,13 @@ def login():
         if not authed:
             from app.ldap_auth import ldap_authenticate
             info = ldap_authenticate(username, password)
-            if info is not None:
+            if info is not None and user is not None and not user.is_ldap:
+                # Homonyme d'un compte LOCAL (« admin », typiquement) : l'AD
+                # n'en est pas l'autorite. Sans ce refus, quiconque cree un
+                # compte AD du meme nom ouvrait la session locale.
+                audit_record('refus LDAP : compte local homonyme',
+                             detail=f'identifiant: {username}', category='securite')
+            elif info is not None:
                 authed = True
                 ldap_used = True
                 if user is None:
@@ -151,19 +153,41 @@ def two_factor():
         return redirect(url_for('auth.login'))
     if request.method == 'POST':
         import pyotp
-        # Anti-bruteforce du code 2FA : plafonne le nombre d'essais avant de
-        # forcer une reconnexion (le code TOTP ne fait que 6 chiffres).
+        from datetime import datetime, timezone, timedelta
+        # Anti-bruteforce du code 2FA (6 chiffres) : le compteur vit sur la fiche
+        # utilisateur, pas dans le cookie de session — rejouer un ancien cookie,
+        # ou se reconnecter avec le mot de passe, ne le remet pas a zero.
         max_attempts = current_app.config.get('LOGIN_MAX_ATTEMPTS', 5)
-        tries = session.get('pending_2fa_tries', 0)
-        if tries >= max_attempts:
-            for k in ('pending_2fa_uid', 'pending_2fa_ldap', 'pending_2fa_next',
-                      'pending_2fa_tries'):
+        lockout_min = current_app.config.get('LOGIN_LOCKOUT_MINUTES', 15)
+        now = datetime.now(timezone.utc)
+
+        def _locked():
+            return bool(user.totp_locked_until
+                        and user.totp_locked_until.replace(tzinfo=timezone.utc) > now)
+
+        def _refuse():
+            for k in ('pending_2fa_uid', 'pending_2fa_ldap', 'pending_2fa_next'):
                 session.pop(k, None)
-            audit_record('blocage 2FA', detail=user.username, category='securite')
-            flash('Trop de tentatives. Reconnectez-vous.', 'danger')
+            flash('Trop de tentatives. Reessayez plus tard.', 'danger')
             return redirect(url_for('auth.login'))
+
+        if _locked():
+            return _refuse()
+        # L'essai est compte AVANT la verification, d'un UPDATE atomique : des
+        # requetes paralleles (waitress est multi-thread) ne verifient pas plus
+        # de codes que le seuil.
+        User.query.filter_by(id=user.id).update(
+            {User.totp_failed_count: db.func.coalesce(User.totp_failed_count, 0) + 1})
+        db.session.commit()
+        db.session.refresh(user)
+        if _locked() or user.totp_failed_count > max_attempts:
+            return _refuse()
+
         code = (request.form.get('code') or '').strip().replace(' ', '')
         if pyotp.TOTP(user.totp_secret).verify(code, valid_window=1):
+            user.totp_failed_count = 0
+            user.totp_locked_until = None
+            db.session.commit()
             ldap_used = session.pop('pending_2fa_ldap', False)
             nxt = _safe_next(session.pop('pending_2fa_next', None))
             # Regeneration de session a l'authentification (anti-fixation).
@@ -172,7 +196,12 @@ def two_factor():
             session.permanent = True
             audit_record('connexion (2FA)' + (' LDAP' if ldap_used else ''), category='securite')
             return redirect(nxt or url_for('dashboard.index'))
-        session['pending_2fa_tries'] = tries + 1
+        if user.totp_failed_count >= max_attempts:
+            user.totp_failed_count = 0
+            user.totp_locked_until = now + timedelta(minutes=lockout_min)
+            db.session.commit()
+            audit_record('blocage 2FA', detail=user.username, category='securite')
+            return _refuse()
         audit_record('echec 2FA', detail=user.username, category='securite')
         flash('Code de vérification invalide.', 'danger')
     return render_template('auth/two_factor.html')

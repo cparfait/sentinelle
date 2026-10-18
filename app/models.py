@@ -129,6 +129,10 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), default='viewer')
     totp_secret = db.Column(db.String(32))  # secret 2FA TOTP (None = desactive)
+    # Essais de code 2FA, comptes EN BASE : un compteur gardé dans le cookie de
+    # session se remettait à zéro en rejouant un ancien cookie.
+    totp_failed_count = db.Column(db.Integer, default=0)
+    totp_locked_until = db.Column(db.DateTime)
     # Jeton d'abonnement au calendrier ICS (None = pas de lien actif). Permet a
     # Outlook/Thunderbird de recuperer /agenda.ics sans session.
     ics_token = db.Column(db.String(64), unique=True, index=True)

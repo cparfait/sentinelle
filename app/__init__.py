@@ -25,6 +25,14 @@ def create_app(config_class=Config):
             "avant de demarrer hors mode debug."
         )
 
+    if app.config.get('TRUST_PROXY'):
+        # Derriere le reverse proxy, l'adresse du client est la DERNIERE entree
+        # de X-Forwarded-For, celle que le proxy ajoute ; les precedentes sont
+        # ecrites par le client et se falsifient. ProxyFix la place dans
+        # remote_addr, que lisent l'anti-bruteforce et Flask-Limiter.
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
+
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
