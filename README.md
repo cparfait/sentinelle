@@ -5,7 +5,7 @@
 **La météo de votre DSI — supervision proactive des échéances et de la conformité.**
 
 [![CI](https://github.com/cparfait/sentinelle/actions/workflows/ci.yml/badge.svg)](https://github.com/cparfait/sentinelle/actions/workflows/ci.yml)
-![Python](https://img.shields.io/badge/Python-3.13-blue)
+![Python](https://img.shields.io/badge/Python-3.14-blue)
 ![Flask](https://img.shields.io/badge/Flask-3.1-black)
 ![Licence](https://img.shields.io/badge/usage-interne-lightgrey)
 
@@ -78,10 +78,10 @@ reportlab (PDF) · ldap3 (AD) · pyotp/qrcode (2FA) · waitress (prod). Base **S
 
 ## 🚀 Installation (développement)
 
-> Nécessite **Python 3.13**.
+> Nécessite **Python 3.14**.
 
 ```powershell
-py -3.13 -m venv venv
+py -3.14 -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 copy .env.example .env        # puis éditer .env (voir ci-dessous)

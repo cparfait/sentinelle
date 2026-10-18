@@ -11,7 +11,7 @@
 #  /app/o365_token.json. Ce niveau intermediaire permet de le persister sans
 #  recouvrir le code par un volume.
 # ============================================================================
-FROM python:3.13-slim
+FROM python:3.14-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \

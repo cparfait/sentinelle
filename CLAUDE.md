@@ -17,7 +17,7 @@ le catalogue des logiciels.
 ## Commandes
 
 ```powershell
-# Environnement (Python 3.13 — l'ancien venv 3.10 a été supprimé)
+# Environnement (Python 3.14, comme l'image Docker)
 .\venv\Scripts\python.exe run.py            # lancer l'app
 .\venv\Scripts\python.exe -m pip install -r requirements.txt
 
