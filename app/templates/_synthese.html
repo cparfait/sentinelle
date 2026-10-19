@@ -47,10 +47,12 @@
    marqueur pour la ligne « À compléter » — sauf `facultatif`, dont le vide
    n'est pas un manque (aucune case de nature cochée, un contact sans courriel).
    `large` : toute la largeur, l'intitulé au-dessus (un paragraphe) ;
-   `pleine` : toute la largeur, l'intitulé à gauche (une valeur seule). #}
-{% macro lu(label, valeur, large=False, titre=None, pleine=False, facultatif=False) %}
+   `pleine` : toute la largeur, l'intitulé à gauche (une valeur seule) ;
+   `texte` : avec `pleine`, un texte libre en face de l'intitulé — il passe à
+   la ligne au lieu de se couper par « … » (le descriptif d'un logiciel). #}
+{% macro lu(label, valeur, large=False, titre=None, pleine=False, facultatif=False, texte=False) %}
 {% if valeur or valeur == 0 %}
-<div class="lu{{ ' lu--large' if large }}{{ ' lu--pleine' if pleine }}">
+<div class="lu{{ ' lu--large' if large }}{{ ' lu--pleine' if pleine }}{{ ' lu--texte' if texte }}">
     <span class="lu-label"{% if titre %} title="{{ titre }}"{% endif %}>{{ label }}</span>
     <span class="lu-valeur">{{ valeur }}</span>
 </div>
